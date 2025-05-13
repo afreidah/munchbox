@@ -1,0 +1,159 @@
+I, [2025-05-12T22:25:01.844621 #28952]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.7.0)
+I, [2025-05-12T22:25:02.042538 #28952]  INFO -- Kitchen: -----> Creating <default-ubuntu-2004>...
+I, [2025-05-12T22:25:02.405800 #28952]  INFO -- Kitchen: #0 building with "default" instance using docker driver
+I, [2025-05-12T22:25:02.405897 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.405908 #28952]  INFO -- Kitchen: #1 [internal] load build definition from Dockerfile-kitchen20250512-28952-gr4bef
+I, [2025-05-12T22:25:02.405916 #28952]  INFO -- Kitchen: #1 transferring dockerfile: 1.60kB done
+I, [2025-05-12T22:25:02.405923 #28952]  INFO -- Kitchen: #1 DONE 0.0s
+I, [2025-05-12T22:25:02.405929 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.405935 #28952]  INFO -- Kitchen: #2 [internal] load metadata for docker.io/library/ubuntu:20.04
+I, [2025-05-12T22:25:02.812862 #28952]  INFO -- Kitchen: #2 DONE 0.6s
+I, [2025-05-12T22:25:02.969173 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969282 #28952]  INFO -- Kitchen: #3 [internal] load .dockerignore
+I, [2025-05-12T22:25:02.969313 #28952]  INFO -- Kitchen: #3 transferring context: 2B done
+I, [2025-05-12T22:25:02.969338 #28952]  INFO -- Kitchen: #3 DONE 0.0s
+I, [2025-05-12T22:25:02.969361 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969390 #28952]  INFO -- Kitchen: #4 [ 1/17] FROM docker.io/library/ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214
+I, [2025-05-12T22:25:02.969417 #28952]  INFO -- Kitchen: #4 resolve docker.io/library/ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214 done
+I, [2025-05-12T22:25:02.969443 #28952]  INFO -- Kitchen: #4 DONE 0.0s
+I, [2025-05-12T22:25:02.969470 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969506 #28952]  INFO -- Kitchen: #5 [14/17] RUN chown kitchen /home/kitchen/.ssh/authorized_keys
+I, [2025-05-12T22:25:02.969530 #28952]  INFO -- Kitchen: #5 CACHED
+I, [2025-05-12T22:25:02.969558 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969585 #28952]  INFO -- Kitchen: #6 [12/17] RUN chmod 0700 /home/kitchen/.ssh
+I, [2025-05-12T22:25:02.969608 #28952]  INFO -- Kitchen: #6 CACHED
+I, [2025-05-12T22:25:02.969638 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969675 #28952]  INFO -- Kitchen: #7 [ 9/17] RUN echo "Defaults !requiretty" >> /etc/sudoers.d/kitchen
+I, [2025-05-12T22:25:02.969701 #28952]  INFO -- Kitchen: #7 CACHED
+I, [2025-05-12T22:25:02.969722 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969745 #28952]  INFO -- Kitchen: #8 [ 8/17] RUN echo "kitchen ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/kitchen
+I, [2025-05-12T22:25:02.969780 #28952]  INFO -- Kitchen: #8 CACHED
+I, [2025-05-12T22:25:02.969802 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969826 #28952]  INFO -- Kitchen: #9 [16/17] RUN mkdir -p /run/sshd
+I, [2025-05-12T22:25:02.969847 #28952]  INFO -- Kitchen: #9 CACHED
+I, [2025-05-12T22:25:02.969870 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969902 #28952]  INFO -- Kitchen: #10 [ 3/17] RUN apt-get update
+I, [2025-05-12T22:25:02.969924 #28952]  INFO -- Kitchen: #10 CACHED
+I, [2025-05-12T22:25:02.969945 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.969967 #28952]  INFO -- Kitchen: #11 [13/17] RUN touch /home/kitchen/.ssh/authorized_keys
+I, [2025-05-12T22:25:02.969991 #28952]  INFO -- Kitchen: #11 CACHED
+I, [2025-05-12T22:25:02.970012 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.970034 #28952]  INFO -- Kitchen: #12 [ 6/17] RUN mkdir -p /etc/sudoers.d
+I, [2025-05-12T22:25:02.970071 #28952]  INFO -- Kitchen: #12 CACHED
+I, [2025-05-12T22:25:02.970096 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.970125 #28952]  INFO -- Kitchen: #13 [15/17] RUN chmod 0600 /home/kitchen/.ssh/authorized_keys
+I, [2025-05-12T22:25:02.970147 #28952]  INFO -- Kitchen: #13 CACHED
+I, [2025-05-12T22:25:02.970170 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.970191 #28952]  INFO -- Kitchen: #14 [10/17] RUN mkdir -p /home/kitchen/.ssh
+I, [2025-05-12T22:25:02.970214 #28952]  INFO -- Kitchen: #14 CACHED
+I, [2025-05-12T22:25:02.970244 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.970286 #28952]  INFO -- Kitchen: #15 [ 7/17] RUN chmod 0750 /etc/sudoers.d
+I, [2025-05-12T22:25:02.970865 #28952]  INFO -- Kitchen: #15 CACHED
+I, [2025-05-12T22:25:02.970893 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.970922 #28952]  INFO -- Kitchen: #16 [ 4/17] RUN apt-get install -y sudo openssh-server curl lsb-release
+I, [2025-05-12T22:25:02.970950 #28952]  INFO -- Kitchen: #16 CACHED
+I, [2025-05-12T22:25:02.970984 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.971007 #28952]  INFO -- Kitchen: #17 [11/17] RUN chown -R kitchen /home/kitchen/.ssh
+I, [2025-05-12T22:25:02.971028 #28952]  INFO -- Kitchen: #17 CACHED
+I, [2025-05-12T22:25:02.971049 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.971082 #28952]  INFO -- Kitchen: #18 [ 2/17] RUN [ ! -f "/sbin/initctl" ] || dpkg-divert --local --rename --add /sbin/initctl                 && ln -sf /bin/true /sbin/initctl
+I, [2025-05-12T22:25:02.971106 #28952]  INFO -- Kitchen: #18 CACHED
+I, [2025-05-12T22:25:02.971127 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.971151 #28952]  INFO -- Kitchen: #19 [ 5/17] RUN if ! getent passwd kitchen; then                   useradd -d /home/kitchen -m -s /bin/bash -p '*' kitchen;                 fi
+I, [2025-05-12T22:25:02.971177 #28952]  INFO -- Kitchen: #19 CACHED
+I, [2025-05-12T22:25:02.971198 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.971225 #28952]  INFO -- Kitchen: #20 [17/17] RUN echo ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1JxYEM3Zp8J8lebBgwALptptog+INHPi9o0QPZRhP9Y52TYFRhYPoSOMUAZ274w3gXs4XftB0u75UMbJRDwjGE/8hMetaXGhJT+ywuDWS/F3GXCibnUt1yStv+4wpoqFS94BUZynC3X4pt6iBPcqOvVmv6yROxFyEVgTbBn7U+bhrfKa/qFxVgDNoaAWZEHDO09fAy8GaTZlyobKerObn15wQD++CUGDQuNfsCdAigrRA7cRVnLTK6iM2LOHugVPc801l0KFEgBdAS4zLfyerddRfHWITFIO/rgzfgKHvOxNaBskTSZ9jcB+owZiCQJQ4Lu0R4m4h576ClVRBMxeV kitchen_docker_key >> /home/kitchen/.ssh/authorized_keys
+I, [2025-05-12T22:25:02.971266 #28952]  INFO -- Kitchen: #20 CACHED
+I, [2025-05-12T22:25:02.971291 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.971313 #28952]  INFO -- Kitchen: #21 exporting to image
+I, [2025-05-12T22:25:02.971335 #28952]  INFO -- Kitchen: #21 exporting layers done
+I, [2025-05-12T22:25:02.971360 #28952]  INFO -- Kitchen: #21 exporting manifest sha256:7cb096ceabacbdb7385df8953b63b3ad448b22b9c835feb06c9c2eec386f58c3 done
+I, [2025-05-12T22:25:02.971392 #28952]  INFO -- Kitchen: #21 exporting config sha256:4bc67162c08873f95f240b92bf788cf29bd436b588c6f43e0174eefb1991d1bd done
+I, [2025-05-12T22:25:02.971421 #28952]  INFO -- Kitchen: #21 exporting attestation manifest sha256:482803a0c439e598f84f9c6fadb550a1f6c6e7a231b8d8758ec303bf4d815c09 done
+I, [2025-05-12T22:25:02.972369 #28952]  INFO -- Kitchen: #21 exporting manifest list sha256:fc7466e4852e6b85eb954860e44dabcbb304c45bd19b4c39b2b23b1adf6039e4 done
+I, [2025-05-12T22:25:02.972436 #28952]  INFO -- Kitchen: #21 naming to moby-dangling@sha256:fc7466e4852e6b85eb954860e44dabcbb304c45bd19b4c39b2b23b1adf6039e4 done
+I, [2025-05-12T22:25:02.972474 #28952]  INFO -- Kitchen: #21 unpacking to moby-dangling@sha256:fc7466e4852e6b85eb954860e44dabcbb304c45bd19b4c39b2b23b1adf6039e4 done
+I, [2025-05-12T22:25:02.972506 #28952]  INFO -- Kitchen: #21 DONE 0.0s
+I, [2025-05-12T22:25:02.972537 #28952]  INFO -- Kitchen: 
+I, [2025-05-12T22:25:02.972569 #28952]  INFO -- Kitchen:  [33m2 warnings found (use docker --debug to expand):
+I, [2025-05-12T22:25:02.972595 #28952]  INFO -- Kitchen: [0m - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 4)
+I, [2025-05-12T22:25:02.972625 #28952]  INFO -- Kitchen:  - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 5)
+E, [2025-05-12T22:25:02.985861 #28952] ERROR -- Kitchen: ------Exception-------
+E, [2025-05-12T22:25:02.985922 #28952] ERROR -- Kitchen: Class: Kitchen::ActionFailed
+E, [2025-05-12T22:25:02.985951 #28952] ERROR -- Kitchen: Message: 1 actions failed.
+>>>>>>     Create failed on instance <default-ubuntu-2004>.  Please see .kitchen/logs/default-ubuntu-2004.log for more details
+E, [2025-05-12T22:25:02.986058 #28952] ERROR -- Kitchen: ----------------------
+E, [2025-05-12T22:25:02.986095 #28952] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-05-12T22:25:02.986118 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:181:in `report_errors'
+E, [2025-05-12T22:25:02.986139 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:172:in `run_action'
+E, [2025-05-12T22:25:02.986173 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:35:in `block in call'
+E, [2025-05-12T22:25:02.986232 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-12T22:25:02.986255 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:33:in `call'
+E, [2025-05-12T22:25:02.986274 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:52:in `perform'
+E, [2025-05-12T22:25:02.986295 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:198:in `block (2 levels) in <class:CLI>'
+E, [2025-05-12T22:25:02.986315 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor/command.rb:28:in `run'
+E, [2025-05-12T22:25:02.986334 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor/invocation.rb:127:in `invoke_command'
+E, [2025-05-12T22:25:02.986353 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor.rb:538:in `dispatch'
+E, [2025-05-12T22:25:02.986376 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor/base.rb:584:in `start'
+E, [2025-05-12T22:25:02.986396 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/bin/kitchen:11:in `block in <top (required)>'
+E, [2025-05-12T22:25:02.986416 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/errors.rb:183:in `with_friendly_errors'
+E, [2025-05-12T22:25:02.986435 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/bin/kitchen:11:in `<top (required)>'
+E, [2025-05-12T22:25:02.986454 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `load'
+E, [2025-05-12T22:25:02.986473 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `<main>'
+E, [2025-05-12T22:25:02.986493 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `eval'
+E, [2025-05-12T22:25:02.986512 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `<main>'
+E, [2025-05-12T22:25:02.986531 #28952] ERROR -- Kitchen: ----End Backtrace-----
+E, [2025-05-12T22:25:02.986550 #28952] ERROR -- Kitchen: -Composite Exception--
+E, [2025-05-12T22:25:02.986583 #28952] ERROR -- Kitchen: Class: Kitchen::InstanceFailure
+E, [2025-05-12T22:25:02.986603 #28952] ERROR -- Kitchen: Message: Create failed on instance <default-ubuntu-2004>.  Please see .kitchen/logs/default-ubuntu-2004.log for more details
+E, [2025-05-12T22:25:02.986622 #28952] ERROR -- Kitchen: ----------------------
+E, [2025-05-12T22:25:02.986641 #28952] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-05-12T22:25:02.986660 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:39:in `parse_image_id'
+E, [2025-05-12T22:25:02.986680 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:68:in `build_image'
+E, [2025-05-12T22:25:02.986699 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/container/linux.rb:41:in `create'
+E, [2025-05-12T22:25:02.986718 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/driver/docker.rb:125:in `create'
+E, [2025-05-12T22:25:02.986747 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `public_send'
+E, [2025-05-12T22:25:02.986767 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `block in perform_action'
+E, [2025-05-12T22:25:02.986786 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:563:in `synchronize_or_call'
+E, [2025-05-12T22:25:02.986805 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
+E, [2025-05-12T22:25:02.986824 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-12T22:25:02.986843 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
+E, [2025-05-12T22:25:02.986864 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `perform_action'
+E, [2025-05-12T22:25:02.986883 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:404:in `create_action'
+E, [2025-05-12T22:25:02.986902 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+E, [2025-05-12T22:25:02.986921 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+E, [2025-05-12T22:25:02.986940 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
+E, [2025-05-12T22:25:02.986959 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
+E, [2025-05-12T22:25:02.986979 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
+E, [2025-05-12T22:25:02.986998 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
+E, [2025-05-12T22:25:02.987018 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
+E, [2025-05-12T22:25:02.987042 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
+E, [2025-05-12T22:25:02.987062 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+E, [2025-05-12T22:25:02.987081 #28952] ERROR -- Kitchen: ----End Backtrace-----
+E, [2025-05-12T22:25:02.987100 #28952] ERROR -- Kitchen: ---Nested Exception---
+E, [2025-05-12T22:25:02.987119 #28952] ERROR -- Kitchen: Class: Kitchen::ActionFailed
+E, [2025-05-12T22:25:02.987138 #28952] ERROR -- Kitchen: Message: Could not parse Docker build output for image ID
+E, [2025-05-12T22:25:02.987159 #28952] ERROR -- Kitchen: ----------------------
+E, [2025-05-12T22:25:02.987178 #28952] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-05-12T22:25:02.987196 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:39:in `parse_image_id'
+E, [2025-05-12T22:25:02.987216 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:68:in `build_image'
+E, [2025-05-12T22:25:02.987235 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/container/linux.rb:41:in `create'
+E, [2025-05-12T22:25:02.987266 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/driver/docker.rb:125:in `create'
+E, [2025-05-12T22:25:02.987286 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `public_send'
+E, [2025-05-12T22:25:02.987305 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `block in perform_action'
+E, [2025-05-12T22:25:02.987324 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:563:in `synchronize_or_call'
+E, [2025-05-12T22:25:02.987344 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
+E, [2025-05-12T22:25:02.987363 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-12T22:25:02.987382 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
+E, [2025-05-12T22:25:02.987401 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `perform_action'
+E, [2025-05-12T22:25:02.987420 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:404:in `create_action'
+E, [2025-05-12T22:25:02.987442 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+E, [2025-05-12T22:25:02.987462 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+E, [2025-05-12T22:25:02.987481 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
+E, [2025-05-12T22:25:02.987500 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
+E, [2025-05-12T22:25:02.987520 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
+E, [2025-05-12T22:25:02.987539 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
+E, [2025-05-12T22:25:02.987562 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
+E, [2025-05-12T22:25:02.987582 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
+E, [2025-05-12T22:25:02.987601 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+E, [2025-05-12T22:25:02.987619 #28952] ERROR -- Kitchen: ----End Backtrace-----

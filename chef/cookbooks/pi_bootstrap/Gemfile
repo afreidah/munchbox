@@ -1,0 +1,20 @@
+# Gemfile
+# frozen_string_literal: true
+
+source 'https://rubygems.org'
+
+# Pin a Ruby version compatible with your environment
+ruby '>= 3.1', '< 4.0'
+
+gem 'chef', '~> 18.7', require: false          # Chef Infra Client library
+
+group :development do
+  gem 'cookstyle'
+  gem 'colorize'
+  gem 'test-kitchen'
+  gem 'kitchen-docker'
+  gem 'kitchen-vagrant'
+  gem 'kitchen-inspec'
+  gem 'inspec'
+  gem 'rspec'
+end

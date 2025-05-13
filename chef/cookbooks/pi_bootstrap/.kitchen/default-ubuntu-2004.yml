@@ -1,0 +1,4 @@
+---
+username: kitchen
+ssh_key: "/Users/alexfreidah/tools/munchbox/chef/cookbooks/pi_bootstrap/.kitchen/docker_id_rsa"
+last_error: Kitchen::ActionFailed

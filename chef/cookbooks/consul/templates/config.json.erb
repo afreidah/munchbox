@@ -1,0 +1,9 @@
+{
+  "data_dir": "/var/lib/consul",
+  "bind_addr": "<%= node['ipaddress'] %>",
+  "client_addr": "0.0.0.0",
+  "server": <%= @server %>,
+  "retry_join": <%= @retry_join.to_json %>,
+  "bootstrap_expect": <%= @bootstrap_expect || 0 %>
+}
+

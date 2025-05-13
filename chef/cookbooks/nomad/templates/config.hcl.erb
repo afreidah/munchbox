@@ -1,0 +1,19 @@
+data_dir  = "<%= node['nomad']['data_dir'] %>"
+bind_addr = "<%= node['nomad']['bind_addr'] %>"
+
+<% if @server %>
+server {
+  enabled          = true
+  bootstrap_expect = <%= @bootstrap_expect %>
+}
+<% else %>
+client {
+  enabled = true
+  # you can add client-specific config here
+}
+<% end %>
+
+retry_join = <%= @retry_join.to_json %>
+region     = "global"
+datacenter = "<%= node['nomad']['datacenter'] %>"
+
