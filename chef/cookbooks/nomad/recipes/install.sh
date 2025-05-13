@@ -4,7 +4,7 @@
 #
 # Download & install the Nomad binary (or use the official HashiCorp repo)
 
-include_recipe 'consul::_install' # if you reuse the same install helper
+include_recipe 'consul::install' # if you reuse the same install helper
 
 archive_file 'nomad' do
   path        '/tmp/nomad.zip'
