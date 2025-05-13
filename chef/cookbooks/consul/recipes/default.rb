@@ -1,5 +1,5 @@
 # Install Consul binary (using official HashiCorp repo or remote_file)
-include_recipe 'consul::_install'
+include_recipe 'consul::install'
 
 # Generate server config
 template '/etc/consul.d/server.json' do
