@@ -1,6 +1,6 @@
 #
 # Cookbook:: consul
-# Recipe:: install
+# Recipe:: _install
 #
 # Installs Consul via HashiCorp’s official binary archive.
 

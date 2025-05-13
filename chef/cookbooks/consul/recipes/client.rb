@@ -1,4 +1,4 @@
-include_recipe 'consul::_install'
+include_recipe 'consul::install'
 
 template '/etc/consul.d/client.json' do
   source 'config.json.erb'
