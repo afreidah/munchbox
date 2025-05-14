@@ -2,6 +2,9 @@
   "run_list": [
     "recipe[pi_bootstrap]",
     "recipe[pi_bootstrap::firewall]",
-    "recipe[consul::server]"
+    "recipe[consul::server]",
+    "recipe[nomad::server]",
+    "recipe[nomad::client]",
+    "recipe[nomad::firewall]"
   ]
 }

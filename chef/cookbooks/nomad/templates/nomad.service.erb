@@ -7,10 +7,10 @@ After=network-online.target
 [Service]
 User=<%= @service_user %>
 Group=<%= @service_group %>
-ExecStart=/usr/local/bin/nomad agent -config=<%= @config_dir %>
-ExecStartPre=/bin/mkdir -p <%= @data_dir %>
+# Use ExecStartPre to create data dir if it doesn't exist
 ExecStartPre=/bin/chown -R <%= @service_user %>:<%= @service_group %> <%= @data_dir %>
 Restart=on-failure
+ExecStart=/usr/local/bin/nomad agent -config=<%= @config_dir %>
 
 [Install]
 WantedBy=multi-user.target

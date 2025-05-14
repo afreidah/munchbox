@@ -3,7 +3,7 @@
 include_recipe 'firewall'
 
 firewall_rule 'loopback' do
-  protocol :all
+  protocol :tcp
   source   '127.0.0.1'
   command  :allow
 end

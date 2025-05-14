@@ -44,8 +44,8 @@ template '/etc/systemd/system/nomad.service' do
   group node['nomad']['group']
   mode '0644'
   variables(
-    data_dir:       node['nomad']['data_dir'],
-    config_dir:     node['nomad']['config_dir'],
+    config_dir:      node['nomad']['config_dir'],
+    data_dir:        node['nomad']['data_dir'],
     service_user:    node['nomad']['user'],
     service_group:   node['nomad']['group'],
   )

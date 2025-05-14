@@ -14,8 +14,8 @@ template '/etc/systemd/system/nomad.service' do
   variables(
     server: false
   )
-  owner      default['nomad']['user']
-  group      default['nomad']['group']
+  owner      node['nomad']['user']
+  group      node['nomad']['group']
   mode       '0644'
   #notifies   :restart, 'service[nomad]', :delayed
 end

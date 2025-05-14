@@ -1,7 +1,6 @@
 # consul::default attributes
 default['consul']['version']       = '1.14.4'
 default['consul']['install_method'] = 'binary'
-default['consul']['bind_addr']       = node['ipaddress']
 
 # Raft quorum members
 default['consul']['servers'] = %w[
