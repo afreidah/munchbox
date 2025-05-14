@@ -2,6 +2,16 @@
 driver:
   name: docker
 
+  # disable BuildKit so Kitchen can parse "Successfully built <id>"
+  environment:
+    DOCKER_BUILDKIT: "0"
+
+  # keep the container alive indefinitely — MUST be a single string
+  run_command: '/bin/sh -c "while sleep 1; do :; done"'
+
+transport:
+  name: docker
+
 provisioner:
   name: chef_solo
 
@@ -12,4 +22,5 @@ suites:
   - name: default
     run_list:
       - recipe[pi_bootstrap::default]
-    attributes:
+    attributes: {}
+

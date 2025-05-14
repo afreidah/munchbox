@@ -9,8 +9,8 @@ template '/etc/consul.d/client.json' do
   notifies :restart, 'service[consul]', :delayed
 end
 
-service 'consul' do
-  action [:enable, :start]
+service 'consul.service' do
+  action [:enable, :start, :restart]
   only_if { node['init_package'] == 'systemd' }
 end
 

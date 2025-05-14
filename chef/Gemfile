@@ -10,6 +10,12 @@ gem 'chef', '~> 18.7', require: false          # Chef Infra Client library
 
 group :development do
   gem 'cookstyle'
+  gem 'berkshelf'
+  gem 'simplecov'
+  gem 'knife'
+  gem 'knife-solo'
+  gem 'knife-zero'
+  gem 'rake'
   gem 'colorize'
   gem 'test-kitchen'
   gem 'kitchen-docker'

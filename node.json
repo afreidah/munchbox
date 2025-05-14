@@ -1,0 +1,7 @@
+{
+  "run_list": [
+    "recipe[pi_bootstrap]",
+    "recipe[consul::server]"
+  ]
+}
+

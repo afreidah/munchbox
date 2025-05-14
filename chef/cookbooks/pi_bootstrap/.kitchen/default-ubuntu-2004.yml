@@ -1,4 +1,9 @@
 ---
 username: kitchen
 ssh_key: "/Users/alexfreidah/tools/munchbox/chef/cookbooks/pi_bootstrap/.kitchen/docker_id_rsa"
+image_id: c7cd6f3fd04c
+container_id: a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe
+hostname: localhost
+port: 63582
+last_action: create
 last_error: Kitchen::ActionFailed

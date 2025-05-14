@@ -1,29 +1,236 @@
-I, [2025-05-12T22:25:02.042602 #28952]  INFO -- default-ubuntu-2004: -----> Creating <default-ubuntu-2004>...
-E, [2025-05-12T22:25:02.983097 #28952] ERROR -- default-ubuntu-2004: Create failed on instance <default-ubuntu-2004>.
-E, [2025-05-12T22:25:02.983505 #28952] ERROR -- default-ubuntu-2004: ------Exception-------
-E, [2025-05-12T22:25:02.983540 #28952] ERROR -- default-ubuntu-2004: Class: Kitchen::ActionFailed
-E, [2025-05-12T22:25:02.983570 #28952] ERROR -- default-ubuntu-2004: Message: Could not parse Docker build output for image ID
-E, [2025-05-12T22:25:02.983591 #28952] ERROR -- default-ubuntu-2004: ----------------------
-E, [2025-05-12T22:25:02.983610 #28952] ERROR -- default-ubuntu-2004: ------Backtrace-------
-E, [2025-05-12T22:25:02.983628 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:39:in `parse_image_id'
-E, [2025-05-12T22:25:02.983646 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:68:in `build_image'
-E, [2025-05-12T22:25:02.983664 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/container/linux.rb:41:in `create'
-E, [2025-05-12T22:25:02.983683 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/driver/docker.rb:125:in `create'
-E, [2025-05-12T22:25:02.983702 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `public_send'
-E, [2025-05-12T22:25:02.983721 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `block in perform_action'
-E, [2025-05-12T22:25:02.983739 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:563:in `synchronize_or_call'
-E, [2025-05-12T22:25:02.983803 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
-E, [2025-05-12T22:25:02.983822 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
-E, [2025-05-12T22:25:02.983841 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
-E, [2025-05-12T22:25:02.983858 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `perform_action'
-E, [2025-05-12T22:25:02.983893 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:404:in `create_action'
-E, [2025-05-12T22:25:02.983912 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
-E, [2025-05-12T22:25:02.983931 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
-E, [2025-05-12T22:25:02.983953 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
-E, [2025-05-12T22:25:02.983972 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
-E, [2025-05-12T22:25:02.983990 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
-E, [2025-05-12T22:25:02.984014 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
-E, [2025-05-12T22:25:02.984033 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
-E, [2025-05-12T22:25:02.984129 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
-E, [2025-05-12T22:25:02.984150 #28952] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
-E, [2025-05-12T22:25:02.984168 #28952] ERROR -- default-ubuntu-2004: ----End Backtrace-----
+I, [2025-05-14T00:06:37.515301 #64648]  INFO -- default-ubuntu-2004: -----> Converging <default-ubuntu-2004>...
+I, [2025-05-14T00:06:37.575839 #64648]  INFO -- default-ubuntu-2004: Preparing files for transfer
+I, [2025-05-14T00:06:37.575912 #64648]  INFO -- default-ubuntu-2004: Preparing dna.json
+I, [2025-05-14T00:06:37.576124 #64648]  INFO -- default-ubuntu-2004: Resolving cookbook dependencies with Berkshelf 8.0.21...
+I, [2025-05-14T00:06:41.099058 #64648]  INFO -- default-ubuntu-2004: Removing non-cookbook files before transfer
+I, [2025-05-14T00:06:41.103113 #64648]  INFO -- default-ubuntu-2004: Preparing solo.rb
+I, [2025-05-14T00:06:49.033635 #64648]  INFO -- default-ubuntu-2004: Transferring files to <default-ubuntu-2004>
+E, [2025-05-14T00:06:51.065330 #64648] ERROR -- default-ubuntu-2004: Converge failed on instance <default-ubuntu-2004>.
+E, [2025-05-14T00:06:51.065447 #64648] ERROR -- default-ubuntu-2004: ------Exception-------
+E, [2025-05-14T00:06:51.065459 #64648] ERROR -- default-ubuntu-2004: Class: Kitchen::ActionFailed
+E, [2025-05-14T00:06:51.065467 #64648] ERROR -- default-ubuntu-2004: Message: Docker failed to execute command on container. Error Details: Failed to execute command on Linux container. Failed to execute command on Docker container. Expected process to exit with [0], but received '1'
+---- Begin output of docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh ----
+STDOUT: +---------------------------------------------+
+✔ 2 product licenses accepted.
++---------------------------------------------+
+Chef Infra Client, version 18.7.6
+Patents: https://www.chef.io/patents
+Infra Phase starting
+[2025-05-14T07:06:50+00:00] WARN: Plugin Network: unable to detect ipaddress
+[2025-05-14T07:06:50+00:00] ERROR: shard_seed: Failed to get dmi property serial_number: is dmidecode installed?
+Creating a new client identity for default-ubuntu-2004 using the validator key.
+Resolving cookbooks for run list: ["pi_bootstrap::default"]
+Synchronizing cookbooks:
+  - pi_bootstrap (0.1.0)
+  - firewall (7.0.1)
+Installing cookbook gem dependencies:
+Compiling cookbooks...
+Loading Chef InSpec profile files:
+Loading Chef InSpec input files:
+Loading Chef InSpec waiver files:
+Converging 8 resources
+Recipe: pi_bootstrap::default
+  * ohai[reload network attributes] action nothing (skipped due to action :nothing)
+  * ruby_block[reload Ohai network plugin at compile-time] action run
+    * ohai[reload network attributes] action reload
+      - re-run ohai and merge results into node attributes
+    
+    ================================================================================
+    Error executing action `run` on resource 'ruby_block[reload Ohai network plugin at compile-time]'
+    ================================================================================
+    
+    NoMethodError
+    -------------
+    undefined method `[]' for nil:NilClass
+    
+    Cookbook Trace: (most recent call first)
+    ----------------------------------------
+    /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:15:in `block (2 levels) in from_file'
+    
+    Resource Declaration:
+    ---------------------
+    # In /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb
+    
+     12: ruby_block 'reload Ohai network plugin at compile-time' do
+     13:   block do
+     14:     resources(ohai: 'reload network attributes').run_action(:reload)
+     15:     ip = node["network"]["interfaces"]['eth0']["addresses"].keys[1]
+     16:     octet = ip.split('.').last
+     17:     pi_hostname = "#{node['pi_bootstrap']['hostname_prefix']}-#{octet}"
+     18:   end
+     19: end
+     20: 
+    
+    Compiled Resource:
+    ------------------
+    # Declared in /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:12:in `from_file'
+    
+    ruby_block("reload Ohai network plugin at compile-time") do
+      action [:run]
+      default_guard_interpreter :default
+      declared_type :ruby_block
+      cookbook_name "pi_bootstrap"
+      recipe_name "default"
+      block #<Proc:0x0000ffff7bff64e8 /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:13>
+    end
+    
+    System Info:
+    ------------
+    chef_version=18.7.6
+    platform=ubuntu
+    platform_version=20.04
+    ruby=ruby 3.1.6p260 (2024-05-29 revision a777087be6) [aarch64-linux]
+    program_name=/opt/chef/bin/chef-solo
+    executable=/opt/chef/bin/chef-solo
+    
+
+Running handlers:
+[2025-05-14T07:06:51+00:00] ERROR: Running exception handlers
+Running handlers complete
+[2025-05-14T07:06:51+00:00] ERROR: Exception handlers complete
+Infra Phase failed. 1 resources updated in 01 seconds
+[2025-05-14T07:06:51+00:00] FATAL: Stacktrace dumped to /tmp/kitchen/cache/chef-stacktrace.out
+[2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+[2025-05-14T07:06:51+00:00] FATAL: PLEASE PROVIDE THE CONTENTS OF THE stacktrace.out FILE (above) IF YOU FILE A BUG REPORT
+[2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+[2025-05-14T07:06:51+00:00] FATAL: NoMethodError: ruby_block[reload Ohai network plugin at compile-time] (pi_bootstrap::default line 12) had an error: NoMethodError: undefined method `[]' for nil:NilClass
+STDERR: 
+---- End output of docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh ----
+Ran docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh returned 1
+E, [2025-05-14T00:06:51.065485 #64648] ERROR -- default-ubuntu-2004: ----------------------
+E, [2025-05-14T00:06:51.065491 #64648] ERROR -- default-ubuntu-2004: ------Backtrace-------
+E, [2025-05-14T00:06:51.065497 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:99:in `rescue in call'
+E, [2025-05-14T00:06:51.065502 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:98:in `call'
+E, [2025-05-14T00:06:51.065512 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:419:in `block in converge_action'
+E, [2025-05-14T00:06:51.065519 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:560:in `block in synchronize_or_call'
+E, [2025-05-14T00:06:51.065526 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize'
+E, [2025-05-14T00:06:51.065532 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize_or_call'
+E, [2025-05-14T00:06:51.065539 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
+E, [2025-05-14T00:06:51.065544 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-14T00:06:51.065549 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
+E, [2025-05-14T00:06:51.065553 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:414:in `converge_action'
+E, [2025-05-14T00:06:51.065558 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+E, [2025-05-14T00:06:51.065567 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+E, [2025-05-14T00:06:51.065572 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
+E, [2025-05-14T00:06:51.065577 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
+E, [2025-05-14T00:06:51.065581 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
+E, [2025-05-14T00:06:51.065586 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
+E, [2025-05-14T00:06:51.065591 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
+E, [2025-05-14T00:06:51.065595 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
+E, [2025-05-14T00:06:51.065600 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+E, [2025-05-14T00:06:51.065605 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/logging-2.4.0/lib/logging/diagnostic_context.rb:474:in `block in create_with_logging_context'
+E, [2025-05-14T00:06:51.065609 #64648] ERROR -- default-ubuntu-2004: ----End Backtrace-----
+E, [2025-05-14T00:06:51.065614 #64648] ERROR -- default-ubuntu-2004: ---Nested Exception---
+E, [2025-05-14T00:06:51.065619 #64648] ERROR -- default-ubuntu-2004: Class: Kitchen::Transport::Docker::DockerFailed
+E, [2025-05-14T00:06:51.065623 #64648] ERROR -- default-ubuntu-2004: Message: Docker failed to execute command on container. Error Details: Failed to execute command on Linux container. Failed to execute command on Docker container. Expected process to exit with [0], but received '1'
+---- Begin output of docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh ----
+STDOUT: +---------------------------------------------+
+✔ 2 product licenses accepted.
++---------------------------------------------+
+Chef Infra Client, version 18.7.6
+Patents: https://www.chef.io/patents
+Infra Phase starting
+[2025-05-14T07:06:50+00:00] WARN: Plugin Network: unable to detect ipaddress
+[2025-05-14T07:06:50+00:00] ERROR: shard_seed: Failed to get dmi property serial_number: is dmidecode installed?
+Creating a new client identity for default-ubuntu-2004 using the validator key.
+Resolving cookbooks for run list: ["pi_bootstrap::default"]
+Synchronizing cookbooks:
+  - pi_bootstrap (0.1.0)
+  - firewall (7.0.1)
+Installing cookbook gem dependencies:
+Compiling cookbooks...
+Loading Chef InSpec profile files:
+Loading Chef InSpec input files:
+Loading Chef InSpec waiver files:
+Converging 8 resources
+Recipe: pi_bootstrap::default
+  * ohai[reload network attributes] action nothing (skipped due to action :nothing)
+  * ruby_block[reload Ohai network plugin at compile-time] action run
+    * ohai[reload network attributes] action reload
+      - re-run ohai and merge results into node attributes
+    
+    ================================================================================
+    Error executing action `run` on resource 'ruby_block[reload Ohai network plugin at compile-time]'
+    ================================================================================
+    
+    NoMethodError
+    -------------
+    undefined method `[]' for nil:NilClass
+    
+    Cookbook Trace: (most recent call first)
+    ----------------------------------------
+    /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:15:in `block (2 levels) in from_file'
+    
+    Resource Declaration:
+    ---------------------
+    # In /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb
+    
+     12: ruby_block 'reload Ohai network plugin at compile-time' do
+     13:   block do
+     14:     resources(ohai: 'reload network attributes').run_action(:reload)
+     15:     ip = node["network"]["interfaces"]['eth0']["addresses"].keys[1]
+     16:     octet = ip.split('.').last
+     17:     pi_hostname = "#{node['pi_bootstrap']['hostname_prefix']}-#{octet}"
+     18:   end
+     19: end
+     20: 
+    
+    Compiled Resource:
+    ------------------
+    # Declared in /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:12:in `from_file'
+    
+    ruby_block("reload Ohai network plugin at compile-time") do
+      action [:run]
+      default_guard_interpreter :default
+      declared_type :ruby_block
+      cookbook_name "pi_bootstrap"
+      recipe_name "default"
+      block #<Proc:0x0000ffff7bff64e8 /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:13>
+    end
+    
+    System Info:
+    ------------
+    chef_version=18.7.6
+    platform=ubuntu
+    platform_version=20.04
+    ruby=ruby 3.1.6p260 (2024-05-29 revision a777087be6) [aarch64-linux]
+    program_name=/opt/chef/bin/chef-solo
+    executable=/opt/chef/bin/chef-solo
+    
+
+Running handlers:
+[2025-05-14T07:06:51+00:00] ERROR: Running exception handlers
+Running handlers complete
+[2025-05-14T07:06:51+00:00] ERROR: Exception handlers complete
+Infra Phase failed. 1 resources updated in 01 seconds
+[2025-05-14T07:06:51+00:00] FATAL: Stacktrace dumped to /tmp/kitchen/cache/chef-stacktrace.out
+[2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+[2025-05-14T07:06:51+00:00] FATAL: PLEASE PROVIDE THE CONTENTS OF THE stacktrace.out FILE (above) IF YOU FILE A BUG REPORT
+[2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+[2025-05-14T07:06:51+00:00] FATAL: NoMethodError: ruby_block[reload Ohai network plugin at compile-time] (pi_bootstrap::default line 12) had an error: NoMethodError: undefined method `[]' for nil:NilClass
+STDERR: 
+---- End output of docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh ----
+Ran docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh returned 1
+E, [2025-05-14T00:06:51.065634 #64648] ERROR -- default-ubuntu-2004: ----------------------
+E, [2025-05-14T00:06:51.065640 #64648] ERROR -- default-ubuntu-2004: ------Backtrace-------
+E, [2025-05-14T00:06:51.065645 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:99:in `rescue in call'
+E, [2025-05-14T00:06:51.065650 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:98:in `call'
+E, [2025-05-14T00:06:51.065654 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:419:in `block in converge_action'
+E, [2025-05-14T00:06:51.065659 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:560:in `block in synchronize_or_call'
+E, [2025-05-14T00:06:51.065664 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize'
+E, [2025-05-14T00:06:51.065669 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize_or_call'
+E, [2025-05-14T00:06:51.065683 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
+E, [2025-05-14T00:06:51.065688 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-14T00:06:51.065693 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
+E, [2025-05-14T00:06:51.065698 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:414:in `converge_action'
+E, [2025-05-14T00:06:51.065708 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+E, [2025-05-14T00:06:51.065714 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+E, [2025-05-14T00:06:51.065720 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
+E, [2025-05-14T00:06:51.065730 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
+E, [2025-05-14T00:06:51.065739 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
+E, [2025-05-14T00:06:51.065744 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
+E, [2025-05-14T00:06:51.065749 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
+E, [2025-05-14T00:06:51.065753 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
+E, [2025-05-14T00:06:51.065758 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+E, [2025-05-14T00:06:51.065763 #64648] ERROR -- default-ubuntu-2004: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/logging-2.4.0/lib/logging/diagnostic_context.rb:474:in `block in create_with_logging_context'
+E, [2025-05-14T00:06:51.065767 #64648] ERROR -- default-ubuntu-2004: ----End Backtrace-----

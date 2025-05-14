@@ -1,4 +1,0 @@
-{
-  "run_list": ["recipe[pi_bootstrap::default]"]
-}
-

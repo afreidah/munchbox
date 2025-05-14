@@ -1,8 +1,12 @@
 #
 # Cookbook:: consul
-# Recipe:: _install
+# Recipe:: install
 #
 # Installs Consul via HashiCorp’s official binary archive.
+
+
+include_recipe 'consul::firewall'
+
 
 version = node['consul']['version']
 install_method = node['consul']['install_method'] # 'binary'
@@ -59,17 +63,45 @@ end
 
 # Create Consul data directory
 directory node['consul']['data_dir'] || '/var/lib/consul' do
-  owner 'consul'
-  group 'consul'
+  owner node['consul']['user']
+  group node['consul']['group']
   mode '0750'
   recursive true
 end
 
 # Create config directory
 directory '/etc/consul.d' do
-  owner 'consul'
-  group 'consul'
+  owner node['consul']['user']
+  group node['consul']['group']
   mode '0750'
   recursive true
 end
 
+# Reload systemd when the unit file changes
+execute 'systemctl-daemon-reload' do
+  command 'systemctl daemon-reload'
+  action :nothing
+end
+
+# Render the consul.service unit
+template '/etc/systemd/system/consul.service' do
+  source 'consul.service.erb'
+  owner node['consul']['user']
+  group node['consul']['group']
+  mode '0644'
+  variables(
+    install_dir:     node['consul']['install_dir'],
+    config_dir:      node['consul']['config_dir'],
+    data_dir:        node['consul']['data_dir'],
+    service_user:    node['consul']['user'],
+    service_group:   node['consul']['group'],
+  )
+  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
+end
+
+# Enable & start the consul service
+service 'consul' do
+  provider Chef::Provider::Service::Systemd
+  action [:enable, :start]
+  subscribes :restart, 'template[/etc/systemd/system/consul.service]', :immediately
+end

@@ -9,5 +9,4 @@ chef_version '>= 16.0'
 supports 'raspbian'
 supports 'ubuntu'
 
-# no external cookbook dependencies for now
-
+depends 'firewall'

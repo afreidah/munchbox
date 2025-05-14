@@ -1,0 +1,70 @@
+{
+  "name": "nomad-pi-1",
+  "normal": {
+    "knife_zero": {
+      "host": "192.168.1.225"
+    },
+    "tags": [
+
+    ]
+  },
+  "default": {
+    "audit": {
+      "inspec_backend_cache": true,
+      "reporter": null,
+      "fetcher": null,
+      "insecure": null,
+      "quiet": true,
+      "profiles": {
+
+      },
+      "inputs": {
+
+      },
+      "attributes": {
+
+      },
+      "waiver_file": null,
+      "json_file": {
+        "location": "/var/chef/compliance_reports/compliance-20250514091822.json"
+      },
+      "run_time_limit": 1.0,
+      "result_message_limit": 10000,
+      "result_include_backtrace": false,
+      "control_results_limit": 50,
+      "chef_node_attribute_enabled": true,
+      "compliance_phase": false,
+      "interval": {
+        "enabled": false,
+        "time": 1440
+      }
+    }
+  },
+  "automatic": {
+    "fqdn": "nomad-pi-1",
+    "os": "linux",
+    "os_version": "6.12.25+rpt-rpi-2712",
+    "hostname": "nomad-pi-1",
+    "ipaddress": "192.168.1.225",
+    "roles": [
+
+    ],
+    "recipes": [
+
+    ],
+    "platform": "debian",
+    "platform_version": "12",
+    "cloud": null,
+    "chef_packages": {
+      "chef": {
+        "version": "18.1.0",
+        "chef_root": "/opt/chef/embedded/lib/ruby/gems/3.1.0/gems/chef-18.1.0/lib",
+        "chef_effortless": null
+      },
+      "ohai": {
+        "version": "18.0.26",
+        "ohai_root": "/opt/chef/embedded/lib/ruby/gems/3.1.0/gems/ohai-18.0.26/lib/ohai"
+      }
+    }
+  }
+}

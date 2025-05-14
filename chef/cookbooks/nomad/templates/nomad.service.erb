@@ -1,0 +1,17 @@
+[Unit]
+Description=nomad Agent
+Documentation=https://www.nomad.io/
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+User=<%= @service_user %>
+Group=<%= @service_group %>
+ExecStart=/usr/local/bin/nomad agent -config=<%= @config_dir %>
+ExecStartPre=/bin/mkdir -p <%= @data_dir %>
+ExecStartPre=/bin/chown -R <%= @service_user %>:<%= @service_group %> <%= @data_dir %>
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

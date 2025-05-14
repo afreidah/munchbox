@@ -9,8 +9,19 @@ template '/etc/nomad.d/client.hcl' do
   notifies :restart, 'service[nomad]', :delayed
 end
 
-service 'nomad' do
-  action [:enable, :start]
-  only_if { node['init_package'] == 'systemd' }
+template '/etc/systemd/system/nomad.service' do
+  source     'nomad.service.erb'
+  variables(
+    server: false
+  )
+  owner      default['nomad']['user']
+  group      default['nomad']['group']
+  mode       '0644'
+  #notifies   :restart, 'service[nomad]', :delayed
 end
+
+# service 'nomad.service' do
+#   action [:enable, :start, :restart]
+#   only_if { node['init_package'] == 'systemd' }
+# end
 

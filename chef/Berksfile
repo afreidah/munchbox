@@ -1,0 +1,12 @@
+# chef/Berksfile
+source 'https://supermarket.chef.io'
+
+# community cookbooks
+cookbook 'firewall', path: 'community-cookbooks/firewall'
+
+# your cookbooks
+cookbook 'consul',      path: 'cookbooks/consul'
+cookbook 'nomad',       path: 'cookbooks/nomad'
+cookbook 'pi_bootstrap',path: 'cookbooks/pi_bootstrap'
+#cookbook 'vault',       path: 'cookbooks/vault'
+

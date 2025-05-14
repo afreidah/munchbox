@@ -1,0 +1,15 @@
+---
+driver:
+  name: docker
+
+provisioner:
+  name: chef_solo
+
+platforms:
+  - name: ubuntu-20.04
+
+suites:
+  - name: default
+    run_list:
+      - recipe[pi_bootstrap::default]
+    attributes:

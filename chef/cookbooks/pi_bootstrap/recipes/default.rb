@@ -3,26 +3,41 @@
 # Recipe:: default
 #
 
-# 1) Compute a unique hostname (e.g. pi-42 for IP x.x.x.42)
-octet = node['ipaddress'].split('.').last
-new_name = "#{node['pi_bootstrap']['hostname_prefix']}-#{octet}"
+ohai 'reload network attributes' do
+  plugin 'network'
+  action :nothing
+end
 
-# 2) Set /etc/hostname & /etc/hosts
+# force that reload *at compile time*, so node['ipaddress'] is set
+ruby_block 'reload Ohai network plugin at compile-time' do
+  block do
+    resources(ohai: 'reload network attributes').run_action(:reload)
+  end
+end
+
+# now you can safely reference node['ipaddress']
+ruby_block 'log my ipaddress' do
+  block do
+    ip = node['ipaddress']
+    Chef::Log.info("My IP address is #{ip}")
+  end
+end
+
 template '/etc/hostname' do
   source 'hostname.erb'
-  variables(hostname: new_name)
+  variables(hostname: lazy { "#{node['pi_bootstrap']['hostname_prefix']}-#{node['ipaddress'].split('.').last}" })
   notifies :run, 'execute[hostnamectl-set]', :immediately
 end
 
 execute 'hostnamectl-set' do
-  command "hostnamectl set-hostname #{new_name}"
+  command lazy { "hostnamectl set-hostname #{node['pi_bootstrap']['hostname_prefix']}-#{node['ipaddress'].split('.').last}"} 
   action :nothing
 end
 
 ruby_block 'update_etc_hosts' do
   block do
     hosts = ::File.read('/etc/hosts').lines.reject { |l| l =~ /127\.0\.1\.1/ }
-    hosts << "127.0.1.1   #{new_name}\n"
+    hosts << "127.0.1.1   #{node['pi_bootstrap']['hostname_prefix']}-#{node['ipaddress'].split('.').last}\n"
     ::File.write('/etc/hosts', hosts.join)
   end
   only_if { ::File.exist?('/etc/hosts') }

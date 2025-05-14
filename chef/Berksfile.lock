@@ -1,0 +1,18 @@
+DEPENDENCIES
+  consul
+    path: cookbooks/consul
+  firewall
+    path: community-cookbooks/firewall
+  nomad
+    path: cookbooks/nomad
+  pi_bootstrap
+    path: cookbooks/pi_bootstrap
+
+GRAPH
+  consul (0.1.0)
+    firewall (>= 0.0.0)
+  firewall (7.0.1)
+  nomad (0.1.0)
+    firewall (>= 0.0.0)
+  pi_bootstrap (0.1.0)
+    firewall (>= 0.0.0)

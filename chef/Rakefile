@@ -1,0 +1,55 @@
+# frozen_string_literal: true
+
+require 'rspec/core/rake_task'
+require 'simplecov'
+
+# Kitchen tasks
+namespace :kitchen do
+  desc 'Run Kitchen converge'
+  task :converge do
+    sh 'kitchen converge'
+  end
+
+  desc 'Run Kitchen verify (Inspec tests)'
+  task :verify do
+    sh 'kitchen verify'
+  end
+
+  desc 'Run Kitchen destroy'
+  task :destroy do
+    sh 'kitchen destroy'
+  end
+
+  desc 'Run Kitchen test (full lifecycle)'
+  task :test do
+    sh 'kitchen test'
+  end
+
+  desc 'Clean then converge'
+  task :clean_converge do
+    sh 'kitchen destroy && \
+        rm -rf .kitchen/ && \
+        docker image prune -f && \
+        bundle exec kitchen create && \
+        bundle exec kitchen converge 
+    '
+  end
+end
+
+# Linting tasks
+namespace :lint do
+  desc 'Run Cookstyle for linting'
+  task :cookstyle do
+    sh 'cookstyle'
+  end
+
+  desc 'Run Cookstyle to fix issues'
+  task :cookstyle_fix do
+    sh 'cookstyle -a'
+  end
+
+  desc 'Run Cookstyle to fix issues unsafe'
+  task :cookstyle_fix_unsafe do
+    sh 'cookstyle -A'
+  end
+end

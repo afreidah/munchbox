@@ -1,159 +1,291 @@
-I, [2025-05-12T22:25:01.844621 #28952]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.7.0)
-I, [2025-05-12T22:25:02.042538 #28952]  INFO -- Kitchen: -----> Creating <default-ubuntu-2004>...
-I, [2025-05-12T22:25:02.405800 #28952]  INFO -- Kitchen: #0 building with "default" instance using docker driver
-I, [2025-05-12T22:25:02.405897 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.405908 #28952]  INFO -- Kitchen: #1 [internal] load build definition from Dockerfile-kitchen20250512-28952-gr4bef
-I, [2025-05-12T22:25:02.405916 #28952]  INFO -- Kitchen: #1 transferring dockerfile: 1.60kB done
-I, [2025-05-12T22:25:02.405923 #28952]  INFO -- Kitchen: #1 DONE 0.0s
-I, [2025-05-12T22:25:02.405929 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.405935 #28952]  INFO -- Kitchen: #2 [internal] load metadata for docker.io/library/ubuntu:20.04
-I, [2025-05-12T22:25:02.812862 #28952]  INFO -- Kitchen: #2 DONE 0.6s
-I, [2025-05-12T22:25:02.969173 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969282 #28952]  INFO -- Kitchen: #3 [internal] load .dockerignore
-I, [2025-05-12T22:25:02.969313 #28952]  INFO -- Kitchen: #3 transferring context: 2B done
-I, [2025-05-12T22:25:02.969338 #28952]  INFO -- Kitchen: #3 DONE 0.0s
-I, [2025-05-12T22:25:02.969361 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969390 #28952]  INFO -- Kitchen: #4 [ 1/17] FROM docker.io/library/ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214
-I, [2025-05-12T22:25:02.969417 #28952]  INFO -- Kitchen: #4 resolve docker.io/library/ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214 done
-I, [2025-05-12T22:25:02.969443 #28952]  INFO -- Kitchen: #4 DONE 0.0s
-I, [2025-05-12T22:25:02.969470 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969506 #28952]  INFO -- Kitchen: #5 [14/17] RUN chown kitchen /home/kitchen/.ssh/authorized_keys
-I, [2025-05-12T22:25:02.969530 #28952]  INFO -- Kitchen: #5 CACHED
-I, [2025-05-12T22:25:02.969558 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969585 #28952]  INFO -- Kitchen: #6 [12/17] RUN chmod 0700 /home/kitchen/.ssh
-I, [2025-05-12T22:25:02.969608 #28952]  INFO -- Kitchen: #6 CACHED
-I, [2025-05-12T22:25:02.969638 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969675 #28952]  INFO -- Kitchen: #7 [ 9/17] RUN echo "Defaults !requiretty" >> /etc/sudoers.d/kitchen
-I, [2025-05-12T22:25:02.969701 #28952]  INFO -- Kitchen: #7 CACHED
-I, [2025-05-12T22:25:02.969722 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969745 #28952]  INFO -- Kitchen: #8 [ 8/17] RUN echo "kitchen ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/kitchen
-I, [2025-05-12T22:25:02.969780 #28952]  INFO -- Kitchen: #8 CACHED
-I, [2025-05-12T22:25:02.969802 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969826 #28952]  INFO -- Kitchen: #9 [16/17] RUN mkdir -p /run/sshd
-I, [2025-05-12T22:25:02.969847 #28952]  INFO -- Kitchen: #9 CACHED
-I, [2025-05-12T22:25:02.969870 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969902 #28952]  INFO -- Kitchen: #10 [ 3/17] RUN apt-get update
-I, [2025-05-12T22:25:02.969924 #28952]  INFO -- Kitchen: #10 CACHED
-I, [2025-05-12T22:25:02.969945 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.969967 #28952]  INFO -- Kitchen: #11 [13/17] RUN touch /home/kitchen/.ssh/authorized_keys
-I, [2025-05-12T22:25:02.969991 #28952]  INFO -- Kitchen: #11 CACHED
-I, [2025-05-12T22:25:02.970012 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.970034 #28952]  INFO -- Kitchen: #12 [ 6/17] RUN mkdir -p /etc/sudoers.d
-I, [2025-05-12T22:25:02.970071 #28952]  INFO -- Kitchen: #12 CACHED
-I, [2025-05-12T22:25:02.970096 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.970125 #28952]  INFO -- Kitchen: #13 [15/17] RUN chmod 0600 /home/kitchen/.ssh/authorized_keys
-I, [2025-05-12T22:25:02.970147 #28952]  INFO -- Kitchen: #13 CACHED
-I, [2025-05-12T22:25:02.970170 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.970191 #28952]  INFO -- Kitchen: #14 [10/17] RUN mkdir -p /home/kitchen/.ssh
-I, [2025-05-12T22:25:02.970214 #28952]  INFO -- Kitchen: #14 CACHED
-I, [2025-05-12T22:25:02.970244 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.970286 #28952]  INFO -- Kitchen: #15 [ 7/17] RUN chmod 0750 /etc/sudoers.d
-I, [2025-05-12T22:25:02.970865 #28952]  INFO -- Kitchen: #15 CACHED
-I, [2025-05-12T22:25:02.970893 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.970922 #28952]  INFO -- Kitchen: #16 [ 4/17] RUN apt-get install -y sudo openssh-server curl lsb-release
-I, [2025-05-12T22:25:02.970950 #28952]  INFO -- Kitchen: #16 CACHED
-I, [2025-05-12T22:25:02.970984 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.971007 #28952]  INFO -- Kitchen: #17 [11/17] RUN chown -R kitchen /home/kitchen/.ssh
-I, [2025-05-12T22:25:02.971028 #28952]  INFO -- Kitchen: #17 CACHED
-I, [2025-05-12T22:25:02.971049 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.971082 #28952]  INFO -- Kitchen: #18 [ 2/17] RUN [ ! -f "/sbin/initctl" ] || dpkg-divert --local --rename --add /sbin/initctl                 && ln -sf /bin/true /sbin/initctl
-I, [2025-05-12T22:25:02.971106 #28952]  INFO -- Kitchen: #18 CACHED
-I, [2025-05-12T22:25:02.971127 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.971151 #28952]  INFO -- Kitchen: #19 [ 5/17] RUN if ! getent passwd kitchen; then                   useradd -d /home/kitchen -m -s /bin/bash -p '*' kitchen;                 fi
-I, [2025-05-12T22:25:02.971177 #28952]  INFO -- Kitchen: #19 CACHED
-I, [2025-05-12T22:25:02.971198 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.971225 #28952]  INFO -- Kitchen: #20 [17/17] RUN echo ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC1JxYEM3Zp8J8lebBgwALptptog+INHPi9o0QPZRhP9Y52TYFRhYPoSOMUAZ274w3gXs4XftB0u75UMbJRDwjGE/8hMetaXGhJT+ywuDWS/F3GXCibnUt1yStv+4wpoqFS94BUZynC3X4pt6iBPcqOvVmv6yROxFyEVgTbBn7U+bhrfKa/qFxVgDNoaAWZEHDO09fAy8GaTZlyobKerObn15wQD++CUGDQuNfsCdAigrRA7cRVnLTK6iM2LOHugVPc801l0KFEgBdAS4zLfyerddRfHWITFIO/rgzfgKHvOxNaBskTSZ9jcB+owZiCQJQ4Lu0R4m4h576ClVRBMxeV kitchen_docker_key >> /home/kitchen/.ssh/authorized_keys
-I, [2025-05-12T22:25:02.971266 #28952]  INFO -- Kitchen: #20 CACHED
-I, [2025-05-12T22:25:02.971291 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.971313 #28952]  INFO -- Kitchen: #21 exporting to image
-I, [2025-05-12T22:25:02.971335 #28952]  INFO -- Kitchen: #21 exporting layers done
-I, [2025-05-12T22:25:02.971360 #28952]  INFO -- Kitchen: #21 exporting manifest sha256:7cb096ceabacbdb7385df8953b63b3ad448b22b9c835feb06c9c2eec386f58c3 done
-I, [2025-05-12T22:25:02.971392 #28952]  INFO -- Kitchen: #21 exporting config sha256:4bc67162c08873f95f240b92bf788cf29bd436b588c6f43e0174eefb1991d1bd done
-I, [2025-05-12T22:25:02.971421 #28952]  INFO -- Kitchen: #21 exporting attestation manifest sha256:482803a0c439e598f84f9c6fadb550a1f6c6e7a231b8d8758ec303bf4d815c09 done
-I, [2025-05-12T22:25:02.972369 #28952]  INFO -- Kitchen: #21 exporting manifest list sha256:fc7466e4852e6b85eb954860e44dabcbb304c45bd19b4c39b2b23b1adf6039e4 done
-I, [2025-05-12T22:25:02.972436 #28952]  INFO -- Kitchen: #21 naming to moby-dangling@sha256:fc7466e4852e6b85eb954860e44dabcbb304c45bd19b4c39b2b23b1adf6039e4 done
-I, [2025-05-12T22:25:02.972474 #28952]  INFO -- Kitchen: #21 unpacking to moby-dangling@sha256:fc7466e4852e6b85eb954860e44dabcbb304c45bd19b4c39b2b23b1adf6039e4 done
-I, [2025-05-12T22:25:02.972506 #28952]  INFO -- Kitchen: #21 DONE 0.0s
-I, [2025-05-12T22:25:02.972537 #28952]  INFO -- Kitchen: 
-I, [2025-05-12T22:25:02.972569 #28952]  INFO -- Kitchen:  [33m2 warnings found (use docker --debug to expand):
-I, [2025-05-12T22:25:02.972595 #28952]  INFO -- Kitchen: [0m - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 4)
-I, [2025-05-12T22:25:02.972625 #28952]  INFO -- Kitchen:  - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 5)
-E, [2025-05-12T22:25:02.985861 #28952] ERROR -- Kitchen: ------Exception-------
-E, [2025-05-12T22:25:02.985922 #28952] ERROR -- Kitchen: Class: Kitchen::ActionFailed
-E, [2025-05-12T22:25:02.985951 #28952] ERROR -- Kitchen: Message: 1 actions failed.
->>>>>>     Create failed on instance <default-ubuntu-2004>.  Please see .kitchen/logs/default-ubuntu-2004.log for more details
-E, [2025-05-12T22:25:02.986058 #28952] ERROR -- Kitchen: ----------------------
-E, [2025-05-12T22:25:02.986095 #28952] ERROR -- Kitchen: ------Backtrace-------
-E, [2025-05-12T22:25:02.986118 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:181:in `report_errors'
-E, [2025-05-12T22:25:02.986139 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:172:in `run_action'
-E, [2025-05-12T22:25:02.986173 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:35:in `block in call'
-E, [2025-05-12T22:25:02.986232 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
-E, [2025-05-12T22:25:02.986255 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:33:in `call'
-E, [2025-05-12T22:25:02.986274 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:52:in `perform'
-E, [2025-05-12T22:25:02.986295 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:198:in `block (2 levels) in <class:CLI>'
-E, [2025-05-12T22:25:02.986315 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor/command.rb:28:in `run'
-E, [2025-05-12T22:25:02.986334 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor/invocation.rb:127:in `invoke_command'
-E, [2025-05-12T22:25:02.986353 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor.rb:538:in `dispatch'
-E, [2025-05-12T22:25:02.986376 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.3.2/lib/thor/base.rb:584:in `start'
-E, [2025-05-12T22:25:02.986396 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/bin/kitchen:11:in `block in <top (required)>'
-E, [2025-05-12T22:25:02.986416 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/errors.rb:183:in `with_friendly_errors'
-E, [2025-05-12T22:25:02.986435 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/bin/kitchen:11:in `<top (required)>'
-E, [2025-05-12T22:25:02.986454 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `load'
-E, [2025-05-12T22:25:02.986473 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `<main>'
-E, [2025-05-12T22:25:02.986493 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `eval'
-E, [2025-05-12T22:25:02.986512 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `<main>'
-E, [2025-05-12T22:25:02.986531 #28952] ERROR -- Kitchen: ----End Backtrace-----
-E, [2025-05-12T22:25:02.986550 #28952] ERROR -- Kitchen: -Composite Exception--
-E, [2025-05-12T22:25:02.986583 #28952] ERROR -- Kitchen: Class: Kitchen::InstanceFailure
-E, [2025-05-12T22:25:02.986603 #28952] ERROR -- Kitchen: Message: Create failed on instance <default-ubuntu-2004>.  Please see .kitchen/logs/default-ubuntu-2004.log for more details
-E, [2025-05-12T22:25:02.986622 #28952] ERROR -- Kitchen: ----------------------
-E, [2025-05-12T22:25:02.986641 #28952] ERROR -- Kitchen: ------Backtrace-------
-E, [2025-05-12T22:25:02.986660 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:39:in `parse_image_id'
-E, [2025-05-12T22:25:02.986680 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:68:in `build_image'
-E, [2025-05-12T22:25:02.986699 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/container/linux.rb:41:in `create'
-E, [2025-05-12T22:25:02.986718 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/driver/docker.rb:125:in `create'
-E, [2025-05-12T22:25:02.986747 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `public_send'
-E, [2025-05-12T22:25:02.986767 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `block in perform_action'
-E, [2025-05-12T22:25:02.986786 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:563:in `synchronize_or_call'
-E, [2025-05-12T22:25:02.986805 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
-E, [2025-05-12T22:25:02.986824 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
-E, [2025-05-12T22:25:02.986843 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
-E, [2025-05-12T22:25:02.986864 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `perform_action'
-E, [2025-05-12T22:25:02.986883 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:404:in `create_action'
-E, [2025-05-12T22:25:02.986902 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
-E, [2025-05-12T22:25:02.986921 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
-E, [2025-05-12T22:25:02.986940 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
-E, [2025-05-12T22:25:02.986959 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
-E, [2025-05-12T22:25:02.986979 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
-E, [2025-05-12T22:25:02.986998 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
-E, [2025-05-12T22:25:02.987018 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
-E, [2025-05-12T22:25:02.987042 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
-E, [2025-05-12T22:25:02.987062 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
-E, [2025-05-12T22:25:02.987081 #28952] ERROR -- Kitchen: ----End Backtrace-----
-E, [2025-05-12T22:25:02.987100 #28952] ERROR -- Kitchen: ---Nested Exception---
-E, [2025-05-12T22:25:02.987119 #28952] ERROR -- Kitchen: Class: Kitchen::ActionFailed
-E, [2025-05-12T22:25:02.987138 #28952] ERROR -- Kitchen: Message: Could not parse Docker build output for image ID
-E, [2025-05-12T22:25:02.987159 #28952] ERROR -- Kitchen: ----------------------
-E, [2025-05-12T22:25:02.987178 #28952] ERROR -- Kitchen: ------Backtrace-------
-E, [2025-05-12T22:25:02.987196 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:39:in `parse_image_id'
-E, [2025-05-12T22:25:02.987216 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/helpers/image_helper.rb:68:in `build_image'
-E, [2025-05-12T22:25:02.987235 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/docker/container/linux.rb:41:in `create'
-E, [2025-05-12T22:25:02.987266 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-3.0.0/lib/kitchen/driver/docker.rb:125:in `create'
-E, [2025-05-12T22:25:02.987286 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `public_send'
-E, [2025-05-12T22:25:02.987305 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `block in perform_action'
-E, [2025-05-12T22:25:02.987324 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:563:in `synchronize_or_call'
-E, [2025-05-12T22:25:02.987344 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
-E, [2025-05-12T22:25:02.987363 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
-E, [2025-05-12T22:25:02.987382 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
-E, [2025-05-12T22:25:02.987401 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:495:in `perform_action'
-E, [2025-05-12T22:25:02.987420 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:404:in `create_action'
-E, [2025-05-12T22:25:02.987442 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
-E, [2025-05-12T22:25:02.987462 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
-E, [2025-05-12T22:25:02.987481 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
-E, [2025-05-12T22:25:02.987500 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
-E, [2025-05-12T22:25:02.987520 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
-E, [2025-05-12T22:25:02.987539 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
-E, [2025-05-12T22:25:02.987562 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
-E, [2025-05-12T22:25:02.987582 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
-E, [2025-05-12T22:25:02.987601 #28952] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
-E, [2025-05-12T22:25:02.987619 #28952] ERROR -- Kitchen: ----End Backtrace-----
+I, [2025-05-14T00:06:36.459842 #64648]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.7.0)
+I, [2025-05-14T00:06:37.515254 #64648]  INFO -- Kitchen: -----> Converging <default-ubuntu-2004>...
+I, [2025-05-14T00:06:41.107498 #64648]  INFO -- Kitchen: [Docker] Executing command on container
+I, [2025-05-14T00:06:41.310444 #64648]  INFO -- Kitchen: -----> Installing Chef install only if missing package
+I, [2025-05-14T00:06:41.311226 #64648]  INFO -- Kitchen: Downloading https://omnitruck.chef.io/install.sh to file /tmp/install.sh
+I, [2025-05-14T00:06:41.311252 #64648]  INFO -- Kitchen: Trying wget...
+I, [2025-05-14T00:06:41.634773 #64648]  INFO -- Kitchen: Download complete.
+I, [2025-05-14T00:06:41.652706 #64648]  INFO -- Kitchen: ubuntu 20.04 aarch64
+I, [2025-05-14T00:06:41.653021 #64648]  INFO -- Kitchen: Getting information for chef stable  for ubuntu...
+I, [2025-05-14T00:06:41.653080 #64648]  INFO -- Kitchen: downloading https://omnitruck.chef.io/stable/chef/metadata?v=&p=ubuntu&pv=20.04&m=aarch64
+I, [2025-05-14T00:06:41.653115 #64648]  INFO -- Kitchen:   to file /tmp/install.sh.32/metadata.txt
+I, [2025-05-14T00:06:41.653139 #64648]  INFO -- Kitchen: trying wget...
+I, [2025-05-14T00:06:41.795042 #64648]  INFO -- Kitchen: sha1	3f53b534b2f49d401eb85e982ea18210e9e227c5
+I, [2025-05-14T00:06:41.795219 #64648]  INFO -- Kitchen: sha256	55a481d4b253a31f4534246c1b022ae57c1d4907b01fc5a8f860b50cbf9b1b1e
+I, [2025-05-14T00:06:41.795267 #64648]  INFO -- Kitchen: url	https://packages.chef.io/files/stable/chef/18.7.6/ubuntu/20.04/chef_18.7.6-1_arm64.deb
+I, [2025-05-14T00:06:41.795293 #64648]  INFO -- Kitchen: version	18.7.6
+I, [2025-05-14T00:06:41.795888 #64648]  INFO -- Kitchen: downloaded metadata file looks valid...
+I, [2025-05-14T00:06:41.800844 #64648]  INFO -- Kitchen: downloading https://packages.chef.io/files/stable/chef/18.7.6/ubuntu/20.04/chef_18.7.6-1_arm64.deb
+I, [2025-05-14T00:06:41.800965 #64648]  INFO -- Kitchen:   to file /tmp/install.sh.32/chef_18.7.6-1_arm64.deb
+I, [2025-05-14T00:06:41.800992 #64648]  INFO -- Kitchen: trying wget...
+I, [2025-05-14T00:06:46.660601 #64648]  INFO -- Kitchen: Comparing checksum with sha256sum...
+I, [2025-05-14T00:06:46.778928 #64648]  INFO -- Kitchen: 
+I, [2025-05-14T00:06:46.779039 #64648]  INFO -- Kitchen: WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+I, [2025-05-14T00:06:46.779079 #64648]  INFO -- Kitchen: 
+I, [2025-05-14T00:06:46.779107 #64648]  INFO -- Kitchen: You are installing a package without a version pin.  If you are installing
+I, [2025-05-14T00:06:46.779134 #64648]  INFO -- Kitchen: on production servers via an automated process this is DANGEROUS and you will
+I, [2025-05-14T00:06:46.779161 #64648]  INFO -- Kitchen: be upgraded without warning on new releases, even to new major releases.
+I, [2025-05-14T00:06:46.779185 #64648]  INFO -- Kitchen: Letting the version float is only appropriate in test, development or
+I, [2025-05-14T00:06:46.779209 #64648]  INFO -- Kitchen: CI/CD environments.
+I, [2025-05-14T00:06:46.779231 #64648]  INFO -- Kitchen: 
+I, [2025-05-14T00:06:46.779264 #64648]  INFO -- Kitchen: WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+I, [2025-05-14T00:06:46.779286 #64648]  INFO -- Kitchen: 
+I, [2025-05-14T00:06:46.779309 #64648]  INFO -- Kitchen: Installing chef 
+I, [2025-05-14T00:06:46.779331 #64648]  INFO -- Kitchen: installing with dpkg...
+I, [2025-05-14T00:06:46.811876 #64648]  INFO -- Kitchen: Selecting previously unselected package chef.
+I, [2025-05-14T00:06:46.818115 #64648]  INFO -- Kitchen: (Reading database ... 12315 files and directories currently installed.)
+I, [2025-05-14T00:06:46.818612 #64648]  INFO -- Kitchen: Preparing to unpack .../chef_18.7.6-1_arm64.deb ...
+I, [2025-05-14T00:06:46.820596 #64648]  INFO -- Kitchen: Unpacking chef (18.7.6-1) ...
+I, [2025-05-14T00:06:48.856215 #64648]  INFO -- Kitchen: Setting up chef (18.7.6-1) ...
+I, [2025-05-14T00:06:48.871326 #64648]  INFO -- Kitchen: Thank you for installing Chef Infra Client! For help getting started visit https://learn.chef.io
+I, [2025-05-14T00:06:48.888374 #64648]  INFO -- Kitchen: [Docker] Executing command on container
+I, [2025-05-14T00:06:49.133766 #64648]  INFO -- Kitchen: [Docker] Executing command on container
+I, [2025-05-14T00:06:49.856010 #64648]  INFO -- Kitchen: +---------------------------------------------+
+I, [2025-05-14T00:06:49.856215 #64648]  INFO -- Kitchen: ✔ 2 product licenses accepted.
+I, [2025-05-14T00:06:49.856243 #64648]  INFO -- Kitchen: +---------------------------------------------+
+I, [2025-05-14T00:06:50.002949 #64648]  INFO -- Kitchen: Chef Infra Client, version 18.7.6
+I, [2025-05-14T00:06:50.003105 #64648]  INFO -- Kitchen: Patents: https://www.chef.io/patents
+I, [2025-05-14T00:06:50.003163 #64648]  INFO -- Kitchen: Infra Phase starting
+I, [2025-05-14T00:06:50.145133 #64648]  INFO -- Kitchen: [2025-05-14T07:06:50+00:00] WARN: Plugin Network: unable to detect ipaddress
+I, [2025-05-14T00:06:50.551206 #64648]  INFO -- Kitchen: [2025-05-14T07:06:50+00:00] ERROR: shard_seed: Failed to get dmi property serial_number: is dmidecode installed?
+I, [2025-05-14T00:06:50.574378 #64648]  INFO -- Kitchen: Creating a new client identity for default-ubuntu-2004 using the validator key.
+I, [2025-05-14T00:06:50.703820 #64648]  INFO -- Kitchen: Resolving cookbooks for run list: ["pi_bootstrap::default"]
+I, [2025-05-14T00:06:50.735917 #64648]  INFO -- Kitchen: Synchronizing cookbooks:
+I, [2025-05-14T00:06:50.755708 #64648]  INFO -- Kitchen:   - pi_bootstrap (0.1.0)
+I, [2025-05-14T00:06:50.768916 #64648]  INFO -- Kitchen:   - firewall (7.0.1)
+I, [2025-05-14T00:06:50.769649 #64648]  INFO -- Kitchen: Installing cookbook gem dependencies:
+I, [2025-05-14T00:06:50.773313 #64648]  INFO -- Kitchen: Compiling cookbooks...
+I, [2025-05-14T00:06:50.986786 #64648]  INFO -- Kitchen: Loading Chef InSpec profile files:
+I, [2025-05-14T00:06:50.986899 #64648]  INFO -- Kitchen: Loading Chef InSpec input files:
+I, [2025-05-14T00:06:50.986927 #64648]  INFO -- Kitchen: Loading Chef InSpec waiver files:
+I, [2025-05-14T00:06:51.004776 #64648]  INFO -- Kitchen: Converging 8 resources
+I, [2025-05-14T00:06:51.004987 #64648]  INFO -- Kitchen: Recipe: pi_bootstrap::default
+I, [2025-05-14T00:06:51.005018 #64648]  INFO -- Kitchen:   * ohai[reload network attributes] action nothing (skipped due to action :nothing)
+I, [2025-05-14T00:06:51.005593 #64648]  INFO -- Kitchen:   * ruby_block[reload Ohai network plugin at compile-time] action run
+I, [2025-05-14T00:06:51.038973 #64648]  INFO -- Kitchen:     * ohai[reload network attributes] action reload
+I, [2025-05-14T00:06:51.039087 #64648]  INFO -- Kitchen:       - re-run ohai and merge results into node attributes
+I, [2025-05-14T00:06:51.039586 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.039627 #64648]  INFO -- Kitchen:     ================================================================================
+I, [2025-05-14T00:06:51.039655 #64648]  INFO -- Kitchen:     Error executing action `run` on resource 'ruby_block[reload Ohai network plugin at compile-time]'
+I, [2025-05-14T00:06:51.039680 #64648]  INFO -- Kitchen:     ================================================================================
+I, [2025-05-14T00:06:51.039702 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.039725 #64648]  INFO -- Kitchen:     NoMethodError
+I, [2025-05-14T00:06:51.039747 #64648]  INFO -- Kitchen:     -------------
+I, [2025-05-14T00:06:51.039769 #64648]  INFO -- Kitchen:     undefined method `[]' for nil:NilClass
+I, [2025-05-14T00:06:51.039791 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.039814 #64648]  INFO -- Kitchen:     Cookbook Trace: (most recent call first)
+I, [2025-05-14T00:06:51.039850 #64648]  INFO -- Kitchen:     ----------------------------------------
+I, [2025-05-14T00:06:51.039878 #64648]  INFO -- Kitchen:     /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:15:in `block (2 levels) in from_file'
+I, [2025-05-14T00:06:51.039901 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.039924 #64648]  INFO -- Kitchen:     Resource Declaration:
+I, [2025-05-14T00:06:51.039946 #64648]  INFO -- Kitchen:     ---------------------
+I, [2025-05-14T00:06:51.039992 #64648]  INFO -- Kitchen:     # In /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb
+I, [2025-05-14T00:06:51.040015 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.040038 #64648]  INFO -- Kitchen:      12: ruby_block 'reload Ohai network plugin at compile-time' do
+I, [2025-05-14T00:06:51.040062 #64648]  INFO -- Kitchen:      13:   block do
+I, [2025-05-14T00:06:51.040085 #64648]  INFO -- Kitchen:      14:     resources(ohai: 'reload network attributes').run_action(:reload)
+I, [2025-05-14T00:06:51.040108 #64648]  INFO -- Kitchen:      15:     ip = node["network"]["interfaces"]['eth0']["addresses"].keys[1]
+I, [2025-05-14T00:06:51.040130 #64648]  INFO -- Kitchen:      16:     octet = ip.split('.').last
+I, [2025-05-14T00:06:51.040152 #64648]  INFO -- Kitchen:      17:     pi_hostname = "#{node['pi_bootstrap']['hostname_prefix']}-#{octet}"
+I, [2025-05-14T00:06:51.040174 #64648]  INFO -- Kitchen:      18:   end
+I, [2025-05-14T00:06:51.040196 #64648]  INFO -- Kitchen:      19: end
+I, [2025-05-14T00:06:51.040217 #64648]  INFO -- Kitchen:      20: 
+I, [2025-05-14T00:06:51.040238 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.040262 #64648]  INFO -- Kitchen:     Compiled Resource:
+I, [2025-05-14T00:06:51.040286 #64648]  INFO -- Kitchen:     ------------------
+I, [2025-05-14T00:06:51.040310 #64648]  INFO -- Kitchen:     # Declared in /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:12:in `from_file'
+I, [2025-05-14T00:06:51.040340 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.040367 #64648]  INFO -- Kitchen:     ruby_block("reload Ohai network plugin at compile-time") do
+I, [2025-05-14T00:06:51.040391 #64648]  INFO -- Kitchen:       action [:run]
+I, [2025-05-14T00:06:51.040413 #64648]  INFO -- Kitchen:       default_guard_interpreter :default
+I, [2025-05-14T00:06:51.040435 #64648]  INFO -- Kitchen:       declared_type :ruby_block
+I, [2025-05-14T00:06:51.040524 #64648]  INFO -- Kitchen:       cookbook_name "pi_bootstrap"
+I, [2025-05-14T00:06:51.040582 #64648]  INFO -- Kitchen:       recipe_name "default"
+I, [2025-05-14T00:06:51.040634 #64648]  INFO -- Kitchen:       block #<Proc:0x0000ffff7bff64e8 /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:13>
+I, [2025-05-14T00:06:51.040688 #64648]  INFO -- Kitchen:     end
+I, [2025-05-14T00:06:51.040803 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.043481 #64648]  INFO -- Kitchen:     System Info:
+I, [2025-05-14T00:06:51.043641 #64648]  INFO -- Kitchen:     ------------
+I, [2025-05-14T00:06:51.043675 #64648]  INFO -- Kitchen:     chef_version=18.7.6
+I, [2025-05-14T00:06:51.043708 #64648]  INFO -- Kitchen:     platform=ubuntu
+I, [2025-05-14T00:06:51.043900 #64648]  INFO -- Kitchen:     platform_version=20.04
+I, [2025-05-14T00:06:51.043943 #64648]  INFO -- Kitchen:     ruby=ruby 3.1.6p260 (2024-05-29 revision a777087be6) [aarch64-linux]
+I, [2025-05-14T00:06:51.043993 #64648]  INFO -- Kitchen:     program_name=/opt/chef/bin/chef-solo
+I, [2025-05-14T00:06:51.044024 #64648]  INFO -- Kitchen:     executable=/opt/chef/bin/chef-solo
+I, [2025-05-14T00:06:51.044054 #64648]  INFO -- Kitchen:     
+I, [2025-05-14T00:06:51.044081 #64648]  INFO -- Kitchen: 
+I, [2025-05-14T00:06:51.044109 #64648]  INFO -- Kitchen: Running handlers:
+I, [2025-05-14T00:06:51.044136 #64648]  INFO -- Kitchen: [2025-05-14T07:06:51+00:00] ERROR: Running exception handlers
+I, [2025-05-14T00:06:51.044164 #64648]  INFO -- Kitchen: Running handlers complete
+I, [2025-05-14T00:06:51.044192 #64648]  INFO -- Kitchen: [2025-05-14T07:06:51+00:00] ERROR: Exception handlers complete
+I, [2025-05-14T00:06:51.044221 #64648]  INFO -- Kitchen: Infra Phase failed. 1 resources updated in 01 seconds
+I, [2025-05-14T00:06:51.044282 #64648]  INFO -- Kitchen: [2025-05-14T07:06:51+00:00] FATAL: Stacktrace dumped to /tmp/kitchen/cache/chef-stacktrace.out
+I, [2025-05-14T00:06:51.044312 #64648]  INFO -- Kitchen: [2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+I, [2025-05-14T00:06:51.044374 #64648]  INFO -- Kitchen: [2025-05-14T07:06:51+00:00] FATAL: PLEASE PROVIDE THE CONTENTS OF THE stacktrace.out FILE (above) IF YOU FILE A BUG REPORT
+I, [2025-05-14T00:06:51.044551 #64648]  INFO -- Kitchen: [2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+I, [2025-05-14T00:06:51.044615 #64648]  INFO -- Kitchen: [2025-05-14T07:06:51+00:00] FATAL: NoMethodError: ruby_block[reload Ohai network plugin at compile-time] (pi_bootstrap::default line 12) had an error: NoMethodError: undefined method `[]' for nil:NilClass
+E, [2025-05-14T00:06:51.067478 #64648] ERROR -- Kitchen: ------Exception-------
+E, [2025-05-14T00:06:51.067509 #64648] ERROR -- Kitchen: Class: Kitchen::ActionFailed
+E, [2025-05-14T00:06:51.067519 #64648] ERROR -- Kitchen: Message: 1 actions failed.
+>>>>>>     Converge failed on instance <default-ubuntu-2004>.  Please see .kitchen/logs/default-ubuntu-2004.log for more details
+E, [2025-05-14T00:06:51.067526 #64648] ERROR -- Kitchen: ----------------------
+E, [2025-05-14T00:06:51.067532 #64648] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-05-14T00:06:51.067537 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:181:in `report_errors'
+E, [2025-05-14T00:06:51.067543 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:172:in `run_action'
+E, [2025-05-14T00:06:51.067548 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:35:in `block in call'
+E, [2025-05-14T00:06:51.067554 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-14T00:06:51.067559 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:33:in `call'
+E, [2025-05-14T00:06:51.067565 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:52:in `perform'
+E, [2025-05-14T00:06:51.067570 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:198:in `block (2 levels) in <class:CLI>'
+E, [2025-05-14T00:06:51.067575 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor/command.rb:27:in `run'
+E, [2025-05-14T00:06:51.067580 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor/invocation.rb:127:in `invoke_command'
+E, [2025-05-14T00:06:51.067585 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor.rb:392:in `dispatch'
+E, [2025-05-14T00:06:51.067591 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor/base.rb:485:in `start'
+E, [2025-05-14T00:06:51.067596 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/bin/kitchen:11:in `block in <top (required)>'
+E, [2025-05-14T00:06:51.067601 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/errors.rb:183:in `with_friendly_errors'
+E, [2025-05-14T00:06:51.067607 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/bin/kitchen:11:in `<top (required)>'
+E, [2025-05-14T00:06:51.067612 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `load'
+E, [2025-05-14T00:06:51.067617 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `<main>'
+E, [2025-05-14T00:06:51.067622 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `eval'
+E, [2025-05-14T00:06:51.067632 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `<main>'
+E, [2025-05-14T00:06:51.067650 #64648] ERROR -- Kitchen: ----End Backtrace-----
+E, [2025-05-14T00:06:51.067656 #64648] ERROR -- Kitchen: -Composite Exception--
+E, [2025-05-14T00:06:51.067663 #64648] ERROR -- Kitchen: Class: Kitchen::InstanceFailure
+E, [2025-05-14T00:06:51.067668 #64648] ERROR -- Kitchen: Message: Converge failed on instance <default-ubuntu-2004>.  Please see .kitchen/logs/default-ubuntu-2004.log for more details
+E, [2025-05-14T00:06:51.067673 #64648] ERROR -- Kitchen: ----------------------
+E, [2025-05-14T00:06:51.067680 #64648] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-05-14T00:06:51.067685 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:99:in `rescue in call'
+E, [2025-05-14T00:06:51.067690 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:98:in `call'
+E, [2025-05-14T00:06:51.067695 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:419:in `block in converge_action'
+E, [2025-05-14T00:06:51.067703 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:560:in `block in synchronize_or_call'
+E, [2025-05-14T00:06:51.067708 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize'
+E, [2025-05-14T00:06:51.067713 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize_or_call'
+E, [2025-05-14T00:06:51.067718 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
+E, [2025-05-14T00:06:51.067727 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-14T00:06:51.067732 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
+E, [2025-05-14T00:06:51.067737 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:414:in `converge_action'
+E, [2025-05-14T00:06:51.067742 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+E, [2025-05-14T00:06:51.067747 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+E, [2025-05-14T00:06:51.067752 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
+E, [2025-05-14T00:06:51.067757 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
+E, [2025-05-14T00:06:51.067762 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
+E, [2025-05-14T00:06:51.067767 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
+E, [2025-05-14T00:06:51.067771 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
+E, [2025-05-14T00:06:51.067777 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
+E, [2025-05-14T00:06:51.067785 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+E, [2025-05-14T00:06:51.067790 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/logging-2.4.0/lib/logging/diagnostic_context.rb:474:in `block in create_with_logging_context'
+E, [2025-05-14T00:06:51.067796 #64648] ERROR -- Kitchen: ----End Backtrace-----
+E, [2025-05-14T00:06:51.067804 #64648] ERROR -- Kitchen: ---Nested Exception---
+E, [2025-05-14T00:06:51.067809 #64648] ERROR -- Kitchen: Class: Kitchen::ActionFailed
+E, [2025-05-14T00:06:51.067815 #64648] ERROR -- Kitchen: Message: Docker failed to execute command on container. Error Details: Failed to execute command on Linux container. Failed to execute command on Docker container. Expected process to exit with [0], but received '1'
+---- Begin output of docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh ----
+STDOUT: +---------------------------------------------+
+✔ 2 product licenses accepted.
++---------------------------------------------+
+Chef Infra Client, version 18.7.6
+Patents: https://www.chef.io/patents
+Infra Phase starting
+[2025-05-14T07:06:50+00:00] WARN: Plugin Network: unable to detect ipaddress
+[2025-05-14T07:06:50+00:00] ERROR: shard_seed: Failed to get dmi property serial_number: is dmidecode installed?
+Creating a new client identity for default-ubuntu-2004 using the validator key.
+Resolving cookbooks for run list: ["pi_bootstrap::default"]
+Synchronizing cookbooks:
+  - pi_bootstrap (0.1.0)
+  - firewall (7.0.1)
+Installing cookbook gem dependencies:
+Compiling cookbooks...
+Loading Chef InSpec profile files:
+Loading Chef InSpec input files:
+Loading Chef InSpec waiver files:
+Converging 8 resources
+Recipe: pi_bootstrap::default
+  * ohai[reload network attributes] action nothing (skipped due to action :nothing)
+  * ruby_block[reload Ohai network plugin at compile-time] action run
+    * ohai[reload network attributes] action reload
+      - re-run ohai and merge results into node attributes
+    
+    ================================================================================
+    Error executing action `run` on resource 'ruby_block[reload Ohai network plugin at compile-time]'
+    ================================================================================
+    
+    NoMethodError
+    -------------
+    undefined method `[]' for nil:NilClass
+    
+    Cookbook Trace: (most recent call first)
+    ----------------------------------------
+    /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:15:in `block (2 levels) in from_file'
+    
+    Resource Declaration:
+    ---------------------
+    # In /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb
+    
+     12: ruby_block 'reload Ohai network plugin at compile-time' do
+     13:   block do
+     14:     resources(ohai: 'reload network attributes').run_action(:reload)
+     15:     ip = node["network"]["interfaces"]['eth0']["addresses"].keys[1]
+     16:     octet = ip.split('.').last
+     17:     pi_hostname = "#{node['pi_bootstrap']['hostname_prefix']}-#{octet}"
+     18:   end
+     19: end
+     20: 
+    
+    Compiled Resource:
+    ------------------
+    # Declared in /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:12:in `from_file'
+    
+    ruby_block("reload Ohai network plugin at compile-time") do
+      action [:run]
+      default_guard_interpreter :default
+      declared_type :ruby_block
+      cookbook_name "pi_bootstrap"
+      recipe_name "default"
+      block #<Proc:0x0000ffff7bff64e8 /tmp/kitchen/cache/cookbooks/pi_bootstrap/recipes/default.rb:13>
+    end
+    
+    System Info:
+    ------------
+    chef_version=18.7.6
+    platform=ubuntu
+    platform_version=20.04
+    ruby=ruby 3.1.6p260 (2024-05-29 revision a777087be6) [aarch64-linux]
+    program_name=/opt/chef/bin/chef-solo
+    executable=/opt/chef/bin/chef-solo
+    
+
+Running handlers:
+[2025-05-14T07:06:51+00:00] ERROR: Running exception handlers
+Running handlers complete
+[2025-05-14T07:06:51+00:00] ERROR: Exception handlers complete
+Infra Phase failed. 1 resources updated in 01 seconds
+[2025-05-14T07:06:51+00:00] FATAL: Stacktrace dumped to /tmp/kitchen/cache/chef-stacktrace.out
+[2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+[2025-05-14T07:06:51+00:00] FATAL: PLEASE PROVIDE THE CONTENTS OF THE stacktrace.out FILE (above) IF YOU FILE A BUG REPORT
+[2025-05-14T07:06:51+00:00] FATAL: ---------------------------------------------------------------------------------------
+[2025-05-14T07:06:51+00:00] FATAL: NoMethodError: ruby_block[reload Ohai network plugin at compile-time] (pi_bootstrap::default line 12) had an error: NoMethodError: undefined method `[]' for nil:NilClass
+STDERR: 
+---- End output of docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh ----
+Ran docker -H unix:///var/run/docker.sock exec -u kitchen a2661dfe8ba226dff3a5c3eaedb0c93b6418ab7d1fcbfd7f629e5ed5955b2bfe /bin/bash /tmp/docker-7f4a6963-6613-4778-a28b-eaed057ab867.sh returned 1
+E, [2025-05-14T00:06:51.067824 #64648] ERROR -- Kitchen: ----------------------
+E, [2025-05-14T00:06:51.067830 #64648] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-05-14T00:06:51.067835 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:99:in `rescue in call'
+E, [2025-05-14T00:06:51.067840 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/provisioner/base.rb:98:in `call'
+E, [2025-05-14T00:06:51.067845 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:419:in `block in converge_action'
+E, [2025-05-14T00:06:51.067850 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:560:in `block in synchronize_or_call'
+E, [2025-05-14T00:06:51.067855 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize'
+E, [2025-05-14T00:06:51.067860 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:558:in `synchronize_or_call'
+E, [2025-05-14T00:06:51.067865 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:524:in `block in action'
+E, [2025-05-14T00:06:51.067870 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-14T00:06:51.067875 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:523:in `action'
+E, [2025-05-14T00:06:51.067880 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:414:in `converge_action'
+E, [2025-05-14T00:06:51.067885 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+E, [2025-05-14T00:06:51.067890 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+E, [2025-05-14T00:06:51.067895 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:391:in `block in transition_to'
+E, [2025-05-14T00:06:51.067900 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `each'
+E, [2025-05-14T00:06:51.067908 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:390:in `transition_to'
+E, [2025-05-14T00:06:51.067913 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/instance.rb:139:in `converge'
+E, [2025-05-14T00:06:51.067919 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `public_send'
+E, [2025-05-14T00:06:51.067924 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:195:in `run_action_in_thread'
+E, [2025-05-14T00:06:51.067929 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+E, [2025-05-14T00:06:51.067934 #64648] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/logging-2.4.0/lib/logging/diagnostic_context.rb:474:in `block in create_with_logging_context'
+E, [2025-05-14T00:06:51.067939 #64648] ERROR -- Kitchen: ----End Backtrace-----

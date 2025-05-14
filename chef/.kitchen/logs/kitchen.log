@@ -1,0 +1,31 @@
+I, [2025-05-14T00:27:06.377793 #19015]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.7.0)
+E, [2025-05-14T00:27:06.377965 #19015] ERROR -- Kitchen: ------Exception-------
+E, [2025-05-14T00:27:06.377981 #19015] ERROR -- Kitchen: Class: Kitchen::UserError
+E, [2025-05-14T00:27:06.377990 #19015] ERROR -- Kitchen: Message: Kitchen YAML file /Users/alexfreidah/tools/munchbox/chef/kitchen.yml does not exist.
+E, [2025-05-14T00:27:06.377997 #19015] ERROR -- Kitchen: ----------------------
+E, [2025-05-14T00:27:06.378004 #19015] ERROR -- Kitchen: ------Backtrace-------
+E, [2025-05-14T00:27:06.378011 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/loader/yaml.rb:65:in `read'
+E, [2025-05-14T00:27:06.378018 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/config.rb:153:in `data'
+E, [2025-05-14T00:27:06.378024 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/config.rb:131:in `suites'
+E, [2025-05-14T00:27:06.378031 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/config.rb:183:in `filter_instances'
+E, [2025-05-14T00:27:06.378037 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/config.rb:142:in `build_instances'
+E, [2025-05-14T00:27:06.378043 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/config.rb:116:in `instances'
+E, [2025-05-14T00:27:06.378064 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:109:in `filtered_instances'
+E, [2025-05-14T00:27:06.378080 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command.rb:139:in `parse_subcommand'
+E, [2025-05-14T00:27:06.378089 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:34:in `block in call'
+E, [2025-05-14T00:27:06.378096 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/3.3.0/benchmark.rb:298:in `measure'
+E, [2025-05-14T00:27:06.378103 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/command/action.rb:33:in `call'
+E, [2025-05-14T00:27:06.378109 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:52:in `perform'
+E, [2025-05-14T00:27:06.378116 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/cli.rb:198:in `block (2 levels) in <class:CLI>'
+E, [2025-05-14T00:27:06.378122 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor/command.rb:27:in `run'
+E, [2025-05-14T00:27:06.378128 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor/invocation.rb:127:in `invoke_command'
+E, [2025-05-14T00:27:06.378134 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor.rb:392:in `dispatch'
+E, [2025-05-14T00:27:06.378140 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/thor-1.2.2/lib/thor/base.rb:485:in `start'
+E, [2025-05-14T00:27:06.378146 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/bin/kitchen:11:in `block in <top (required)>'
+E, [2025-05-14T00:27:06.378152 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/lib/kitchen/errors.rb:183:in `with_friendly_errors'
+E, [2025-05-14T00:27:06.378158 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.7.0/bin/kitchen:11:in `<top (required)>'
+E, [2025-05-14T00:27:06.378172 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `load'
+E, [2025-05-14T00:27:06.378178 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `<main>'
+E, [2025-05-14T00:27:06.378183 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `eval'
+E, [2025-05-14T00:27:06.378188 #19015] ERROR -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `<main>'
+E, [2025-05-14T00:27:06.378193 #19015] ERROR -- Kitchen: ----End Backtrace-----
