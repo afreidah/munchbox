@@ -31,7 +31,7 @@ namespace :kitchen do
         rm -rf .kitchen/ && \
         docker image prune -f && \
         bundle exec kitchen create && \
-        bundle exec kitchen converge 
+        bundle exec kitchen converge
     '
   end
 end

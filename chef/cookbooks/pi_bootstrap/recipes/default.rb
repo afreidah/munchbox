@@ -30,7 +30,7 @@ template '/etc/hostname' do
 end
 
 execute 'hostnamectl-set' do
-  command lazy { "hostnamectl set-hostname #{node['pi_bootstrap']['hostname_prefix']}-#{node['ipaddress'].split('.').last}"} 
+  command lazy { "hostnamectl set-hostname #{node['pi_bootstrap']['hostname_prefix']}-#{node['ipaddress'].split('.').last}" }
   action :nothing
 end
 
@@ -51,10 +51,10 @@ end
 # 4) Enable and start Docker
 service 'docker' do
   action [:enable, :start]
-  only_if { node['init_package'] == 'systemd' }
+  only_if { systemd? }
 end
 
 # 5) Enable and start WireGuard tools (wg-quick@<iface> can be managed later)
-#service 'chrony' do
+# service 'chrony' do
 #  action [:enable, :start]
-#end
+# end

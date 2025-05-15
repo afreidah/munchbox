@@ -4,9 +4,7 @@
 #
 # Installs Consul via HashiCorp’s official binary archive.
 
-
 include_recipe 'consul::firewall'
-
 
 version = node['consul']['version']
 install_method = node['consul']['install_method'] # 'binary'
@@ -20,6 +18,7 @@ when 'binary'
     source archive_url
     checksum node['consul']['checksum'] if node['consul'].key?('checksum')
     action :create
+    not_if { ::File.exist?('/usr/local/bin/consul') && `consul version`.include?(version) }
   end
 
   directory '/usr/local/bin' do
@@ -37,11 +36,10 @@ when 'binary'
   end
 
 when 'package'
-  # if you wanted to use apt or yum, you could add the repo here
-  include_recipe 'apt' if platform_family?('debian')
   package 'consul' do
     version version
     action :install
+    not_if { ::File.exist?('/usr/local/bin/consul') && `consul version`.include?(version) }
   end
 else
   Chef::Log.error("Unknown consul install_method '#{install_method}'")
@@ -90,11 +88,11 @@ template '/etc/systemd/system/consul.service' do
   group node['consul']['group']
   mode '0644'
   variables(
-    install_dir:     node['consul']['install_dir'],
-    config_dir:      node['consul']['config_dir'],
-    data_dir:        node['consul']['data_dir'],
-    service_user:    node['consul']['user'],
-    service_group:   node['consul']['group'],
+    install_dir: node['consul']['install_dir'],
+    config_dir: node['consul']['config_dir'],
+    data_dir: node['consul']['data_dir'],
+    service_user: node['consul']['user'],
+    service_group: node['consul']['group']
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
 end

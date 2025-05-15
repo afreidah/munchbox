@@ -4,9 +4,10 @@ default['nomad']['version']         = '1.5.3'
 default['nomad']['install_method']  = 'binary'
 
 # Raft quorum members
-default['nomad']['servers'] = %w[
-  pi-225
-]
+default['nomad']['servers'] = %w(
+  192.168.1.225
+  192.168.1.98
+)
 #  pi-98
 
 default['nomad']['user']       = 'root'

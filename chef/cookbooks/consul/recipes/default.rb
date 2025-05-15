@@ -15,4 +15,3 @@ end
 service 'consul' do
   action [:enable, :start]
 end
-

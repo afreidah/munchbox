@@ -1,16 +1,14 @@
 # local_mode true
-#chef_repo_path   File.expand_path('../' , __FILE__)
 cookbook_path ['/tmp/chef/cookbooks', '/tmp/chef/community-cookbooks' ]
 log_level        :info
 formatter        :doc
 
-
-knife[:ssh_attribute] = "knife_zero.host"
+knife[:ssh_attribute] = 'knife_zero.host'
 knife[:use_sudo] = true
-knife[:identity_file] = "~/.ssh/ed25519"
+knife[:identity_file] = '~/.ssh/ed25519'
 # knife[:ssh_identity_file] = '"~/.ssh/ed25519"'  # Newer than Chef 14
 
-knife[:automatic_attribute_whitelist] = %w[
+knife[:automatic_attribute_whitelist] = %w(
   fqdn
   os
   os_version
@@ -24,7 +22,7 @@ knife[:automatic_attribute_whitelist] = %w[
   cloud
   cloud_v2
   chef_packages
-]
+)
 
 ### Optional.
 ## If you use attributes from cookbooks for set credentials or dynamic values.

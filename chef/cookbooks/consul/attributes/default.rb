@@ -1,12 +1,12 @@
 # consul::default attributes
-default['consul']['version']       = '1.14.4'
+default['consul']['version'] = '1.14.4'
 default['consul']['install_method'] = 'binary'
 
 # Raft quorum members
-default['consul']['servers'] = %w[
-  pi-225
-  pi-98
-]
+default['consul']['servers'] = %w(
+  192.168.1.225
+  192.168.1.98
+)
 
 default['consul']['config_dir'] = '/etc/consul.d'
 default['consul']['user'] = 'root'

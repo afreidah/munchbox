@@ -1,7 +1,7 @@
 include_recipe 'consul::install'
 
 template '/etc/consul.d/client.json' do
-  source 'config.json.erb'
+  source 'client-config.json.erb'
   variables(
     server: false,
     retry_join: node['consul']['servers']
@@ -11,6 +11,5 @@ end
 
 service 'consul.service' do
   action [:enable, :start, :restart]
-  only_if { node['init_package'] == 'systemd' }
+  only_if { systemd? }
 end
-
