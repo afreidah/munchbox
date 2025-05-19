@@ -1,8 +1,21 @@
 # frozen_string_literal: true
 
+# Cookbook:: nomad
+# Recipe:: firewall
+#
+# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+#
+
+# =========================
+# Include Firewall Cookbook
+# =========================
+
 include_recipe 'firewall'
 
-## HTTP API & Web UI
+# =========================
+# Nomad HTTP API & Web UI
+# =========================
+
 firewall_rule 'nomad-ui' do
   port     4646
   protocol :tcp
@@ -10,7 +23,10 @@ firewall_rule 'nomad-ui' do
   command  :allow
 end
 
-## gRPC/RPC (clients ↔ servers)
+# =========================
+# Nomad gRPC/RPC (Clients ↔ Servers)
+# =========================
+
 firewall_rule 'nomad-rpc' do
   port     4647
   protocol :tcp
@@ -18,7 +34,10 @@ firewall_rule 'nomad-rpc' do
   command  :allow
 end
 
-## Serf gossip (LAN & WAN)
+# =========================
+# Nomad Serf Gossip (LAN & WAN)
+# =========================
+
 %w(tcp udp).each do |proto|
   firewall_rule "nomad-serf-#{proto}" do
     port     4648
@@ -27,4 +46,3 @@ end
     command  :allow
   end
 end
-

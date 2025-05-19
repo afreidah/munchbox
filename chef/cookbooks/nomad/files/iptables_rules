@@ -1,0 +1,31 @@
+# Nomad UI (TCP 4646)
+sudo iptables -A INPUT \
+  -p tcp \
+  -s 192.168.1.0/24 \
+  --dport 4646 \
+  -m conntrack --ctstate NEW,ESTABLISHED \
+  -j ACCEPT
+
+# Nomad RPC (TCP 4647)
+sudo iptables -A INPUT \
+  -p tcp \
+  -s 192.168.1.0/24 \
+  --dport 4647 \
+  -m conntrack --ctstate NEW,ESTABLISHED \
+  -j ACCEPT
+
+# Nomad Serf gossip (TCP 4648)
+sudo iptables -A INPUT \
+  -p tcp \
+  -s 192.168.1.0/24 \
+  --dport 4648 \
+  -m conntrack --ctstate NEW,ESTABLISHED \
+  -j ACCEPT
+
+# Nomad Serf gossip (UDP 4648)
+sudo iptables -A INPUT \
+  -p udp \
+  -s 192.168.1.0/24 \
+  --dport 4648 \
+  -j ACCEPT
+

@@ -1,105 +1,134 @@
+# frozen_string_literal: true
 #
 # Cookbook:: consul
 # Recipe:: install
 #
-# Installs Consul via HashiCorp’s official binary archive.
+# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+#
+# Installs Consul via HashiCorp’s official binary archive or package manager,
+# creates necessary users, directories, and systemd service.
+#
 
+# =========================
+# Include Firewall Recipe
+# =========================
 
 include_recipe 'consul::firewall'
 
+# =========================
+# Set Install Variables
+# =========================
 
-version = node['consul']['version']
-install_method = node['consul']['install_method'] # 'binary'
+consul_version        = node['consul']['version']
+consul_install_method = node['consul']['install_method']
+consul_user           = node['consul']['user']
+consul_group          = node['consul']['group']
+consul_data_dir       = node['consul']['data_dir']
+consul_config_dir     = node['consul']['config_dir']
+consul_install_dir    = node['consul']['install_dir']
+consul_binary         = ::File.join(consul_install_dir, 'consul')
 
-case install_method
+# =========================
+# Install Consul
+# =========================
+
+case consul_install_method
 when 'binary'
-  archive_url = "https://releases.hashicorp.com/consul/#{version}/consul_#{version}_linux_arm64.zip"
-  archive_path = ::File.join(Chef::Config[:file_cache_path], "consul_#{version}.zip")
+  archive_url  = "https://releases.hashicorp.com/consul/#{consul_version}/consul_#{consul_version}_linux_arm64.zip"
+  archive_path = ::File.join(Chef::Config[:file_cache_path], "consul_#{consul_version}.zip")
 
   remote_file archive_path do
     source archive_url
     checksum node['consul']['checksum'] if node['consul'].key?('checksum')
     action :create
+    not_if { ::File.exist?(consul_binary) && `#{consul_binary} version`.include?(consul_version) }
   end
 
-  directory '/usr/local/bin' do
+  directory consul_install_dir do
     mode '0755'
     recursive true
   end
 
   execute 'unzip_consul' do
-    command "unzip -o #{archive_path} -d /usr/local/bin/"
-    not_if { ::File.exist?('/usr/local/bin/consul') && `consul version`.include?(version) }
+    command "unzip -o #{archive_path} -d #{consul_install_dir}"
+    not_if { ::File.exist?(consul_binary) && `#{consul_binary} version`.include?(consul_version) }
   end
 
-  file '/usr/local/bin/consul' do
+  file consul_binary do
     mode '0755'
   end
 
 when 'package'
-  # if you wanted to use apt or yum, you could add the repo here
-  include_recipe 'apt' if platform_family?('debian')
   package 'consul' do
-    version version
+    version consul_version
     action :install
+    not_if { ::File.exist?(consul_binary) && `#{consul_binary} version`.include?(consul_version) }
   end
+
 else
-  Chef::Log.error("Unknown consul install_method '#{install_method}'")
+  Chef::Log.error("Unknown consul install_method '#{consul_install_method}'")
 end
 
-# Create a dedicated Consul user & group
-group 'consul' do
+# =========================
+# Create Consul User & Group
+# =========================
+
+group consul_group do
   system true
-  action :create
 end
 
-user 'consul' do
+user consul_user do
   system true
-  gid 'consul'
-  home '/var/lib/consul'
+  gid consul_group
+  home consul_data_dir
   shell '/bin/false'
-  action :create
 end
 
-# Create Consul data directory
-directory node['consul']['data_dir'] || '/var/lib/consul' do
-  owner node['consul']['user']
-  group node['consul']['group']
-  mode '0750'
-  recursive true
+# =========================
+# Create Consul Directories
+# =========================
+
+[consul_data_dir, consul_config_dir].each do |dir|
+  directory dir do
+    owner consul_user
+    group consul_group
+    mode '0750'
+    recursive true
+  end
 end
 
-# Create config directory
-directory '/etc/consul.d' do
-  owner node['consul']['user']
-  group node['consul']['group']
-  mode '0750'
-  recursive true
-end
+# =========================
+# Reload systemd When Unit File Changes
+# =========================
 
-# Reload systemd when the unit file changes
 execute 'systemctl-daemon-reload' do
   command 'systemctl daemon-reload'
   action :nothing
 end
 
-# Render the consul.service unit
+# =========================
+# Render Consul systemd Unit
+# =========================
+
 template '/etc/systemd/system/consul.service' do
   source 'consul.service.erb'
-  owner node['consul']['user']
-  group node['consul']['group']
+  owner consul_user
+  group consul_group
   mode '0644'
   variables(
-    install_dir:     node['consul']['install_dir'],
-    config_dir:      node['consul']['config_dir'],
-    data_dir:        node['consul']['data_dir'],
-    service_user:    node['consul']['user'],
-    service_group:   node['consul']['group'],
+    install_dir: consul_install_dir,
+    config_dir: consul_config_dir,
+    data_dir: consul_data_dir,
+    service_user: consul_user,
+    service_group: consul_group
   )
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
 end
 
-# Enable & start the consul service
+# =========================
+# Enable & Start Consul Service
+# =========================
+
 service 'consul' do
   provider Chef::Provider::Service::Systemd
   action [:enable, :start]

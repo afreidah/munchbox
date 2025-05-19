@@ -1,8 +1,23 @@
-# pi_bootstrap::default attributes
+# frozen_string_literal: true
+#
+# Cookbook:: pi_bootstrap
+# Attributes:: default
+#
+# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+#
+# Default attributes for Raspberry Pi bootstrap configuration.
+#
 
-# Prefix for the hostname; we'll append the Pi’s last octet
+# =========================
+# Hostname Configuration
+# =========================
+
+# Prefix for the hostname; the Pi’s last octet will be appended
 default['pi_bootstrap']['hostname_prefix'] = 'pi'
 
-# WireGuard package name (adjust if you use a PPA)
-# default['pi_bootstrap']['packages'] = %w[docker.io wireguard chrony]
-default['pi_bootstrap']['packages'] = %w[docker.io]
+# =========================
+# Package Installation
+# =========================
+
+# List of packages to install (adjust as needed)
+default['pi_bootstrap']['packages'] = %w(docker.io dmidecode)

@@ -6,7 +6,7 @@ source 'https://rubygems.org'
 # Pin a Ruby version compatible with your environment
 ruby '>= 3.1', '< 4.0'
 
-gem 'chef', '~> 18.7', require: false          # Chef Infra Client library
+gem 'chef', '~> 18.7', require: false # Chef Infra Client library
 
 group :development do
   gem 'cookstyle'

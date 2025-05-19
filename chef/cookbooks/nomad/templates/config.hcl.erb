@@ -1,19 +1,97 @@
-data_dir  = "<%= node['nomad']['data_dir'] %>"
-bind_addr = "<%= node['nomad']['bind_addr'] %>"
+# ─────────────────────────────────────────────────────────────────────────────
+# nomad.hcl  —  Pi-225 (first server) in mixed server+client mode
+# ─────────────────────────────────────────────────────────────────────────────
 
-<% if @server %>
-server {
-  enabled          = true
-  bootstrap_expect = <%= @bootstrap_expect %>
+###########################
+# Global Settings
+###########################
+data_dir  = "<%= node['nomad']['data_dir'] %>"  # where Nomad stores its state
+bind_addr = "<%= node['nomad']['bind_addr'] %>"  # this host’s LAN IP
+
+region     = "global"                # must match across cluster
+datacenter = "<%= node['nomad']['datacenter'] %>"
+
+###########################
+# How this node advertises itself
+###########################
+advertise {
+  http = "<%= node['nomad']['bind_addr'] %>:4646"         # API endpoint
+  rpc  = "<%= node['nomad']['bind_addr'] %>:4647"         # Raft RPC endpoint
+  serf = "<%= node['nomad']['bind_addr'] %>:4648"         # Serf LAN gossip
 }
-<% else %>
+
+###########################
+# Server Configuration
+###########################
+server {
+  enabled          = <%= node['nomad']['server']['enabled'] %>        # run in server mode
+  bootstrap_expect = <%= node['nomad']['server']['servers'].count %>  # wait for configured servers total
+  raft_multiplier  = <%= node['nomad']['raft_multiplier'] %>          # Raft heartbeat multiplier
+
+  server_join {
+    retry_join     = [
+      <% @retry_join.each do |join| %>
+        "<%= join %>",            # will add first
+      <% end %>
+    ]
+    retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"  # seconds
+    retry_max      = <%= node['nomad']['server']['retry_max'] %>         # seconds
+  }
+}
+
+###########################
+# Client Configuration
+###########################
 client {
-  enabled = true
-  # you can add client-specific config here
+  enabled    = <%= node['nomad']['client']['enabled'] %>
+  <% if node['nomad']['client']['node_class'] != '' %>
+  node_class = "<%= node['nomad']['client']['node_class'] %>"
+  <% end %>
+  cni_path   = "<%= node['nomad']['cni_path'] %>"  # path to CNI plugin binaries
+
+<% node['nomad']['client']['host_volumes'].each do |volume| %>
+  <% volume.each do |name, config| %>
+  host_volume "<%= name %>" {
+    path      = "<%= config['path'] %>"  # shared data on host
+    read_only = false
+  }
+  <% end %>
+<% end %>
+}
+
+###########################
+# Docker Task Plugin
+###########################
+plugin "docker" {
+  config {
+    allow_privileged = <%= node['nomad']['docker']['allow_privileged'] %>
+    volumes { enabled = <%= node['nomad']['docker']['volumes'] %> }
+  }
+  caps {
+    whitelist = [<% node['nomad']['docker_capabilities'].join(", ") %>]
+  }
+}
+
+###########################
+# Consul Integration
+###########################
+consul {
+  address          = "<%= node['nomad']['bind_addr'] %>:8500"  # this node’s Consul agent
+  auto_advertise   = <%= node['nomad']['consul']['auto_advertise'] %>
+  client_auto_join = <%= node['nomad']['consul']['client_auto_join'] %>
+}
+
+<% if node['nomad']['telemetry']['enabled'] %>
+###########################
+# Telemetry Integration
+###########################
+telemetry {
+  collection_interval = "<%= node['nomad']['telemetry']['collection_interval'] %>"
+  disable_hostname = <%= node['nomad']['telemetry']['disable_hostname'] %>
+  prometheus_metrics = <%= node['nomad']['telemetry']['prometheus_metrics'] %>
+  publish_allocation_metrics = <%= node['nomad']['telemetry']['publish_allocation_metrics'] %>
+  publish_node_metrics = <%= node['nomad']['telemetry']['publish_node_metrics'] %>
 }
 <% end %>
 
-retry_join = <%= @retry_join.to_json %>
-region     = "global"
-datacenter = "<%= node['nomad']['datacenter'] %>"
 

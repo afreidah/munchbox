@@ -1,0 +1,24 @@
+{
+  "server": <%= node['consul']['server']['enable'] %>,
+  "datacenter": "dc1",
+  "data_dir":      "<%= @data_dir %>",
+  "bind_addr":     "<%= @bind_addr %>",
+  "advertise_addr":     "<%= @bind_addr %>",
+  "client_addr": "0.0.0.0",
+
+  "bootstrap_expect": <%= @retry_join.count %>,
+  "retry_join": [
+    <% @retry_join.each_with_index do |join, idx| %>
+      "<%= join %>"<%= ',' unless idx == @retry_join.size - 1 %>
+    <% end %>
+  ],
+
+  "ui": true,
+
+  "ports": {
+    "http": 8500,
+    "dns": 8600
+  },
+
+  "log_level": "INFO"
+}

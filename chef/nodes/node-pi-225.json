@@ -1,10 +1,14 @@
 {
   "run_list": [
-    "recipe[pi_bootstrap]",
+    "recipe[pi_bootstrap::default]",
     "recipe[pi_bootstrap::firewall]",
     "recipe[consul::server]",
+    "recipe[consul::firewall]",
     "recipe[nomad::server]",
-    "recipe[nomad::client]",
     "recipe[nomad::firewall]"
-  ]
+  ],
+  "nomad": {
+    "node_class": "vpn"
+  }
 }
+

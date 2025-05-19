@@ -1,10 +1,10 @@
+
 # cdktf and terraform ignores
 .terraform
 cdktf.out
 cdktf.log
 *terraform.*.tfstate*
 generated
-*tags*
 
 # src https://github.com/github/gitignore/blob/master/Go.gitignore
 # Binaries for programs and plugins
@@ -19,5 +19,3 @@ generated
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
-
-nomad-jobs/traefik-vars.hcl
