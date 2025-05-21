@@ -11,7 +11,7 @@
 # =========================
 
 default['nomad']['datacenter']      = 'pi-dc'
-default['nomad']['version']         = '1.5.3'
+default['nomad']['version']         = '1.7.1'
 default['nomad']['install_method']  = 'binary'
 default['nomad']['user']            = 'root'
 default['nomad']['group']           = 'root'

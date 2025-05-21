@@ -1,31 +1,43 @@
-# Nomad UI (TCP 4646)
-sudo iptables -A INPUT \
-  -p tcp \
-  -s 192.168.1.0/24 \
-  --dport 4646 \
-  -m conntrack --ctstate NEW,ESTABLISHED \
-  -j ACCEPT
+#!/bin/bash
+ 
+# Allow all TCP on loopback
+sudo ufw allow proto tcp from 127.0.0.1 to any comment 'loopback'
 
-# Nomad RPC (TCP 4647)
-sudo iptables -A INPUT \
-  -p tcp \
-  -s 192.168.1.0/24 \
-  --dport 4647 \
-  -m conntrack --ctstate NEW,ESTABLISHED \
-  -j ACCEPT
+# SSH (port 22) from your LAN
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 22 comment 'ssh'
 
-# Nomad Serf gossip (TCP 4648)
-sudo iptables -A INPUT \
-  -p tcp \
-  -s 192.168.1.0/24 \
-  --dport 4648 \
-  -m conntrack --ctstate NEW,ESTABLISHED \
-  -j ACCEPT
+# Consul-raft
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 8300 comment 'consul-raft'
 
-# Nomad Serf gossip (UDP 4648)
-sudo iptables -A INPUT \
-  -p udp \
-  -s 192.168.1.0/24 \
-  --dport 4648 \
-  -j ACCEPT
+# DNS
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 53 comment 'dns'
+
+# Consul Serf LAN
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 8301 comment 'consul-serf-lan-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 8301 comment 'consul-serf-lan-udp'
+
+# Consul Serf WAN
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 8302 comment 'consul-serf-wan-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 8302 comment 'consul-serf-wan-udp'
+
+# Consul HTTP API
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 8500 comment 'consul-http'
+
+# Consul DNS
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 8600 comment 'consul-dns-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 8600 comment 'consul-dns-udp'
+
+# Nomad UI and RPC
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 4646 comment 'nomad-ui'
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 4647 comment 'nomad-rpc'
+
+# Nomad Serf
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 4648 comment 'nomad-serf-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 4648 comment 'nomad-serf-udp'
+
+# Finally, enable UFW if it isn’t already:
+sudo ufw enable
+
+# And check your rules:
+sudo ufw status numbered
 

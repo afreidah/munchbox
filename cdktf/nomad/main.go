@@ -24,25 +24,37 @@ func register_job(stack cdktf.TerraformStack, id string, hcl string) {
 }
 
 func main() {
+	// --- CLI Flags ---
+	jobsFlag := flag.String("jobs", "all", "Comma-separated list of job names (without .nomad.hcl) or 'all'")
+	flag.Parse()
+
 	// --- Stack Initialization ---
 	app := cdktf.NewApp(nil)
 	stack := cdktf.NewTerraformStack(app, jsii.String("nomad"))
 
 	// --- Provider Configuration ---
-	// TODO: Move the address to a configuration file or environment variable for flexibility.
 	provider.NewNomadProvider(stack, jsii.String("nomad-provider"), &provider.NomadProviderConfig{
 		Address: jsii.String("http://192.168.1.225:4646"),
 	})
 
-
 	// --- Job Registration ---
-	// Find all Nomad job HCL files in the current directory.
-	files, err := filepath.Glob("*.nomad.hcl")
+                  files, err := filepath.Glob("../../nomad-jobs/*.nomad.hcl")
 	if err != nil {
 		log.Fatalf("failed to glob job files: %v", err)
 	}
 
+	selected := map[string]bool{}
+	if *jobsFlag != "all" {
+		for _, name := range strings.Split(*jobsFlag, ",") {
+			selected[strings.TrimSpace(name)] = true
+		}
+	}
+
 	for _, f := range files {
+		id := strings.TrimSuffix(filepath.Base(f), ".nomad.hcl")
+		if *jobsFlag != "all" && !selected[id] {
+			continue
+		}
 		raw, err := os.ReadFile(f)
 		if err != nil {
 			log.Printf("failed to read file %s: %v", f, err)
@@ -50,7 +62,6 @@ func main() {
 		}
 
 		hcl := strings.ReplaceAll(string(raw), "${", "$${")
-		id := strings.TrimSuffix(filepath.Base(f), ".nomad.hcl")
 		register_job(stack, id, hcl)
 	}
 	app.Synth()
