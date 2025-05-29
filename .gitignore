@@ -21,3 +21,5 @@ generated
 *.out
 
 nomad-jobs/traefik-vars.hcl
+encrypted_data_bag_secret
+.kitchen/*

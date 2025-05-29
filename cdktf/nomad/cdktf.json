@@ -1,6 +1,6 @@
 {
   "language": "go",
-  "app": "go run main.go",
+  "app": "./nomad-app",
   "codeMakerOutput": "generated",
   "projectId": "d5ae7775-bc4d-431b-afc6-6ae3bbdfcedf",
   "sendCrashReports": "true",

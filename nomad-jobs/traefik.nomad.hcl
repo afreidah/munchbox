@@ -1,15 +1,16 @@
-######################################################################
-# Traefik Reverse Proxy - Nomad Job
-# - Exposes dashboard locally   (8081)
-# - Exposes internal HTTP       (80)
-# - Exposes HTTPS via VPN port (48060)
-# - Single entrypoint for all internal & exposed services
-######################################################################
+###############################################################################
+# Traefik Reverse Proxy — Nomad Job (values pulled from Consul KV)
+#
+# - Exposes dashboard locally (8081)
+# - Exposes internal HTTP (80)
+# - Exposes HTTPS via VPN port (fetched from Consul KV)
+# - Uses Cloudflare API token (fetched from Consul KV)
+###############################################################################
 
-variable "cf_api_token" {
-  description = "Cloudflare API token with DNS:Edit on alexanddakota.com"
-  type        = string
-}
+
+# ──────────────────────────────────────────────────────────────
+#  Render the job with values from Consul KV
+# ──────────────────────────────────────────────────────────────
 
 job "traefik" {
   region      = "global"
@@ -28,9 +29,9 @@ job "traefik" {
 
     # Bind static ports directly via host networking
     network {
-      port "http"      { static = 80    }  # Internal HTTP entrypoint
-      port "https"     { static = 48060 }  # VPN-forwarded HTTPS
-      port "dashboard" { static = 8081  }  # Local-only HTTP dashboard
+      port "http"      { static = 80 }
+      port "https"     { static = 48060 }
+      port "dashboard" { static = 8081 }
     }
 
     # Expose Traefik service to Consul for discovery
@@ -58,6 +59,10 @@ job "traefik" {
     task "traefik" {
       driver = "docker"
 
+      vault {
+        policies = ["traefik-nomad"]
+      }
+
       config {
         image        = "traefik:v2.11"
         network_mode = "host"
@@ -71,7 +76,7 @@ job "traefik" {
 
       env {
         TRAEFIK_LOG_LEVEL        = "DEBUG"
-        CLOUDFLARE_DNS_API_TOKEN = "${var.cf_api_token}"
+        CLOUDFLARE_DNS_API_TOKEN = "${NOMAD_SECRETS_cf_api_token}"
       }
 
       logs {
@@ -79,50 +84,41 @@ job "traefik" {
         max_file_size = 5
       }
 
-      # ──────────────────────────────────────────────────────────────
-      # STATIC CONFIGURATION
-      # - Enables web (80), websecure (48060), dashboard (8081)
-      # - API dashboard + insecure mode for IP-based access
-      # - ACME via Cloudflare DNS
-      # - Dynamic routes from Consul catalog
-      # ──────────────────────────────────────────────────────────────
       template {
         destination = "local/traefik.toml"
         perms       = "0644"
         change_mode = "noop"
         data = <<-TOML
-[entryPoints]
-  [entryPoints.web]
-    address = ":80"
+          [entryPoints]
+            [entryPoints.web]
+              address = ":80"
 
-  [entryPoints.websecure]
-    address = ":48060"
+            [entryPoints.websecure]
+              address = ":48060"
 
-  [entryPoints.dashboard]
-    address = "192.168.1.225:8081"
+            [entryPoints.dashboard]
+              address = "192.168.1.225:8081"
 
-[api]
-  dashboard = true
-  insecure  = true
+          [api]
+            dashboard = true
+            insecure  = true
 
-[providers.consulCatalog]
-  prefix           = "traefik"
-  exposedByDefault = false
+          [providers.consulCatalog]
+            prefix           = "traefik"
+            exposedByDefault = false
 
-  [providers.consulCatalog.endpoint]
-    address = "127.0.0.1:8500"
-    scheme  = "http"
+            [providers.consulCatalog.endpoint]
+              address = "127.0.0.1:8500"
+              scheme  = "http"
 
-[certificatesResolvers.dns.acme]
-  email   = "alex.freidah@gmail.com"
-  storage = "/etc/traefik/acme.json"
+          [certificatesResolvers.dns.acme]
+            email   = "alex.freidah@gmail.com"
+            storage = "/etc/traefik/acme.json"
 
-  [certificatesResolvers.dns.acme.dnsChallenge]
-    provider = "cloudflare"
-TOML
+            [certificatesResolvers.dns.acme.dnsChallenge]
+              provider = "cloudflare"
+        TOML
       }
-
-      # No extra dynamic config needed for dashboard—covered by insecure mode
 
       resources {
         cpu    = 200
@@ -138,4 +134,3 @@ TOML
     }
   }
 }
-

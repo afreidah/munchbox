@@ -35,6 +35,29 @@ sudo ufw allow proto tcp from 192.168.1.0/24 to any port 4647 comment 'nomad-rpc
 sudo ufw allow proto tcp from 192.168.1.0/24 to any port 4648 comment 'nomad-serf-tcp'
 sudo ufw allow proto udp from 192.168.1.0/24 to any port 4648 comment 'nomad-serf-udp'
 
+# 81 for Pihole
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 81 comment 'pihole-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 81 comment 'pihole-udp'
+
+# 123 for NTP
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 123 comment 'ntp-tcp'
+
+# Deluge Web UI
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 8112 comment 'deluge-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 8112 comment 'deluge-ucp'
+
+# Prometheus 
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 9090 comment 'prometheus-tcp'
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 9100 comment 'node-exporter-tcp'
+
+# vault 
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 8200 comment 'vault-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 8200 comment 'vault-udp'
+
+# registry 
+sudo ufw allow proto tcp from 192.168.1.0/24 to any port 5000 comment 'registry-tcp'
+sudo ufw allow proto udp from 192.168.1.0/24 to any port 5000 comment 'registry-udp'
+
 # Finally, enable UFW if it isn’t already:
 sudo ufw enable
 

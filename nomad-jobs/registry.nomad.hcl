@@ -16,6 +16,12 @@ job "registry" {
     run_uuid = "${uuidv4()}" # Unique run identifier
   }
 
+  constraint {
+    attribute = "${node.class}"
+    operator  = "="
+    value     = "pi5"
+  }
+
   group "mirror" {
     network {
       mode = "host" # Use host networking for container
@@ -24,9 +30,9 @@ job "registry" {
       }
     }
 
-    volume "shared-data" {
+    volume "registry-data" {
       type      = "host"
-      source    = "shared-data"
+      source    = "registry-data"
       read_only = false
     }
 
@@ -39,7 +45,8 @@ job "registry" {
         network_mode = "host"       # Host networking for container
         # No command/args override – default entrypoint is fine
         volumes = [
-          "shared-data:/etc/docker/registry" # Persistent cache directory
+          "registry-data:/etc/docker/registry", # Persistent cache directory
+          "local/config/config.yml:/etc/docker/registry/config.yml" # Registry config
         ]
       }
 
@@ -47,7 +54,7 @@ job "registry" {
 
       # Mount persistent cache
       volume_mount {
-        volume      = "cache"
+        volume = "registry-data"
         destination = "/var/lib/registry"
         read_only   = false
       }
@@ -66,9 +73,6 @@ log:
 storage:
   filesystem:
     rootdirectory: /var/lib/registry
-
-proxy:
-  remoteurl: https://registry-1.docker.io
 
 http:
   addr: :5000          # ← forces the listener to stay on 5000
