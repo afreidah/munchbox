@@ -42,7 +42,7 @@ archive_file '/tmp/cni-plugins.tgz' do
   action :nothing
 end
 
-template //etc/sysctl.d/bridge.conf do
+template '/etc/sysctl.d/bridge.conf' do
   source 'bridge.conf.erb'
   owner 'root'
   group 'root'
