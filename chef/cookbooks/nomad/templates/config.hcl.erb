@@ -26,12 +26,12 @@ advertise {
 server {
   enabled          = <%= node['nomad']['server']['enabled'] %>        # run in server mode
   bootstrap_expect = <%= node['nomad']['server']['servers'].count %>  # wait for configured servers total
-  raft_multiplier  = <%= node['nomad']['raft_multiplier'] %>          # Raft heartbeat multiplier
+  raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %>          # Raft heartbeat multiplier
 
   server_join {
     retry_join     = [
-      <% @retry_join.each do |join| %>
-        "<%= join %>",            # will add first
+      <% @retry_join.each do |j| %>
+        "<%= j %>",            # will add first
       <% end %>
     ]
     retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"  # seconds
@@ -47,15 +47,13 @@ client {
   <% if node['nomad']['client']['node_class'] != '' %>
   node_class = "<%= node['nomad']['client']['node_class'] %>"
   <% end %>
-  cni_path   = "<%= node['nomad']['cni_path'] %>"  # path to CNI plugin binaries
+  cni_path   = "<%= node['nomad']['client']['cni_path'] %>"  # path to CNI plugin binaries
 
 <% node['nomad']['client']['host_volumes'].each do |volume| %>
-  <% volume.each do |name, config| %>
-  host_volume "<%= name %>" {
-    path      = "<%= config['path'] %>"  # shared data on host
-    read_only = false
+  host_volume "<%= volume['name'] %>" {
+    path      = "<%= volume['path'] %>"  # shared data on host
+    read_only = <%= volume['read_only'] %> 
   }
-  <% end %>
 <% end %>
 }
 
@@ -65,10 +63,10 @@ client {
 plugin "docker" {
   config {
     allow_privileged = <%= node['nomad']['docker']['allow_privileged'] %>
-    volumes { enabled = <%= node['nomad']['docker']['volumes'] %> }
+    volumes { enabled = <%= node['nomad']['docker']['volumes']['enabled'] %> }
   }
   caps {
-    whitelist = [<% node['nomad']['docker_capabilities'].join(", ") %>]
+    whitelist = [<% node['nomad']['docker']['caps'].join(", ") %>]
   }
 }
 
@@ -78,7 +76,7 @@ plugin "docker" {
 consul {
   address          = "<%= node['nomad']['bind_addr'] %>:8500"  # this node’s Consul agent
   auto_advertise   = <%= node['nomad']['consul']['auto_advertise'] %>
-  client_auto_join = <%= node['nomad']['consul']['client_auto_join'] %>
+  client_auto_join = <%= node['nomad']['consul']['auto_join'] %>
 }
 
 <% if node['nomad']['telemetry']['enabled'] %>
@@ -94,4 +92,13 @@ telemetry {
 }
 <% end %>
 
+<% if node['nomad']['vault']['enabled'] %>
+###########################
+# Vault Integration
+###########################
+vault {
+  enabled          = true
+  address          = "<%= node['nomad']['vault']['address'] %>"
+  token            = "<%= @token || '' %>"
+}
 

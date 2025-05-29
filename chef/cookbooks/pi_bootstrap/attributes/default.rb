@@ -20,4 +20,11 @@ default['pi_bootstrap']['hostname_prefix'] = 'pi'
 # =========================
 
 # List of packages to install (adjust as needed)
-default['pi_bootstrap']['packages'] = %w(docker.io dmidecode)
+default['pi_bootstrap']['packages'] = %w(
+  docker.io
+  dmidecode
+  telnet
+  dnsutils
+  net-tools
+  containernetworking-plugins 
+)

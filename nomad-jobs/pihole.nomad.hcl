@@ -39,8 +39,8 @@ job "pihole" {
 
     constraint {
       attribute = "${node.class}"
-      operator  = "!="
-      value     = "vpn"
+      operator  = "="
+      value     = "pi5"
     }
 
     # ────────────────────────────────────────────────────────────────
@@ -64,8 +64,9 @@ job "pihole" {
       mode = "host"
       port "dns"   { static = 53  }
       port "dhcp"  { static = 67  }
-      port "http"  { static = 80  }  # changed from 80 → 81
       port "https" { static = 443 }
+      port "http"  { static = 80 }
+
     }
 
     # ────────────────────────────────────────────────────────────────
@@ -98,18 +99,24 @@ job "pihole" {
         }
       }
 
+      volume_mount {
+        volume      = "config"
+        destination = "/etc/pihole"
+        read_only   = false
+      }
+
+      volume_mount {
+        volume      = "dnsmasq"
+        destination = "/etc/dnsmasq.d"
+        read_only   = false
+      }
+
       config {
         image              = "pihole/pihole:latest"
         network_mode       = "host"
         privileged         = true
         image_pull_timeout = "10m"
         ports              = ["dns", "dhcp", "http", "https"]
-
-        # mount both volumes
-        volumes = [
-          "config:/etc/pihole",
-          "dnsmasq:/etc/dnsmasq.d",
-        ]
       }
 
       env = {

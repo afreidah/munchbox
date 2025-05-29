@@ -1,0 +1,10 @@
+{
+  "id": "vault_token",
+  "token": {
+    "encrypted_data": "AWyUGUISuTaijophQM0X0LlJAEKlpI+b8g1dOhJ05iZJh1DDqDOSB3tdQfzS\nHL4=\n",
+    "iv": "eY7NMdh1dKscyX0V\n",
+    "auth_tag": "M153TX+z0arEJCPyrcY9Fg==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  }
+}

@@ -17,6 +17,12 @@ job "deluge" {
 
   group "deluge" {
 
+    constraint {
+      attribute = "${node.class}"
+      operator  = "="
+      value     = "vpn"
+    }
+
     network {
       mode = "host" # Use host networking for container
 
@@ -25,9 +31,9 @@ job "deluge" {
       }
     }
 
-    volume "shared-data" {
+    volume "deluge-data" {
       type      = "host"
-      source    = "shared-data"
+      source    = "deluge-data"
       read_only = false
     }
 
@@ -38,8 +44,7 @@ job "deluge" {
         image = "linuxserver/deluge" # Deluge Docker image
         image_pull_timeout = "10m"   # Timeout for pulling image
         volumes = [
-          "shared-data:/etc/pihole",
-          "local/deluge-config:/config",   # Persistent config storage
+          "deluge-data:/config",
           "local/downloads:/downloads"     # Downloaded files storage
         ]
       }
@@ -57,7 +62,7 @@ job "deluge" {
 
         tags = [
           "traefik.enable=true",                                         # Enable Traefik
-          "traefik.http.routers.deluge.rule=Host(`deluge.alexanddakota.com`)", # Traefik routing rule
+          "traefik.http.routers.deluge.rule=Host(`deluge.lan`)", # Traefik routing rule
           "traefik.http.routers.deluge.entrypoints=https",               # Use HTTPS entrypoint
           "traefik.http.routers.deluge.tls=true",                        # Enable TLS
           "traefik.http.routers.deluge.tls.certresolver=dns",            # Use DNS cert resolver

@@ -5,7 +5,8 @@
 #apt-get update
 #apt-get install -y build-essential ruby3.1
 #gem install chef --no-document
-#ssh afreidah@$1 "curl -L https://omnitruck.chef.io/install.sh | bash"
+#ssh afreidah@$1 "sudo apt-get update; sudo apt-get install -y curl build-essential"
+ssh afreidah@$1 "curl -L https://omnitruck.chef.io/install.sh | sudo bash"
 ssh afreidah@$1 "sudo rm -rf /tmp/chef/"
 rsync -av chef/ afreidah@$1:/tmp/chef/
 ssh afreidah@$1 "sudo chef-solo --chef-license accept -c /tmp/chef/knife.rb -j /tmp/chef/nodes/node-pi-$2.json"
