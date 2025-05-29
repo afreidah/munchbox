@@ -1,0 +1,13 @@
+{
+  "run_list": [
+    "recipe[pi_bootstrap::default]",
+    "recipe[pi_bootstrap::firewall]",
+    "recipe[consul::service]",
+    "recipe[nomad::install]",
+    "recipe[nomad::firewall]"
+  ],
+  "nomad": {
+    "node_class": "pi5"
+  }
+}
+

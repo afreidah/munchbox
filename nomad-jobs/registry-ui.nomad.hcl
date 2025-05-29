@@ -8,14 +8,33 @@
 ###############################################################################
 
 job "registry-ui" {
-  datacenters = ["pi-dc"] # Nomad datacenter(s) to run in
+  datacenters = ["pi-dc"]
   type        = "service" # Service job type
 
   meta {
     run_uuid = "${uuidv4()}" # Unique run identifier
   }
 
+  update {
+    healthy_deadline  = "9m"
+    progress_deadline = "10m"
+  }
+
   group "ui" {
+    count = 1
+
+    volume "registry-ui" {
+      type      = "host"
+      source    = "registry-ui-data"
+      read_only = false
+    }
+
+    # constraint {
+    #   attribute = "${node.unique.name}"
+    #   operator  = "="
+    #   value     = "pi-222"
+    # }
+
     network {
       port "http" {
         static = 8086 # Expose UI on port 8086
@@ -32,14 +51,20 @@ job "registry-ui" {
       }
 
       config {
-        image       = "joxit/docker-registry-ui:master-debian" # UI Docker image
-        image_pull_timeout = "10m"                             # Timeout for pulling image
-        ports       = ["http"]                                 # Expose http port
+        image               = "joxit/docker-registry-ui:master-debian" # UI Docker image
+        image_pull_timeout  = "10m"                             # Timeout for pulling image
+        ports               = ["http"]                                 # Expose http port
       }
 
       service {
         name = "registry-ui" # Service name for Consul
         port = "http"        # Service port
+      }
+
+      volume_mount {
+        volume      = "registry-ui"
+        destination = "/etc/nginx/conf.d/"
+        read_only   = false
       }
     }
   }

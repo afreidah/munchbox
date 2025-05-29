@@ -28,12 +28,6 @@ default['nomad']['client']['enabled']      = true
 default['nomad']['client']['node_class']   = ''
 default['nomad']['client']['cni_path']     = '/opt/cni/bin'
 default['nomad']['client']['host_volumes'] = [
-  # Shared data volume
-  {
-    'name' => 'shared_data',
-    'path' => '/opt/nomad/shared-data',
-    'read_only' => false
-  },
   # Pi-hole config volume
   {
     'name' => 'pihole-config',
@@ -44,6 +38,36 @@ default['nomad']['client']['host_volumes'] = [
   {
     'name' => 'pihole-dnsmasq',
     'path' => '/opt/nomad/data/pihole/dnsmasq.d',
+    'read_only' => false
+  },
+  # Pi-hole unbound volume
+  {
+    'name' => 'unbound-data',
+    'path' => '/opt/nomad/data/unbound',
+    'read_only' => false
+  }
+  # grafana volume
+  {
+    'name' => 'grafana-data',
+    'path' => '/opt/nomad/data/grafana/',
+    'read_only' => false
+  }
+  # vault volume
+  {
+    'name' => 'vault-data',
+    'path' => '/opt/nomad/data/vault/',
+    'read_only' => false
+  }
+  # registry volume
+  {
+    'name' => 'registry-data',
+    'path' => '/opt/nomad/data/registry/',
+    'read_only' => false
+  }
+  # registry-ui volume
+  {
+    'name' => 'registry-ui-data',
+    'path' => '/opt/nomad/data/registry-ui/',
     'read_only' => false
   }
 ]
@@ -60,6 +84,7 @@ default['nomad']['server']['servers'] = %w(
   192.168.1.225
   192.168.1.222
   192.168.1.98
+  192.168.1.115
 )
 
 # =========================
@@ -87,5 +112,19 @@ default['nomad']['telemetry']['publish_node_metrics']          = true
 # Consul Configuration
 # =========================
 
-default['nomad']['consul']['auto_agent'] = true
+default['nomad']['consul']['auto_advertise'] = true
 default['nomad']['consul']['auto_join']  = true
+
+# =========================
+# CNI Configuration
+# =========================
+default['nomad']['cni']['version'] = 'v1.6.2'
+default['nomad']['cni']['path'] = '/opt/cni/bin'
+default['nomad']['cni']['url'] = "https://github.com/containernetworking/plugins/releases/download"
+
+# =========================
+# Vault Configuration
+# =========================
+default['nomad']['vault']['enabled'] = true
+default['nomad']['vault']['address'] = 'http://192.168.1.222:8200'
+

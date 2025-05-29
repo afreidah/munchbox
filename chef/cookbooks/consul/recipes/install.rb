@@ -77,12 +77,12 @@ group consul_group do
   system true
 end
 
-user consul_user do
-  system true
-  gid consul_group
-  home consul_data_dir
-  shell '/bin/false'
-end
+#user consul_user do
+#  system true
+#  gid consul_group
+#  home consul_data_dir
+#  shell '/bin/false'
+#end
 
 # =========================
 # Create Consul Directories
