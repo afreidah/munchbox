@@ -1,4 +1,4 @@
-###############################################################################
+# -------------------------------------------------------------------------------
 # Prometheus — Nomad Job (with persistent data under /opt/nomad/data)
 #
 # - Runs Prometheus using the official Docker image
@@ -6,9 +6,9 @@
 # - Registers with Consul for service discovery
 # - Scrapes Nomad, Node Exporter, and itself (edit scrape_configs as needed)
 # - Exposes the web UI on port 9090 (can be routed via Traefik)
-###############################################################################
+# -------------------------------------------------------------------------------
 
-# ──────────────────────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
 # 1) Make sure your Nomad client has this in /etc/nomad.d/client.hcl:
 #
 # client {
@@ -19,10 +19,9 @@
 # }
 #
 # Then `sudo systemctl restart nomad` on each node.
-# ──────────────────────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
 
-# TODO: 1921.68.1.223 is eth0 on pi5 which is 192.168.1.225 everywhere else becauseit 
-# was on wlan0 before I moved it to eth0.  Need to fix this so it works on all nodes.
+# --- NOTE: 192.168.1.223 is eth0 on pi5, which is 192.168.1.225 everywhere else because it was on wlan0 before. Fix this so it works on all nodes. ---
 
 job "prometheus" {
   datacenters = ["pi-dc"]
@@ -35,40 +34,42 @@ job "prometheus" {
   group "prometheus" {
     count = 1
 
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     # Attach the host_volume declared in client.hcl
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     volume "prometheus-data" {
       type      = "host"
       source    = "prometheus-data"
       read_only = false
     }
 
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     # Expose the Prometheus web UI on port 9090 via bridge networking
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     network {
       port "web" { static = 9090 }
       mode = "bridge"
     }
 
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     # Prometheus Task
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     task "prometheus" {
       driver = "docker"
 
+      # -------------------------------------------------------------------------
+      # Register Prometheus in Consul (with Traefik tags for routing)
+      # -------------------------------------------------------------------------
       service {
         name     = "prometheus"
         port     = "web"
         provider = "consul"
 
         tags = [
-          # Uncomment to enable Traefik routing at http://prometheus.lan
-          "traefik.enable=true",
-          "traefik.http.routers.prometheus.rule=Host(`prometheus.lan`)",
-          "traefik.http.routers.prometheus.entrypoints=web",
-          "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+          "traefik.enable=true",                                        # --- Enable Traefik ---
+          "traefik.http.routers.prometheus.rule=Host(`prometheus.lan`)",# --- Traefik routing rule ---
+          "traefik.http.routers.prometheus.entrypoints=web",            # --- Traefik entrypoint ---
+          "traefik.http.services.prometheus.loadbalancer.server.port=9090" # --- Internal service port for Traefik ---
         ]
 
         check {
@@ -96,18 +97,18 @@ job "prometheus" {
         ]
       }
 
-      # ────────────────────────────────────────────────────────────────
+      # -------------------------------------------------------------------------
       # Mount persistent data volume
-      # ────────────────────────────────────────────────────────────────
+      # -------------------------------------------------------------------------
       volume_mount {
         volume      = "prometheus-data"
         destination = "/prometheus-data"
         read_only   = false
       }
 
-      # ────────────────────────────────────────────────────────────────
+      # -------------------------------------------------------------------------
       # Supply Prometheus config as a Nomad template
-      # ────────────────────────────────────────────────────────────────
+      # -------------------------------------------------------------------------
       template {
         destination = "local/config/prometheus.yml"
         change_mode = "restart"
@@ -162,4 +163,3 @@ job "prometheus" {
     }
   }
 }
-

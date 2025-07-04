@@ -1,0 +1,40 @@
+# -------------------------------------------------------------------------------
+# Semgrep rules for Nomad job files (HCL)
+# -------------------------------------------------------------------------------
+
+rules:
+  - id: avoid-root-user
+    pattern: PUID = "0"
+    message: "Avoid running containers as root user (PUID=0)"
+    severity: WARNING
+    languages: [hcl]
+
+  - id: avoid-privileged
+    pattern: privileged = true
+    message: "Avoid running containers with privileged = true unless absolutely necessary"
+    severity: WARNING
+    languages: [hcl]
+
+  - id: require-resources
+    pattern: |
+      task $TASK {
+        ...
+        resources {
+          ...
+        }
+      }
+    message: "All tasks should specify resource limits (cpu, memory)"
+    severity: INFO
+    languages: [hcl]
+
+  - id: avoid-hardcoded-secrets
+    pattern: '"*password*" = $VAL'
+    message: "Avoid hardcoding secrets or passwords in job files"
+    severity: ERROR
+    languages: [hcl]
+
+  - id: avoid-latest-tag
+    pattern: image = "$IMG:latest"
+    message: "Avoid using the 'latest' tag for Docker images; use a specific version"
+    severity: WARNING
+    languages: [hcl]

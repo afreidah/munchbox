@@ -1,26 +1,35 @@
-# cdktf and terraform ignores
+# -------------------------------------------------------------------------------
+# Munchbox .gitignore
+#
+# - Ignores Terraform and CDKTF state, logs, and generated files
+# - Ignores Go build/test artifacts and coverage outputs
+# - Ignores Chef, Nomad, and encrypted secrets
+# -------------------------------------------------------------------------------
+
+# --- Terraform & CDKTF ---
 .terraform
 cdktf.out
 cdktf.log
 *terraform.*.tfstate*
 generated
+
+# --- Tags ---
 *tags*
 
-# src https://github.com/github/gitignore/blob/master/Go.gitignore
-# Binaries for programs and plugins
+# --- Go Build Artifacts ---
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
 
-# Test binary, built with `go test -c`
+# --- Go Test & Coverage Outputs ---
 *.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+# --- Chef & Nomad ---
 nomad-jobs/traefik-vars.hcl
 encrypted_data_bag_secret
 .kitchen/*
 chef/cookbooks/vault/files/vault-armv6
+chef/community-cookbooks/*

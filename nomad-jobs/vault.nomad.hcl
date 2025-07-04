@@ -1,14 +1,15 @@
-###############################################################################
+# -------------------------------------------------------------------------------
 # Vault — Nomad Job
+#
 # - Runs Vault server in dev or HA mode (adjust as needed)
 # - Persists data to host volume for durability
 # - Exposes HTTP API on port 8200
 # - Registers with Consul for service discovery
-###############################################################################
+# -------------------------------------------------------------------------------
 
 job "vault" {
-  datacenters = ["pi-dc"]
-  type        = "service"
+  datacenters = ["pi-dc"]   # --- Nomad datacenter(s) to run in ---
+  type        = "service"   # --- Service job type ---
 
   update {
     healthy_deadline  = "9m"
@@ -16,7 +17,7 @@ job "vault" {
   }
 
   group "vault" {
-    count = 1  # For HA, deploy more than one and configure cluster join
+    count = 1  # --- For HA, deploy more than one and configure cluster join ---
 
     constraint {
       attribute = "${node.unique.name}"
@@ -26,7 +27,7 @@ job "vault" {
 
     network {
       port "http" {
-        static = 8200
+        static = 8200 # --- Expose Vault HTTP API on port 8200 ---
       }
     }
 
@@ -37,14 +38,14 @@ job "vault" {
     }
 
     task "vault" {
-      driver            = "docker"
+      driver = "docker" # --- Use Docker driver ---
 
       config {
-        image = "192.168.1.115:5000/my-vault-arm6:latest"
-        force_pull = false
+        image              = "192.168.1.115:5000/my-vault-arm6:latest"
+        force_pull         = false
         image_pull_timeout = "30m"
-        ports = ["http"]
-        args  = [
+        ports              = ["http"]
+        args               = [
           "server",
           "-config=/vault/config/vault.hcl"
         ]
@@ -70,16 +71,16 @@ job "vault" {
       }
 
       service {
-        name       = "vault"
-        port       = "http"
-        provider   = "consul"
+        name     = "vault"   # --- Service name for Consul ---
+        port     = "http"    # --- Service port ---
+        provider = "consul"  # --- Register with Consul ---
 
         check {
-          name     = "http"
-          type     = "http"
-          path     = "/v1/sys/health"
-          interval = "10s"
-          timeout  = "2s"
+          name     = "http"        # --- Health check name ---
+          type     = "http"        # --- HTTP health check ---
+          path     = "/v1/sys/health" # --- Path to check ---
+          interval = "10s"         # --- Check interval ---
+          timeout  = "2s"          # --- Timeout for check ---
         }
       }
 
@@ -102,10 +103,9 @@ job "vault" {
       }
 
       resources {
-        cpu    = 100
-        memory = 128
+        cpu    = 100   # --- CPU MHz ---
+        memory = 128   # --- Memory MB ---
       }
     }
   }
 }
-
