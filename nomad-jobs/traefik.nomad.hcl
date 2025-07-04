@@ -1,16 +1,15 @@
-###############################################################################
+# -------------------------------------------------------------------------------
 # Traefik Reverse Proxy — Nomad Job (values pulled from Consul KV)
 #
 # - Exposes dashboard locally (8081)
 # - Exposes internal HTTP (80)
 # - Exposes HTTPS via VPN port (fetched from Consul KV)
 # - Uses Cloudflare API token (fetched from Consul KV)
-###############################################################################
+# -------------------------------------------------------------------------------
 
-
-# ──────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
 #  Render the job with values from Consul KV
-# ──────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
 
 job "traefik" {
   region      = "global"
@@ -20,21 +19,21 @@ job "traefik" {
   group "traefik" {
     count = 1
 
-    # Only run on nodes labeled as "vpn"
+    # --- Only run on nodes labeled as "vpn" ---
     constraint {
       attribute = "${node.class}"
       operator  = "="
       value     = "vpn"
     }
 
-    # Bind static ports directly via host networking
+    # --- Bind static ports directly via host networking ---
     network {
       port "http"      { static = 80 }
       port "https"     { static = 48060 }
       port "dashboard" { static = 8081 }
     }
 
-    # Expose Traefik service to Consul for discovery
+    # --- Expose Traefik service to Consul for discovery ---
     service {
       name     = "traefik"
       port     = "https"
@@ -49,7 +48,7 @@ job "traefik" {
       }
     }
 
-    # Shared volume for config and ACME certs
+    # --- Shared volume for config and ACME certs ---
     volume "shared_data" {
       type      = "host"
       source    = "shared_data"
@@ -84,6 +83,9 @@ job "traefik" {
         max_file_size = 5
       }
 
+      # -------------------------------------------------------------------------
+      # traefik.toml template (rendered from Consul KV)
+      # -------------------------------------------------------------------------
       template {
         destination = "local/traefik.toml"
         perms       = "0644"

@@ -1,15 +1,27 @@
 ---
 driver:
-  name: docker
+  name: vagrant
+
+transport:
+  name: ssh
 
 provisioner:
-  name: chef_solo
+  name: chef_zero
+  always_update_cookbooks: true
+
+verifier:
+  name: inspec
 
 platforms:
-  - name: ubuntu-20.04
+  - name: debian-12-arm64
+    driver_config:
+      box: generic/debian12-arm64
+      box_url: https://vagrantcloud.com/generic/boxes/debian12-arm64
+      provider: virtualbox # or "parallels" if you use Parallels Desktop
 
 suites:
   - name: default
     run_list:
       - recipe[pi_bootstrap::default]
     attributes:
+

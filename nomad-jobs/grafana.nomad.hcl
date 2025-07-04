@@ -1,4 +1,4 @@
-###############################################################################
+# -------------------------------------------------------------------------------
 # Grafana — Nomad Job (with persistent volume under /opt/nomad/data)
 #
 # - Runs Grafana using the official Docker image
@@ -6,9 +6,9 @@
 # - Registers with Consul for service discovery
 # - Routes via Traefik at http://grafana.lan
 # - Uses bridge networking (default, sufficient for Grafana)
-###############################################################################
+# -------------------------------------------------------------------------------
 
-# ──────────────────────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
 # 1) Make sure your Nomad client has this in /etc/nomad.d/client.hcl:
 #
 # client {
@@ -19,7 +19,7 @@
 # }
 #
 # Then `sudo systemctl restart nomad` on each node.
-# ──────────────────────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
 
 job "grafana" {
   datacenters = ["pi-dc"]
@@ -38,50 +38,50 @@ job "grafana" {
     #   value     = "pi5"
     # }
 
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     # Attach the host_volume declared in client.hcl
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     volume "data" {
       type      = "host"
       source    = "grafana-data"
       read_only = false
     }
 
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     # Bridge networking; expose only the Grafana web UI port (3000)
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     network {
       port "web" { static = 3000 }
       mode = "bridge"
     }
 
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     # Grafana Task
-    # ────────────────────────────────────────────────────────────────
+    # ---------------------------------------------------------------------------
     task "grafana" {
       driver = "docker"
 
-      # ────────────────────────────────────────────────────────────────
+      # -------------------------------------------------------------------------
       # Register Grafana in Consul (with Traefik tags for routing)
-      # ────────────────────────────────────────────────────────────────
+      # -------------------------------------------------------------------------
       service {
         name     = "grafana"
         port     = "web"
         provider = "consul"
 
         tags = [
-          "traefik.enable=true",
-          "traefik.http.routers.grafana.rule=Host(`grafana.lan`)",
-          "traefik.http.routers.grafana.entrypoints=web", # use "websecure" for HTTPS
-          "traefik.http.services.grafana.loadbalancer.server.port=3000"
+          "traefik.enable=true",                                        # --- Enable Traefik ---
+          "traefik.http.routers.grafana.rule=Host(`grafana.lan`)",      # --- Traefik routing rule ---
+          "traefik.http.routers.grafana.entrypoints=web",               # --- Use "websecure" for HTTPS ---
+          "traefik.http.services.grafana.loadbalancer.server.port=3000" # --- Internal service port for Traefik ---
         ]
 
         check {
           name     = "grafana-http"
-          type     = "http"
-          path     = "/login"
-          interval = "10s"
-          timeout  = "2s"
+          type     = "http"         # --- HTTP health check ---
+          path     = "/login"       # --- Path to check ---
+          interval = "10s"          # --- Check interval ---
+          timeout  = "2s"           # --- Timeout for check ---
         }
       }
 
@@ -93,7 +93,7 @@ job "grafana" {
 
       env = {
         TZ = "America/Los_Angeles"
-        # GF_SECURITY_ADMIN_PASSWORD = "changeme" # (optional) set admin password at boot
+        # GF_SECURITY_ADMIN_PASSWORD = "changeme" # --- (optional) set admin password at boot ---
       }
 
       resources {
@@ -116,4 +116,3 @@ job "grafana" {
     }
   }
 }
-

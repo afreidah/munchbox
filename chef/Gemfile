@@ -1,27 +1,38 @@
-# Gemfile
+# Gemfile for Chef Infra Client and related tools 
 # frozen_string_literal: true
 
+#----------------------------------------
+# Source
+#----------------------------------------
 source 'https://rubygems.org'
 
+#----------------------------------------
+# Ruby Version
+#----------------------------------------
 # Pin a Ruby version compatible with your environment
 ruby '>= 3.1', '< 4.0'
 
+#----------------------------------------
+# Core Dependencies
+#----------------------------------------
 gem 'chef', '~> 18.7', require: false # Chef Infra Client library
 
+#----------------------------------------
+# Development & Test Dependencies
+#----------------------------------------
 group :development do
-  gem 'cookstyle'
-  gem 'berkshelf'
-  gem 'simplecov'
-  gem 'knife'
-  gem 'knife-solo'
-  gem 'knife-solo_data_bag'
-  gem 'knife-zero'
-  gem 'rake'
-  gem 'colorize'
-  gem 'test-kitchen'
-  gem 'kitchen-docker'
-  gem 'kitchen-vagrant'
-  gem 'kitchen-inspec'
-  gem 'inspec'
-  gem 'rspec'
+  gem 'cookstyle'           # Linting and style checks for Chef cookbooks
+  gem 'berkshelf'           # Cookbook dependency management
+  gem 'simplecov'           # Code coverage
+  gem 'knife'               # Chef command-line tool
+  gem 'knife-solo'          # Knife plugin for solo mode
+  gem 'knife-solo_data_bag' # Knife plugin for data bags in solo mode
+  gem 'knife-zero'          # Knife plugin for remote Chef runs
+  gem 'rake'                # Task runner
+  gem 'colorize'            # Colored terminal output
+  gem 'test-kitchen'        # Test harness for infrastructure code
+  gem 'kitchen-vagrant'     # Test Kitchen Vagrant driver
+  gem 'kitchen-inspec'      # Test Kitchen InSpec verifier
+  gem 'inspec'              # Compliance and testing framework
+  gem 'rspec'               # Testing framework
 end
