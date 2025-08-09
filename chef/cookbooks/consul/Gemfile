@@ -1,0 +1,63 @@
+# frozen_string_literal: true
+
+# ------------------------------------------------------------------------------
+#  Gemfile — Consul Cookbook Development & Testing Dependencies
+# ------------------------------------------------------------------------------
+#
+#  Ruby version is locked to 3.3.6 for compatibility with current Chef, Kitchen,
+#  and Cinc toolchain. Update with care and test all integrations if bumping Ruby.
+#
+#  Groups:
+#    :development, :test — All gems here are only needed for authoring, testing,
+#                          and CI. Nothing here is needed for Chef-Server use.
+# ------------------------------------------------------------------------------
+
+source 'https://rubygems.org'
+
+ruby '>= 3.3', '< 3.5'
+
+# ------------------------------------------------------------------------------
+#  Core Chef & Testing Gems
+# ------------------------------------------------------------------------------
+
+group :development, :test do
+  # --- Chef/Cinc CLI tools ---
+  gem 'cinc' # Cinc CLI: command-line interface for Cinc (Chef) tools.
+
+  # --- Utilities & Ruby stdlib stuff ---
+  gem 'archive-tar-minitar'               # Tarball archiving (used by some Chef tools)
+  gem 'syslog', '~> 0.3'                  # Syslog Ruby bindings (for syslog support).
+
+  # --- CI & Notifications ---
+  gem 'slack-notifier', require: false # Slack notifications for CI events (optional, but useful).
+
+  # --- Testing ---
+  gem 'berkshelf'                         # Berkshelf: dependency management for Chef cookbooks.
+  gem 'rubocop'                           # RuboCop: Ruby static code analyzer and formatter.
+  gem 'pry'                               # Pry: interactive Ruby shell for debugging and exploration.
+  gem 'csv'                               # CSV: Ruby standard library for handling CSV files.
+  gem 'inspec', '~> 5.22'                 # InSpec: compliance and integration testing.
+  gem 'rspec', '~> 3.11'                  # RSpec: testing framework for Ruby (unit tests, etc.).
+  gem 'rspec-core', '~> 3.12'             # RSpec core library (required by RSpec).
+  gem 'rspec-expectations', '~> 3.12'     # RSpec expectations library (required by RSpec).
+  gem 'rspec-mocks', '~> 3.12'            # RSpec mocks library (required by RSpec).
+  gem 'simplecov'                         # Test coverage reporting.
+  gem 'simplecov-console'                 # SimpleCov console formatter (for better output in CI).
+  gem 'chefspec', '~> 9.3.8'              # ChefSpec: unit testing framework for Chef cookbooks.
+  gem 'guard'                             # Guard: file watcher for automatic test runs.
+  gem 'guard-shell'                       # Guard shell plugin for running shell commands (e.g., ChefSpec).
+
+  # --- Linting & Style ---
+  gem 'cookstyle'                         # Cookstyle: Ruby style and linting for Chef cookbooks.
+  gem 'colorize'                          # Colored output (makes lint and test output easier to read).
+  gem 'ruby-lsp'                          # Ruby Language Server Protocol support for IDEs/editors.
+  gem 'syntax_tree'                       # Syntax tree parsing for Ruby (used by Cookstyle).
+
+  # --- Test Kitchen & Drivers ---
+  gem 'test-kitchen'                      # Test Kitchen core.
+  gem 'kitchen-inspec'                    # InSpec verifier for Kitchen.
+  gem 'kitchen-docker'                    # Dokken driver for Kitchen (Docker-based testing).
+
+  # --- Build & Docs ---
+  gem 'rake' # Standard build tasks.
+end

@@ -4,7 +4,7 @@
 #
 # Copyright:: 2024, Alex Freidah, All Rights Reserved.
 #
-# Cookbook metadata for Consul installation and configuration.
+# Cookbook:: metadata for Consul installation and configuration.
 # --------------------------------------------------------------------
 
 name             'consul'
