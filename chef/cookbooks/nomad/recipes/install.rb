@@ -1,23 +1,24 @@
 # frozen_string_literal: true
-#
+
+# --------------------------------------------------------------------
 # Cookbook:: nomad
 # Recipe:: install
 #
 # Copyright:: 2024, Alex Freidah, All Rights Reserved.
 #
 # Downloads and installs the Nomad binary, sets up configuration, and enables the service.
-#
+# --------------------------------------------------------------------
 
-# =========================
+# --------------------------------------------------------------------
 # Include Firewall Recipe and Helpers
-# =========================
+# --------------------------------------------------------------------
 
 include_recipe 'nomad::firewall'
 Chef::Recipe.include(Nomad::Helpers)
 
-# =========================
+# --------------------------------------------------------------------
 # Determine Architecture for Download
-# =========================
+# --------------------------------------------------------------------
 
 arch = node['kernel']['machine']
 
@@ -32,9 +33,9 @@ else
   platform_arch = arch
 end
 
-# =========================
+# --------------------------------------------------------------------
 # Create Nomad Config and Data Directories
-# =========================
+# --------------------------------------------------------------------
 
 [
   node['nomad']['config_dir'],
@@ -48,15 +49,12 @@ end
   end
 end
 
-# =========================
+# --------------------------------------------------------------------
 # Download and Extract Nomad Binary
-# =========================
+# --------------------------------------------------------------------
 
-# ex: produced format: https://releases.hashicorp.com/nomad/x.x.x/nomad_x.x.x_linux_amd64.zip
-# ex: produced format: https://releases.hashicorp.com/nomad/x.x.x/nomad_x.x.x_linux_arm64.zip
-# ex: produced format: https://releases.hashicorp.com/nomad/x.x.x/nomad_x.x.x_linux_arm.zip
 nomad_download = "nomad_#{node['nomad']['version']}_linux_#{platform_arch}.zip"
-download_url = "https://releases.hashicorp.com/nomad/#{node['nomad']['version']}/#{filename}"
+download_url   = "https://releases.hashicorp.com/nomad/#{node['nomad']['version']}/#{nomad_download}"
 
 remote_file nomad_download do
   source     download_url
@@ -74,9 +72,9 @@ bash 'install-nomad' do
   action :nothing
 end
 
-# =========================
+# --------------------------------------------------------------------
 # Create Nomad Config File
-# =========================
+# --------------------------------------------------------------------
 
 token = encrypted_data_bag_item('vault', 'vault_token')
 
@@ -90,9 +88,9 @@ template '/etc/nomad.d/server.hcl' do
   notifies :restart, 'service[nomad]', :delayed
 end
 
-# =========================
+# --------------------------------------------------------------------
 # Render systemd Unit and Reload Daemon
-# =========================
+# --------------------------------------------------------------------
 
 execute 'systemctl-daemon-reload' do
   command 'systemctl daemon-reload'
@@ -113,9 +111,9 @@ template '/etc/systemd/system/nomad.service' do
   notifies :run, 'execute[systemctl-daemon-reload]', :immediately
 end
 
-# =========================
+# --------------------------------------------------------------------
 # Create Host Volume Mount Directories
-# =========================
+# --------------------------------------------------------------------
 
 node['nomad']['client']['host_volumes'].each do |volume|
   directory volume['path'] do
@@ -127,9 +125,9 @@ node['nomad']['client']['host_volumes'].each do |volume|
   end
 end
 
-# =========================
+# --------------------------------------------------------------------
 # Enable and Start Nomad Service
-# =========================
+# --------------------------------------------------------------------
 
 service 'nomad' do
   provider Chef::Provider::Service::Systemd

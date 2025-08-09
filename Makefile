@@ -49,3 +49,36 @@ nomad-checkov:
 
 nomad-test:
 	bash scripts/nomad-test.sh
+
+# -------------------------------------------------------------------------------
+# CDKTF/ Terraform/Cloud Security Testing Tasks (cdktf/*)
+# -------------------------------------------------------------------------------
+
+.PHONY: cdktf-synth
+
+cdktf-synth:
+	@echo "Running synth"
+
+cdktf-trivy: cdktf-synth
+	@for dir in $$(find cdktf -mindepth 1 -maxdepth 1 -type d); do \
+		if [ -d "$$dir/cdktf.out" ]; then \
+			echo "Running Trivy scan in $$dir/cdktf.out..."; \
+			trivy config --scan terraform --exit-code 1 --severity HIGH,CRITICAL "$$dir/cdktf.out" || true; \
+		fi \
+	done
+
+cdktf-checkov: cdktf-synth
+	@for dir in $$(find cdktf -mindepth 1 -maxdepth 1 -type d); do \
+		if [ -d "$$dir/cdktf.out" ]; then \
+			echo "Running Checkov scan in $$dir/cdktf.out..."; \
+			checkov -d "$$dir/cdktf.out" || true; \
+		fi \
+	done
+
+cdktf-fmt:
+	@for dir in $$(find cdktf -mindepth 1 -maxdepth 1 -type d); do \
+		if ls "$$dir"/*.go >/dev/null 2>&1; then \
+			echo "Running go fmt in $$dir..."; \
+			cd "$$dir" && go fmt ./...; \
+		fi \
+	done

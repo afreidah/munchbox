@@ -1,3 +1,14 @@
+# frozen_string_literal: true
+
+# --------------------------------------------------------------------
+# Cookbook:: nomad
+# Metadata
+#
+# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+#
+# Cookbook metadata for Nomad installation and configuration.
+# --------------------------------------------------------------------
+
 name             'nomad'
 maintainer       'Alex Freidah'
 maintainer_email 'alex.freidah@gmail.com'

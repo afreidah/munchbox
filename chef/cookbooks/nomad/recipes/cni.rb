@@ -1,11 +1,17 @@
 # frozen_string_literal: true
-#
+
+# --------------------------------------------------------------------
 # Cookbook:: nomad
 # Recipe:: cni
 #
 # Copyright:: 2024, Alex Freidah, All Rights Reserved.
 #
-# # Installs the CNI plugins required for Nomad networking.
+# Installs the CNI plugins required for Nomad networking.
+# --------------------------------------------------------------------
+
+# --------------------------------------------------------------------
+# Determine Platform Architecture
+# --------------------------------------------------------------------
 
 arch = node['kernel']['machine']
 
@@ -20,8 +26,16 @@ else
   platform_arch = arch
 end
 
+# --------------------------------------------------------------------
+# Build CNI Plugin Download URL
+# --------------------------------------------------------------------
+
 base_url = "#{node['nomad']['cni']['url']}/cni-plugin-linux"
 full_url = "#{base_url}-#{platform_arch}-#{node['nomad']['cni']['version']}.tgz"
+
+# --------------------------------------------------------------------
+# Ensure CNI Directory Exists
+# --------------------------------------------------------------------
 
 directory node['nomad']['cni']['path'] do
   owner 'root'
@@ -29,6 +43,10 @@ directory node['nomad']['cni']['path'] do
   mode '0755'
   action :create
 end
+
+# --------------------------------------------------------------------
+# Download and Extract CNI Plugins
+# --------------------------------------------------------------------
 
 remote_file '/tmp/cni-plugins.tgz' do
   source full_url
@@ -42,6 +60,10 @@ archive_file '/tmp/cni-plugins.tgz' do
   action :nothing
 end
 
+# --------------------------------------------------------------------
+# Configure Kernel Bridge Settings for CNI Networking
+# --------------------------------------------------------------------
+
 template '/etc/sysctl.d/bridge.conf' do
   source 'bridge.conf.erb'
   owner 'root'
@@ -53,4 +75,3 @@ end
 execute 'apply-sysctl' do
   command 'sysctl --system'
   action :nothing
-end

@@ -1,18 +1,23 @@
 # frozen_string_literal: true
-#
+
+# --------------------------------------------------------------------
 # Cookbook:: consul
 # Recipe:: service
 #
 # Copyright:: 2024, Alex Freidah, All Rights Reserved.
 #
 # Configures Consul service directories and renders the main server configuration.
-#
+# --------------------------------------------------------------------
+
+# --------------------------------------------------------------------
+# Include Consul Install Recipe
+# --------------------------------------------------------------------
 
 include_recipe 'consul::install'
 
-# =========================
+# --------------------------------------------------------------------
 # Ensure Consul Config Directory Ownership
-# =========================
+# --------------------------------------------------------------------
 
 directory node['consul']['config_dir'] do
   owner  node['consul']['service_user']
@@ -20,9 +25,9 @@ directory node['consul']['config_dir'] do
   mode   '0755'
 end
 
-# =========================
+# --------------------------------------------------------------------
 # Render Consul Server JSON Configuration
-# =========================
+# --------------------------------------------------------------------
 
 template ::File.join(node['consul']['config_dir'], 'server.json') do
   source 'consul-config.json.erb'

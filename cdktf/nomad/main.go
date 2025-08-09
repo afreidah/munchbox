@@ -1,3 +1,12 @@
+// --------------------------------------------------------------------
+// Program: Nomad CDKTF Stack
+// File: main.go
+//
+// Copyright: 2024, Alex Freidah, All Rights Reserved.
+//
+// Registers Nomad jobs from HCL files using the Terraform CDK for Go.
+// --------------------------------------------------------------------
+
 package main
 
 import (
@@ -16,6 +25,9 @@ import (
 	"cdk.tf/go/stack/generated/hashicorp/nomad/provider"
 )
 
+// --------------------------------------------------------------------
+// Register a Nomad job resource from HCL
+// --------------------------------------------------------------------
 func register_job(stack cdktf.TerraformStack, id string, hcl string) {
 	job.NewJob(stack, jsii.String(id), &job.JobConfig{
 		Jobspec:             jsii.String(hcl),
@@ -24,6 +36,9 @@ func register_job(stack cdktf.TerraformStack, id string, hcl string) {
 	})
 }
 
+// --------------------------------------------------------------------
+// Main entrypoint: parses flags, loads jobs, and synthesizes the stack
+// --------------------------------------------------------------------
 func main() {
 	// --- CLI Flags ---
 	jobsEnv := os.Getenv("JOBS")

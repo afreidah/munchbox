@@ -1,65 +1,70 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# nomad.hcl  —  Pi-225 (first server) in mixed server+client mode
-# ─────────────────────────────────────────────────────────────────────────────
+# --------------------------------------------------------------------
+# Cookbook:: nomad
+# Template:: config.hcl.erb
+#
+# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+#
+# Main configuration for Nomad server/client node.
+# --------------------------------------------------------------------
 
-###########################
+# --------------------------------------------------------------------
 # Global Settings
-###########################
-data_dir  = "<%= node['nomad']['data_dir'] %>"  # where Nomad stores its state
-bind_addr = "<%= node['nomad']['bind_addr'] %>"  # this host’s LAN IP
+# --------------------------------------------------------------------
+data_dir  = "<%= node['nomad']['data_dir'] %>"      # Where Nomad stores its state
+bind_addr = "<%= node['nomad']['bind_addr'] %>"     # This host’s LAN IP
 
-region     = "global"                # must match across cluster
+region     = "global"                               # Must match across cluster
 datacenter = "<%= node['nomad']['datacenter'] %>"
 
-###########################
-# How this node advertises itself
-###########################
+# --------------------------------------------------------------------
+# Advertise Settings
+# --------------------------------------------------------------------
 advertise {
-  http = "<%= node['nomad']['bind_addr'] %>:4646"         # API endpoint
-  rpc  = "<%= node['nomad']['bind_addr'] %>:4647"         # Raft RPC endpoint
-  serf = "<%= node['nomad']['bind_addr'] %>:4648"         # Serf LAN gossip
+  http = "<%= node['nomad']['bind_addr'] %>:4646"  # API endpoint
+  rpc  = "<%= node['nomad']['bind_addr'] %>:4647"  # Raft RPC endpoint
+  serf = "<%= node['nomad']['bind_addr'] %>:4648"  # Serf LAN gossip
 }
 
-###########################
+# --------------------------------------------------------------------
 # Server Configuration
-###########################
+# --------------------------------------------------------------------
 server {
-  enabled          = <%= node['nomad']['server']['enabled'] %>        # run in server mode
-  bootstrap_expect = <%= node['nomad']['server']['servers'].count %>  # wait for configured servers total
-  raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %>          # Raft heartbeat multiplier
+  enabled          = <%= node['nomad']['server']['enabled'] %>        # Run in server mode
+  bootstrap_expect = <%= node['nomad']['server']['servers'].count %>  # Wait for configured servers total
+  raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %> # Raft heartbeat multiplier
 
   server_join {
     retry_join     = [
       <% @retry_join.each do |j| %>
-        "<%= j %>",            # will add first
+        "<%= j %>",                # Join address
       <% end %>
     ]
-    retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"  # seconds
-    retry_max      = <%= node['nomad']['server']['retry_max'] %>         # seconds
+    retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"  # Seconds
+    retry_max      = <%= node['nomad']['server']['retry_max'] %>         # Max attempts
   }
 }
 
-###########################
+# --------------------------------------------------------------------
 # Client Configuration
-###########################
+# --------------------------------------------------------------------
 client {
   enabled    = <%= node['nomad']['client']['enabled'] %>
   <% if node['nomad']['client']['node_class'] != '' %>
   node_class = "<%= node['nomad']['client']['node_class'] %>"
   <% end %>
-  cni_path   = "<%= node['nomad']['client']['cni_path'] %>"  # path to CNI plugin binaries
+  cni_path   = "<%= node['nomad']['client']['cni_path'] %>"  # Path to CNI plugin binaries
 
 <% node['nomad']['client']['host_volumes'].each do |volume| %>
   host_volume "<%= volume['name'] %>" {
-    path      = "<%= volume['path'] %>"  # shared data on host
-    read_only = <%= volume['read_only'] %> 
+    path      = "<%= volume['path'] %>"      # Shared data on host
+    read_only = <%= volume['read_only'] %>
   }
 <% end %>
 }
 
-###########################
+# --------------------------------------------------------------------
 # Docker Task Plugin
-###########################
+# --------------------------------------------------------------------
 plugin "docker" {
   config {
     allow_privileged = <%= node['nomad']['docker']['allow_privileged'] %>
@@ -70,19 +75,19 @@ plugin "docker" {
   }
 }
 
-###########################
+# --------------------------------------------------------------------
 # Consul Integration
-###########################
+# --------------------------------------------------------------------
 consul {
-  address          = "<%= node['nomad']['bind_addr'] %>:8500"  # this node’s Consul agent
+  address          = "<%= node['nomad']['bind_addr'] %>:8500"  # This node’s Consul agent
   auto_advertise   = <%= node['nomad']['consul']['auto_advertise'] %>
   client_auto_join = <%= node['nomad']['consul']['auto_join'] %>
 }
 
 <% if node['nomad']['telemetry']['enabled'] %>
-###########################
+# --------------------------------------------------------------------
 # Telemetry Integration
-###########################
+# --------------------------------------------------------------------
 telemetry {
   collection_interval = "<%= node['nomad']['telemetry']['collection_interval'] %>"
   disable_hostname = <%= node['nomad']['telemetry']['disable_hostname'] %>
@@ -93,12 +98,12 @@ telemetry {
 <% end %>
 
 <% if node['nomad']['vault']['enabled'] %>
-###########################
+# --------------------------------------------------------------------
 # Vault Integration
-###########################
+# --------------------------------------------------------------------
 vault {
   enabled          = true
   address          = "<%= node['nomad']['vault']['address'] %>"
   token            = "<%= @token || '' %>"
 }
-
+<% end %>
