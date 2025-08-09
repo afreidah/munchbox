@@ -1,3 +1,12 @@
+// --------------------------------------------------------------------
+// Program: Cloudflare CDKTF Stack
+// File: main.go
+//
+// Copyright: 2024, Alex Freidah, All Rights Reserved.
+//
+// Configures Cloudflare provider, creates a DNS zone, and adds a subdomain A record.
+// --------------------------------------------------------------------
+
 package main
 
 import (
@@ -13,24 +22,22 @@ import (
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
 )
 
-// main is the entry point for the CDKTF application.
-// It configures the Cloudflare provider, creates a DNS zone, and adds a subdomain A record.
+// --------------------------------------------------------------------
+// Main entrypoint: configures Cloudflare provider, DNS zone, and record
+// --------------------------------------------------------------------
 func main() {
-	// Initialize the CDKTF application
+	// --- Initialize the CDKTF application ---
 	app := cdktf.NewApp(nil)
 
-	// Create a new Terraform stack
+	// --- Create a new Terraform stack ---
 	stack := cdktf.NewTerraformStack(app, jsii.String("cf"))
 
 	// --- Provider Configuration ---
-	// Configure the Cloudflare provider with an API token.
-	// TODO: Move sensitive values like API tokens to environment variables or a secrets manager.
 	provider.NewCloudflareProvider(stack, jsii.String("cloudflare-provider"), &provider.CloudflareProviderConfig{
 		ApiToken: jsii.String(os.Getenv("CLOUDFLARE_API_TOKEN")),
 	})
 
 	// --- Zone Resource ---
-	// Define the Cloudflare DNS zone for the domain.
 	zone := zone.NewZone(stack, jsii.String("alexanddakota_com"), &zone.ZoneConfig{
 		Account: &zone.ZoneAccount{Id: jsii.String("023e105f4ecef8ad9ca31a8372d0c353")},
 		Name:    jsii.String("alexanddakota.com"),
@@ -38,7 +45,6 @@ func main() {
 	})
 
 	// --- DNS Record Resource ---
-	// Create an A record for the 'traefik' subdomain.
 	dnsrecord.NewDnsRecord(stack, jsii.String("traefik_subdomain"), &dnsrecord.DnsRecordConfig{
 		ZoneId:    zone.Id(),
 		Name:      jsii.String("traefik"),
@@ -49,6 +55,6 @@ func main() {
 		DependsOn: &[]cdktf.ITerraformDependable{zone},
 	})
 
-	// Synthesize the Terraform configuration
+	// --- Synthesize the Terraform configuration ---
 	app.Synth()
 }
