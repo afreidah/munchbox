@@ -1,0 +1,83 @@
+# --------------------------------------------------------------------
+# Consul Agent Configuration (HCL)
+# Works for both servers and clients (node-driven)
+# --------------------------------------------------------------------
+
+datacenter   = "<%= node['consul']['datacenter'] %>"
+node_name    = "<%= node['consul']['node_name'] %>"
+data_dir     = "<%= node['consul']['data_dir'] %>"
+
+bind_addr      = "<%= node['consul']['bind_addr'] %>"
+advertise_addr = "<%= node['consul']['advertise_addr'] %>"
+
+leave_on_terminate   = true
+rejoin_after_leave   = true
+disable_update_check = true
+log_level            = "<%= node['consul']['log_level'] || 'INFO' %>"
+
+ui_config {
+  enabled = <%= node['consul']['ui'] ? 'true' : 'false' %>
+}
+
+# Keep API/UI local; expose via Traefik internal if you want browser access.
+client_addr = "127.0.0.1"
+addresses {
+  http = "127.0.0.1"
+  dns  = "0.0.0.0"
+}
+
+ports {
+  http = 8500
+  dns  = 8600
+}
+
+# --------------------------------------------------------------------
+# ACLs
+# --------------------------------------------------------------------
+acl {
+  enabled                  = true
+  default_policy           = "deny"
+  down_policy              = "extend-cache"
+  enable_token_persistence = true
+
+  <% agent   = node.dig('consul','acl','tokens','agent') %>
+  <% default = node.dig('consul','acl','tokens','default') %>
+  <% if agent || default %>
+  tokens {
+    <% if agent %>agent   = "<%= agent %>"<% end %>
+    <% if default %><%= agent ? "\n    " : "" %>default = "<%= default %>"<% end %>
+  }
+  <% end %>
+}
+
+# --------------------------------------------------------------------
+# Gossip (Serf) Encryption
+# --------------------------------------------------------------------
+encrypt                 = "<%= @serf_key || node['consul']['serf_key'] %>"
+encrypt_verify_incoming = true
+encrypt_verify_outgoing = true
+
+# --------------------------------------------------------------------
+# Role: server or client
+# --------------------------------------------------------------------
+server = <%= node['consul']['server']['enable'] ? 'true' : 'false' %>
+<% if node['consul']['server']['enable'] %>
+bootstrap_expect = <%= node['consul']['server']['bootstrap_expect'] %>
+autopilot {
+  cleanup_dead_servers   = true
+  last_contact_threshold = "200ms"
+  max_trailing_logs      = 250
+}
+<% end %>
+
+# --------------------------------------------------------------------
+# Cluster Join & DNS
+# --------------------------------------------------------------------
+retry_join = <%= (node['consul']['retry_join'] || []).to_a.to_json %>
+recursors  = <%= (node['consul']['recursors']  || %w(1.1.1.1 9.9.9.9)).to_json %>
+
+# --------------------------------------------------------------------
+# Telemetry / Performance
+# --------------------------------------------------------------------
+telemetry   { prometheus_retention_time = "24h" }
+performance { raft_multiplier = 1 }

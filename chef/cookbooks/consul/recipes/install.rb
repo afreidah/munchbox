@@ -1,77 +1,60 @@
 # frozen_string_literal: true
+
+# ------------------------------------------------------------------------------
+#  install.rb — Installs Consul using official HashiCorp binaries or packages
 #
-# --------------------------------------------------------------------
-# Cookbook:: consul
-# Recipe:: install
-#
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
-#
-# Installs Consul via HashiCorp’s official binary archive or package manager,
-# creates necessary users, directories, and systemd service.
-# --------------------------------------------------------------------
+#  This recipe installs Consul, creates required users, directories, and
+#  systemd service units, and ensures the service is enabled and started.
+# ------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Create Consul User & Group
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+#  Include Firewall Recipe
+# ------------------------------------------------------------------------------
 
-group consul_group do
-  system true
+include_recipe 'consul::firewall'
+
+# ------------------------------------------------------------------------------
+#  Install Consul (binary or package, user/group, directories)
+# ------------------------------------------------------------------------------
+
+consul_install 'consul' do
+  version        node['consul']['version']
+  install_method node['consul']['install_method']
+  user           node['consul']['user']
+  group          node['consul']['group']
+  data_dir       node['consul']['data_dir']
+  config_dir     node['consul']['config_dir']
+  install_dir    node['consul']['install_dir']
+  checksum       node['consul']['checksum'] if node['consul'].key?('checksum')
 end
 
-# user consul_user do
-#   system true
-#   gid consul_group
-#   home consul_data_dir
-#   shell '/bin/false'
-# end
+# ------------------------------------------------------------------------------
+#  Render Consul HCL Config
+# ------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Create Consul Directories
-# --------------------------------------------------------------------
-
-[consul_data_dir, consul_config_dir].each do |dir|
-  directory dir do
-    owner consul_user
-    group consul_group
-    mode '0750'
-    recursive true
-  end
+consul_config 'consul' do
+  config_dir  node['consul']['config_dir']
+  install_dir node['consul']['install_dir']
+  user        node['consul']['user']
+  group       node['consul']['group']
+  notifies    :create, 'consul_service[consul]', :immediately
+  notifies    :restart, 'service[consul]', :delayed
 end
 
-# --------------------------------------------------------------------
-# Reload systemd When Unit File Changes
-# --------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+#  Render Consul systemd Unit and Manage Service
+# ------------------------------------------------------------------------------
 
-execute 'systemctl-daemon-reload' do
-  command 'systemctl daemon-reload'
-  action :nothing
+consul_service 'consul' do
+  user        node['consul']['user']
+  group       node['consul']['group']
+  data_dir    node['consul']['data_dir']
+  config_dir  node['consul']['config_dir']
+  install_dir node['consul']['install_dir']
+  action      :create
 end
-
-# --------------------------------------------------------------------
-# Render Consul systemd Unit
-# --------------------------------------------------------------------
-
-template '/etc/systemd/system/consul.service' do
-  source 'consul.service.erb'
-  owner consul_user
-  group consul_group
-  mode '0644'
-  variables(
-    install_dir: consul_install_dir,
-    config_dir: consul_config_dir,
-    data_dir: consul_data_dir,
-    service_user: consul_user,
-    service_group: consul_group
-  )
-  notifies :run, 'execute[systemctl-daemon-reload]', :immediately
-end
-
-# --------------------------------------------------------------------
-# Enable & Start Consul Service
-# --------------------------------------------------------------------
 
 service 'consul' do
-  provider Chef::Provider::Service::Systemd
   action [:enable, :start]
-  subscribes :restart, 'template[/etc/systemd/system/consul.service]', :immediately
+  subscribes :restart, 'consul_service[consul]', :delayed
 end

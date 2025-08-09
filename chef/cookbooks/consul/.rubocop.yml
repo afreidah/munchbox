@@ -1,0 +1,15 @@
+# ---------------------------------------------------------------------------------
+# .rubocop.yml
+#
+#  This file contains RuboCop configuration for this Chef cookbook.
+#
+#  Adjusts cops and exclusions for project-specific needs.
+# ---------------------------------------------------------------------------------
+
+AllCops:
+  Exclude:
+    - 'berks-cookbooks/**/*'
+    - 'berks-cookbooks/**'
+    - './berks-cookbooks/**/*'
+    - './berks-cookbooks/**'
+

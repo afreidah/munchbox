@@ -1,27 +1,59 @@
----
+# ------------------------------------------------------------------------------
+#  kitchen.yml — Test Kitchen configuration for Consul cookbook
+#
+#  Defines driver, transport, provisioner, verifier, platforms, and suites
+#  for automated infrastructure testing.
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+#  Driver Configuration
+# ------------------------------------------------------------------------------
 driver:
-  name: vagrant
+  name: docker                # Use Docker as the Test Kitchen driver
+  chef_version: latest        # Use the latest Chef Infra Client version
+  privileged: true            # Run containers in privileged mode
+  username: root              # Use root user inside the container
 
+# ------------------------------------------------------------------------------
+#  Transport Configuration
+# ------------------------------------------------------------------------------
 transport:
-  name: ssh
+  name: docker                # Use Docker transport for communication
 
+# ------------------------------------------------------------------------------
+#  Provisioner Configuration
+# ------------------------------------------------------------------------------
 provisioner:
-  name: chef_zero
-  always_update_cookbooks: true
+  name: chef_zero             # Use chef_zero provisioner for local Chef runs
+  chef_license: accept        # Accept Chef license for Chef Infra Client
 
+# ------------------------------------------------------------------------------
+#  Verifier Configuration
+# ------------------------------------------------------------------------------
 verifier:
-  name: inspec
+  name: inspec                # Use InSpec for verification
+  sudo: true                  # Run InSpec controls with sudo
+  reporter:
+    - cli                     # Output results to CLI
+  chef_license: accept        # Accept Chef license for InSpec
 
+# ------------------------------------------------------------------------------
+#  Platforms
+# ------------------------------------------------------------------------------
 platforms:
-  - name: debian-12-arm64
+  - name: ubuntu-22.04        # Example platform
     driver_config:
-      box: generic/debian12-arm64
-      box_url: https://vagrantcloud.com/generic/boxes/debian12-arm64
-      provider: virtualbox # or "parallels" if you use Parallels Desktop
+      image: ubuntu:22.04     # Docker image to use for this platform
+      platform: ubuntu        # Platform type for the provisioner
+      username: root          # Use root user inside the container
+      privileged: true        # Run container in privileged mode
+      run_command: /usr/lib/systemd/systemd
 
+# ------------------------------------------------------------------------------
+#  Suites
+# ------------------------------------------------------------------------------
 suites:
   - name: default
     run_list:
-      - recipe[pi_bootstrap::default]
+      - recipe[consul::install]   # Run the consul::install recipe
     attributes:
-

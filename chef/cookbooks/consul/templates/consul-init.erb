@@ -1,0 +1,69 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          consul
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Consul Agent
+# Description:       Consul Agent Service
+### END INIT INFO
+
+CONSUL_BIN="<%= @consul_binary %>"
+CONFIG_DIR="<%= @config_dir %>"
+DATA_DIR="<%= @data_dir %>"
+USER="<%= @user %>"
+GROUP="<%= @group %>"
+
+PIDFILE="/var/run/consul.pid"
+LOGFILE="/var/log/consul.log"
+
+start() {
+    echo "Starting consul..."
+    start-stop-daemon --start --background --pidfile $PIDFILE --make-pidfile \
+        --chuid $USER:$GROUP \
+        --exec $CONSUL_BIN -- agent -config-dir=$CONFIG_DIR >> $LOGFILE 2>&1
+}
+
+stop() {
+    echo "Stopping consul..."
+    start-stop-daemon --stop --pidfile $PIDFILE --retry 5
+}
+
+status() {
+    if [ -f $PIDFILE ]; then
+        PID=$(cat $PIDFILE)
+        if ps -p $PID > /dev/null; then
+            echo "Consul is running (pid $PID)"
+            exit 0
+        else
+            echo "Consul is not running, but pidfile exists"
+            exit 1
+        fi
+    else
+        echo "Consul is not running"
+        exit 3
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 2
+        ;;
+esac
+
+exit 0

@@ -1,0 +1,357 @@
+# Home Nomad Cluster – Architecture & Build Plan
+
+## 1) Goals
+- Provide a resilient home + personal-use Nomad cluster for learning and running services.
+- Nomad-first: run everything as Nomad jobs unless bare metal is clearly better.
+- Single ingress with fast L2 failover; all admin/admin-ish UIs are LAN/VPN-only.
+- Service discovery via Consul; recursive DNS + filtering via Pi-hole + Unbound.
+- GitHub Actions CI/CD with self-hosted (Nomad) runners; static GH secrets now, OpenBao later.
+- Practical storage on Lenovo NVMe + 2TB USB; simple, consistent backups and restore drills.
+
+---
+
+## 2) Hardware Inventory & Roles
+
+| Node | Specs | Role(s) |
+|------|------|---------|
+| **Lenovo ThinkCentre M910q** | i5-6500T, 16GB, 256GB NVMe | Nomad **server** + Consul **server**, **primary Traefik**, Keepalived **MASTER**, PIA ingress WG, Docker Registry + UI, Prometheus/Grafana/Alertmanager (and optional Loki), NFS server, CI runners, Deluge |
+| **Raspberry Pi 5 #1 (4GB)** | ARM64 | Nomad **server** + Consul **server**, **shadow Traefik**, Keepalived **BACKUP**, standby PIA, general workloads, CI runner (arm64) |
+| **Raspberry Pi 5 #2 (4GB)** | ARM64 | Nomad **server** + Consul **server**, general workloads, CI runner (arm64) |
+| **iMac (2011-era, RAM TBD)** | x86_64, 2–4GB | Nomad **client**. **If 2GB:** OpenBao + light jobs. **If 4GB+:** OpenBao + Nextcloud app stack (DB/Redis/app) |
+| **Pi 1 #1 (512MB)** | ARMv6 | **Pi-hole + Unbound** (primary), Consul agent |
+| **Pi 1 #2 (512MB)** | ARMv6 | **Pi-hole + Unbound** (secondary), Consul agent |
+| **External 2TB USB** | USB 3 | Primary persistent data/backup on Lenovo (`/srv/data`) |
+| **Old HDDs (USB & bare)** | Mixed | **Cold/offline backup rotation** (not live) |
+
+**Quorum:** 3× Consul servers (Lenovo + both Pi5s), 3× Nomad servers (same trio).
+
+---
+
+## 3) Networking, Ingress, DNS, Certs
+
+- **Flat L2** for now (VLANs later).
+- **VRRP/Keepalived VIP:** Lenovo (MASTER) + Pi5-1 (BACKUP) share a **floating LAN VIP** (e.g., `192.168.1.50`).
+  - Health track: Keepalived script hits Traefik `/ping`; demote if unhealthy.
+- **Ingress path:** **PIA WireGuard static IP → DNAT → VIP:443/80 → Traefik**.
+- **Traefik:** runs on Lenovo + Pi5-1; **host** networking; binds VIP :80/:443; Consul Catalog provider with `exposedByDefault=false`.
+- **Cloudflare DNS:**  
+  - `edge.yourdomain.com` → PIA static IP (DNS-only).  
+  - `*.apps.yourdomain.com` → `edge.yourdomain.com`.
+- **ACME:** DNS-01 (Cloudflare) wildcard certs for `*.apps.yourdomain.com`.
+- **Admin access rule:** All admin UIs **LAN/VPN-only** via Traefik **internal** entrypoint + IP allowlist.
+
+### DNS Playbook (internal)
+- **Resolvers:** Pi-hole (+ Unbound) on both Pi 1s — handed out by DHCP to clients.
+- **Conditional forward:** From both Pi-holes, forward **`.consul`** to Consul DNS on `:8600` (TCP+UDP).
+- **Split-horizon:** In Pi-hole “Local DNS” (A/AAAA):
+  - `edge.yourdomain.com` → LAN VIP.
+  - `*.apps.yourdomain.com` → LAN VIP.
+
+---
+
+## 4) What Runs Where (Nomad vs Bare Metal)
+
+**Bare metal**
+- Keepalived (VRRP VIP) on Lenovo + Pi5-1.
+- PIA WireGuard (ingress) on Lenovo (+ optional on Pi5-1 with failover hooks).
+- Consul & Nomad **servers** (Lenovo + both Pi5s).
+- Pi-hole + Unbound on both Pi 1s.
+- NFS server (Lenovo) & client mount (iMac if Nextcloud runs there).
+- **Chef Server (Cinc)** on Lenovo, bound to `127.0.0.1:7443`, behind Traefik **internal**.
+
+**Nomad jobs**
+- **Traefik** (Lenovo + Pi5-1), host networking.
+- **OpenBao** (iMac), integrated Raft; snapshots to Lenovo.
+- **Nextcloud** (iMac if 4GB+; else split with DB on Lenovo), Redis + MariaDB per pattern below.
+- **Deluge + VPN sidecar** (Lenovo), WebUI internal-only.
+- **Registry + UI** (Lenovo).
+- **Observability** (Lenovo): vmagent → VictoriaMetrics, vmalert, Alertmanager, (optional) Loki, Grafana.
+- **node_exporter / blackbox_exporter** (system jobs) on Lenovo + Pi5s + iMac (skip Pi1s).
+- **Vector/Fluent Bit** (system jobs) on Lenovo + Pi5s + iMac (if enabling Loki).
+- **Self-hosted GitHub runners** (Lenovo amd64; Pi5s arm64), **ephemeral**.
+
+---
+
+## 5) Service Architecture Decisions (summary)
+
+### Traefik (ingress)
+- Lenovo primary, Pi5-1 secondary; **host** network; Consul Catalog; DNS-01 ACME wildcard; Keepalived failover via `/ping`.
+
+### Nextcloud (app + DB + cache)
+- **If iMac has 4GB+:** **Single job, multiple groups** co-located on iMac: `db` (MariaDB), `app` (Nextcloud FPM) + `redis`. NFS mount for `/data`.
+- **If iMac has 2GB:** **Split jobs**: DB on Lenovo (host volume on NVMe), app+Redis on iMac; app resolves DB via Consul DNS.
+- **Ingress:** Internal-only. **Backups:** DB dump/mariabackup + config tar + `/data` snapshot.
+- Avoid “all-in-one” images.
+
+### Deluge (torrent)
+- On Lenovo with **VPN sidecar** (WireGuard/gluetun) + killswitch; WebUI internal-only.
+- Downloads temp on NVMe → completed to `/srv/data/torrents`.
+
+### Docker/OCI Registry (+ UI)
+- On Lenovo; data at `/srv/data/registry`; internal-only; weekly `garbage-collect`.
+
+### OpenBao (secrets)
+- On iMac; local raft dir; nightly snapshots to Lenovo; internal-only; manual unseal at first; audit logs to file (rotate/ship).
+
+### Monitoring/Observability
+- **Prometheus/VictoriaMetrics** ingestion via vmagent; retention 15–30 days (Lenovo).
+- **Alertmanager** routes: critical → push/email; warnings grouped.
+- **Grafana** internal-only; provision dashboards/datasources.
+- **node_exporter** (Lenovo, Pi5s, iMac) & **blackbox_exporter** (VIP, Traefik routers, Pi-hole UI, PIA endpoint).
+- **Loki** optional now; add later for centralized logs.
+
+### CI/CD Runners (GitHub Actions)
+- Lenovo (amd64) + Pi5s (arm64); **ephemeral**; DinD or host Docker (pick one).
+- Secrets from GH Actions now; migrate to OpenBao OIDC later.
+- Labels: `self-hosted, nomad, amd64|arm64`.
+
+### Service Discovery / DNS
+- **Consul** servers (Lenovo + Pi5s), ACLs enabled; `.consul` forwarded from Pi-hole.
+
+---
+
+## 6) Dynamic Storage Strategy
+
+**Phase 1 (now):**  
+- **Host/NFS bind mounts** for stateful data (Chef provisions dirs).  
+- Per-task **`ephemeral_disk`** for scratch/caches.
+
+_Example_
+```hcl
+volume "appdata" { type = "host"; source = "/srv/data/app" }
+task "svc" {
+  volume_mount { volume = "appdata"; destination = "/var/lib/app" }
+  ephemeral_disk { size = 1024 } # MB
+}
+
+Phase 2 (optional later):
+
+    Add CSI if you want PVC-like dynamic volumes:
+
+        democratic-csi (NFS) for RWX “give me 20Gi” style volumes.
+
+    Keep write-heavy raft/DB data local; back it up to NFS.
+
+Guardrails: pin stateful jobs; don’t put raft/DB on NFS; disk alerts; prune images/registry weekly.
+7) Storage & Backups
+
+Mounts
+
+    Lenovo NVMe: live DBs/caches, registry index.
+
+    Lenovo 2TB USB (/srv/data): backups, registry blobs, metrics, logs, Nextcloud data (if hosted here).
+
+    NFS: Lenovo exports /srv/data/nextcloud/data to iMac when Nextcloud runs there.
+
+Backups (Nomad jobs / cron)
+
+    OpenBao snapshots → /srv/data/backups/openbao/ on Lenovo.
+
+    Chef Server: chef-server-ctl backup → /srv/data/backups/chef-server/.
+
+    Nextcloud: DB dump + config tar + restic snapshot of data.
+
+    Nomad job specs/configs to /srv/data/backups/infra/.
+
+    Old HDDs used for offline rotation (monthly); do restore drills monthly.
+
+8) Logging, Rotation, Monitoring, Alerts
+
+Central logs (optional now): Vector/Fluent Bit → Loki (Lenovo), retention 7–14d.
+Local rotation:
+
+    journald caps: Lenovo/Pi5/iMac 200MB (iMac can be 100MB), Pi1 50MB.
+
+    Docker logs: max-size=10m, max-file=3.
+
+    Service logrotate (Pi-hole, etc.).
+
+Metrics & Alerts:
+
+    vmagent → VictoriaMetrics + vmalert + Alertmanager.
+
+    Exporters: node_exporter on Lenovo + Pi5s + iMac; Traefik metrics; blackbox exporter.
+
+    Core rules: disk 80/90%, CPU/mem pressure, Traefik /ping, PIA tunnel up, Consul/Nomad health, Pi-hole UI up, cert expiry, OpenBao snapshot age, Nextcloud cron, Loki/VM ingestion errors.
+
+9) Security Baseline
+
+    Admin UIs via Traefik internal only; IP allowlist (LAN/VPN CIDRs) + optional auth.
+
+    Nomad & Consul ACLs on from day one; least-priv tokens for CI.
+
+    Secrets: GitHub Actions secrets now; migrate to OpenBao OIDC later.
+
+    SSH keys only; disable password logins.
+
+    OS updates routine; image scanning (Trivy/Grype) in CI.
+
+    Alert if PIA tunnel drops while Deluge is active.
+
+10) CI/CD (Phase 1 — GitHub Actions Secrets)
+
+Create these GitHub Secrets
+
+    Core: NOMAD_ADDR, NOMAD_TOKEN, REGISTRY_URL, REGISTRY_USER, REGISTRY_PASS
+
+    Chef: CHEF_SERVER_URL, CHEF_USER, CHEF_CLIENT_KEY
+
+    Terraform/Terragrunt (optional now): CONSUL_HTTP_ADDR, CONSUL_HTTP_TOKEN
+
+Runner topology
+
+    Lenovo: 1–2 amd64 runners; Pi5s: 1 arm64 each — all ephemeral.
+
+    Labels: self-hosted, nomad, amd64 or arm64.
+
+Example workflows (snippets)
+
+Chef PR checks
+
+name: chef-ci
+on: { pull_request: { paths: ['cookbooks/**'] } }
+jobs:
+  lint-spec:
+    runs-on: [self-hosted, nomad, amd64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: '3.2', bundler-cache: true }
+      - run: bundle install --without kitchen
+      - run: bundle exec cookstyle
+      - run: bundle exec rspec --format progress
+
+Chef deploy (main, env approval)
+
+name: chef-deploy
+on:
+  push: { branches: [main], paths: ['cookbooks/**'] }
+  workflow_dispatch: {}
+jobs:
+  package:
+    runs-on: [self-hosted, nomad, amd64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: '3.2', bundler-cache: true }
+      - run: |
+          cd cookbooks/my_cookbook
+          chef install Policyfile.rb
+          chef export Policyfile.rb ./pkg --force
+      - uses: actions/upload-artifact@v4
+        with: { name: policy-export, path: cookbooks/my_cookbook/pkg }
+  deploy:
+    needs: package
+    runs-on: [self-hosted, nomad, amd64]
+    environment: { name: production, url: ${{ secrets.CHEF_SERVER_URL }} }
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: policy-export, path: ./pkg }
+      - name: Push policy to Cinc Server
+        env:
+          CHEF_SERVER_URL: ${{ secrets.CHEF_SERVER_URL }}
+          CHEF_USER:       ${{ secrets.CHEF_USER }}
+          CHEF_CLIENT_KEY: ${{ secrets.CHEF_CLIENT_KEY }}
+        run: |
+          printf '%s' "$CHEF_CLIENT_KEY" > client.pem
+          export CHEF_LICENSE=accept
+          chef push home ./pkg
+          chef policy apply home my_cookbook production
+
+Docker build & deploy
+
+name: docker-pipeline
+on:
+  pull_request: { paths: ['**/Dockerfile','src/**'] }
+  push: { branches: [main] }
+jobs:
+  build-pr:
+    runs-on: [self-hosted, nomad, amd64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASS }}
+      - run: |
+          IMAGE=${{ secrets.REGISTRY_URL }}/myapp
+          TAG=pr-${{ github.event.number }}
+          docker buildx build --platform linux/amd64,linux/arm64 -t $IMAGE:$TAG --push .
+  deploy-main:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, nomad, amd64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASS }}
+      - run: |
+          IMAGE=${{ secrets.REGISTRY_URL }}/myapp
+          SHA=${GITHUB_SHA::7}
+          docker buildx build --platform linux/amd64,linux/arm64 \
+            -t $IMAGE:$SHA -t $IMAGE:latest --push .
+          nomad job run -var image=$IMAGE jobs/myapp.nomad
+
+11) Hardware Baseline
+
+    UPS for Lenovo, 2TB USB, router/switch, both Pi-holes; graceful shutdown (apcupsd/NUT).
+
+    Spare SDs/PSUs/USB NICs for Pis; powered USB hub if 3.5" HDDs used.
+
+    Cooling for Pi5s; dust clean Lenovo/iMac.
+
+    Smart plugs for remote reboots of headless nodes.
+
+12) Chef Server (Cinc) Behind Traefik
+
+    Chef Server runs bare metal on Lenovo; Nginx bound to 127.0.0.1:7443.
+
+    Traefik internal route chef.int.yourdomain.com → 127.0.0.1:7443.
+
+    Backups: nightly chef-server-ctl backup → /srv/data/backups/chef-server/.
+
+13) OpenBao (Secrets)
+
+    Nomad job on iMac; 256–512MB RAM; local disk for Raft.
+
+    Nightly snapshots to Lenovo /srv/data/backups/openbao/.
+
+    LAN/VPN-only; audit logs shipped to Loki (rotated) if Loki enabled.
+
+    Upgrade path: GitHub OIDC → OpenBao JWT auth for ephemeral CI secrets.
+
+14) Rollout Order (detailed checklist)
+Phase 0 — Prep
+
+    Label devices; reserve static DHCP leases; reserve VIP for VRRP.
+
+    Format and mount 2TB USB on Lenovo at /srv/data; add to /etc/fstab.
+
+    UPS wiring for Lenovo, router/switch, Pi-holes.
+
+Phase 1 — OS & Hardening
+
+    Lenovo/iMac: Debian 12 minimal, SSH keys, updates, ufw/nftables baseline.
+
+    Pi5s: Raspberry Pi OS Lite 64-bit; SSH keys; updates.
+
+    Pi1s: Raspberry Pi OS Lite 32-bit; SSH keys; updates.
+
+Phase 2 — Core Control Plane
+
+    Consul servers on Lenovo + Pi5s; ACLs on; bootstrap token stored offline.
+
+    Nomad servers on Lenovo + Pi5s; clients on iMac + (optionally) Pi1s (very light).
+
+    Verify nomad server members + consul members.
+
+Phase 3 — Ingress (VRRP + PIA + Traefik)
+
+    Keepalived MASTER on Lenovo, BACKUP on Pi5-1
