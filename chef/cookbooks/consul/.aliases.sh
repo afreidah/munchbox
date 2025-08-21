@@ -17,5 +17,6 @@ alias converge="bundle exec kitchen converge"
 alias verify="bundle exec kitchen verify"
 alias destroy="bundle exec kitchen destroy"
 alias list="bundle exec kitchen list"
+alias kitchen="bundle exec kitchen"
 
 export DOCKER_BUILDKIT=0

@@ -16,40 +16,45 @@ property :group,       String, required: true
 # ------------------------------------------------------------------------------
 
 action :create do
-  consul_binary = ::File.join(new_resource.install_dir, 'consul')
   config_path = ::File.join(new_resource.config_dir, 'consul.hcl')
-  keyfile = ::File.join(new_resource.config_dir, 'serf.key')
 
-  # --- Generate gossip encryption key if needed ---
-  ruby_block 'generate_consul_serf_key' do
+  # --- Resolve data bag source (supports plain or encrypted) ---
+  #     Defaults:
+  #       - bag:  "consul"
+  #       - item: "gossip"
+  #       - key field names checked in order: "encrypt", "serf_key", "key"
+  #     Toggle encryption with node['consul']['encrypted_data_bag'] (true/false).
+  ruby_block 'load_consul_serf_key_from_databag' do
     block do
-      unless ::File.exist?(keyfile)
-        key = shell_out!("#{consul_binary} keygen").stdout.strip
-        ::File.write(keyfile, key)
+      bag_name       = node.dig('consul', 'databag_name') || 'consul'
+      item_name      = node.dig('consul', 'databag_item') || 'gossip'
+      encrypted_bag  = !!node.dig('consul', 'encrypted_data_bag')
+
+      if encrypted_bag
       end
-    end
-    action :run
-    only_if { ::File.exist?(consul_binary) }
-  end
+      item = data_bag_item(bag_name, item_name)
 
-  # --- Read key from file and set for template ---
-  ruby_block 'read_consul_serf_key' do
-    block do
-      node.run_state['consul_serf_key'] = ::File.read(keyfile).strip
+      key = item['encrypt'] || item['serf_key'] || item['key']
+      if key.to_s.strip.empty?
+        raise "Consul gossip key not found in data bag '#{bag_name}/#{item_name}'. " \
+              "Expected one of: 'encrypt', 'serf_key', or 'key'."
+      end
+
+      node.run_state['consul_serf_key'] = key.strip
     end
     action :run
-    only_if { ::File.exist?(keyfile) }
   end
 
   # --- Render Consul HCL Config ---
   template config_path do
+    mode      '0640'
     source    'consul.hcl.erb'
     owner     new_resource.user
     group     new_resource.group
-    mode      '0640'
     sensitive true
     variables(
-      serf_key: lazy { node.run_state['consul_serf_key'] }
+      serf_key: lazy { node.run_state['consul_serf_key'] },
+      retry_join: node['consul']['retry_join']
     )
   end
 end

@@ -1,35 +1,48 @@
 # ------------------------------------------------------------------------------
-#  kitchen.yml — Test Kitchen configuration for Consul cookbook
+#  kitchen.yml — Test Kitchen configuration for Consul cookbook (Docker, 3-node)
 #
-#  Defines driver, transport, provisioner, verifier, platforms, and suites
-#  for automated infrastructure testing.
+#  Hacky-but-reliable test setup:
+#    - Static Docker IPs on a user-defined bridge (172.28.0.0/16)
+#    - retry_join by IP (no Docker DNS dependency)
+#    - /etc/hosts pre-populated for convenience
+#    - ca-certificates installed to avoid SSL EOF errors
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
 #  Driver Configuration
 # ------------------------------------------------------------------------------
+
 driver:
-  name: docker                # Use Docker as the Test Kitchen driver
+  name: docker
   chef_version: latest        # Use the latest Chef Infra Client version
   privileged: true            # Run containers in privileged mode
   username: root              # Use root user inside the container
+  repository: debian
+  tag: "latest"
+  build_options:
+    load: true
+    progress: plain 
 
 # ------------------------------------------------------------------------------
 #  Transport Configuration
 # ------------------------------------------------------------------------------
+
 transport:
   name: docker                # Use Docker transport for communication
 
 # ------------------------------------------------------------------------------
 #  Provisioner Configuration
 # ------------------------------------------------------------------------------
+
 provisioner:
   name: chef_zero             # Use chef_zero provisioner for local Chef runs
   chef_license: accept        # Accept Chef license for Chef Infra Client
+  data_bags_path: ../../data_bags  # Path to data bags
 
 # ------------------------------------------------------------------------------
 #  Verifier Configuration
 # ------------------------------------------------------------------------------
+
 verifier:
   name: inspec                # Use InSpec for verification
   sudo: true                  # Run InSpec controls with sudo
@@ -40,20 +53,60 @@ verifier:
 # ------------------------------------------------------------------------------
 #  Platforms
 # ------------------------------------------------------------------------------
+
 platforms:
-  - name: ubuntu-22.04        # Example platform
+  - name: ubuntu-22.04
     driver_config:
-      image: ubuntu:22.04     # Docker image to use for this platform
-      platform: ubuntu        # Platform type for the provisioner
-      username: root          # Use root user inside the container
-      privileged: true        # Run container in privileged mode
+      image: ubuntu:22.04
+      platform: ubuntu
+      username: root
+      privileged: true
       run_command: /usr/lib/systemd/systemd
+      provision_command:
+        - apt-get update
+        - DEBIAN_FRONTEND=noninteractive apt-get install -y systemd curl unzip jq ca-certificates
+        - update-ca-certificates
 
 # ------------------------------------------------------------------------------
-#  Suites
+#  Common Blocks (YAML Anchors)
 # ------------------------------------------------------------------------------
+
+_common_consul_attrs: &common_consul_attrs
+  consul_firewall_rules:
+            - name: allow-all-local
+              source: 127.0.0.1
+  datacenter: kitchen
+  bind_addr: "0.0.0.0"        # Consul binds on all; UI/API kept local by template
+  interface: eth0             # Template renders "{{ GetInterfaceIP \"eth0\" }}"
+  ui: true                    # Template maps to ui_config.enabled
+  acl:
+    enabled: false            # Disable ACLs for simplicity in tests
+  server:
+    enable: true
+    bootstrap_expect: 3
+
+_common_suite: &common_suite
+  run_list:
+    - recipe[consul::firewall]
+    - recipe[consul::_test_cluster]
+  verifier:
+    inspec_tests:
+      - test/integration/default
+  attributes:
+    consul:
+      <<: *common_consul_attrs
+
+# ------------------------------------------------------------------------------
+#  Suites (static IPs + /etc/hosts + retry_join by IP)
+# ------------------------------------------------------------------------------
+
 suites:
-  - name: default
-    run_list:
-      - recipe[consul::install]   # Run the consul::install recipe
+  - name: consul
+    <<: *common_suite
+    driver_config:
+      hostname: consul
+      container_name: consul
     attributes:
+      consul:
+        <<: *common_consul_attrs
+        retry_join: []

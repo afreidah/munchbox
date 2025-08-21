@@ -5,15 +5,15 @@
 # ------------------------------------------------------------------------------
 
 unified_mode true
-
 property :version,        String, name_property: true
-property :install_method, String, required: true
+
+property :checksum,       [String, nil]
 property :user,           String, required: true
 property :group,          String, required: true
 property :data_dir,       String, required: true
 property :config_dir,     String, required: true
 property :install_dir,    String, required: true
-property :checksum,       [String, nil]
+property :install_method, String, required: true
 
 # ------------------------------------------------------------------------------
 #  ACTION: :install
@@ -40,9 +40,9 @@ action :install do
 
     # --- Download Consul binary archive ---
     remote_file archive_path do
+      action   :create
       source   archive_url
       checksum new_resource.checksum if new_resource.checksum
-      action   :create
       not_if   { ::File.exist?(consul_binary) && `#{consul_binary} version`.include?(new_resource.version) }
     end
 
@@ -66,8 +66,8 @@ action :install do
   when 'package'
     # --- Install Consul via package manager ---
     package 'consul' do
-      version new_resource.version
       action  :install
+      version new_resource.version
       not_if  { ::File.exist?(consul_binary) && `#{consul_binary} version`.include?(new_resource.version) }
     end
 
@@ -126,8 +126,8 @@ action :delete do
   [new_resource.data_dir, new_resource.config_dir].each do |dir|
     directory dir do
       recursive true
-      action :delete
-      only_if { ::File.directory?(dir) }
+      action    :delete
+      only_if   { ::File.directory?(dir) }
     end
   end
 

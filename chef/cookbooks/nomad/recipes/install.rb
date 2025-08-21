@@ -14,7 +14,7 @@
 # --------------------------------------------------------------------
 
 include_recipe 'nomad::firewall'
-Chef::Recipe.include(Nomad::Helpers)
+Chef::DSL::Recipe.include(Nomad::Helpers)
 
 # --------------------------------------------------------------------
 # Determine Architecture for Download
@@ -22,16 +22,16 @@ Chef::Recipe.include(Nomad::Helpers)
 
 arch = node['kernel']['machine']
 
-case arch
-when 'x86_64', 'amd64'
-  platform_arch = 'amd64'
-when 'aarch64'
-  platform_arch = 'arm64'
-when 'armv7l', 'armv6l', 'armv8l', 'arm'
-  platform_arch = 'arm'
-else
-  platform_arch = arch
-end
+platform_arch = case arch
+                when 'x86_64', 'amd64'
+                  'amd64'
+                when 'aarch64'
+                  'arm64'
+                when 'armv7l', 'armv6l', 'armv8l', 'arm'
+                  'arm'
+                else
+                  arch
+                end
 
 # --------------------------------------------------------------------
 # Create Nomad Config and Data Directories
@@ -39,7 +39,7 @@ end
 
 [
   node['nomad']['config_dir'],
-  node['nomad']['data_dir']
+  node['nomad']['data_dir'],
 ].each do |dir|
   directory dir do
     owner node['nomad']['user']
@@ -50,24 +50,29 @@ end
 end
 
 # --------------------------------------------------------------------
-# Download and Extract Nomad Binary
+# Download and Extract Nomad Binary (fixed paths + unzip dependency)
 # --------------------------------------------------------------------
+
+package 'unzip' # ensure unzip exists
 
 nomad_download = "nomad_#{node['nomad']['version']}_linux_#{platform_arch}.zip"
 download_url   = "https://releases.hashicorp.com/nomad/#{node['nomad']['version']}/#{nomad_download}"
+cache_file     = ::File.join(Chef::Config[:file_cache_path], nomad_download)
 
-remote_file nomad_download do
-  source     download_url
-  notifies   :run, 'bash[install-nomad]', :immediately
+remote_file cache_file do
+  source download_url
+  mode '0644'
+  # checksum '...'  # ← strongly recommended: add official SHA256 for the exact version
+  action :create
+  notifies :run, 'bash[install-nomad]', :immediately
 end
 
 bash 'install-nomad' do
   code <<-EOH
-    cd /tmp
-    unzip -o #{nomad_download}
-    mv /tmp/nomad #{node['nomad']['bin_path']}
-    chmod 0755 #{node['nomad']['bin_path']}/nomad
+    unzip -o #{cache_file} -d /tmp
+    install -m 0755 /tmp/nomad #{node['nomad']['bin_path']}/nomad
   EOH
+  not_if { ::File.exist?("#{node['nomad']['bin_path']}/nomad") && nomad_version == "v#{node['nomad']['version']}" }
   notifies :restart, 'service[nomad]', :delayed
   action :nothing
 end
@@ -76,16 +81,31 @@ end
 # Create Nomad Config File
 # --------------------------------------------------------------------
 
-token = encrypted_data_bag_item('vault', 'vault_token')
+vault_item = encrypted_data_bag_item('vault', 'vault_token')
 
 template '/etc/nomad.d/server.hcl' do
   source 'config.hcl.erb'
   variables(
-    bootstrap_expect: node['nomad']['server']['servers'].size,
     retry_join: node['nomad']['server']['servers'].map { |h| "#{h}:4648" },
-    vault_token: token
+    token: vault_item['token'] # ← make name match template
   )
+  sensitive true
+  mode '0640'
+  owner node['nomad']['user']
+  group node['nomad']['group']
   notifies :restart, 'service[nomad]', :delayed
+end
+
+directory node['nomad']['config_dir'] do
+  owner node['nomad']['user']
+  group node['nomad']['group']
+  mode  '0750' # tighter
+end
+
+directory node['nomad']['data_dir'] do
+  owner node['nomad']['user']
+  group node['nomad']['group']
+  mode  '0755'
 end
 
 # --------------------------------------------------------------------

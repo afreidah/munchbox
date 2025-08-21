@@ -602,7 +602,7 @@ GEM
       recursive-open-struct (~> 1.1, >= 1.1.3)
       yajl-ruby (~> 1.4)
       yaml-safe_load_stream3
-    kitchen-docker (3.0.0)
+    kitchen-docker (2.15.0)
       test-kitchen (>= 1.0.0)
     kitchen-inspec (3.0.0)
       hashie (>= 3.4, <= 5.0)
@@ -1034,7 +1034,7 @@ DEPENDENCIES
   guard
   guard-shell
   inspec (~> 5.22)
-  kitchen-docker
+  kitchen-docker (= 2.15.0)
   kitchen-inspec
   pry
   rake
@@ -1055,4 +1055,4 @@ RUBY VERSION
    ruby 3.3.6p108
 
 BUNDLED WITH
-   2.6.9
+   2.7.1

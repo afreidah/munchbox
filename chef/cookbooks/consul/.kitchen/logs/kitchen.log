@@ -1,3 +1,205 @@
-I, [2025-08-09T14:23:00.789452 #31688]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.8.1)
-I, [2025-08-09T14:23:02.180554 #31688]  INFO -- Kitchen: -----> Verifying <default-ubuntu-2204>...
-I, [2025-08-09T14:23:04.871039 #31688]  INFO -- Kitchen: -----> Test Kitchen is finished. (0m4.08s)
+I, [2025-08-10T01:06:41.787620 #16810]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.8.1)
+D, [2025-08-10T01:06:41.890068 #16810] DEBUG -- Kitchen: [local command] BEGIN (docker >> /dev/null 2>&1)
+D, [2025-08-10T01:06:41.965235 #16810] DEBUG -- Kitchen: [local command] END (0m0.06s)
+I, [2025-08-10T01:06:42.670555 #16810]  INFO -- Kitchen: -----> Creating <consul-ubuntu-2204>...
+D, [2025-08-10T01:06:42.670656 #16810] DEBUG -- Kitchen: Creating Linux container
+D, [2025-08-10T01:06:42.670751 #16810] DEBUG -- Kitchen: --- Start Dockerfile ---
+D, [2025-08-10T01:06:42.670765 #16810] DEBUG -- Kitchen: FROM ubuntu:22.04
+
+            RUN [ ! -f "/sbin/initctl" ] || dpkg-divert --local --rename --add /sbin/initctl                 && ln -sf /bin/true /sbin/initctl
+            ENV DEBIAN_FRONTEND noninteractive
+            ENV container docker
+            RUN apt-get update
+            RUN apt-get install -y sudo openssh-server curl lsb-release
+
+            RUN if ! getent passwd root; then                   useradd -d /root -m -s /bin/bash -p '*' root;                 fi
+            RUN mkdir -p /etc/sudoers.d
+            RUN chmod 0750 /etc/sudoers.d
+            RUN echo "root ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/root
+            RUN echo "Defaults !requiretty" >> /etc/sudoers.d/root
+            RUN mkdir -p /root/.ssh
+            RUN chown -R root /root/.ssh
+            RUN chmod 0700 /root/.ssh
+            RUN touch /root/.ssh/authorized_keys
+            RUN chown root /root/.ssh/authorized_keys
+            RUN chmod 0600 /root/.ssh/authorized_keys
+            RUN mkdir -p /run/sshd
+
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y systemd curl unzip jq ca-certificates
+RUN update-ca-certificates
+
+RUN echo ssh-rsa\ AAAAB3NzaC1yc2EAAAADAQABAAABAQDzWgVxyQhs4CBzGYrPYd765GeEdlem/G0hGfvRHXeg9vqmhTonE7RrxU00yvepvdumOzWDBM9siUzJD7o6aprmpjvsWvItDJVB4ZAGiguiIEeA0G4z6HNLvWSKdDQ7ClikfBiuiWeP8aSKhQeDjNEZt8FhsYNXiiIPSk4vahfqoP2H6H38+uM44N9Q9dZ6XIXZAPmbGg3+v/r1n9qirYExtiL6TY4wqmMYLJzXDbo42Zz9vFpVXKv1+odJTHKMDRpCscyhC19eDH76+480kt6am/5YqTdlEL03SJbZe6HLdnRCBLxRZub3NkVuUtrlKHxQu1CJyiqvodCPhVfcO1wd\ kitchen_docker_key >> /root/.ssh/authorized_keys
+D, [2025-08-10T01:06:42.670802 #16810] DEBUG -- Kitchen: --- End Dockerfile ---
+D, [2025-08-10T01:06:42.671285 #16810] DEBUG -- Kitchen: docker_command: docker -H unix:///var/run/docker.sock build --load=true --progress=plain -f Dockerfile-kitchen20250810-16810-6m8aac . shell_opts: {:input=>"FROM ubuntu:22.04\n\n            RUN [ ! -f \"/sbin/initctl\" ] || dpkg-divert --local --rename --add /sbin/initctl                 && ln -sf /bin/true /sbin/initctl\n            ENV DEBIAN_FRONTEND noninteractive\n            ENV container docker\n            RUN apt-get update\n            RUN apt-get install -y sudo openssh-server curl lsb-release\n\n            RUN if ! getent passwd root; then                   useradd -d /root -m -s /bin/bash -p '*' root;                 fi\n            RUN mkdir -p /etc/sudoers.d\n            RUN chmod 0750 /etc/sudoers.d\n            RUN echo \"root ALL=(ALL) NOPASSWD: ALL\" >> /etc/sudoers.d/root\n            RUN echo \"Defaults !requiretty\" >> /etc/sudoers.d/root\n            RUN mkdir -p /root/.ssh\n            RUN chown -R root /root/.ssh\n            RUN chmod 0700 /root/.ssh\n            RUN touch /root/.ssh/authorized_keys\n            RUN chown root /root/.ssh/authorized_keys\n            RUN chmod 0600 /root/.ssh/authorized_keys\n            RUN mkdir -p /run/sshd\n\nRUN apt-get update\nRUN DEBIAN_FRONTEND=noninteractive apt-get install -y systemd curl unzip jq ca-certificates\nRUN update-ca-certificates\n\nRUN echo ssh-rsa\\ AAAAB3NzaC1yc2EAAAADAQABAAABAQDzWgVxyQhs4CBzGYrPYd765GeEdlem/G0hGfvRHXeg9vqmhTonE7RrxU00yvepvdumOzWDBM9siUzJD7o6aprmpjvsWvItDJVB4ZAGiguiIEeA0G4z6HNLvWSKdDQ7ClikfBiuiWeP8aSKhQeDjNEZt8FhsYNXiiIPSk4vahfqoP2H6H38+uM44N9Q9dZ6XIXZAPmbGg3+v/r1n9qirYExtiL6TY4wqmMYLJzXDbo42Zz9vFpVXKv1+odJTHKMDRpCscyhC19eDH76+480kt6am/5YqTdlEL03SJbZe6HLdnRCBLxRZub3NkVuUtrlKHxQu1CJyiqvodCPhVfcO1wd\\ kitchen_docker_key >> /root/.ssh/authorized_keys\n", :environment=>{:BUILDKIT_PROGRESS=>"plain"}}
+D, [2025-08-10T01:06:42.671334 #16810] DEBUG -- Kitchen: [local command] BEGIN (docker -H unix:///var/run/docker.sock build --load=true --progress=plain -f Dockerfile-kitchen20250810-16810-6m8aac .)
+I, [2025-08-10T01:06:42.992258 #16810]  INFO -- Kitchen: #0 building with "default" instance using docker driver
+I, [2025-08-10T01:06:42.992379 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:42.992394 #16810]  INFO -- Kitchen: #1 [internal] load build definition from Dockerfile-kitchen20250810-16810-6m8aac
+I, [2025-08-10T01:06:42.992405 #16810]  INFO -- Kitchen: #1 transferring dockerfile: 1.66kB done
+I, [2025-08-10T01:06:42.992483 #16810]  INFO -- Kitchen: #1 DONE 0.0s
+I, [2025-08-10T01:06:42.992503 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:42.992513 #16810]  INFO -- Kitchen: #2 [internal] load metadata for docker.io/library/ubuntu:22.04
+I, [2025-08-10T01:06:43.543553 #16810]  INFO -- Kitchen: #2 DONE 0.7s
+I, [2025-08-10T01:06:43.764496 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.764667 #16810]  INFO -- Kitchen: #3 [internal] load .dockerignore
+I, [2025-08-10T01:06:43.764723 #16810]  INFO -- Kitchen: #3 transferring context: 2B done
+I, [2025-08-10T01:06:43.764772 #16810]  INFO -- Kitchen: #3 DONE 0.0s
+I, [2025-08-10T01:06:43.764819 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.764878 #16810]  INFO -- Kitchen: #4 [ 1/20] FROM docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81452302406825c46fcc9cb
+I, [2025-08-10T01:06:43.764935 #16810]  INFO -- Kitchen: #4 resolve docker.io/library/ubuntu:22.04@sha256:1ec65b2719518e27d4d25f104d93f9fac60dc437f81452302406825c46fcc9cb 0.0s done
+I, [2025-08-10T01:06:43.764990 #16810]  INFO -- Kitchen: #4 DONE 0.0s
+I, [2025-08-10T01:06:43.765035 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.765080 #16810]  INFO -- Kitchen: #5 [15/20] RUN chmod 0600 /root/.ssh/authorized_keys
+I, [2025-08-10T01:06:43.765125 #16810]  INFO -- Kitchen: #5 CACHED
+I, [2025-08-10T01:06:43.765169 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.765214 #16810]  INFO -- Kitchen: #6 [ 7/20] RUN chmod 0750 /etc/sudoers.d
+I, [2025-08-10T01:06:43.765258 #16810]  INFO -- Kitchen: #6 CACHED
+I, [2025-08-10T01:06:43.765301 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.765345 #16810]  INFO -- Kitchen: #7 [17/20] RUN apt-get update
+I, [2025-08-10T01:06:43.765390 #16810]  INFO -- Kitchen: #7 CACHED
+I, [2025-08-10T01:06:43.765433 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.765479 #16810]  INFO -- Kitchen: #8 [18/20] RUN DEBIAN_FRONTEND=noninteractive apt-get install -y systemd curl unzip jq ca-certificates
+I, [2025-08-10T01:06:43.765525 #16810]  INFO -- Kitchen: #8 CACHED
+I, [2025-08-10T01:06:43.765568 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.765614 #16810]  INFO -- Kitchen: #9 [11/20] RUN chown -R root /root/.ssh
+I, [2025-08-10T01:06:43.765658 #16810]  INFO -- Kitchen: #9 CACHED
+I, [2025-08-10T01:06:43.766265 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.766317 #16810]  INFO -- Kitchen: #10 [ 4/20] RUN apt-get install -y sudo openssh-server curl lsb-release
+I, [2025-08-10T01:06:43.766373 #16810]  INFO -- Kitchen: #10 CACHED
+I, [2025-08-10T01:06:43.766419 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.766472 #16810]  INFO -- Kitchen: #11 [ 3/20] RUN apt-get update
+I, [2025-08-10T01:06:43.766602 #16810]  INFO -- Kitchen: #11 CACHED
+I, [2025-08-10T01:06:43.766676 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.766732 #16810]  INFO -- Kitchen: #12 [ 6/20] RUN mkdir -p /etc/sudoers.d
+I, [2025-08-10T01:06:43.766790 #16810]  INFO -- Kitchen: #12 CACHED
+I, [2025-08-10T01:06:43.766835 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.766878 #16810]  INFO -- Kitchen: #13 [14/20] RUN chown root /root/.ssh/authorized_keys
+I, [2025-08-10T01:06:43.766921 #16810]  INFO -- Kitchen: #13 CACHED
+I, [2025-08-10T01:06:43.766963 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767005 #16810]  INFO -- Kitchen: #14 [ 9/20] RUN echo "Defaults !requiretty" >> /etc/sudoers.d/root
+I, [2025-08-10T01:06:43.767058 #16810]  INFO -- Kitchen: #14 CACHED
+I, [2025-08-10T01:06:43.767140 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767184 #16810]  INFO -- Kitchen: #15 [12/20] RUN chmod 0700 /root/.ssh
+I, [2025-08-10T01:06:43.767228 #16810]  INFO -- Kitchen: #15 CACHED
+I, [2025-08-10T01:06:43.767269 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767311 #16810]  INFO -- Kitchen: #16 [13/20] RUN touch /root/.ssh/authorized_keys
+I, [2025-08-10T01:06:43.767353 #16810]  INFO -- Kitchen: #16 CACHED
+I, [2025-08-10T01:06:43.767394 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767436 #16810]  INFO -- Kitchen: #17 [ 8/20] RUN echo "root ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/root
+I, [2025-08-10T01:06:43.767488 #16810]  INFO -- Kitchen: #17 CACHED
+I, [2025-08-10T01:06:43.767532 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767574 #16810]  INFO -- Kitchen: #18 [16/20] RUN mkdir -p /run/sshd
+I, [2025-08-10T01:06:43.767616 #16810]  INFO -- Kitchen: #18 CACHED
+I, [2025-08-10T01:06:43.767657 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767699 #16810]  INFO -- Kitchen: #19 [19/20] RUN update-ca-certificates
+I, [2025-08-10T01:06:43.767741 #16810]  INFO -- Kitchen: #19 CACHED
+I, [2025-08-10T01:06:43.767782 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767827 #16810]  INFO -- Kitchen: #20 [ 2/20] RUN [ ! -f "/sbin/initctl" ] || dpkg-divert --local --rename --add /sbin/initctl                 && ln -sf /bin/true /sbin/initctl
+I, [2025-08-10T01:06:43.767870 #16810]  INFO -- Kitchen: #20 CACHED
+I, [2025-08-10T01:06:43.767911 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.767959 #16810]  INFO -- Kitchen: #21 [ 5/20] RUN if ! getent passwd root; then                   useradd -d /root -m -s /bin/bash -p '*' root;                 fi
+I, [2025-08-10T01:06:43.768012 #16810]  INFO -- Kitchen: #21 CACHED
+I, [2025-08-10T01:06:43.768054 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.768098 #16810]  INFO -- Kitchen: #22 [10/20] RUN mkdir -p /root/.ssh
+I, [2025-08-10T01:06:43.768153 #16810]  INFO -- Kitchen: #22 CACHED
+I, [2025-08-10T01:06:43.768196 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.768254 #16810]  INFO -- Kitchen: #23 [20/20] RUN echo ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDzWgVxyQhs4CBzGYrPYd765GeEdlem/G0hGfvRHXeg9vqmhTonE7RrxU00yvepvdumOzWDBM9siUzJD7o6aprmpjvsWvItDJVB4ZAGiguiIEeA0G4z6HNLvWSKdDQ7ClikfBiuiWeP8aSKhQeDjNEZt8FhsYNXiiIPSk4vahfqoP2H6H38+uM44N9Q9dZ6XIXZAPmbGg3+v/r1n9qirYExtiL6TY4wqmMYLJzXDbo42Zz9vFpVXKv1+odJTHKMDRpCscyhC19eDH76+480kt6am/5YqTdlEL03SJbZe6HLdnRCBLxRZub3NkVuUtrlKHxQu1CJyiqvodCPhVfcO1wd kitchen_docker_key >> /root/.ssh/authorized_keys
+I, [2025-08-10T01:06:43.768358 #16810]  INFO -- Kitchen: #23 CACHED
+I, [2025-08-10T01:06:43.768407 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:43.768453 #16810]  INFO -- Kitchen: #24 exporting to image
+I, [2025-08-10T01:06:43.768559 #16810]  INFO -- Kitchen: #24 exporting layers done
+I, [2025-08-10T01:06:43.768647 #16810]  INFO -- Kitchen: #24 exporting manifest sha256:a748ca5ac54acf9ecf134b2e70f9cadeea5596f2b22130195363c24848047636 done
+I, [2025-08-10T01:06:43.768711 #16810]  INFO -- Kitchen: #24 exporting config sha256:c864b008dc90a7cd75615173b60d95d26470faac3edb49abc3ea7b4e2dcfe01e done
+I, [2025-08-10T01:06:43.768756 #16810]  INFO -- Kitchen: #24 exporting attestation manifest sha256:1bdafe3de712a67cef7f9cf8218191db1e661386b33c625bf9452b75f6312d25 done
+I, [2025-08-10T01:06:43.768808 #16810]  INFO -- Kitchen: #24 exporting manifest list sha256:99b86c0637a4b5e608912ec47f4e28844682b2aad0cdec992b6521bbcc294cbd done
+I, [2025-08-10T01:06:43.768927 #16810]  INFO -- Kitchen: #24 naming to moby-dangling@sha256:99b86c0637a4b5e608912ec47f4e28844682b2aad0cdec992b6521bbcc294cbd done
+I, [2025-08-10T01:06:43.768984 #16810]  INFO -- Kitchen: #24 unpacking to moby-dangling@sha256:99b86c0637a4b5e608912ec47f4e28844682b2aad0cdec992b6521bbcc294cbd
+I, [2025-08-10T01:06:44.721083 #16810]  INFO -- Kitchen: #24 unpacking to moby-dangling@sha256:99b86c0637a4b5e608912ec47f4e28844682b2aad0cdec992b6521bbcc294cbd 1.1s done
+I, [2025-08-10T01:06:44.821330 #16810]  INFO -- Kitchen: #24 DONE 1.1s
+I, [2025-08-10T01:06:44.822222 #16810]  INFO -- Kitchen: 
+I, [2025-08-10T01:06:44.822268 #16810]  INFO -- Kitchen:  [33m2 warnings found (use docker --debug to expand):
+I, [2025-08-10T01:06:44.822294 #16810]  INFO -- Kitchen: [0m - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 4)
+I, [2025-08-10T01:06:44.822316 #16810]  INFO -- Kitchen:  - LegacyKeyValueFormat: "ENV key=value" should be used instead of legacy "ENV key value" format (line 5)
+D, [2025-08-10T01:06:44.827175 #16810] DEBUG -- Kitchen: [local command] END (0m1.85s)
+D, [2025-08-10T01:06:44.830056 #16810] DEBUG -- Kitchen: ------Exception-------
+D, [2025-08-10T01:06:44.830114 #16810] DEBUG -- Kitchen: Class: Kitchen::ActionFailed
+D, [2025-08-10T01:06:44.830312 #16810] DEBUG -- Kitchen: Message: 1 actions failed.
+>>>>>>     Create failed on instance <consul-ubuntu-2204>.  Please see .kitchen/logs/consul-ubuntu-2204.log for more details
+D, [2025-08-10T01:06:44.830344 #16810] DEBUG -- Kitchen: ----------------------
+D, [2025-08-10T01:06:44.830468 #16810] DEBUG -- Kitchen: ------Backtrace-------
+D, [2025-08-10T01:06:44.830507 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:181:in `report_errors'
+D, [2025-08-10T01:06:44.830537 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:172:in `run_action'
+D, [2025-08-10T01:06:44.830586 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command/action.rb:35:in `block in call'
+D, [2025-08-10T01:06:44.830616 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/benchmark-0.4.1/lib/benchmark.rb:305:in `measure'
+D, [2025-08-10T01:06:44.830642 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command/action.rb:33:in `call'
+D, [2025-08-10T01:06:44.830669 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/cli.rb:52:in `perform'
+D, [2025-08-10T01:06:44.830694 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/cli.rb:198:in `block (2 levels) in <class:CLI>'
+D, [2025-08-10T01:06:44.830720 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.2.2/lib/thor/command.rb:27:in `run'
+D, [2025-08-10T01:06:44.830746 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.2.2/lib/thor/invocation.rb:127:in `invoke_command'
+D, [2025-08-10T01:06:44.830772 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.2.2/lib/thor.rb:392:in `dispatch'
+D, [2025-08-10T01:06:44.830797 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/thor-1.2.2/lib/thor/base.rb:485:in `start'
+D, [2025-08-10T01:06:44.830836 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/bin/kitchen:11:in `block in <top (required)>'
+D, [2025-08-10T01:06:44.830890 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/errors.rb:183:in `with_friendly_errors'
+D, [2025-08-10T01:06:44.830945 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/bin/kitchen:11:in `<top (required)>'
+D, [2025-08-10T01:06:44.830999 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `load'
+D, [2025-08-10T01:06:44.831053 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/kitchen:25:in `<main>'
+D, [2025-08-10T01:06:44.831111 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `eval'
+D, [2025-08-10T01:06:44.831165 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/bin/ruby_executable_hooks:22:in `<main>'
+D, [2025-08-10T01:06:44.831278 #16810] DEBUG -- Kitchen: ----End Backtrace-----
+D, [2025-08-10T01:06:44.831334 #16810] DEBUG -- Kitchen: -Composite Exception--
+D, [2025-08-10T01:06:44.831395 #16810] DEBUG -- Kitchen: Class: Kitchen::InstanceFailure
+D, [2025-08-10T01:06:44.831450 #16810] DEBUG -- Kitchen: Message: Create failed on instance <consul-ubuntu-2204>.  Please see .kitchen/logs/consul-ubuntu-2204.log for more details
+D, [2025-08-10T01:06:44.831510 #16810] DEBUG -- Kitchen: ----------------------
+D, [2025-08-10T01:06:44.831565 #16810] DEBUG -- Kitchen: ------Backtrace-------
+D, [2025-08-10T01:06:44.831622 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/docker/helpers/image_helper.rb:39:in `parse_image_id'
+D, [2025-08-10T01:06:44.831677 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/docker/helpers/image_helper.rb:68:in `build_image'
+D, [2025-08-10T01:06:44.831732 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/docker/container/linux.rb:41:in `create'
+D, [2025-08-10T01:06:44.831786 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/driver/docker.rb:125:in `create'
+D, [2025-08-10T01:06:44.831840 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:495:in `public_send'
+D, [2025-08-10T01:06:44.831904 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:495:in `block in perform_action'
+D, [2025-08-10T01:06:44.831961 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:563:in `synchronize_or_call'
+D, [2025-08-10T01:06:44.832018 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:524:in `block in action'
+D, [2025-08-10T01:06:44.832076 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/benchmark-0.4.1/lib/benchmark.rb:305:in `measure'
+D, [2025-08-10T01:06:44.832134 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:523:in `action'
+D, [2025-08-10T01:06:44.832188 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:495:in `perform_action'
+D, [2025-08-10T01:06:44.832246 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:404:in `create_action'
+D, [2025-08-10T01:06:44.832301 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+D, [2025-08-10T01:06:44.832358 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+D, [2025-08-10T01:06:44.832414 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:391:in `block in transition_to'
+D, [2025-08-10T01:06:44.832470 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:390:in `each'
+D, [2025-08-10T01:06:44.832542 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:390:in `transition_to'
+D, [2025-08-10T01:06:44.832596 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:139:in `converge'
+D, [2025-08-10T01:06:44.832655 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:195:in `public_send'
+D, [2025-08-10T01:06:44.832732 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:195:in `run_action_in_thread'
+D, [2025-08-10T01:06:44.832788 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+D, [2025-08-10T01:06:44.832844 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/logging-2.4.0/lib/logging/diagnostic_context.rb:474:in `block in create_with_logging_context'
+D, [2025-08-10T01:06:44.832899 #16810] DEBUG -- Kitchen: ----End Backtrace-----
+D, [2025-08-10T01:06:44.832958 #16810] DEBUG -- Kitchen: ---Nested Exception---
+D, [2025-08-10T01:06:44.833014 #16810] DEBUG -- Kitchen: Class: Kitchen::ActionFailed
+D, [2025-08-10T01:06:44.833068 #16810] DEBUG -- Kitchen: Message: Could not parse Docker build output for image ID
+D, [2025-08-10T01:06:44.833126 #16810] DEBUG -- Kitchen: ----------------------
+D, [2025-08-10T01:06:44.833180 #16810] DEBUG -- Kitchen: ------Backtrace-------
+D, [2025-08-10T01:06:44.833232 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/docker/helpers/image_helper.rb:39:in `parse_image_id'
+D, [2025-08-10T01:06:44.833295 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/docker/helpers/image_helper.rb:68:in `build_image'
+D, [2025-08-10T01:06:44.833350 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/docker/container/linux.rb:41:in `create'
+D, [2025-08-10T01:06:44.833409 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/kitchen-docker-2.15.0/lib/kitchen/driver/docker.rb:125:in `create'
+D, [2025-08-10T01:06:44.833463 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:495:in `public_send'
+D, [2025-08-10T01:06:44.833516 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:495:in `block in perform_action'
+D, [2025-08-10T01:06:44.833571 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:563:in `synchronize_or_call'
+D, [2025-08-10T01:06:44.833625 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:524:in `block in action'
+D, [2025-08-10T01:06:44.833693 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/benchmark-0.4.1/lib/benchmark.rb:305:in `measure'
+D, [2025-08-10T01:06:44.833747 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:523:in `action'
+D, [2025-08-10T01:06:44.833805 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:495:in `perform_action'
+D, [2025-08-10T01:06:44.833860 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:404:in `create_action'
+D, [2025-08-10T01:06:44.833915 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:392:in `block (2 levels) in transition_to'
+D, [2025-08-10T01:06:44.833969 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/lifecycle_hooks.rb:47:in `run_with_hooks'
+D, [2025-08-10T01:06:44.834024 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:391:in `block in transition_to'
+D, [2025-08-10T01:06:44.834080 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:390:in `each'
+D, [2025-08-10T01:06:44.834156 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:390:in `transition_to'
+D, [2025-08-10T01:06:44.834210 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/instance.rb:139:in `converge'
+D, [2025-08-10T01:06:44.834269 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:195:in `public_send'
+D, [2025-08-10T01:06:44.834323 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:195:in `run_action_in_thread'
+D, [2025-08-10T01:06:44.834377 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/rubies/ruby-3.3.6/lib/ruby/gems/3.3.0/gems/test-kitchen-3.8.1/lib/kitchen/command.rb:166:in `block (2 levels) in run_action'
+D, [2025-08-10T01:06:44.834432 #16810] DEBUG -- Kitchen: /Users/alexfreidah/.rvm/gems/ruby-3.3.6/gems/logging-2.4.0/lib/logging/diagnostic_context.rb:474:in `block in create_with_logging_context'
+D, [2025-08-10T01:06:44.834492 #16810] DEBUG -- Kitchen: ----End Backtrace-----

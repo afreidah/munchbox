@@ -6,7 +6,7 @@
 #
 # Copyright:: 2024, Alex Freidah, All Rights Reserved.
 #
-# Cookbook metadata for Raspberry Pi bootstrap configuration.
+# Cookbook:: metadata for Raspberry Pi bootstrap configuration.
 # --------------------------------------------------------------------
 
 name             'pi_bootstrap'

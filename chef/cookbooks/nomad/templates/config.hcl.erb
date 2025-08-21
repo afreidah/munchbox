@@ -78,11 +78,13 @@ plugin "docker" {
 # --------------------------------------------------------------------
 # Consul Integration
 # --------------------------------------------------------------------
+<% if node['nomad']['consul']['enabled'] %>
 consul {
-  address          = "<%= node['nomad']['bind_addr'] %>:8500"  # This node’s Consul agent
+  address          = "<%= node['nomad']['consul']['address'] %>"
   auto_advertise   = <%= node['nomad']['consul']['auto_advertise'] %>
   client_auto_join = <%= node['nomad']['consul']['auto_join'] %>
 }
+<% end %>
 
 <% if node['nomad']['telemetry']['enabled'] %>
 # --------------------------------------------------------------------

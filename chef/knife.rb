@@ -3,7 +3,7 @@
 # Local paths to your cookbooks and data bags
 cookbook_path [
   File.expand_path('cookbooks', __dir__),
-  File.expand_path('community-cookbooks', __dir__)
+  File.expand_path('community-cookbooks', __dir__),
 ]
 
 data_bag_path File.expand_path('data_bags', __dir__)

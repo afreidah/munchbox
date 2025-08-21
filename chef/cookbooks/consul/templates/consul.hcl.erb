@@ -8,7 +8,8 @@ node_name    = "<%= node['consul']['node_name'] %>"
 data_dir     = "<%= node['consul']['data_dir'] %>"
 
 bind_addr      = "<%= node['consul']['bind_addr'] %>"
-advertise_addr = "<%= node['consul']['advertise_addr'] %>"
+advertise_addr = "{{ GetInterfaceIP \"<%= node.dig('consul','interface') || 'eth0' %>\" }}"
+
 
 leave_on_terminate   = true
 rejoin_after_leave   = true
@@ -35,7 +36,7 @@ ports {
 # ACLs
 # --------------------------------------------------------------------
 acl {
-  enabled                  = true
+  enabled                  = <%= node['consul']['acl']['enabled'] %>
   default_policy           = "deny"
   down_policy              = "extend-cache"
   enable_token_persistence = true
@@ -73,7 +74,9 @@ autopilot {
 # --------------------------------------------------------------------
 # Cluster Join & DNS
 # --------------------------------------------------------------------
-retry_join = <%= (node['consul']['retry_join'] || []).to_a.to_json %>
+<% if node['consul']['retry_join'] && !node['consul']['retry_join'].empty? %>
+retry_join = <%= node['consul']['retry_join'].to_json %>
+<% end %>
 recursors  = <%= (node['consul']['recursors']  || %w(1.1.1.1 9.9.9.9)).to_json %>
 
 # --------------------------------------------------------------------

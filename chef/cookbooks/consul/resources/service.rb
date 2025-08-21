@@ -62,8 +62,8 @@ action :create do
   template '/etc/init.d/consul' do
     source 'consul-init.erb'
     mode '0755'
-    owner 'root'
-    group 'root'
+    owner node['consul']['user']
+    group node['consul']['group']
     variables(
       consul_binary: consul_binary,
       config_dir: new_resource.config_dir,

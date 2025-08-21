@@ -8,23 +8,19 @@
 
 include_recipe 'firewall'
 
-# --- Define Consul firewall rules as an array of hashes ---
-consul_firewall_rules = [
-  { name: 'consul-raft',          port: 8300, protocol: :tcp },
-  { name: 'consul-serf-lan-tcp',  port: 8301, protocol: :tcp },
-  { name: 'consul-serf-lan-udp',  port: 8301, protocol: :udp },
-  { name: 'consul-serf-wan-tcp',  port: 8302, protocol: :tcp },
-  { name: 'consul-serf-wan-udp',  port: 8302, protocol: :udp },
-  { name: 'consul-http',          port: 8500, protocol: :tcp },
-  { name: 'consul-dns-tcp',       port: 8600, protocol: :tcp },
-  { name: 'consul-dns-udp',       port: 8600, protocol: :udp },
-]
+Array(node['consul']['consul_firewall_rules']).each do |rule|
+  name     = rule[:name]     || rule['name'] || 'consul-rule'
+  port     = rule[:port]     || rule['port']     # may be nil => all ports
+  protocol = rule[:protocol] || rule['protocol'] # "tcp"/"udp" or :tcp/:udp or nil
+  source   = rule[:source]   || rule['source'] || '0.0.0.0/0'
 
-consul_firewall_rules.each do |rule|
-  firewall_rule rule[:name] do
-    port     rule[:port]
-    protocol rule[:protocol]
-    source   '192.168.1.0/24'
+  # Coerce "tcp"/"udp" -> :tcp/:udp, leave nil as nil
+  protocol = protocol.nil? ? nil : protocol.to_s.strip.to_sym
+
+  firewall_rule name do
     command  :allow
+    source   source
+    port     port unless port.nil?
+    protocol protocol unless protocol.nil?
   end
 end
