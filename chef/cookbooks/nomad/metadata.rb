@@ -6,7 +6,7 @@
 #
 # Copyright:: 2024, Alex Freidah, All Rights Reserved.
 #
-# Cookbook metadata for Nomad installation and configuration.
+# Cookbook:: metadata for Nomad installation and configuration.
 # --------------------------------------------------------------------
 
 name             'nomad'

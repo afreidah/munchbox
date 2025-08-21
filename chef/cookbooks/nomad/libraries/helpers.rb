@@ -24,6 +24,6 @@ module Nomad
   end
 end
 
-Chef::Recipe.include(Nomad::Helpers)
+Chef::DSL::Recipe.include(Nomad::Helpers)
 Chef::Resource.include(Nomad::Helpers)
-Chef::Provider.include(Nomad::Helpers) if defined?(Chef::Provider)
+Chef::DSL::Recipe.include(Nomad::Helpers) if defined?(Chef::Provider)

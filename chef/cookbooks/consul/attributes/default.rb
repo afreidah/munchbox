@@ -14,7 +14,7 @@
 # --------------------------------------------------------------------
 
 default['consul']['install_method'] = 'binary'
-default['consul']['version']        = '1.21.0'
+default['consul']['version']        = '1.21.3'
 default['consul']['install_dir']    = '/usr/local/bin'
 
 # --------------------------------------------------------------------
@@ -30,6 +30,13 @@ default['consul']['group'] = 'root'
 
 default['consul']['data_dir']   = '/opt/consul'
 default['consul']['config_dir'] = '/etc/consul.d'
+
+# --------------------------------------------------------------------
+# Serf Key from Data Bag
+# --------------------------------------------------------------------
+
+default['consul']['databag_name'] = 'consul'
+default['consul']['databag_item'] = 'gossip'
 
 # --------------------------------------------------------------------
 # Consul Identity
@@ -56,24 +63,18 @@ default['consul']['ui']        = true # UI enabled; HTTP kept on 127.0.0.1 (prox
 # Consul Server Configuration
 # --------------------------------------------------------------------
 
-# List of Consul server nodes for Raft quorum
-default['consul']['servers'] = %w(
-  192.168.1.225
-  192.168.1.222
-  192.168.1.98
-)
-
 default['consul']['server']['enable']           = true
-default['consul']['server']['bootstrap_expect'] = node['consul']['servers'].length
+default['consul']['server']['retry_join']       = []
+default['consul']['server']['bootstrap_expect'] = node['consul']['server']['retry_join'].length
 
 # --------------------------------------------------------------------
 # Consul Cluster Join / DNS
 # --------------------------------------------------------------------
 
-# retry_join typically equals the server list
+# --- retry_join typically equals the server list ---
 default['consul']['retry_join'] = node['consul']['servers']
 
-# Recursors used by Consul DNS (Pi-hole forwards .consul here; Consul forwards upstream lookups to these)
+# --- Recursors used by Consul DNS (Pi-hole forwards .consul here; Consul forwards upstream lookups to these) ---
 default['consul']['recursors'] = %w(
   1.1.1.1
   9.9.9.9
@@ -83,9 +84,22 @@ default['consul']['recursors'] = %w(
 # Security: Gossip (Serf) & ACL tokens
 # --------------------------------------------------------------------
 
-# Gossip encryption key (generate with `consul keygen` and override per-env)
-default['consul']['serf_key'] = 'REPLACE_WITH_consul_keygen'
-
-# Agent/default tokens will be set post-bootstrap (leave nil in git)
+# --- Agent/default tokens will be set post-bootstrap (leave nil in git) ---
+default['consul']['acl']['enabled'] = true
 default['consul']['acl']['tokens']['agent']   = nil
 default['consul']['acl']['tokens']['default'] = nil
+
+# --------------------------------------------------------------------
+# Firewall Rules
+# --------------------------------------------------------------------
+
+default['consul']['consul_firewall_rules'] = [
+  { name: 'consul-raft',          port: 8300, protocol: :tcp },
+  { name: 'consul-serf-lan-tcp',  port: 8301, protocol: :tcp },
+  { name: 'consul-serf-lan-udp',  port: 8301, protocol: :udp },
+  { name: 'consul-serf-wan-tcp',  port: 8302, protocol: :tcp },
+  { name: 'consul-serf-wan-udp',  port: 8302, protocol: :udp },
+  { name: 'consul-http',          port: 8500, protocol: :tcp },
+  { name: 'consul-dns-tcp',       port: 8600, protocol: :tcp },
+  { name: 'consul-dns-udp',       port: 8600, protocol: :udp },
+]

@@ -1,0 +1,61 @@
+# --------------------------------------------------------------------
+# Consul instance config (single-host test cluster)
+# --------------------------------------------------------------------
+
+datacenter   = "<%= @datacenter %>"
+node_name    = "<%= @node_name %>"
+data_dir     = "<%= @data_dir %>"
+
+bind_addr      = "127.0.0.1"
+advertise_addr = "127.0.0.1"
+
+leave_on_terminate   = true
+rejoin_after_leave   = true
+disable_update_check = true
+log_level            = "<%= @log_level %>"
+
+ui_config { enabled = true }
+
+# Listen on localhost for test; you can port-forward if you want the UI
+client_addr = "127.0.0.1"
+addresses {
+  http = "127.0.0.1"
+  dns  = "127.0.0.1"
+}
+
+# IMPORTANT: turn off HTTPS and gRPC ports so instances don't collide on 8503.
+ports {
+  http     = <%= @ports['http'] %>
+  https    = -1
+  grpc     = -1
+  grpc_tls = -1
+
+  dns      = <%= @ports['dns']  %>
+  server   = <%= @ports['raft'] %>
+  serf_lan = <%= @ports['lan']  %>
+  serf_wan = <%= @ports['wan']  %>
+}
+
+# ACLs disabled for localhost Kitchen cluster (test only)
+acl {
+  enabled = false
+}
+
+encrypt                 = "<%= @encrypt %>"
+encrypt_verify_incoming = true
+encrypt_verify_outgoing = true
+
+server           = true
+bootstrap_expect = <%= @bootstrap_expect %>
+
+autopilot {
+  cleanup_dead_servers   = true
+  last_contact_threshold = "200ms"
+  max_trailing_logs      = 250
+}
+
+retry_join = <%= @retry_join.to_json %>
+recursors  = ["1.1.1.1","9.9.9.9"]
+
+telemetry   { prometheus_retention_time = "24h" }
+performance { raft_multiplier = 1 }

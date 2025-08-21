@@ -56,7 +56,7 @@ group :development, :test do
   # --- Test Kitchen & Drivers ---
   gem 'test-kitchen'                      # Test Kitchen core.
   gem 'kitchen-inspec'                    # InSpec verifier for Kitchen.
-  gem 'kitchen-docker'                    # Dokken driver for Kitchen (Docker-based testing).
+  gem 'kitchen-docker', '2.15.0'          # Dokken driver for Kitchen (Docker-based testing).
 
   # --- Build & Docs ---
   gem 'rake' # Standard build tasks.

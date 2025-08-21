@@ -1,0 +1,8 @@
+#!/bin/bash
+
+alias lint="bundle exec rake lint:cookstyle"
+alias spec="bundle exec rake spec:chefspec"
+alias destroy="bundle exec kitchen destroy"
+alias converge="bundle exec kitchen converge"
+alias verify="bundle exec kitchen verify"
+alias fix="bundle exec rake lint:cookstyle_fix"
