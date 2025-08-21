@@ -1,0 +1,7 @@
+{
+  "run_list": [
+    "recipe[pi_bootstrap::default]",
+    "recipe[pi_bootstrap::firewall]",
+    "recipe[consul::install]"
+  ]
+}

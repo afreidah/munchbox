@@ -64,15 +64,18 @@ default['consul']['ui']        = true # UI enabled; HTTP kept on 127.0.0.1 (prox
 # --------------------------------------------------------------------
 
 default['consul']['server']['enable']           = true
-default['consul']['server']['retry_join']       = []
-default['consul']['server']['bootstrap_expect'] = node['consul']['server']['retry_join'].length
+default['consul']['server']['bootstrap_expect'] = 3
 
 # --------------------------------------------------------------------
 # Consul Cluster Join / DNS
 # --------------------------------------------------------------------
 
 # --- retry_join typically equals the server list ---
-default['consul']['retry_join'] = node['consul']['servers']
+default['consul']['retry_join'] = [
+  '192.168.68.60',
+  '192.168.68.61',
+  '192.168.68.63'
+]
 
 # --- Recursors used by Consul DNS (Pi-hole forwards .consul here; Consul forwards upstream lookups to these) ---
 default['consul']['recursors'] = %w(

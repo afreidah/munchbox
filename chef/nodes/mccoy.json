@@ -1,0 +1,15 @@
+{
+  "run_list": [
+    "recipe[pi_bootstrap::default]",
+    "recipe[pi_bootstrap::firewall]",
+    "recipe[consul::install]"
+  ],
+  "override": {
+    "consul": {
+      "server": {
+        "bootstrap_expect": 3
+      },
+      "servers": ["192.168.68.60", "192.168.68.61", "192.168.68.63"]
+    }
+  }
+}
