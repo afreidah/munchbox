@@ -3,30 +3,31 @@
 # --------------------------------------------------------------------
 # Cookbook:: nomad
 # Resource:: nomad_install
-# Purpose:: Install/upgrade Nomad in an idempotent, arch‑aware way.
+# Purpose:: Install/upgrade Nomad in an idempotent, arch-aware way.
 # --------------------------------------------------------------------
 
 # --- Name of resource for Nomad cluster installation ---
 provides :nomad_install
 unified_mode true
 
-property :version,      String,  required: true
-property :bin_path,     String,  default: '/usr/local/bin'
-property :checksums,    Hash,    default: {} # { '1.10.3' => { 'amd64' => 'sha256', 'arm64' => 'sha256' } }
-property :install_user, String,  default: 'root'
-property :install_group, String, default: 'root'
+property :version,       String,  required: true
+property :bin_path,      String,  default: '/usr/local/bin'
+property :checksums,     Hash,    default: {} # { '1.10.3' => { 'amd64' => 'sha256', 'arm64' => 'sha256' } }
+property :install_user,  String,  default: 'root'
+property :install_group, String,  default: 'root'
 
 default_action :install
 
 action :install do
   package 'unzip' # ensure unzip binary exists
 
-  arch       = NomadCookbook::Helper.arch_for(node)
+  arch       = NomadCookbook::Helper.arch_for(node) # 'amd64' or 'arm64'
   ver        = new_resource.version
-  zip_name   = "nomad_#{ver}_linux_#{arch}.zip"
+  ver_clean  = ver.sub(/^v/, '')
+  zip_name   = "nomad_#{ver_clean}_linux_#{arch}.zip"
   cache_file = ::File.join(Chef::Config[:file_cache_path], zip_name)
-  url        = "https://releases.hashicorp.com/nomad/#{ver}/#{zip_name}"
-  sha        = new_resource.checksums.dig(ver, arch)
+  url        = "https://releases.hashicorp.com/nomad/#{ver_clean}/#{zip_name}"
+  sha        = new_resource.checksums.dig(ver_clean, arch)
 
   remote_file cache_file do
     source   url
@@ -37,8 +38,11 @@ action :install do
   bash 'install-nomad' do
     code <<-EOH
       unzip -o #{cache_file} -d /tmp
-      install -m 0755 /tmp/nomad #{new_resource.bin_path}/nomad
+      install -o #{new_resource.install_user} -g #{new_resource.install_group} -m 0755 /tmp/nomad #{new_resource.bin_path}/nomad
     EOH
-    not_if { NomadCookbook::Helper.installed_version("#{new_resource.bin_path}/nomad") == "v#{ver}" }
+    not_if do
+      installed = NomadCookbook::Helper.installed_version("#{new_resource.bin_path}/nomad")
+      installed && installed.sub(/^v/, '') == ver_clean
+    end
   end
 end

@@ -1,0 +1,24 @@
+{
+  "id": "management",
+  "secret_id": {
+    "encrypted_data": "Xa1o1co8AGwmo+3FVfAwVselX+BtXzj1Rr3MtkWoHmB7amoyKH0sg3WimH4E\nCTXOTXN1O1yW7w==\n",
+    "iv": "a0ALN+9GqxfXmQ5W\n",
+    "auth_tag": "Ea1pzajZsR+G76Jo86wV4Q==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "name": {
+    "encrypted_data": "aZFslkMmu8n4RhJNgW4jFTa/1lfEFg3zRs6sYYElFBsJXw==\n",
+    "iv": "0AVgwTEy0wuGiRuc\n",
+    "auth_tag": "nz/9mxZbfJaTSzt8gbKs+A==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "type": {
+    "encrypted_data": "Yj3BPofURMjlmDKIycF6g4erXUbXoWWTUZNYgHs=\n",
+    "iv": "WZz8KX7ZLhatJzYQ\n",
+    "auth_tag": "CwSdE2IvuGXZWb5T6OIqvg==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  }
+}

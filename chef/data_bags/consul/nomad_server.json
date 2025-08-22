@@ -1,0 +1,10 @@
+{
+  "id": "nomad_server",
+  "token": {
+    "encrypted_data": "OtcNJBGVachjjYnkk7m6+UkOP1aNbeIqBvNdXIMIGerHiNmFbyDRTu9FdCAV\nkrpnaKA0Si5g+g==\n",
+    "iv": "uYWOQ4SCA6knt5th\n",
+    "auth_tag": "Imy02JFtD7q+/wNqlpFKyQ==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  }
+}

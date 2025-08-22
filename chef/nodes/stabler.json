@@ -2,14 +2,68 @@
   "run_list": [
     "recipe[pi_bootstrap::default]",
     "recipe[pi_bootstrap::firewall]",
-    "recipe[consul::install]"
+    "recipe[consul::install]",
+    "recipe[consul::acl_nomad]",
+    "recipe[nomad::default]"
   ],
   "override": {
-    "consul": {
+    "set_fqdn": "stabler",
+    "nomad": {
+      "bind_addr": "192.168.68.61",
+      "datacenter": "pi-dc",
+
       "server": {
-        "bootstrap_expect": 3
+        "enabled": true,
+        "servers": [
+          "192.168.68.60",
+          "192.168.68.61",
+          "192.168.68.63"
+        ],
+        "raft_multiplier": 2,
+        "retry_interval": "15s",
+        "retry_max": 5
       },
-      "servers": ["192.168.68.60", "192.168.68.61", "192.168.68.63"]
+
+      "client": {
+        "enabled": true,
+        "node_class": "",
+        "cni_path": "/opt/cni/bin",
+        "host_volumes": []
+      },
+
+      "consul": {
+        "enabled": true,
+        "address": "192.168.68.61:8500",
+        "auto_advertise": true,
+        "auto_join": true
+      },
+
+      "docker": {
+        "allow_privileged": true,
+        "volumes": { "enabled": true },
+        "caps": ["NET_ADMIN"]
+      },
+
+      "telemetry": {
+        "enabled": true,
+        "collection_interval": "1s",
+        "disable_hostname": true,
+        "prometheus_metrics": true,
+        "publish_allocation_metrics": true,
+        "publish_node_metrics": true
+      },
+
+      "cni": {
+        "enable": true,
+        "path": "/opt/cni/bin",
+        "version": "v1.6.2"
+      },
+
+      "acl": {
+        "enabled": true,
+        "bootstrap_this_node": false
+      }
     }
   }
 }
+

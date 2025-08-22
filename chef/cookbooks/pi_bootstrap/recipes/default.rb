@@ -13,7 +13,7 @@
 # Set Variables
 # --------------------------------------------------------------------
 
-host = "#{node['pi_bootstrap']['hostname_prefix']}-#{node['ipaddress'].split('.').last}"
+host = node['set_fqdn']
 
 # --------------------------------------------------------------------
 # Log Detected IP Address
@@ -37,7 +37,7 @@ template '/etc/hostname' do
 end
 
 execute 'hostnamectl-set' do
-  command lazy { "hostnamectl set-hostname #{host}" }
+  command lazy { "hostnamectl hostname #{host}" }
   action :nothing
 end
 

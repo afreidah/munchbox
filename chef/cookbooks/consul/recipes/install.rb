@@ -13,6 +13,19 @@
 
 include_recipe 'consul::firewall'
 
+# --------------------------------------------------------------------
+# Load agent token from encrypted data bag (chef-solo)
+# --------------------------------------------------------------------
+begin
+  agent_item = Chef::EncryptedDataBagItem.load('consul', 'agent')
+  node.default['consul']['acl'] ||= {}
+  node.default['consul']['acl']['enabled'] = true
+  node.default['consul']['acl']['tokens'] ||= {}
+  node.default['consul']['acl']['tokens']['agent'] = agent_item['token']
+rescue => e
+  Chef::Log.warn("Consul agent token not loaded: #{e}")
+end
+
 # ------------------------------------------------------------------------------
 #  Install Consul (binary or package, user/group, directories)
 # ------------------------------------------------------------------------------
