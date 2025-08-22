@@ -1,0 +1,12 @@
+# --------------------------------------------------------------------
+# Consul ACL Policy: nomad-server
+# Grants Nomad servers the minimal rights they need.
+# --------------------------------------------------------------------
+key_prefix "nomad/" { policy = "write" }
+node_prefix ""      { policy = "write" }
+service "nomad"     { policy = "write" }
+session_prefix ""   { policy = "write" }
+agent_prefix ""     { policy = "read" }
+
+# Optional: if Nomad will manage Connect intentions
+intention_prefix "" { policy = "write" }

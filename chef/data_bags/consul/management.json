@@ -1,0 +1,10 @@
+{
+  "id": "management",
+  "token": {
+    "encrypted_data": "yFsyNWj9Zr2BT31Kb9ezPlGMVjEVF2Sv79Lt/UXY3TqIS4FfpSgM1S/MBH9L\npWyTA9Bb1V6vfg==\n",
+    "iv": "H/WrIkeL8Dbm2BCw\n",
+    "auth_tag": "d7wEKZuGtCJ7ktHVR7l/Mg==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  }
+}

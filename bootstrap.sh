@@ -11,3 +11,4 @@ ssh afreidah@$1 "sudo chef-solo --chef-license accept -c /tmp/chef/knife.rb -j /
 
 # just dumping the knife-zero command here so I don't forget it
 # bundle exec knife zero bootstrap 192.168.1.225 --ssh-user afreidah --node-name pi-225 -c solo.rb --json-attribute-file nodes/node-pi-225.json --sudo
+#

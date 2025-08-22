@@ -2,59 +2,103 @@
 # Cookbook:: nomad
 # Template:: config.hcl.erb
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
-#
 # Main configuration for Nomad server/client node.
+# Production-oriented: TLS, ACLs, Serf encryption, Consul ACL tokens.
 # --------------------------------------------------------------------
 
 # --------------------------------------------------------------------
 # Global Settings
 # --------------------------------------------------------------------
 data_dir  = "<%= node['nomad']['data_dir'] %>"      # Where Nomad stores its state
-bind_addr = "<%= node['nomad']['bind_addr'] %>"     # This host’s LAN IP
+bind_addr = "<%= node['nomad']['bind_addr'] %>"     # This host’s bind address (listen on)
 
 region     = "global"                               # Must match across cluster
 datacenter = "<%= node['nomad']['datacenter'] %>"
 
+# Friendly name & verbosity (safe fallbacks)
+name                 = "<%= node['nomad']['name'] || node['hostname'] %>"   # Shown in UI/logs
+log_level            = "<%= node['nomad']['log_level'] || 'INFO' %>"        # INFO steady state; DEBUG for bring-up
+disable_update_check = true                                                 # Keep air-gapped/hardened nodes quiet
+
 # --------------------------------------------------------------------
-# Advertise Settings
+# Security: TLS for HTTP (API/UI) and RPC (server<->server/client)
+# Provide per-node certs with correct SANs (IP/DNS). Gated by attribute.
+# --------------------------------------------------------------------
+<% if node.dig('nomad','tls','enabled') %>
+tls {
+  http  = true                                                    # Serve HTTPS on :4646
+  rpc   = true                                                    # mTLS for Nomad RPC
+  ca_file   = "<%= node.dig('nomad','tls','ca_file') %>"
+  cert_file = "<%= node.dig('nomad','tls','cert_file') %>"
+  key_file  = "<%= node.dig('nomad','tls','key_file') %>"
+  <% if !node.dig('nomad','tls','verify_https_client').nil? %>
+  verify_https_client = <%= node.dig('nomad','tls','verify_https_client') ? 'true' : 'false' %>  # Optional: gate API by client certs
+  <% end %>
+}
+<% end %>
+
+# --------------------------------------------------------------------
+# Nomad ACLs (separate from Consul ACLs). Enable for job/namespace RBAC.
+# Bootstrap after the server cluster is healthy: `nomad acl bootstrap`
+# --------------------------------------------------------------------
+acl {
+  enabled = <%= node.dig('nomad','acl','enabled') ? 'true' : 'false' %>
+  <% if node.dig('nomad','acl','token_ttl') %>
+  token_ttl = "<%= node.dig('nomad','acl','token_ttl') %>"        # Optional hardening
+  <% end %>
+}
+
+# --------------------------------------------------------------------
+# Advertise Settings (prefer explicit advertise_ip; fall back to bind_addr)
 # --------------------------------------------------------------------
 advertise {
-  http = "<%= node['nomad']['bind_addr'] %>:4646"  # API endpoint
-  rpc  = "<%= node['nomad']['bind_addr'] %>:4647"  # Raft RPC endpoint
-  serf = "<%= node['nomad']['bind_addr'] %>:4648"  # Serf LAN gossip
+  http = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4646"  # API endpoint
+  rpc  = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4647"  # Raft RPC endpoint
+  serf = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4648"  # Serf LAN gossip
 }
 
 # --------------------------------------------------------------------
 # Server Configuration
 # --------------------------------------------------------------------
+<% retry_list = (@retry_join && @retry_join.any?) ? @retry_join : Array(node.dig('nomad','server','servers')) %>
 server {
-  enabled          = <%= node['nomad']['server']['enabled'] %>        # Run in server mode
-  bootstrap_expect = <%= node['nomad']['server']['servers'].count %>  # Wait for configured servers total
-  raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %> # Raft heartbeat multiplier
+  enabled          = <%= node['nomad']['server']['enabled'] %>                     # Run in server mode
+  bootstrap_expect = <%= Array(node.dig('nomad','server','servers')).count %>      # Wait for configured servers total
+  raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %>             # Raft heartbeat multiplier
 
+  # Serf (gossip) encryption key — servers only
+  # Generate with: `nomad operator gossip keyring generate`
+  <% if node.dig('nomad','server','gossip_encrypt').to_s != '' %>
+  encrypt = "<%= node['nomad']['server']['gossip_encrypt'] %>"
+  <% end %>
+
+  # Auto-join peers (retry) — works with IPs or Consul/DNS names
+  <% if retry_list.any? %>
   server_join {
-    retry_join     = [
-      <% @retry_join.each do |j| %>
-        "<%= j %>",                # Join address
+    retry_join = [
+      <% retry_list.each do |j| %>
+        "<%= j %>",                         # Join address
       <% end %>
     ]
-    retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"  # Seconds
-    retry_max      = <%= node['nomad']['server']['retry_max'] %>         # Max attempts
+    retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"  # Seconds between attempts
+    retry_max      = <%= node['nomad']['server']['retry_max'] %>         # Max attempts (0 = forever)
   }
+  <% end %>
 }
 
 # --------------------------------------------------------------------
 # Client Configuration
 # --------------------------------------------------------------------
 client {
-  enabled    = <%= node['nomad']['client']['enabled'] %>
-  <% if node['nomad']['client']['node_class'] != '' %>
-  node_class = "<%= node['nomad']['client']['node_class'] %>"
-  <% end %>
-  cni_path   = "<%= node['nomad']['client']['cni_path'] %>"  # Path to CNI plugin binaries
+  enabled = <%= node['nomad']['client']['enabled'] %>
 
-<% node['nomad']['client']['host_volumes'].each do |volume| %>
+  <% if (node['nomad']['client']['node_class'] || '') != '' %>
+  node_class = "<%= node['nomad']['client']['node_class'] %>"            # Classify capacity/traits for job constraints
+  <% end %>
+
+  cni_path = "<%= node['nomad']['client']['cni_path'] %>"                # Path to CNI plugin binaries
+
+<% Array(node.dig('nomad','client','host_volumes')).to_a.each do |volume| %>
   host_volume "<%= volume['name'] %>" {
     path      = "<%= volume['path'] %>"      # Shared data on host
     read_only = <%= volume['read_only'] %>
@@ -63,49 +107,66 @@ client {
 }
 
 # --------------------------------------------------------------------
-# Docker Task Plugin
+# Task Drivers
 # --------------------------------------------------------------------
+
+# Docker Task Plugin (correct fields)
 plugin "docker" {
   config {
+    # Non-default Docker socket or remote host if needed
+    endpoint         = "<%= node.dig('nomad','docker','endpoint') || 'unix:///var/run/docker.sock' %>"
+
     allow_privileged = <%= node['nomad']['docker']['allow_privileged'] %>
     volumes { enabled = <%= node['nomad']['docker']['volumes']['enabled'] %> }
+
+    # Allowed Linux capabilities that tasks may request via cap_add
+    <% allow_caps = Array(node.dig('nomad','docker','allow_caps') || node['nomad']['docker']['caps']).map { |c| "\"#{c}\"" }.join(", ") %>
+    <% if allow_caps != "" %>allow_caps = [<%= allow_caps %>]<% end %>
   }
-  caps {
-    whitelist = [<% node['nomad']['docker']['caps'].join(", ") %>]
+}
+
+# Raw Exec driver (modern enablement)
+plugin "raw_exec" {
+  config {
+    enabled = <%= node.dig('nomad','client','raw_exec').nil? ? 'true' : (node['nomad']['client']['raw_exec'] ? 'true' : 'false') %>
   }
 }
 
 # --------------------------------------------------------------------
-# Consul Integration
+# Consul Integration (with ACL token). Use least-privilege, per-role tokens.
+# server_service_name/client_service_name make registration explicit.
 # --------------------------------------------------------------------
-<% if node['nomad']['consul']['enabled'] %>
+<% if node.dig('nomad','consul','enabled') %>
 consul {
-  address          = "<%= node['nomad']['consul']['address'] %>"
-  auto_advertise   = <%= node['nomad']['consul']['auto_advertise'] %>
-  client_auto_join = <%= node['nomad']['consul']['auto_join'] %>
+  address               = "<%= node.dig('nomad','consul','address') || '127.0.0.1:8500' %>"  # Fallback to local agent
+  token                 = "<%= node.dig('nomad','consul','token').to_s %>"                   # Server token on servers; Client token on clients
+  auto_advertise        = <%= node['nomad']['consul']['auto_advertise'] %>
+  client_auto_join      = <%= node['nomad']['consul']['auto_join'] %>
+  server_service_name   = "nomad"
+  client_service_name   = "nomad-client"
 }
 <% end %>
 
-<% if node['nomad']['telemetry']['enabled'] %>
 # --------------------------------------------------------------------
 # Telemetry Integration
 # --------------------------------------------------------------------
+<% if node.dig('nomad','telemetry','enabled') %>
 telemetry {
-  collection_interval = "<%= node['nomad']['telemetry']['collection_interval'] %>"
-  disable_hostname = <%= node['nomad']['telemetry']['disable_hostname'] %>
-  prometheus_metrics = <%= node['nomad']['telemetry']['prometheus_metrics'] %>
+  collection_interval        = "<%= node['nomad']['telemetry']['collection_interval'] %>"
+  disable_hostname           = <%= node['nomad']['telemetry']['disable_hostname'] %>
+  prometheus_metrics         = <%= node['nomad']['telemetry']['prometheus_metrics'] %>
   publish_allocation_metrics = <%= node['nomad']['telemetry']['publish_allocation_metrics'] %>
-  publish_node_metrics = <%= node['nomad']['telemetry']['publish_node_metrics'] %>
+  publish_node_metrics       = <%= node['nomad']['telemetry']['publish_node_metrics'] %>
 }
 <% end %>
 
-<% if node['nomad']['vault']['enabled'] %>
 # --------------------------------------------------------------------
 # Vault Integration
 # --------------------------------------------------------------------
+<% if node.dig('nomad','vault','enabled') %>
 vault {
-  enabled          = true
-  address          = "<%= node['nomad']['vault']['address'] %>"
-  token            = "<%= @token || '' %>"
+  enabled = true
+  address = "<%= node['nomad']['vault']['address'] %>"
+  token   = "<%= @token || '' %>"     # Prefer short-lived tokens/approle in production
 }
 <% end %>

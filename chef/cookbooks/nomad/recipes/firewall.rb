@@ -4,48 +4,66 @@
 # Cookbook:: nomad
 # Recipe:: firewall
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
-#
 # Configures firewall rules for Nomad cluster communication and services.
+# Uses UFW via the firewall cookbook.
 # --------------------------------------------------------------------
 
 # --------------------------------------------------------------------
-# Include Firewall Cookbook
+# Include & Install Firewall
 # --------------------------------------------------------------------
 
 include_recipe 'firewall'
 
-# --------------------------------------------------------------------
-# Nomad HTTP API & Web UI
-# --------------------------------------------------------------------
-
-firewall_rule 'nomad-ui' do
-  port     4646
-  protocol :tcp
-  source   '192.168.1.0/24'
-  command  :allow
+firewall 'default' do
+  action :install
 end
 
 # --------------------------------------------------------------------
-# Nomad gRPC/RPC (Clients ↔ Servers)
+# Inputs / Defaults
 # --------------------------------------------------------------------
 
-firewall_rule 'nomad-rpc' do
-  port     4647
-  protocol :tcp
-  source   '192.168.1.0/24'
-  command  :allow
-end
+allowed_cidrs = Array(node['nomad']['allowed_cidrs'])
+server_node   = node.dig('nomad', 'server', 'enabled') ? true : false
 
 # --------------------------------------------------------------------
-# Nomad Serf Gossip (LAN & WAN)
+# Nomad HTTP API & Web UI (4646/tcp)
 # --------------------------------------------------------------------
 
-%w(tcp udp).each do |proto|
-  firewall_rule "nomad-serf-#{proto}" do
-    port     4648
-    protocol proto.to_sym
-    source   '192.168.1.0/24'
+allowed_cidrs.each do |cidr|
+  firewall_rule "nomad-ui-#{cidr}" do
+    port     4646
+    protocol :tcp
+    source   cidr
     command  :allow
+  end
+end
+
+# --------------------------------------------------------------------
+# Nomad gRPC/RPC (Clients ↔ Servers) (4647/tcp)
+# --------------------------------------------------------------------
+
+allowed_cidrs.each do |cidr|
+  firewall_rule "nomad-rpc-#{cidr}" do
+    port     4647
+    protocol :tcp
+    source   cidr
+    command  :allow
+  end
+end
+
+# --------------------------------------------------------------------
+# Nomad Serf Gossip (Servers only) (4648/tcp, 4648/udp)
+# --------------------------------------------------------------------
+
+if server_node
+  %w(tcp udp).each do |proto|
+    allowed_cidrs.each do |cidr|
+      firewall_rule "nomad-serf-#{proto}-#{cidr}" do
+        port     4648
+        protocol proto.to_sym
+        source   cidr
+        command  :allow
+      end
+    end
   end
 end

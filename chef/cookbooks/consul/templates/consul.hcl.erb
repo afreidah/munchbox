@@ -39,16 +39,23 @@ ports {
 # ACLs
 # --------------------------------------------------------------------
 acl {
-  enabled                  = <%= node['consul']['acl']['enabled'] %>
-  default_policy           = "deny"
-  down_policy              = "extend-cache"
-  enable_token_persistence = true
-  <% agent   = node.dig('consul','acl','tokens','agent') %>
-  <% default = node.dig('consul','acl','tokens','default') %>
-  <% if agent || default %>
+  enabled                   = <%= node['consul']['acl']['enabled'] %>                 # Enforce Consul ACLs
+  default_policy            = "<%= node.dig('consul','acl','default_policy') || 'deny' %>"        # 'deny' recommended (anonymous has no rights)
+  down_policy               = "<%= node.dig('consul','acl','down_policy') || 'extend-cache' %>"   # Keep cached authorizations during leader loss
+  enable_token_persistence  = <%= (node.dig('consul','acl','enable_token_persistence').nil? ? true : node['consul']['acl']['enable_token_persistence']) %>  # Persist set-agent-token across restarts
+
+  # Tokens: only render what you’ve provided via attributes/data bags.
+  # - agent:     required for each agent to write its own node/health/service info.
+  # - default:   optional; set *only* if you want anonymous read access.
+  # - replication: optional; used for ACL replication (leave unset unless you know you need it).
+  <% agent       = node.dig('consul','acl','tokens','agent') %>
+  <% default_tok = node.dig('consul','acl','tokens','default') %>
+  <% replication = node.dig('consul','acl','tokens','replication') %>
+  <% if agent || default_tok || replication %>
   tokens {
-    <% if agent %>agent   = "<%= agent %>"<% end %>
-    <% if default %><%= agent ? "\n    " : "" %>default = "<%= default %>"<% end %>
+    <% if agent        %>agent       = "<%= agent %>"<% end %>
+    <% if default_tok  %><%= agent ? "\n    " : "" %>default     = "<%= default_tok %>"<% end %>
+    <% if replication  %><%= (agent || default_tok) ? "\n    " : "" %>replication = "<%= replication %>"<% end %>
   }
   <% end %>
 }

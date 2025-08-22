@@ -28,4 +28,5 @@ default['pi_bootstrap']['packages'] = %w(
   dnsutils
   net-tools
   containernetworking-plugins
+  binutils
 )

@@ -1,0 +1,24 @@
+{
+  "id": "deploy",
+  "accessor_id": {
+    "encrypted_data": "7m/o2PfcfhebY/UYmrn0kmwKDa5cdXYBlIhRY4flxE6BV95KQ1iJye3qbyFE\nNZKhMfYN7Bcq4g==\n",
+    "iv": "7PVE94C3KibHU0pC\n",
+    "auth_tag": "k0opTy9ra32v5Gp8i04Wkg==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "secret_id": {
+    "encrypted_data": "fUHnPy4I+D3SVXkrNXVjxa42P5BpDFyTtwbkdvNJkCotsaWJu4cuR372BjsW\neqgMQYdwmMAWrQ==\n",
+    "iv": "L7Nn3xkNSvqu0K/H\n",
+    "auth_tag": "69MLZoZ6sjXo4qWQaxN/Ag==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "created_at": {
+    "encrypted_data": "/Q4lgWf1VMLii6w3njwGMeST92YaRypyW3DEahMQry4WsaxAgs1i\n",
+    "iv": "jUF8RPPD7IRkibwd\n",
+    "auth_tag": "FcgXatdmqfSmSGPk4dhBjg==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  }
+}

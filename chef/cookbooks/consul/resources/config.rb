@@ -56,6 +56,7 @@ action :create do
       serf_key: lazy { node.run_state['consul_serf_key'] },
       retry_join: node['consul']['retry_join']
     )
+    notifies :reload, 'service[consul]', :immediately
   end
 end
 

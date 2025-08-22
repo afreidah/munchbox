@@ -6,6 +6,15 @@
 # Purpose:: Call install, configure, cluster resources with attributes.
 # --------------------------------------------------------------------
 
+include_recipe 'nomad::firewall'
+
+# --- Install package dependencies ---
+node['nomad']['packages'].each do |pkg|
+  package pkg do
+    action :install
+  end
+end
+
 # === Install Nomad ==================================================
 nomad_install 'nomad' do
   version      node['nomad']['version']
