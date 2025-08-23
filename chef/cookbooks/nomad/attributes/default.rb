@@ -11,14 +11,15 @@
 # Nomad General
 # --------------------------------------------------------------------
 
-default['nomad']['version']    = '1.10.3'
-default['nomad']['bin_path']   = '/usr/local/bin'
-default['nomad']['user']       = 'root'
-default['nomad']['group']      = 'root'
-default['nomad']['config_dir'] = '/etc/nomad.d'
-default['nomad']['data_dir']   = '/opt/nomad'
-default['nomad']['bind_addr']  = node['ipaddress'] # Override on multihomed hosts
-default['nomad']['datacenter'] = 'pi-dc'
+default['nomad']['client_tags'] = {}
+default['nomad']['group']       = 'root'
+default['nomad']['user']        = 'root'
+default['nomad']['datacenter']  = 'pi-dc'
+default['nomad']['version']     = '1.10.3'
+default['nomad']['data_dir']    = '/opt/nomad'
+default['nomad']['config_dir']  = '/etc/nomad.d'
+default['nomad']['bin_path']    = '/usr/local/bin'
+default['nomad']['bind_addr']   = node['ipaddress'] # Override on multihomed hosts
 
 default['nomad']['packages'] = %w(
   default-jre-headless
@@ -46,10 +47,10 @@ default['nomad']['checksums'] = {
 # Security: TLS (Nomad HTTP/RPC)
 # --------------------------------------------------------------------
 # Enable HTTPS for API/UI and mTLS for RPC. Provide per-node certs with correct SANs.
-default['nomad']['tls']['enabled']              = false
-default['nomad']['tls']['ca_file']              = '/etc/nomad/tls/ca.pem'
-default['nomad']['tls']['cert_file']            = '/etc/nomad/tls/nomad.pem'
-default['nomad']['tls']['key_file']             = '/etc/nomad/tls/nomad-key.pem'
+default['nomad']['tls']['enabled']              = true
+default['nomad']['tls']['ca_file']              = '/opt/nomad/tls/nomad-agent-ca.pem'
+default['nomad']['tls']['cert_file']            = '/opt/nomad/tls/global-server-nomad.pem'
+default['nomad']['tls']['key_file']             = '/opt/nomad/tls/global-server-nomad-key.pem'
 # Optional: require client certs for HTTP API access
 default['nomad']['tls']['verify_https_client']  = false
 

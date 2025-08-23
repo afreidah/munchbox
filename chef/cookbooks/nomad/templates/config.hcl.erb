@@ -37,6 +37,7 @@ tls {
 }
 <% end %>
 
+
 # --------------------------------------------------------------------
 # Nomad ACLs (separate from Consul ACLs). Enable for job/namespace RBAC.
 # Bootstrap after the server cluster is healthy: `nomad acl bootstrap`
@@ -57,12 +58,14 @@ advertise {
   serf = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4648"  # Serf LAN gossip
 }
 
+<% retry_list = (@retry_join && @retry_join.any?) ? @retry_join : Array(node.dig('nomad','server','servers')) %>
+
 # --------------------------------------------------------------------
 # Server Configuration
 # --------------------------------------------------------------------
-<% retry_list = (@retry_join && @retry_join.any?) ? @retry_join : Array(node.dig('nomad','server','servers')) %>
+<% if @server_enabled %>
 server {
-  enabled          = <%= node['nomad']['server']['enabled'] %>                     # Run in server mode
+  enabled          = true
   bootstrap_expect = <%= Array(node.dig('nomad','server','servers')).count %>      # Wait for configured servers total
   raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %>             # Raft heartbeat multiplier
 
@@ -85,6 +88,7 @@ server {
   }
   <% end %>
 }
+<% end %>
 
 # --------------------------------------------------------------------
 # Client Configuration
@@ -104,6 +108,14 @@ client {
     read_only = <%= volume['read_only'] %>
   }
 <% end %>
+
+  <% unless @server_enabled %>
+  servers = [
+    <% node['nomad']['server']['servers'].each do |j| %>
+      "<%= j %>:4647",
+    <% end %>
+  ]
+  <% end %>
 }
 
 # --------------------------------------------------------------------
@@ -138,8 +150,8 @@ plugin "raw_exec" {
 # --------------------------------------------------------------------
 <% if node.dig('nomad','consul','enabled') %>
 consul {
-  address               = "<%= node.dig('nomad','consul','address') || '127.0.0.1:8500' %>"  # Fallback to local agent
-  token                 = "<%= node.dig('nomad','consul','token').to_s %>"                   # Server token on servers; Client token on clients
+  address               = "127.0.0.1:8500"
+  token   = "<%= @consul_token %>"
   auto_advertise        = <%= node['nomad']['consul']['auto_advertise'] %>
   client_auto_join      = <%= node['nomad']['consul']['auto_join'] %>
   server_service_name   = "nomad"

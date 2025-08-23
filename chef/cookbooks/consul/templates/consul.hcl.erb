@@ -21,7 +21,8 @@ ui_config { enabled = <%= node['consul']['ui'] ? 'true' : 'false' %> }
 # Keep API local; DNS open to LAN if you want clients to use Consul DNS
 client_addr = "127.0.0.1"
 addresses {
-  http = "127.0.0.1"
+  # http = "127.0.0.1"
+  http = "0.0.0.0"
   dns  = "0.0.0.0"
 }
 

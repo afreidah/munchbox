@@ -67,6 +67,13 @@ default['consul']['server']['enable']           = true
 default['consul']['server']['bootstrap_expect'] = 3
 
 # --------------------------------------------------------------------
+# TLS configuration
+# --------------------------------------------------------------------
+
+default['consul']['tls']['ca_from_databag'] = true
+default['consul']['tls']['bootstrap_ca']    = false
+
+# --------------------------------------------------------------------
 # Consul Cluster Join / DNS
 # --------------------------------------------------------------------
 
