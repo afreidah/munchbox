@@ -12,26 +12,18 @@
     "recipe[nomad::tls]"
   ],
   "normal": {
+    "set_fqdn": "cabot",
     "nomad": {
       "client_tags": {
-        "node_pool": "core",
-        "node_class": "core",
-        "meta": { "role": "ingress", "zone": "rack-a", "public": true }
-      }
-    }
-  },
-  "override": {
-    "set_fqdn": "mccoy",
-    "consul": {
-      "acl": {
-        "provisioner": true
-      }
-    },
-    "nomad": {
-      "bind_addr": "192.168.68.63",
+        "node_pool": "edge",
+        "node_class": "utility",
+        "meta": { "role": "utility", "zone": "rack-b", "public": false }
+      },
+      "bind_addr": "192.168.68.59",
       "datacenter": "pi-dc",
+
       "server": {
-        "enabled": true,
+        "enabled": false,
         "servers": [
           "192.168.68.60",
           "192.168.68.61",
@@ -51,7 +43,7 @@
 
       "consul": {
         "enabled": true,
-        "address": "192.168.68.63:8500",
+        "address": "192.168.68.59:8500",
         "auto_advertise": true,
         "auto_join": true
       },
@@ -79,7 +71,7 @@
 
       "acl": {
         "enabled": true,
-        "bootstrap_this_node": true
+        "bootstrap_this_node": false
       }
     }
   }

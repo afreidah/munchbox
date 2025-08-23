@@ -11,7 +11,7 @@ property :config_dir,       String, default: '/etc/nomad.d'
 property :data_dir,         String, default: '/opt/nomad'
 property :bind_addr,        String, default: lazy { node['ipaddress'] }
 property :datacenter,       String, default: 'dc1'
-property :server_enabled,   [true, false], default: true
+property :server_enabled,   [true, false]
 property :client_enabled,   [true, false], default: true
 property :retry_join,       Array, default: []
 property :consul_auto,      [true, false], default: true
@@ -100,6 +100,17 @@ action :apply do
     end
   end
 
+  ruby_block 'read_consul_agent_token' do
+    block do
+      require 'json'
+      p = '/opt/consul/acl-tokens.json'
+      raise 'Consul agent token file missing' unless ::File.exist?(p)
+      tok = JSON.parse(::File.read(p))['agent']
+      raise 'Consul agent token empty' if tok.to_s.empty?
+      node.run_state['consul_agent_token'] = tok
+    end
+  end 
+
   # ------------------------------------------------------------------
   # Render Nomad configuration (HCL)
   # Pass retry_join and Vault token as template variables; others via node attrs
@@ -111,9 +122,12 @@ action :apply do
     mode   '0640'
     sensitive true
     variables(
+      consul_token: lazy { node.run_state['consul_agent_token'] },
+      server_enabled: new_resource.server_enabled,
       retry_join: new_resource.retry_join,
       token: new_resource.vault['token'] || ''
     )
+    notifies :restart, 'service[nomad]', :delayed
   end
 
   # ------------------------------------------------------------------

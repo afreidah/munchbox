@@ -29,6 +29,7 @@ vault_item = begin
                {}
 end
 
+Chef::Log.warn("DEBUG: node['nomad']['server']['enabled'] = #{node['nomad']['server']['enabled'].inspect}")
 nomad_configure 'nomad' do
   config_dir     node['nomad']['config_dir']
   data_dir       node['nomad']['data_dir']
@@ -57,4 +58,15 @@ nomad_cluster 'nomad' do
   wait_for_consul false
   acl_enabled     true
   bootstrap_this  node['nomad']['acl']['bootstrap_this_node']
+end
+
+tags = node['nomad']['client_tags']
+template '/etc/nomad.d/010-client-tags.hcl' do
+  source 'client-tags.hcl.erb'
+  owner  'root'
+  group  'root'
+  mode   '0644'
+  variables(tags: tags)
+  notifies :restart, 'service[nomad]', :delayed
+  only_if { tags && !tags.empty? }
 end

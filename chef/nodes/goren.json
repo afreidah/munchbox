@@ -4,14 +4,27 @@
     "recipe[pi_bootstrap::firewall]",
     "recipe[consul::install]",
     "recipe[consul::acl_nomad]",
-    "recipe[nomad::default]"
+    "recipe[consul::management_token]",
+    "recipe[consul::agent_token]",
+    "recipe[consul::tls]",
+    "recipe[nomad::default]",
+    "recipe[nomad::consul_token]",
+    "recipe[nomad::tls]"
   ],
+  "normal": {
+    "nomad": {
+      "client_tags": {
+        "node_pool": "core",
+        "node_class": "batch",
+        "meta": { "role": "batch", "zone": "rack-b", "public": false }
+      }
+    }
+  },
   "override": {
     "set_fqdn": "goren",
     "nomad": {
       "bind_addr": "192.168.68.60",
       "datacenter": "pi-dc",
-
       "server": {
         "enabled": true,
         "servers": [

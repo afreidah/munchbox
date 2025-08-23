@@ -1,0 +1,22 @@
+tls {
+  defaults {
+<% if @is_server -%>
+    verify_incoming = true
+<% end -%>
+    verify_outgoing = true
+
+  ca_file   = "<%= @tls_dir %>/consul-agent-ca.pem"
+<% if @is_server -%>
+  cert_file = "<%= @tls_dir %>/<%= @dc %>-server-<%= @domain %>-0.pem"
+  key_file  = "<%= @tls_dir %>/<%= @dc %>-server-<%= @domain %>-0-key.pem"
+<% else -%>
+  cert_file = "<%= @tls_dir %>/consul-client-0.pem"
+  key_file  = "<%= @tls_dir %>/consul-client-0-key.pem"
+<% end -%>
+  }
+
+  internal_rpc {
+    verify_server_hostname = true
+  }
+
+}

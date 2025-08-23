@@ -1,9 +1,9 @@
 {
   "id": "gossip",
   "encrypt": {
-    "encrypted_data": "3Ks7GQVT4Z643S9P+io0Su5GpdsveJqUgR68GaBv\n",
-    "iv": "0Il08qzyptZh5mO3\n",
-    "auth_tag": "qj5C4BVmUCl2w5ch1xFunw==\n",
+    "encrypted_data": "6oNO05FF60nZSURdozy5u2ngF3OhSuv5bzKEN/Rlz0NlCP8GWk6mqTC5DDHN\nDMMW/X2pL8XiChOg2lZ+aodW\n",
+    "iv": "aExaDJI6etPJbfEN\n",
+    "auth_tag": "UKB65pCg/HyK0kELhszRRQ==\n",
     "version": 3,
     "cipher": "aes-256-gcm"
   }
