@@ -9,16 +9,15 @@
 # --------------------------------------------------------------------
 # Global Settings
 # --------------------------------------------------------------------
-data_dir  = "<%= node['nomad']['data_dir'] %>"      # Where Nomad stores its state
-bind_addr = "<%= node['nomad']['bind_addr'] %>"     # This host’s bind address (listen on)
+data_dir  = "<%= node['nomad']['data_dir'] %>"
+bind_addr = "<%= node['nomad']['bind_addr'] %>"
 
-region     = "global"                               # Must match across cluster
+region     = "global"
 datacenter = "<%= node['nomad']['datacenter'] %>"
 
-# Friendly name & verbosity (safe fallbacks)
-name                 = "<%= node['nomad']['name'] || node['hostname'] %>"   # Shown in UI/logs
-log_level            = "<%= node['nomad']['log_level'] || 'INFO' %>"        # INFO steady state; DEBUG for bring-up
-disable_update_check = true                                                 # Keep air-gapped/hardened nodes quiet
+name                 = "<%= node['nomad']['name'] || node['hostname'] %>"
+log_level            = "<%= node['nomad']['log_level'] || 'INFO' %>"
+disable_update_check = true
 
 # --------------------------------------------------------------------
 # Security: TLS for HTTP (API/UI) and RPC (server<->server/client)
@@ -26,36 +25,34 @@ disable_update_check = true                                                 # Ke
 # --------------------------------------------------------------------
 <% if node.dig('nomad','tls','enabled') %>
 tls {
-  http  = true                                                    # Serve HTTPS on :4646
-  rpc   = true                                                    # mTLS for Nomad RPC
+  http  = true
+  rpc   = true
   ca_file   = "<%= node.dig('nomad','tls','ca_file') %>"
   cert_file = "<%= node.dig('nomad','tls','cert_file') %>"
   key_file  = "<%= node.dig('nomad','tls','key_file') %>"
   <% if !node.dig('nomad','tls','verify_https_client').nil? %>
-  verify_https_client = <%= node.dig('nomad','tls','verify_https_client') ? 'true' : 'false' %>  # Optional: gate API by client certs
+  verify_https_client = <%= node.dig('nomad','tls','verify_https_client') ? 'true' : 'false' %>
   <% end %>
 }
 <% end %>
 
-
 # --------------------------------------------------------------------
-# Nomad ACLs (separate from Consul ACLs). Enable for job/namespace RBAC.
-# Bootstrap after the server cluster is healthy: `nomad acl bootstrap`
+# Nomad ACLs
 # --------------------------------------------------------------------
 acl {
   enabled = <%= node.dig('nomad','acl','enabled') ? 'true' : 'false' %>
   <% if node.dig('nomad','acl','token_ttl') %>
-  token_ttl = "<%= node.dig('nomad','acl','token_ttl') %>"        # Optional hardening
+  token_ttl = "<%= node.dig('nomad','acl','token_ttl') %>"
   <% end %>
 }
 
 # --------------------------------------------------------------------
-# Advertise Settings (prefer explicit advertise_ip; fall back to bind_addr)
+# Advertise Settings
 # --------------------------------------------------------------------
 advertise {
-  http = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4646"  # API endpoint
-  rpc  = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4647"  # Raft RPC endpoint
-  serf = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4648"  # Serf LAN gossip
+  http = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4646"
+  rpc  = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4647"
+  serf = "<%= (node['nomad']['advertise_ip'] || node['nomad']['bind_addr']) %>:4648"
 }
 
 <% retry_list = (@retry_join && @retry_join.any?) ? @retry_join : Array(node.dig('nomad','server','servers')) %>
@@ -66,25 +63,20 @@ advertise {
 <% if @server_enabled %>
 server {
   enabled          = true
-  bootstrap_expect = <%= Array(node.dig('nomad','server','servers')).count %>      # Wait for configured servers total
-  raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %>             # Raft heartbeat multiplier
-
-  # Serf (gossip) encryption key — servers only
-  # Generate with: `nomad operator gossip keyring generate`
+  bootstrap_expect = <%= Array(node.dig('nomad','server','servers')).count %>
+  raft_multiplier  = <%= node['nomad']['server']['raft_multiplier'] %>
   <% if node.dig('nomad','server','gossip_encrypt').to_s != '' %>
   encrypt = "<%= node['nomad']['server']['gossip_encrypt'] %>"
   <% end %>
-
-  # Auto-join peers (retry) — works with IPs or Consul/DNS names
   <% if retry_list.any? %>
   server_join {
     retry_join = [
       <% retry_list.each do |j| %>
-        "<%= j %>",                         # Join address
+        "<%= j %>",
       <% end %>
     ]
-    retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"  # Seconds between attempts
-    retry_max      = <%= node['nomad']['server']['retry_max'] %>         # Max attempts (0 = forever)
+    retry_interval = "<%= node['nomad']['server']['retry_interval'] %>"
+    retry_max      = <%= node['nomad']['server']['retry_max'] %>
   }
   <% end %>
 }
@@ -95,63 +87,40 @@ server {
 # --------------------------------------------------------------------
 client {
   enabled = <%= node['nomad']['client']['enabled'] %>
+  cni_path = "/opt/cni/bin"
 
-  <% if (node['nomad']['client']['node_class'] || '') != '' %>
-  node_class = "<%= node['nomad']['client']['node_class'] %>"            # Classify capacity/traits for job constraints
-  <% end %>
-
-  cni_path = "<%= node['nomad']['client']['cni_path'] %>"                # Path to CNI plugin binaries
-
-<% Array(node.dig('nomad','client','host_volumes')).to_a.each do |volume| %>
+  <% Array(node.dig('nomad','client','host_volumes')).to_a.each do |volume| %>
   host_volume "<%= volume['name'] %>" {
     path      = "<%= volume['path'] %>"      # Shared data on host
     read_only = <%= volume['read_only'] %>
   }
-<% end %>
-
-  <% unless @server_enabled %>
-  servers = [
-    <% node['nomad']['server']['servers'].each do |j| %>
-      "<%= j %>:4647",
-    <% end %>
-  ]
   <% end %>
 }
 
 # --------------------------------------------------------------------
 # Task Drivers
 # --------------------------------------------------------------------
-
-# Docker Task Plugin (correct fields)
 plugin "docker" {
   config {
-    # Non-default Docker socket or remote host if needed
-    endpoint         = "<%= node.dig('nomad','docker','endpoint') || 'unix:///var/run/docker.sock' %>"
-
-    allow_privileged = <%= node['nomad']['docker']['allow_privileged'] %>
-    volumes { enabled = <%= node['nomad']['docker']['volumes']['enabled'] %> }
-
-    # Allowed Linux capabilities that tasks may request via cap_add
-    <% allow_caps = Array(node.dig('nomad','docker','allow_caps') || node['nomad']['docker']['caps']).map { |c| "\"#{c}\"" }.join(", ") %>
-    <% if allow_caps != "" %>allow_caps = [<%= allow_caps %>]<% end %>
+    endpoint         = "unix:///var/run/docker.sock"
+    allow_privileged = true
+    volumes { enabled = true }
+    allow_caps = ["NET_ADMIN", "NET_BIND_SERVICE"]
   }
 }
 
-# Raw Exec driver (modern enablement)
 plugin "raw_exec" {
   config {
-    enabled = <%= node.dig('nomad','client','raw_exec').nil? ? 'true' : (node['nomad']['client']['raw_exec'] ? 'true' : 'false') %>
+    enabled = true
   }
 }
 
 # --------------------------------------------------------------------
-# Consul Integration (with ACL token). Use least-privilege, per-role tokens.
-# server_service_name/client_service_name make registration explicit.
+# Consul Integration
 # --------------------------------------------------------------------
 <% if node.dig('nomad','consul','enabled') %>
 consul {
   address               = "127.0.0.1:8500"
-  token   = "<%= @consul_token %>"
   auto_advertise        = <%= node['nomad']['consul']['auto_advertise'] %>
   client_auto_join      = <%= node['nomad']['consul']['auto_join'] %>
   server_service_name   = "nomad"
@@ -179,6 +148,6 @@ telemetry {
 vault {
   enabled = true
   address = "<%= node['nomad']['vault']['address'] %>"
-  token   = "<%= @token || '' %>"     # Prefer short-lived tokens/approle in production
+  token   = "<%= @token || '' %>"
 }
 <% end %>

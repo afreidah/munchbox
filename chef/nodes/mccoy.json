@@ -9,7 +9,8 @@
     "recipe[consul::tls]",
     "recipe[nomad::default]",
     "recipe[nomad::consul_token]",
-    "recipe[nomad::tls]"
+    "recipe[nomad::tls]",
+    "recipe[openbao::default]"
   ],
   "normal": {
     "nomad": {

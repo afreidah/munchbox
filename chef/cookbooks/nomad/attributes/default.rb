@@ -76,13 +76,22 @@ default['nomad']['server']['servers'] = %w(
 
 default['nomad']['client']['enabled']    = true
 default['nomad']['client']['node_class'] = ''
-default['nomad']['client']['cni_path']   = '/opt/cni/bin'
+default['nomad']['client']['cni_path']   = '/usr/sbin'
 
 # Enable raw_exec for small/util tasks even if Docker is primary
 default['nomad']['client']['raw_exec']   = true
 
 # Host volumes exposed to jobs (paths are created with permissive mode by default)
 default['nomad']['client']['host_volumes'] = [
+  { 'name' => 'prometheus', 'path' => '/opt/nomad/data/prometheus', 'read_only' => false },
+  { 'name' => 'traefik', 'path' => '/opt/nomad/data/traefik', 'read_only' => true },
+  { 'name' => 'registry', 'path' => '/opt/nomad/data/registry', 'read_only' => false },
+  { 'name' => 'prometheus-data', 'path' => '/opt/nomad/data/prometheus-data', 'read_only' => false },
+  { 'name' => 'registry-data', 'path' => '/opt/nomad/data/registry-data', 'read_only' => false },
+  { 'name' => 'registry-ui-conf', 'path' => '/opt/nomad/data/registry-ui-conf', 'read_only' => false },
+  { 'name' => 'registry-ui-html', 'path' => '/opt/nomad/data/registry-ui-html', 'read_only' => false },
+  { 'name' => 'registry-ui', 'path' => '/opt/nomad/data/registry-ui-data', 'read_only' => false },
+  { 'name' => 'grafana-data', 'path' => '/opt/nomad/data/grafana-data', 'read_only' => false }
 ]
 
 # --------------------------------------------------------------------
@@ -91,7 +100,10 @@ default['nomad']['client']['host_volumes'] = [
 
 default['nomad']['docker']['allow_privileged']   = true
 default['nomad']['docker']['volumes']['enabled'] = true
-default['nomad']['docker']['caps']               = %w(NET_ADMIN)
+default['nomad']['docker']['caps']               = %w(
+  NET_ADMIN
+  NET_BIND_SERVICE
+)
 # Optional: non-default Docker socket path (template only emits if set)
 default['nomad']['docker']['socket']             = '/var/run/docker.sock'
 
@@ -116,10 +128,6 @@ default['nomad']['consul']['enabled']        = true
 default['nomad']['consul']['address']        = "#{node['ipaddress']}:8500"
 default['nomad']['consul']['required']       = true # Cluster resource will wait for Consul if true
 
-# Consul ACL token used by Nomad. Use distinct tokens per role (server vs client).
-# Source from encrypted data bag/chef-vault at converge; keep empty in repo.
-default['nomad']['consul']['token']          = '' # DO NOT COMMIT REAL TOKENS
-
 # --------------------------------------------------------------------
 # CNI Plugins
 # --------------------------------------------------------------------
@@ -134,7 +142,7 @@ default['nomad']['cni']['enable']   = true
 # --------------------------------------------------------------------
 
 default['nomad']['vault']['enabled'] = true
-default['nomad']['vault']['address'] = 'http://192.168.1.222:8200'
+default['nomad']['vault']['address'] = 'http://mccoy:8200'
 # Token is sourced from encrypted data bag at converge time (do not store here)
 
 # --------------------------------------------------------------------

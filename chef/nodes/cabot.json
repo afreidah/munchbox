@@ -37,8 +37,7 @@
       "client": {
         "enabled": true,
         "node_class": "",
-        "cni_path": "/opt/cni/bin",
-        "host_volumes": []
+        "cni_path": "/opt/cni/bin"
       },
 
       "consul": {

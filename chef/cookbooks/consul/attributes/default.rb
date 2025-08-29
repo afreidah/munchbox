@@ -112,4 +112,8 @@ default['consul']['consul_firewall_rules'] = [
   { name: 'consul-http',          port: 8500, protocol: :tcp },
   { name: 'consul-dns-tcp',       port: 8600, protocol: :tcp },
   { name: 'consul-dns-udp',       port: 8600, protocol: :udp },
+  { name: 'consul-grpc-udp',      port: 8502, protocol: :udp },
+  { name: 'consul-grpc-udp',      port: 8502, protocol: :udp },
+  { name: 'consul-grpc_tls-udp',  port: 8503, protocol: :udp },
+  { name: 'consul-grpc_tls-udp',  port: 8503, protocol: :udp },
 ]

@@ -67,3 +67,20 @@ if server_node
     end
   end
 end
+
+# --------------------------------------------------------------------
+# Nomad port 80 for traefik
+# --------------------------------------------------------------------
+
+if server_node
+  %w(tcp udp).each do |proto|
+    allowed_cidrs.each do |cidr|
+      firewall_rule "nomad-traefik-ingress-#{proto}-#{cidr}" do
+        port     80
+        protocol proto.to_sym
+        source   cidr
+        command  :allow
+      end
+    end
+  end
+end

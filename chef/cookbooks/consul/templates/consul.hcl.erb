@@ -19,7 +19,7 @@ log_level            = "<%= node['consul']['log_level'] || 'INFO' %>"
 ui_config { enabled = <%= node['consul']['ui'] ? 'true' : 'false' %> }
 
 # Keep API local; DNS open to LAN if you want clients to use Consul DNS
-client_addr = "127.0.0.1"
+client_addr = "0.0.0.0"
 addresses {
   # http = "127.0.0.1"
   http = "0.0.0.0"
@@ -31,8 +31,9 @@ ports {
   http     = 8500
   dns      = 8600
   serf_lan = 8301
-  serf_wan = -1     # <- disables WAN completely
+  serf_wan = -1
   server   = 8300
+  grpc     = 8502
   grpc_tls = 8503
 }
 
