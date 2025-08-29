@@ -1,12 +1,13 @@
-# -------------------------------------------------------------------------------
-# Grafana — Nomad Job (with persistent data under /opt/nomad/data)
+# ------------------------------------------------------------------------------
+# Grafana — Nomad Job (Traefik under /grafana on *.munchbox)
 #
-# - Single instance on core pool
+# - Single instance on edge pool (adjust as needed)
 # - Host networking so Grafana can reach Prometheus at 127.0.0.1:9090
-# - Data persisted under /opt/nomad/data/grafana-data
-# - Traefik tags for routing under /grafana via munchbox
-# - Admin password injected securely from OpenBao/Vault
-# -------------------------------------------------------------------------------
+# - Persistent data under /opt/nomad/data/grafana-data (host volume)
+# - Traefik: HostRegexp(`{subdomain:[a-z0-9-]+}.munchbox`) + PathPrefix(`/grafana`)
+# - Strip /grafana before proxying; Grafana configured for sub-path
+# - Admin password set via env template (demo: 'admin')
+# ------------------------------------------------------------------------------
 
 job "grafana" {
   region      = "global"
@@ -14,19 +15,24 @@ job "grafana" {
   type        = "service"
   node_pool   = "edge"
 
-  vault {
-    policies = ["grafana-policy"]
-  }
-
   group "grafana" {
     count = 1
 
+    # --- Placement ---------------------------------------------------------------
+    constraint {
+      attribute = "${node.class}"
+      operator  = "="
+      value     = "utility"
+    }
+
+    # --- Persistence: host volume ------------------------------------------------
     volume "grafana-data" {
       type      = "host"
       source    = "grafana-data"
       read_only = false
     }
 
+    # --- Networking: host mode, :3000 --------------------------------------------
     network {
       mode = "host"
       port "web" { static = 3000 }
@@ -35,56 +41,53 @@ job "grafana" {
     task "grafana" {
       driver = "docker"
 
+      # --- Service registration (Consul + Traefik tags) --------------------------
       service {
         name     = "grafana"
         port     = "web"
         provider = "consul"
 
-        tags = [
-          "traefik.enable=true",
-          "traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)",
-          "traefik.http.routers.grafana.entrypoints=web",
-          "traefik.http.services.grafana.loadbalancer.server.port=3000",
-          "traefik.http.routers.grafana.middlewares=grafana-stripprefix@consulcatalog"
-        ]
-
         check {
           name     = "grafana-alive"
           type     = "http"
           path     = "/api/health"
+          port     = "web"
           interval = "10s"
           timeout  = "2s"
         }
       }
 
+      # --- Container config -------------------------------------------------------
       config {
         image              = "grafana/grafana:10.4.2"
         ports              = ["web"]
         image_pull_timeout = "10m"
-
         volumes = [
           "local/grafana-provisioning:/etc/grafana/provisioning"
         ]
       }
 
+      # --- Persistent data mount --------------------------------------------------
       volume_mount {
         volume      = "grafana-data"
         destination = "/opt/nomad/data/grafana-data"
         read_only   = false
       }
 
-      # Inject Grafana admin password from OpenBao/Vault using a template stanza
+      # --- Admin credentials (demo only) -----------------------------------------
       template {
-        data = <<EOH
-GF_SECURITY_ADMIN_PASSWORD={{ with secret "kv/grafana" }}{{ .Data.admin_password }}{{ end }}
-EOH
         destination = "secrets/grafana.env"
         env         = true
+        data = <<EOH
+GF_SECURITY_ADMIN_PASSWORD=admin
+EOH
       }
 
+      # --- Grafana env: sub-path operation at /grafana ----------------------------
+      # Use a RELATIVE root_url so direct :3000 testing and proxied /grafana both work.
       env = {
-        GF_PATHS_DATA = "/opt/nomad/data/grafana-data"
-        TZ            = "America/Los_Angeles"
+        GF_SERVER_SERVE_FROM_SUB_PATH = "false"
+        GF_SERVER_ROOT_URL            = "http://grafana.munchbox/"
       }
 
       resources {

@@ -1,16 +1,15 @@
 # -----------------------------------------------------------------------------
 # Traefik Nomad Job
 # -----------------------------------------------------------------------------
-# This Nomad job definition runs Traefik as a system service on all nodes
-# with the "ingress" role. It exposes HTTP, HTTPS, and the Traefik dashboard.
-# Configuration files are templated and mounted into the container.
-# This version is updated to route the dashboard under /traefik and
-# supports path-based routing for other services (e.g., /grafana, /nomad).
+# Runs Traefik as a system service on ingress nodes, exposes HTTP and dashboard.
+# Uses host-based routing:
+#   - http://traefik.munchbox  -> Traefik dashboard
+#   - http://consul.munchbox   -> Consul UI  (on this node)
+#   - http://nomad.munchbox    -> Nomad UI   (on this node)
+#   - http://grafana.munchbox  -> Grafana UI (on remote node IP below)
 # -----------------------------------------------------------------------------
 
 job "traefik" {
-
-  # Nomad region and datacenter configuration
   region      = "global"
   datacenters = ["pi-dc"]
   node_pool   = "core"
@@ -19,8 +18,8 @@ job "traefik" {
   # Only run on nodes with meta.role = "ingress"
   constraint {
     attribute = "${meta.role}"
-    value     = "ingress"
     operator  = "="
+    value     = "ingress"
   }
 
   group "traefik" {
@@ -28,14 +27,17 @@ job "traefik" {
     # Host networking exposes ports directly on the host
     network {
       mode = "host"
+
       port "dashboard" {
         static = 8081
         to     = 8081
       }
+
       port "http" {
         static = 80
         to     = 80
       }
+
       port "https" {
         static = 443
         to     = 443
@@ -47,20 +49,17 @@ job "traefik" {
 
       config {
         network_mode = "host"
-        image = "traefik:v2.11"
-        ports = [
-          "http",
-          "https",
-          "dashboard"
-        ]
-        # Mount static and dynamic configuration files
+        image        = "traefik:v2.11"
+        ports        = ["http","https","dashboard"]
         volumes = [
           "local/traefik.toml:/etc/traefik/traefik.toml",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml"
         ]
       }
 
-      # Generate the main Traefik static configuration
+      # ---------------------------------------------------------------------------
+      # Static configuration (entrypoints + file provider only)
+      # ---------------------------------------------------------------------------
       template {
         data = <<EOF
 [entryPoints]
@@ -75,65 +74,77 @@ job "traefik" {
   dashboard = true
   insecure  = false
 
-[ping]
-  entryPoint    = "traefik"
-  manualrouting = false
-
-[providers.consulCatalog]
-  prefix           = "traefik"
-  exposedByDefault = false
-  [providers.consulCatalog.endpoint]
-    address = "127.0.0.1:8500"
-    scheme  = "http"
-
+# File provider drives our routers/services
 [providers.file]
   filename = "/etc/traefik/traefik_dynamic.toml"
-EOF
 
+[accessLog]
+[log]
+  level = "INFO"
+EOF
         destination = "local/traefik.toml"
       }
 
-      # Generate the dynamic configuration for routers and middlewares
+      # ---------------------------------------------------------------------------
+      # Dynamic configuration (routers, middlewares, services)
+      # ---------------------------------------------------------------------------
       template {
         data = <<EOF
-[http.routers.traefik-dashboard]
-  rule        = "PathPrefix(`/traefik`) || PathPrefix(`/api`)"
+# --------------------------------------------------------------------
+# Traefik Dynamic Config — subdomain-based dashboards
+# --------------------------------------------------------------------
+
+[http.routers]
+
+# Traefik dashboard
+[http.routers.traefik]
+  rule        = "Host(`traefik.munchbox`)"
   entryPoints = ["web"]
   service     = "api@internal"
-  middlewares = ["dashboard-auth", "dashboard-allowlan", "traefik-stripprefix"]
+  middlewares = ["dashboard-auth", "dashboard-allowlan"]
 
+# Consul UI (Consul runs on this ingress node)
+[http.routers.consul]
+  rule        = "Host(`consul.munchbox`)"
+  entryPoints = ["web"]
+  service     = "consul"
+
+# Nomad UI (Nomad runs on this ingress node)
+[http.routers.nomad]
+  rule        = "Host(`nomad.munchbox`)"
+  entryPoints = ["web"]
+  service     = "nomad"
+
+# Grafana UI (REMOTE node — set the IP below)
+[http.routers.grafana]
+  rule        = "Host(`grafana.munchbox`)"
+  entryPoints = ["web"]
+  service     = "grafana"
+
+[http.middlewares]
+# Protect Traefik dashboard + restrict to LAN
 [http.middlewares.dashboard-auth.basicAuth]
   users = ["alex:$2y$05$2pwj9TDZZ29xWxv.eUAKLeKOhm/RrbbrbNewMkzjg1aGm4Bp81yKS"]
 
 [http.middlewares.dashboard-allowlan.ipWhiteList]
   sourceRange = ["192.168.68.0/24"]
 
-[http.middlewares.traefik-stripprefix.stripPrefix]
-  prefixes = ["/traefik"]
+[http.services]
 
-[http.routers.consul]
-  rule = "Host(`consul.munchbox`)"
-  entryPoints = ["web"]
-  service = "consul"
-
+# Backends on THIS host for Consul/Nomad
 [http.services.consul.loadBalancer]
   [[http.services.consul.loadBalancer.servers]]
-    url = "http://localhost:8500"
-
-[http.routers.nomad]
-  rule = "PathPrefix(`/nomad`)"
-  entryPoints = ["web"]
-  service = "nomad"
-  middlewares = ["nomad-stripprefix"]
+    url = "http://127.0.0.1:8500"
 
 [http.services.nomad.loadBalancer]
   [[http.services.nomad.loadBalancer.servers]]
-    url = "http://localhost:4646"
+    url = "http://127.0.0.1:4646"
 
-[http.middlewares.nomad-stripprefix.stripPrefix]
-  prefixes = ["/nomad"]
+# Grafana runs on a different node: REPLACE cabot below
+[http.services.grafana.loadBalancer]
+  [[http.services.grafana.loadBalancer.servers]]
+    url = "http://cabot:3000"
 EOF
-
         destination = "local/traefik_dynamic.toml"
         change_mode = "noop"
       }

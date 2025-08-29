@@ -91,7 +91,8 @@ default['nomad']['client']['host_volumes'] = [
   { 'name' => 'registry-ui-conf', 'path' => '/opt/nomad/data/registry-ui-conf', 'read_only' => false },
   { 'name' => 'registry-ui-html', 'path' => '/opt/nomad/data/registry-ui-html', 'read_only' => false },
   { 'name' => 'registry-ui', 'path' => '/opt/nomad/data/registry-ui-data', 'read_only' => false },
-  { 'name' => 'grafana-data', 'path' => '/opt/nomad/data/grafana-data', 'read_only' => false }
+  { 'name' => 'grafana-data', 'path' => '/opt/nomad/data/grafana-data', 'read_only' => false },
+  { 'name' => 'deluge-data', 'path' => '/opt/nomad/data/deluge-data', 'read_only' => false }
 ]
 
 # --------------------------------------------------------------------
