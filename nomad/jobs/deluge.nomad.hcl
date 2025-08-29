@@ -1,34 +1,25 @@
 # -------------------------------------------------------------------------------
 # Deluge BitTorrent Client — Nomad service job
-# 
+#
 # * Runs the Deluge BitTorrent client using the linuxserver/deluge image.
 # * Persists configuration and downloads on the host.
 # * Exposes web UI on port 8112.
-# * Registers service with Consul and configures Traefik for HTTPS routing.
+# * Registers service with Consul and configures Traefik for HTTP routing.
 # -------------------------------------------------------------------------------
 
 job "deluge" {
-  datacenters = ["pi-dc"]     # --- Nomad datacenter(s) to run in ---
-  type        = "service"     # --- Service job type ---
-
-  meta        {
-    run_uuid  = "${uuidv4()}" # --- Unique run identifier ---
-  }
+  region      = "global"
+  datacenters = ["pi-dc"]
+  type        = "service"
+  node_pool   = "core"
 
   group "deluge" {
+    count = 1
 
     constraint {
-      attribute = "${node.class}"
+      attribute = "${node.unique.name}"
       operator  = "="
-      value     = "vpn"
-    }
-
-    network {
-      mode = "host"   # --- Use host networking for container ---
-
-      port "web" {    # --- Expose port 8112 for Deluge web UI ---
-        static = 8112 # --- Static port mapping ---
-      }
+      value     = "stabler"
     }
 
     volume "deluge-data" {
@@ -37,50 +28,53 @@ job "deluge" {
       read_only = false
     }
 
+    network {
+      mode = "host"
+      port "web" { static = 8112 }
+    }
+
     task "deluge" {
-      driver = "docker"                 # --- Use Docker driver ---
-
-      config {
-        image = "linuxserver/deluge"    # --- Deluge Docker image ---
-        image_pull_timeout = "10m"      # --- Timeout for pulling image ---
-        volumes = [
-          "deluge-data:/config",
-          "local/downloads:/downloads"  # --- Downloaded files storage ---
-        ]
-      }
-
-      env {
-        PUID = "1000" # --- User ID for container ---
-        PGID = "1000" # --- Group ID for container ---
-        TZ   = "UTC"  # --- Timezone ---
-      }
+      driver = "docker"
 
       service {
-        name     = "deluge"   # --- Service name for Consul ---
+        name     = "deluge"
         port     = "web"
-        provider = "consul"   # --- Register with Consul ---
-
-        tags = [
-          "traefik.enable=true", # --- Enable Traefik ---
-          "traefik.http.routers.deluge.rule=Host(`deluge.lan`)",       # --- Traefik routing rule ---
-          "traefik.http.routers.deluge.entrypoints=https",             # --- Use HTTPS entrypoint ---
-          "traefik.http.routers.deluge.tls=true",                      # --- Enable TLS ---
-          "traefik.http.routers.deluge.tls.certresolver=dns",          # --- Use DNS cert resolver ---
-          "traefik.http.services.deluge.loadbalancer.server.port=8112" # --- Internal service port for Traefik ---
-        ]
+        provider = "consul"
 
         check {
-          type     = "http" # --- HTTP health check ---
-          path     = "/"    # --- Path to check ---
-          interval = "10s"  # --- Check interval ---
-          timeout  = "2s"   # --- Timeout for check ---
-          port     = "web"  # --- Port to check ---
+          name     = "deluge-alive"
+          type     = "http"
+          path     = "/"
+          port     = "web"
+          interval = "10s"
+          timeout  = "2s"
         }
       }
 
+      config {
+        image              = "linuxserver/deluge"
+        image_pull_timeout = "10m"
+        ports              = ["web"]
+        volumes = [
+          "/opt/nomad/data/deluge-data/downloads:/downloads"
+        ]
+      }
+
+      env = {
+        PUID = "1000"
+        PGID = "1000"
+        TZ   = "UTC"
+      }
+
+      volume_mount {
+        volume      = "deluge-data"
+        destination = "/config"
+        read_only   = false
+      }
+
       resources {
-        cpu    = 200   # --- CPU MHz ---
-        memory = 256   # --- Memory MB ---
+        cpu    = 200
+        memory = 256
       }
     }
   }
