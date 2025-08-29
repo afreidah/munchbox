@@ -1,0 +1,11 @@
+# ---------------------------------------------------------------------------------
+# Berksfile
+#
+#  This file defines cookbook dependencies for this Chef cookbook.
+#
+#  Managed with Berkshelf. Adjust dependencies as needed for your environment.
+# ---------------------------------------------------------------------------------
+
+source 'https://supermarket.chef.io'
+
+cookbook 'openbao', path: '.'

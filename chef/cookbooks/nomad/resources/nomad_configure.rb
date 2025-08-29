@@ -17,7 +17,7 @@ property :retry_join,       Array, default: []
 property :consul_auto,      [true, false], default: true
 property :telemetry,        Hash,   default: {}
 property :docker,           Hash,   default: {}
-property :vault,            Hash,   default: {} # { 'enabled'=>true, 'address'=>'...', 'token'=> '...' }
+property :vault_token,      String
 property :user,             String, default: 'root'
 property :group,            String, default: 'root'
 property :enable_cni,       [true, false], default: true
@@ -125,7 +125,7 @@ action :apply do
       consul_token: lazy { node.run_state['consul_agent_token'] },
       server_enabled: new_resource.server_enabled,
       retry_join: new_resource.retry_join,
-      token: new_resource.vault['token'] || ''
+      token: new_resource.vault_token || ''
     )
     notifies :restart, 'service[nomad]', :delayed
   end

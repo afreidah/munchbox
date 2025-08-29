@@ -1,0 +1,31 @@
+# frozen_string_literal: true
+
+# ------------------------------------------------------------------------------
+#  Rakefile for edo_openbao Cookbook Project
+# ------------------------------------------------------------------------------
+#
+#  Provides a unified interface for common development, testing, CI, and
+#  infrastructure automation tasks for this Chef cookbook project.
+#
+#  Features:
+#    - Kitchen integration for instance converge, verify, destroy, and test
+#    - ChefSpec unit test automation and file watching
+#    - Linting and auto-correction with Cookstyle
+#    - Berkshelf dependency management
+#    - Output of all available tasks with descriptions via `rake help`
+# ------------------------------------------------------------------------------
+
+require 'rspec/core/rake_task'
+require 'simplecov'
+require 'fileutils'
+require 'listen'
+
+# --- Load all task files from rakelib/ ---
+Dir.glob('rakelib/**/*.rake').each { |r| import r }
+
+# ------------------------------------------------------------------------------
+#  CI tasks: Run all checks (lint, Kitchen tests, and docs)
+# ------------------------------------------------------------------------------
+desc 'Run all checks (lint, Kitchen tests)'
+task default: ['lint:cookstyle', 'test:chefspec', 'berks:vendor', 'kitchen:test']
+Rake::Task['default'].comment = 'Run all checks (cookstyle, chefspec, berks vendor, kitchen inspec). Usage: rake default'

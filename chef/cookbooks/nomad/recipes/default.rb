@@ -22,13 +22,7 @@ nomad_install 'nomad' do
   checksums    node['nomad']['checksums'] # optional but recommended
 end
 
-# === Configure Nomad ================================================
-vault_item = begin
-  encrypted_data_bag_item('vault', 'vault_token')
-             rescue StandardError
-               {}
-end
-
+# --- Configure Nomad ---
 Chef::Log.warn("DEBUG: node['nomad']['server']['enabled'] = #{node['nomad']['server']['enabled'].inspect}")
 nomad_configure 'nomad' do
   config_dir     node['nomad']['config_dir']
@@ -41,15 +35,13 @@ nomad_configure 'nomad' do
   telemetry      node['nomad']['telemetry']
   docker         node['nomad']['docker']
   consul_auto    node['nomad']['consul']['auto_join']
-  vault({ 'enabled' => node['nomad']['vault']['enabled'],
-          'address' => node['nomad']['vault']['address'],
-          'token' => vault_item['token'] })
   user           node['nomad']['user']
   group          node['nomad']['group']
   enable_cni     node['nomad']['cni']['enabled']
   cni_version    node['nomad']['cni']['version']
   cni_path       node['nomad']['cni']['path']
   cni_url_base   node['nomad']['cni']['url']
+  vault_token    data_bag_item('vault', 'vault_token')['token']
 end
 
 # === Cluster bring‑up ===============================================
@@ -70,3 +62,6 @@ template '/etc/nomad.d/010-client-tags.hcl' do
   notifies :restart, 'service[nomad]', :delayed
   only_if { tags && !tags.empty? }
 end
+
+# --- Setup data directories ---
+include_recipe 'nomad::data_directories'
