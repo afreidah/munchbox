@@ -10,6 +10,7 @@
     "recipe[nomad::default]",
     "recipe[nomad::consul_token]",
     "recipe[nomad::tls]",
+    "recipe[nomad::snapshot]",
     "recipe[openbao::default]"
   ],
   "normal": {
@@ -49,7 +50,10 @@
         "cni_path": "/opt/cni/bin",
         "host_volumes": []
       },
-
+      "vault": {
+        "enabled": true,
+        "address": "https://mccoy:8200"
+      },
       "consul": {
         "enabled": true,
         "address": "192.168.68.63:8500",
