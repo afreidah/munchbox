@@ -2,7 +2,8 @@
 // Program: Nomad CDKTF Stack
 // File: main.go
 //
-// Registers Nomad jobs from HCL files using the Terraform CDK for Go.
+// Registers Nomad jobs, policies, and tokens from HCL files using the
+// Terraform CDK for Go. Uses shared library for common logic.
 // --------------------------------------------------------------------
 
 package main
@@ -17,13 +18,12 @@ import (
 	"github.com/aws/jsii-runtime-go"
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
 
+	"cdk.tf/go/stack/common"
+
 	"cdk.tf/go/stack/generated/hashicorp/nomad/job"
-	"cdk.tf/go/stack/generated/hashicorp/nomad/provider"
 )
 
-// --------------------------------------------------------------------
 // Register a Nomad job resource from HCL
-// --------------------------------------------------------------------
 func register_job(stack cdktf.TerraformStack, id string, hcl string) {
 	job.NewJob(stack, jsii.String(id), &job.JobConfig{
 		Jobspec:             jsii.String(hcl),
@@ -32,11 +32,8 @@ func register_job(stack cdktf.TerraformStack, id string, hcl string) {
 	})
 }
 
-// --------------------------------------------------------------------
-// Main entrypoint: parses flags, loads jobs, and synthesizes the stack
-// --------------------------------------------------------------------
 func main() {
-	// --- CLI Flags ---
+	// --- CLI Flags for jobs ---
 	jobsEnv := os.Getenv("JOBS")
 	jobsFlag := flag.String("jobs", jobsEnv, "Comma-separated list of jobs to process, or 'all'")
 	flag.Parse()
@@ -45,26 +42,16 @@ func main() {
 	app := cdktf.NewApp(nil)
 	stack := cdktf.NewTerraformStack(app, jsii.String("nomad"))
 
-	// --- Provider Configuration (from env, with sane defaults) ---
-	addr := os.Getenv("NOMAD_ADDR")
-	if addr == "" {
-		addr = "https://192.168.68.63:4646"
-	}
-	token := os.Getenv("NOMAD_TOKEN")   // SecretID
-	cacert := os.Getenv("NOMAD_CACERT") // path to CA PEM
+	// --- Provider Configuration (shared) ---
+	common.SetupProvider(stack)
 
-	cfg := &provider.NomadProviderConfig{
-		Address: jsii.String(addr),
-	}
-	if token != "" {
-		cfg.SecretId = jsii.String(token)
-	}
-	if cacert != "" {
-		cfg.CaFile = jsii.String(cacert)
-	}
-	provider.NewNomadProvider(stack, jsii.String("nomad-provider"), cfg)
+	// --- Policy Registration (shared) ---
+	common.RegisterPolicies(stack, "ops-read/policy")
 
-	// --- Job Registration ---
+	// --- Token Registration (shared) ---
+	common.RegisterTokens(stack, "ops-read/token")
+
+	// --- Job Registration (local) ---
 	files, err := filepath.Glob("../../nomad/jobs/*.nomad.hcl")
 	if err != nil {
 		log.Fatalf("failed to glob job files: %v", err)
