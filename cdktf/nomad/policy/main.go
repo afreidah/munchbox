@@ -9,6 +9,8 @@
 package main
 
 import (
+	"path/filepath"
+
 	"cdk.tf/go/stack/common"
 	"github.com/aws/jsii-runtime-go"
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
@@ -17,13 +19,19 @@ import (
 func main() {
 	// --- Stack Initialization ---
 	app := cdktf.NewApp(nil)
-	stack := cdktf.NewTerraformStack(app, jsii.String("nomad-ops-read-policy"))
+	stack := cdktf.NewTerraformStack(app, jsii.String("cdktf-nomad-policies"))
 
 	// --- Provider Configuration (shared) ---
 	common.SetupProvider(stack)
 
 	// --- Policy Registration (shared) ---
-	common.RegisterPolicies(stack, ".")
+	policyFiles, err := filepath.Glob("*.hcl")
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range policyFiles {
+		common.RegisterPolicies(stack, f)
+	}
 
 	app.Synth()
 }

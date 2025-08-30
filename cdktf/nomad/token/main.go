@@ -9,6 +9,8 @@
 package main
 
 import (
+	"path/filepath"
+
 	"cdk.tf/go/stack/common"
 	"github.com/aws/jsii-runtime-go"
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
@@ -16,8 +18,16 @@ import (
 
 func main() {
 	app := cdktf.NewApp(nil)
-	stack := cdktf.NewTerraformStack(app, jsii.String("nomad-ops-read-token"))
+	stack := cdktf.NewTerraformStack(app, jsii.String("cdktf-nomad-tokens"))
 	common.SetupProvider(stack)
-	common.RegisterTokens(stack, ".")
+
+	tokenFiles, err := filepath.Glob("*.hcl")
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range tokenFiles {
+		common.RegisterTokens(stack, f)
+	}
+
 	app.Synth()
 }
