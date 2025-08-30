@@ -24,7 +24,7 @@ import (
 )
 
 // Register a Nomad job resource from HCL
-func register_job(stack cdktf.TerraformStack, id string, hcl string) {
+func registerJob(stack cdktf.TerraformStack, id string, hcl string) {
 	job.NewJob(stack, jsii.String(id), &job.JobConfig{
 		Jobspec:             jsii.String(hcl),
 		DeregisterOnDestroy: jsii.Bool(true),
@@ -46,10 +46,10 @@ func main() {
 	common.SetupProvider(stack)
 
 	// --- Policy Registration (shared) ---
-	common.RegisterPolicies(stack, "ops-read/policy")
+	common.RegisterPolicies(stack, "policy")
 
 	// --- Token Registration (shared) ---
-	common.RegisterTokens(stack, "ops-read/token")
+	common.RegisterTokens(stack, "token")
 
 	// --- Job Registration (local) ---
 	files, err := filepath.Glob("../../nomad/jobs/*.nomad.hcl")
@@ -79,7 +79,7 @@ func main() {
 		}
 		// Escape ${...} so Terraform doesn't try to template Nomad HCL
 		hcl := strings.ReplaceAll(string(raw), "${", "$${")
-		register_job(stack, id, hcl)
+		registerJob(stack, id, hcl)
 	}
 
 	app.Synth()

@@ -53,7 +53,8 @@ func RegisterPolicies(stack cdktf.TerraformStack, dir string) {
 			continue
 		}
 		hcl := strings.ReplaceAll(string(raw), "${", "$${")
-		aclpolicy.NewAclPolicy(stack, jsii.String(id), &aclpolicy.AclPolicyConfig{
+		uniqueID := id + "-policy"
+		aclpolicy.NewAclPolicy(stack, jsii.String(uniqueID), &aclpolicy.AclPolicyConfig{
 			Name:     jsii.String(id),
 			RulesHcl: jsii.String(hcl),
 		})
@@ -68,11 +69,10 @@ func RegisterTokens(stack cdktf.TerraformStack, dir string) {
 	}
 	for _, f := range tokenFiles {
 		id := strings.TrimSuffix(filepath.Base(f), ".hcl")
-		// Use a sanitized version of the relative path for uniqueness
-		relPath := strings.ReplaceAll(strings.TrimPrefix(f, dir), string(os.PathSeparator), "-")
-		uniqueID := id + relPath
+		uniqueID := id + "-token"
 		acltoken.NewAclToken(stack, jsii.String(uniqueID), &acltoken.AclTokenConfig{
 			Type:     jsii.String("client"),
+			Name:     jsii.String(id),
 			Policies: &[]*string{jsii.String(id)},
 		})
 	}
