@@ -69,5 +69,4 @@ end
 
 service 'consul' do
   action [:enable, :start]
-  subscribes :restart, 'consul_service[consul]', :delayed
 end

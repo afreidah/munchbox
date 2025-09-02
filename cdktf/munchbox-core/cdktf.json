@@ -3,10 +3,11 @@
   "app": "./nomad-app",
   "codeMakerOutput": "generated",
   "projectId": "d5ae7775-bc4d-431b-afc6-6ae3bbdfcedf",
-  "sendCrashReports": "true",
+  "sendCrashReports": true,
   "terraformProviders": [
-    "hashicorp/nomad@~> 2.5"
+      "hashicorp/nomad@~> 2.5",
+      "hashicorp/vault@~> 3.21"
   ],
   "terraformModules": [],
-  "context": {}
+  "context": { "disableDefaultBackend": true }
 }

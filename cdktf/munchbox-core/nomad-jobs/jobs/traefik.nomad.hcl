@@ -109,11 +109,17 @@ EOF
   entryPoints = ["web"]
   service     = "consul"
 
-# Nomad UI (Nomad runs on this ingress node)
+# Nomad UI (Hashi-UI web interface)
 [http.routers.nomad]
   rule        = "Host(`nomad.munchbox`)"
   entryPoints = ["web"]
-  service     = "nomad"
+  service     = "hashiui"
+
+# Deluge Web UI (runs on stabler)
+[http.routers.deluge]
+  rule        = "Host(`deluge.munchbox`)"
+  entryPoints = ["web"]
+  service     = "deluge"
 
 # Grafana UI (REMOTE node — set the IP below)
 [http.routers.grafana]
@@ -131,14 +137,20 @@ EOF
 
 [http.services]
 
-# Backends on THIS host for Consul/Nomad
+# Backends on THIS host for Consul
 [http.services.consul.loadBalancer]
   [[http.services.consul.loadBalancer.servers]]
     url = "http://127.0.0.1:8500"
 
-[http.services.nomad.loadBalancer]
-  [[http.services.nomad.loadBalancer.servers]]
-    url = "http://127.0.0.1:4646"
+# Hashi-UI (Nomad UI) backend
+[http.services.hashiui.loadBalancer]
+  [[http.services.hashiui.loadBalancer.servers]]
+    url = "http://127.0.0.1:3000"
+
+# Deluge Web UI backend (runs on stabler)
+[http.services.deluge.loadBalancer]
+  [[http.services.deluge.loadBalancer.servers]]
+    url = "http://stabler:8112"
 
 # Grafana runs on a different node: REPLACE cabot below
 [http.services.grafana.loadBalancer]

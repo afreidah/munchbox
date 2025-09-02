@@ -1,0 +1,31 @@
+{
+  "id": "pia",
+  "wireguard": {
+    "encrypted_data": "UBY6ibqUZJtYc1CwyrxjL/+mC0uqC2s1jUG6AgfnUWdEwJqPucxlYsb058qj\nT0DKANppXcLDNJSXfxuPnzaSxp0Mmkc+Y8ZWvcwUbRpg/Wu+thGv8+5HEq6/\nnjQ37QRxcIxh+casJLde+tsjfJ2RXH+s1WWD3vH3rWjHSLiEFNfPab9pl4WX\nZCrhE5s0FyL+97cHEJzg7eV+7h07llFedHg4/rywj+80q9yTVEKqEBcfjOmS\nktT6Uk1e2ll3Xy0wlFbV2MRTKHjdtHniREJiMN0G+p3kO768eyWDgwfj4AwA\ndvkqorcGQQGi0eRhFAxTcTENhH7TJcOsMmozepKqYEdmOdN/nbQTLPFlsIF+\n/hltMMduCN8o74mQ51Fg6oZNhBDuN2Dli/VjuV/Hwt7JjW4RltVIngBhGfTr\nAZkW5EwCwMQQoc0ZYQT59kU3g9veRA==\n",
+    "iv": "ogr/MtpHdciuYs4P\n",
+    "auth_tag": "3aEJYmsbFhrtRwb8Z49A6Q==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "pia_token": {
+    "encrypted_data": "JBPkNwWc8mPjh8yq5CauWZSoguK2OQQe7/qWO4wuqpNM2QnAbXmBNzsY4Huc\nmlvBacdL7WEBN4sty23s7U+p24Df6q0FW86uLKb4vbed4FyjBRveCZsbmec4\npBYQ1ZBHancQ6L/AjnXTCl/n9ClkgB2bXcp2+mfyd0qQbBQHRUev2AoB94VZ\ngLOr9Ep32pLHjqnS\n",
+    "iv": "NNqOobhmz9feOMaJ\n",
+    "auth_tag": "G1fVyZKoSP6lbWo66CUamA==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "pf_gateway": {
+    "encrypted_data": "c6rjNM+t1s09MLxMKCaEdxdKO3s1NeP/7Fl1ZrPc+w==\n",
+    "iv": "hpAxkWpsuL4tD96e\n",
+    "auth_tag": "lXUInXndr4KKh3ruhp9GlQ==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "pf_hostname": {
+    "encrypted_data": "RjI18RDmuyjojKO80+hwwtsgX3DWz+ZmQBpL8g==\n",
+    "iv": "02lX9wV5tMNZfljY\n",
+    "auth_tag": "oM9NvriZ+OdRLYChhGEZZw==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  }
+}

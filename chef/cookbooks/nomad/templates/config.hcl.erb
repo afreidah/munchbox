@@ -95,6 +95,10 @@ client {
     read_only = <%= volume['read_only'] %>
   }
   <% end %>
+
+  meta {
+    vault.version = "2.3.1"
+  }
 }
 
 # --------------------------------------------------------------------
@@ -105,7 +109,7 @@ plugin "docker" {
     endpoint         = "unix:///var/run/docker.sock"
     allow_privileged = true
     volumes { enabled = true }
-    allow_caps = ["NET_ADMIN", "NET_BIND_SERVICE"]
+    allow_caps = ["ALL"]
   }
 }
 
@@ -146,8 +150,9 @@ telemetry {
 # --------------------------------------------------------------------
 <% if node.dig('nomad','vault','enabled') %>
 vault {
-  enabled = true
-  address = "<%= node['nomad']['vault']['address'] %>"
-  token   = "<%= @token || '' %>"
+  enabled         = true
+  address         = "<%= node['nomad']['vault']['address'] %>"
+  token           = "<%= @token || '' %>"
+  tls_skip_verify = <%= node['nomad']['vault']['tls_skip_verify'] %>
 }
 <% end %>

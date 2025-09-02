@@ -4,8 +4,9 @@
 # - Single instance on core pool
 # - Host networking so Prometheus can reach Consul on 127.0.0.1:8500
 # - TSDB persisted under /opt/nomad/data/prometheus-data
-# - Traefik tags preserved
-# - Scrapes self, Nomad, and node_exporter (via Consul SD)
+# - Traefik tags preserved for service discovery/routing
+# - Scrapes self, Nomad servers, and node_exporter (via Consul SD)
+# - Mounts host's /etc/hosts for reliable hostname resolution
 # -------------------------------------------------------------------------------
 
 job "prometheus" {
@@ -17,8 +18,14 @@ job "prometheus" {
   group "prometheus" {
     count = 1
 
+    constraint {
+      attribute = "${node.unique.name}"
+      operator  = "="
+      value     = "goren"
+    }
+
     # ---------------------------------------------------------------------------
-    # Attach the host_volume declared in client.hcl
+    # Attach the host_volume declared in client.hcl for persistent TSDB data
     # ---------------------------------------------------------------------------
     volume "prometheus-data" {
       type      = "host"
@@ -63,9 +70,17 @@ job "prometheus" {
       }
 
       config {
-        image              = "prom/prometheus:v2.54.1"     # pin a stable version
+        image              = "prom/prometheus:v2.54.1"     # Pin a stable version
         ports              = ["web"]
         image_pull_timeout = "10m"
+        extra_hosts = [
+          "goren:192.168.68.60",
+          "green:192.168.68.62",
+          "logan:192.168.68.64",
+          "stabler:192.168.68.61",
+          "mccoy:192.168.68.63",
+          "cabot:192.168.68.59"
+        ]
 
         # IMPORTANT: args must be a LIST (not a string)
         args = [
@@ -76,12 +91,12 @@ job "prometheus" {
         ]
 
         volumes = [
-          "local/config:/etc/prometheus/config"
+          "local/config:/etc/prometheus/config",
         ]
       }
 
       # -------------------------------------------------------------------------
-      # Mount persistent data volume
+      # Mount persistent data volume for TSDB
       # -------------------------------------------------------------------------
       volume_mount {
         volume      = "prometheus-data"
@@ -90,8 +105,7 @@ job "prometheus" {
       }
 
       # -------------------------------------------------------------------------
-      # Config: scrape self, Nomad (static list), and node_exporter via Consul SD
-      # Consul agent is bound to 127.0.0.1 per your setup; host networking makes that reachable.
+      # Render Prometheus config: scrape self, Nomad servers, node_exporter via Consul SD
       # -------------------------------------------------------------------------
       template {
         destination = "local/config/prometheus.yml"
@@ -121,18 +135,18 @@ job "prometheus" {
                     - 'mccoy:4646'
                     - 'stabler:4646'
                     - 'cabot:4646'
-                    - 'goren:4646'
+                    - '192.168.68.60:4646'
 
             # --- node_exporter via Consul Service Discovery ---
             - job_name: 'node-exporter'
               consul_sd_configs:
                 - server: 'http://127.0.0.1:8500'
               relabel_configs:
-                # keep services whose names look like node-exporter (covers 'node-exporter' & 'prometheus-node-exporter')
+                # Keep services whose names look like node-exporter (covers 'node-exporter' & 'prometheus-node-exporter')
                 - source_labels: [__meta_consul_service]
                   regex: '.*node[-_]?exporter.*'
                   action: keep
-                # use service address + port advertised by Consul
+                # Use service address + port advertised by Consul
                 - source_labels: [__meta_consul_service_address]
                   target_label: __address__
                 - source_labels: [__meta_consul_service_port]

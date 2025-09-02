@@ -2,6 +2,9 @@
   "run_list": [
     "recipe[pi_bootstrap::default]",
     "recipe[pi_bootstrap::firewall]",
+    "recipe[pi_bootstrap::wireguard]",
+    "recipe[pi_bootstrap::docker_setup]",
+    "recipe[pi_bootstrap::pia_port_forward]",
     "recipe[consul::install]",
     "recipe[consul::acl_nomad]",
     "recipe[consul::management_token]",
