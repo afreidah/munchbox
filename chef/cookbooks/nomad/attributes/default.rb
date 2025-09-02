@@ -92,7 +92,8 @@ default['nomad']['client']['host_volumes'] = [
   { 'name' => 'registry-ui-html', 'path' => '/opt/nomad/data/registry-ui-html', 'read_only' => false },
   { 'name' => 'registry-ui', 'path' => '/opt/nomad/data/registry-ui-data', 'read_only' => false },
   { 'name' => 'grafana-data', 'path' => '/opt/nomad/data/grafana-data', 'read_only' => false },
-  { 'name' => 'deluge-data', 'path' => '/opt/nomad/data/deluge-data', 'read_only' => false }
+  { 'name' => 'deluge-data', 'path' => '/opt/nomad/data/deluge-data', 'read_only' => false },
+  { 'name' => 'gitlab', 'path' => '/opt/nomad/data/gitlab', 'read_only' => false }
 ]
 
 # --------------------------------------------------------------------
@@ -142,8 +143,9 @@ default['nomad']['cni']['enable']   = true
 # Vault Integration
 # --------------------------------------------------------------------
 
-default['nomad']['vault']['enabled'] = true
-default['nomad']['vault']['address'] = 'http://mccoy:8200'
+default['nomad']['vault']['enabled']         = true
+default['nomad']['vault']['tls_skip_verify'] = true
+default['nomad']['vault']['address']         = 'http://mccoy:8200'
 # Token is sourced from encrypted data bag at converge time (do not store here)
 
 # --------------------------------------------------------------------

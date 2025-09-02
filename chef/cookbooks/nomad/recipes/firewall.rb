@@ -84,3 +84,20 @@ if server_node
     end
   end
 end
+
+# --------------------------------------------------------------------
+# Nomad port 8112 for deluge
+# --------------------------------------------------------------------
+
+if server_node
+  %w(tcp udp).each do |proto|
+    allowed_cidrs.each do |cidr|
+      firewall_rule "deluge-ingress-#{proto}-#{cidr}" do
+        port     8112
+        protocol proto.to_sym
+        source   cidr
+        command  :allow
+      end
+    end
+  end
+end

@@ -22,7 +22,7 @@ listener "tcp" {
 
   # Provide a client CA only if you want client-auth (mTLS) for the API.
   # If you include this without requiring client certs, it will verify when presented.
-  tls_client_ca_file  = "<%= @tls_ca %>"
+  # tls_client_ca_file  = "<%= @tls_ca %>"
 
   # Recommended hardening (uncomment if you want strict TLS):
   # tls_min_version = "tls12"

@@ -1,0 +1,46 @@
+# templates/default/wg0.conf.erb
+# ---------------------------------------------------------------------------
+#  WireGuard split-tunnel configuration (policy routing)
+#
+#  - No default-route hijack (Table=off)
+#  - Only packets marked with fwmark (0x1) use table 51820
+#  - Endpoint host-route is ensured to avoid routing recursion
+#  - Rules applied/removed in PostUp/PreDown (idempotent)
+# ---------------------------------------------------------------------------
+
+[Interface]
+# --- Local identity/address ---------------------------------------------------
+PrivateKey = <%= ::File.read('/etc/wireguard/private.key').strip %>
+Address    = <%= @interface_address %>
+
+# Prevent wg-quick from auto-adding routes based on AllowedIPs.
+# We manage routing explicitly with marks and a dedicated table.
+Table      = off
+
+# Bind a socket fwmark so reply traffic uses table 51820 as well.
+PostUp   = /usr/bin/wg set %i fwmark <%= @mark_hex %>
+PreDown  = /usr/bin/wg set %i fwmark 0x0 || true
+
+# Ensure kernel permits src_valid_mark (reply-path validation with marks).
+PostUp   = /sbin/sysctl -q net.ipv4.conf.all.src_valid_mark=1
+
+# --- Policy routing: only MARKED packets use table <%= @wg_table %> ----------
+#  Rule: packets with fwmark go to the dedicated table
+PostUp   = /usr/sbin/ip -4 rule add fwmark <%= @mark_hex %> table <%= @wg_table %> priority 51820
+PreDown  = /usr/sbin/ip -4 rule del fwmark <%= @mark_hex %> table <%= @wg_table %> priority 51820 || true
+
+#  Default route inside that table goes out the WG interface
+PostUp   = /usr/sbin/ip -4 route add default dev %i table <%= @wg_table %>
+PreDown  = /usr/sbin/ip -4 route del default dev %i table <%= @wg_table %> || true
+
+# --- Endpoint host-route so handshake never tries to traverse the tunnel -----
+# Single-line shell to avoid wg-quick parsing errors
+PostUp   = /bin/sh -c 'IP="<%= @server_ip %>"; DEV="$(/usr/sbin/ip -4 route get "$IP" 2>/dev/null | awk '"'"'{for(i=1;i<=NF;i++) if ($i=="dev") {print $(i+1); exit}}'"'"')"; GW="$(/usr/sbin/ip -4 route get "$IP" 2>/dev/null | awk '"'"'{for(i=1;i<=NF;i++) if ($i=="via") {print $(i+1); exit}}'"'"')"; [ -n "$DEV" ] || exit 0; CMD="/usr/sbin/ip -4 route add $IP/32 dev $DEV"; [ -n "$GW" ] && CMD="$CMD via $GW"; $CMD table main 2>/dev/null || true'
+PreDown  = /usr/sbin/ip -4 route del <%= @server_ip %>/32 table main || true
+
+# --- Peer: PIA VPN server -----------------------------------------------------
+[Peer]
+PublicKey = <%= @server_pubkey %>
+Endpoint = <%= @server_endpoint %>
+AllowedIPs = <%= Array(@allowed_ips).join(', ') %>
+PersistentKeepalive = 25

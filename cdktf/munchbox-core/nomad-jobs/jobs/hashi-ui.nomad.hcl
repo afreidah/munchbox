@@ -25,7 +25,8 @@ job "hashi-ui" {
  
     # --- Vault block to declare secret dependency ---
     vault {
-      policies = ["default"]
+      policies = ["root"]
+      change_mode = "noop"
     }
 
     task "hashi-ui" {
@@ -36,15 +37,14 @@ job "hashi-ui" {
         network_mode = "host"
         volumes      = [
           "/opt/nomad/tls/nomad-agent-ca.pem:/etc/ssl/certs/nomad-agent-ca.pem",
-          "/etc/nomad.d/hashiuisecret:/secrets/hashiuisecret:ro"
         ]
       }
 
       template {
         data = <<EOH
-NOMAD_TOKEN={{ key "secrets/hashiuisecret" }}
-EOH
-        destination = "secrets/env"
+      NOMAD_TOKEN={{ with secret "secret/hashiuisecret" }}{{ .Data.data.token }}{{ end }}
+      EOH
+        destination = "secrets/nomad.env"
         env         = true
       }
 

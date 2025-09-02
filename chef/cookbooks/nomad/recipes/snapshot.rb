@@ -23,7 +23,12 @@ management_token = management['secret_id']
 cron 'nomad_snapshot_save' do
   minute '0'
   hour '2'
-  command 'nomad operator snapshot save /mnt/gdrive/nomad-snapshots/nomad-$(date +\\%Y\\%m\\%d\\%H\\%M\\%S).snap'
+  command [
+    "NOMAD_TOKEN=#{management_token}",
+    "nomad operator snapshot save",
+    "/mnt/gdrive/nomad-snapshots/nomad-$(date +\\%Y\\%m\\%d\\%H\\%M\\%S).snap",
+    ">> /var/log/nomad_snapshot.log 2>&1"
+  ].join(' ')
   user 'root'
   environment({ 'NOMAD_TOKEN' => management_token })
 end
