@@ -175,10 +175,61 @@ template '/etc/wireguard/pia.conf' do
     wg_table:          51820,                       # policy routing table id (arbitrary, stable)
     server_ip:         srv_ip                       # for endpoint host-route pinning
   )
-  notifies :restart, 'service[wg-quick@pia]', :delayed
 end
 
-# --- Service management -------------------------------------------------------
-service 'wg-quick@pia' do
-  action [:enable, :start]
+# --- Systemd service for PIA WireGuard/Port Forwarding -------------------------
+env_vars = [
+  "PIA_TOKEN=#{pia_item['pia_token'] || pia_item['pia_user']}",
+  "WG_SERVER_IP=#{srv_ip}",
+  "PIA_PF=true"
+]
+env_vars << "WG_HOSTNAME=#{pia_item['wg_hostname']}" if pia_item['wg_hostname'] && !pia_item['wg_hostname'].empty?
+
+systemd_unit 'pia-portforward.service' do
+  content({
+    Unit: {
+      Description: 'PIA WireGuard Port Forwarding',
+      After: 'network-online.target',
+      Wants: 'network-online.target'
+    },
+    Service: {
+      Type: 'simple',
+      WorkingDirectory: '/opt/piavpn-manual',
+      Environment: env_vars,
+      ExecStart: '/opt/piavpn-manual/connect_to_wireguard_with_token.sh',
+      Restart: 'always',
+      RestartSec: 10
+    },
+    Install: {
+      WantedBy: 'multi-user.target'
+    }
+  })
+  action [:create, :enable, :start]
+end
+
+# --- Optional: Separate systemd service for PIA Port Forwarding ---------------
+systemd_unit 'pia-portforward-refresh.service' do
+  content({
+    Unit: {
+      Description: 'PIA Port Forwarding Refresh',
+      After: 'network-online.target',
+      Wants: 'network-online.target'
+    },
+    Service: {
+      Type: 'simple',
+      WorkingDirectory: '/opt/piavpn-manual',
+      Environment: [
+        "PIA_TOKEN=#{pia_item['pia_token'] || pia_item['pia_user']}",
+        "PF_GATEWAY=#{srv_ip}",
+        "PF_HOSTNAME=#{pia_item['wg_hostname']}"
+      ],
+      ExecStart: '/opt/piavpn-manual/port_forwarding.sh',
+      Restart: 'always',
+      RestartSec: 10
+    },
+    Install: {
+      WantedBy: 'multi-user.target'
+    }
+  })
+  action [:create, :enable, :start]
 end

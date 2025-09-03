@@ -32,3 +32,11 @@ cron 'nomad_snapshot_save' do
   user 'root'
   environment({ 'NOMAD_TOKEN' => management_token })
 end
+
+# Ensure backup directory exists
+directory '/mnt/gdrive/gitlab-backups' do
+  owner 'root'
+  group 'root'
+  mode '0755'
+  recursive true
+end

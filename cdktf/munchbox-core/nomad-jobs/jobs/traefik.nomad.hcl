@@ -127,6 +127,12 @@ EOF
   entryPoints = ["web"]
   service     = "grafana"
 
+# Gitlab UI (REMOTE node — set the IP below)
+[http.routers.gitlab]
+  rule        = "Host(`gitlab.munchbox`)"
+  entryPoints = ["web"]
+  service     = "gitlab"
+
 [http.middlewares]
 # Protect Traefik dashboard + restrict to LAN
 [http.middlewares.dashboard-auth.basicAuth]
@@ -156,6 +162,11 @@ EOF
 [http.services.grafana.loadBalancer]
   [[http.services.grafana.loadBalancer.servers]]
     url = "http://cabot:3000"
+
+# Gitlab 
+[http.services.gitlab.loadBalancer]
+  [[http.services.gitlab.loadBalancer.servers]]
+    url = "http://stabler:8080"
 EOF
         destination = "local/traefik_dynamic.toml"
         change_mode = "noop"
