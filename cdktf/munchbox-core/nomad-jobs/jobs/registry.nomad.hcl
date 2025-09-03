@@ -21,6 +21,13 @@ job "registry" {
       }
     }
 
+    # --- Placement: run only on the specified node (goren) ---------------------
+    constraint {
+      attribute = "${node.unique.name}"
+      operator  = "="
+      value     = "goren"
+    }
+
     # Update host volume to match your client config
     volume "registry-data" {
       type      = "host"

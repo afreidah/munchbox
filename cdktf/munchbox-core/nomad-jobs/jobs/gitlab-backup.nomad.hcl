@@ -4,13 +4,13 @@
 # * Runs the GitLab backup process using the official Docker image.
 # * Ensures backups are stored on a mounted Google Drive directory for durability.
 # * Runs on the same node as the main GitLab service for consistent data access.
-# * Uses the same persistent volumes as the GitLab service.
+# * Uses the same persistent volumes and Omnibus config as the GitLab service.
 # * Schedules daily backups at 3am.
 # -------------------------------------------------------------------------------
 
 job "gitlab-backup" {
   datacenters = ["pi-dc"]
-  type = "batch"
+  type        = "batch"
 
   # Ensure backup runs on the same node as GitLab
   constraint {
@@ -20,18 +20,26 @@ job "gitlab-backup" {
   }
 
   periodic {
-    cron = "*/5 * * * *" # Every 5 minutes
-    prohibit_overlap = true
+    cron               = "0 3 * * *" # Daily at 3am
+    prohibit_overlap   = true
   }
 
   group "backup" {
     task "backup" {
       driver = "docker"
 
+      env = {
+        GITLAB_OMNIBUS_CONFIG = <<-OMNI
+          external_url 'http://cabot:8080';
+          gitlab_rails['gitlab_shell_ssh_port'] = 2222;
+          puma['port'] = 8081
+        OMNI
+      }
+
       config {
-        image = "gitlab/gitlab-ce:latest"
+        image   = "gitlab/gitlab-ce:latest"
         command = "/bin/bash"
-        args = ["-c", "gitlab-backup create"]
+        args    = ["-c", "gitlab-backup create"]
         volumes = [
           "/mnt/gdrive/gitlab-backups:/var/opt/gitlab/backups",
           "local/gitlab/config:/etc/gitlab",

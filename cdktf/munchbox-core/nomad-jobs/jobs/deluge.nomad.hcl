@@ -42,7 +42,7 @@ job "deluge" {
       driver = "docker"
     
       config {
-        image              = "mccoy:5000/deluge-with-vpnmark:latest"
+        image              = "goren:5000/deluge-with-vpnmark:latest"
         image_pull_timeout = "10m"
         ports              = ["web"]
 

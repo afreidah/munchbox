@@ -4,7 +4,7 @@
     "recipe[pi_bootstrap::firewall]",
     "recipe[pi_bootstrap::wireguard]",
     "recipe[pi_bootstrap::docker_setup]",
-    "recipe[pi_bootstrap::pia_port_forward]",
+    "recipe[pi_bootstrap::docker_config]",
     "recipe[consul::install]",
     "recipe[consul::acl_nomad]",
     "recipe[consul::management_token]",
@@ -16,6 +16,7 @@
     "recipe[nomad::snapshot]",
     "recipe[openbao::default]"
   ],
+
   "normal": {
     "nomad": {
       "client_tags": {
