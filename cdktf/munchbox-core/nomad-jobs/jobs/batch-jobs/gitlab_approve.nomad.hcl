@@ -8,7 +8,7 @@
 
 job "gitlab-approve-users" {
   datacenters = ["pi-dc"]
-  type = "batch"
+  type        = "batch"
 
   constraint {
     attribute = "${node.unique.name}"
@@ -21,7 +21,7 @@ job "gitlab-approve-users" {
       driver = "docker"
 
       config {
-        image = "gitlab/gitlab-ce:latest"
+        image   = "gitlab/gitlab-ce:latest"
         command = "/bin/bash"
         args = [
           "-c",

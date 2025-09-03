@@ -20,8 +20,8 @@ job "gitlab-backup" {
   }
 
   periodic {
-    cron               = "0 3 * * *" # Daily at 3am
-    prohibit_overlap   = true
+    crons            = ["0 3 * * *"] # Daily at 3am
+    prohibit_overlap = true
   }
 
   group "backup" {

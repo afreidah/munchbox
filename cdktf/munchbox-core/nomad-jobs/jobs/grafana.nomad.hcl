@@ -78,7 +78,7 @@ job "grafana" {
       template {
         destination = "secrets/grafana.env"
         env         = true
-        data = <<EOH
+        data        = <<EOH
 GF_SECURITY_ADMIN_PASSWORD=admin
 EOH
       }

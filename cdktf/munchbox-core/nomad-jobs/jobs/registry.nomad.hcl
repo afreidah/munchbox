@@ -62,7 +62,7 @@ job "registry" {
         destination = "local/config/config.yml"
         change_mode = "restart"
         perms       = "0644"
-        data = <<EOT
+        data        = <<EOT
 version: 0.1
 log:
   level: info
