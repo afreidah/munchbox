@@ -2,12 +2,14 @@
   "run_list": [
     "recipe[pi_bootstrap::default]",
     "recipe[pi_bootstrap::firewall]",
+    "recipe[pi_bootstrap::gdrive_mount]",
     "recipe[consul::install]",
     "recipe[consul::acl_nomad]",
     "recipe[consul::management_token]",
     "recipe[consul::agent_token]",
     "recipe[consul::tls]",
     "recipe[nomad::default]",
+    "recipe[nomad::cni]",
     "recipe[nomad::consul_token]",
     "recipe[nomad::tls]"
   ],

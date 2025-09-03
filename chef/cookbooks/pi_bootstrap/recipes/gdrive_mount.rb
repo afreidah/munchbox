@@ -10,6 +10,10 @@
 # Ensures the mount point exists and persists the mount in /etc/fstab.
 # --------------------------------------------------------------------
 
+package 'sshfs' do
+  action :install
+end
+
 # --------------------------------------------------------------------
 # Ensure Mount Point Exists
 # --------------------------------------------------------------------
