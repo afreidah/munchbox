@@ -30,3 +30,6 @@ default['pi_bootstrap']['packages'] = %w(
   containernetworking-plugins
   binutils
 )
+
+# --- Node that acts as Docker Registry ---
+default['pi_bootstrap']['docker_registry_node'] = 'goren'

@@ -156,7 +156,7 @@ EOF
 # Deluge Web UI backend (runs on stabler)
 [http.services.deluge.loadBalancer]
   [[http.services.deluge.loadBalancer.servers]]
-    url = "http://stabler:8112"
+    url = "http://mccoy:8112"
 
 # Grafana runs on a different node: REPLACE cabot below
 [http.services.grafana.loadBalancer]
