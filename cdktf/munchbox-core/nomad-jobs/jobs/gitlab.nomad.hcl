@@ -42,8 +42,8 @@ job "gitlab" {
     # ---------------------------------------------------------------------------
     network {
       mode = "bridge"
-      port "http" { static = 8080 }   # GitLab web UI (proxied by Traefik)
-      port "ssh"  { static = 2222 }   # Git over SSH
+      port "http" { static = 8080 } # GitLab web UI (proxied by Traefik)
+      port "ssh" { static = 2222 }  # Git over SSH
     }
 
     # ---------------------------------------------------------------------------
@@ -71,8 +71,8 @@ job "gitlab" {
 
       # Resource tuning: GitLab benefits from memory headroom.
       resources {
-        cpu    = 2000         # ~2 CPUs worth of shares
-        memory = 4096         # 4 GiB RAM
+        cpu    = 2000 # ~2 CPUs worth of shares
+        memory = 4096 # 4 GiB RAM
       }
 
       volume_mount {
@@ -97,7 +97,7 @@ job "gitlab" {
       service {
         name = "gitlab"
         port = "http"
-        tags = ["traefik"]  # Traefik watches Consul and routes HTTP to this task
+        tags = ["traefik"] # Traefik watches Consul and routes HTTP to this task
 
         check {
           type     = "http"

@@ -70,7 +70,7 @@ job "prometheus" {
       }
 
       config {
-        image              = "prom/prometheus:v2.54.1"     # Pin a stable version
+        image              = "prom/prometheus:v2.54.1" # Pin a stable version
         ports              = ["web"]
         image_pull_timeout = "10m"
         extra_hosts = [
@@ -111,7 +111,7 @@ job "prometheus" {
         destination = "local/config/prometheus.yml"
         change_mode = "restart"
         perms       = "0644"
-        data = <<-EOT
+        data        = <<-EOT
           global:
             scrape_interval: 15s
             evaluation_interval: 15s

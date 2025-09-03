@@ -50,7 +50,7 @@ job "traefik" {
       config {
         network_mode = "host"
         image        = "traefik:v2.11"
-        ports        = ["http","https","dashboard"]
+        ports        = ["http", "https", "dashboard"]
         volumes = [
           "local/traefik.toml:/etc/traefik/traefik.toml",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml"
@@ -61,7 +61,7 @@ job "traefik" {
       # Static configuration (entrypoints + file provider only)
       # ---------------------------------------------------------------------------
       template {
-        data = <<EOF
+        data        = <<EOF
 [entryPoints]
   [entryPoints.web]
     address = ":80"
@@ -89,7 +89,7 @@ EOF
       # Dynamic configuration (routers, middlewares, services)
       # ---------------------------------------------------------------------------
       template {
-        data = <<EOF
+        data        = <<EOF
 # --------------------------------------------------------------------
 # Traefik Dynamic Config — subdomain-based dashboards
 # --------------------------------------------------------------------
@@ -166,7 +166,7 @@ EOF
 # Gitlab 
 [http.services.gitlab.loadBalancer]
   [[http.services.gitlab.loadBalancer.servers]]
-    url = "http://stabler:8080"
+    url = "http://cabot:8080"
 EOF
         destination = "local/traefik_dynamic.toml"
         change_mode = "noop"

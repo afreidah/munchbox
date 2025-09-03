@@ -22,11 +22,17 @@ job "hashi-ui" {
       operator  = "="
       value     = "mccoy"
     }
- 
+
     # --- Vault block to declare secret dependency ---
     vault {
-      policies = ["root"]
+      policies    = ["root"]
       change_mode = "noop"
+    }
+
+    network {
+      port "http" {
+        static = 3000
+      }
     }
 
     task "hashi-ui" {
@@ -35,13 +41,13 @@ job "hashi-ui" {
       config {
         image        = "jippi/hashi-ui"
         network_mode = "host"
-        volumes      = [
+        volumes = [
           "/opt/nomad/tls/nomad-agent-ca.pem:/etc/ssl/certs/nomad-agent-ca.pem",
         ]
       }
 
       template {
-        data = <<EOH
+        data        = <<EOH
       NOMAD_TOKEN={{ with secret "secret/hashiuisecret" }}{{ .Data.data.token }}{{ end }}
       EOH
         destination = "secrets/nomad.env"
@@ -49,12 +55,12 @@ job "hashi-ui" {
       }
 
       env {
-        NOMAD_ENABLE   = "1"
-        NOMAD_ADDR     = "https://mccoy:4646"
-        NOMAD_CACERT   = "/etc/ssl/certs/nomad-agent-ca.pem"
-        CONSUL_ENABLE  = "1"
-        CONSUL_CACERT  = "/etc/ssl/certs/nomad-agent-ca.pem"
-        CONSUL_ADDR    = "http://mccoy:8500"
+        NOMAD_ENABLE  = "1"
+        NOMAD_ADDR    = "https://mccoy:4646"
+        NOMAD_CACERT  = "/etc/ssl/certs/nomad-agent-ca.pem"
+        CONSUL_ENABLE = "1"
+        CONSUL_CACERT = "/etc/ssl/certs/nomad-agent-ca.pem"
+        CONSUL_ADDR   = "http://mccoy:8500"
       }
 
       service {
@@ -73,12 +79,6 @@ job "hashi-ui" {
       resources {
         cpu    = 500
         memory = 512
-
-        network {
-          port "http" {
-            static = 3000
-          }
-        }
       }
     }
   }

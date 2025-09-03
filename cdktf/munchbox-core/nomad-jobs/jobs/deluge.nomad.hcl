@@ -38,31 +38,31 @@ job "deluge" {
 
     task "deluge" {
       # Run as the 'vpnmark' user so all traffic is routed via the VPN
-      user = "vpnmark"
+      user   = "vpnmark"
       driver = "docker"
-    
+
       config {
         image              = "goren:5000/deluge-with-vpnmark:latest"
         image_pull_timeout = "10m"
         ports              = ["web"]
 
         readonly_rootfs = false
-        cap_add = ["CHOWN","FOWNER"]
+        cap_add         = ["CHOWN", "FOWNER"]
 
         volumes = [
           "/opt/nomad/data/deluge-data/downloads:/downloads",
           "/mnt/gdrive/nomad_deluge_downloads:/completed"
         ]
       }
-    
+
       env = {
-        PUID = "1000"
-        PGID = "1000"
-        TZ   = "UTC"
+        PUID                       = "1000"
+        PGID                       = "1000"
+        TZ                         = "UTC"
         DELUGE_MOVE_COMPLETED_PATH = "/completed"
-        DELUGE_MOVE_COMPLETED = "true"
+        DELUGE_MOVE_COMPLETED      = "true"
       }
-    
+
       volume_mount {
         volume      = "deluge-data"
         destination = "/config"
