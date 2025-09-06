@@ -15,9 +15,12 @@ job "registry" {
 
   group "mirror" {
     network {
-      mode = "host"
       port "registry" {
         static = 5000
+      }
+      port "ui" {
+        static = 5001
+        to     = 80
       }
     }
 
@@ -35,6 +38,13 @@ job "registry" {
       read_only = false
     }
 
+    # Volume for registry authentication
+    volume "registry-auth" {
+      type      = "host"
+      source    = "registry-auth"
+      read_only = true
+    }
+
     task "registry" {
       driver = "docker"
 
@@ -42,7 +52,6 @@ job "registry" {
         image              = "registry:2"
         image_pull_timeout = "10m"
         network_mode       = "host"
-        # Use correct volume mount for persistent data
         volumes = [
           "local/config/config.yml:/etc/docker/registry/config.yml"
         ]
@@ -58,6 +67,12 @@ job "registry" {
         read_only   = false
       }
 
+      volume_mount {
+        volume      = "registry-auth"
+        destination = "/auth"
+        read_only   = true
+      }
+
       template {
         destination = "local/config/config.yml"
         change_mode = "restart"
@@ -66,13 +81,15 @@ job "registry" {
 version: 0.1
 log:
   level: info
-
 storage:
   filesystem:
     rootdirectory: /var/lib/registry
-
 http:
   addr: :5000
+  headers:
+    Access-Control-Allow-Origin: ["http://192.168.68.60:5001", "http://registry.munchbox"]
+    Access-Control-Allow-Methods: ["GET", "HEAD", "OPTIONS"]
+    Access-Control-Allow-Headers: ["Authorization", "Accept", "Cache-Control", "Content-Type", "Origin"]
 EOT
       }
 
@@ -87,6 +104,40 @@ EOT
           path     = "/v2/"
           interval = "10s"
           timeout  = "3s"
+        }
+      }
+    }
+
+    task "registry-ui" {
+      driver = "docker"
+
+      config {
+        image = "joxit/docker-registry-ui:latest"
+        ports = ["ui"]
+      }
+
+      env {
+        REGISTRY_URL        = "http://goren:5000"
+        REGISTRY_TITLE      = "Docker Registry Mirror"
+        DELETE_IMAGES       = "false"
+        PORT                = "5001"
+        REGISTRY_BASIC_AUTH = "true"
+        REGISTRY_USERNAME   = "alex.freidah"
+        REGISTRY_PASSWORD   = "changeme"
+      }
+
+      service {
+        name     = "docker-registry-ui"
+        provider = "consul"
+        port     = "ui"
+
+        check {
+          name                   = "http-registry-ui"
+          type                   = "http"
+          path                   = "/"
+          interval               = "15s"
+          timeout                = "5s"
+          success_before_passing = 1
         }
       }
     }
