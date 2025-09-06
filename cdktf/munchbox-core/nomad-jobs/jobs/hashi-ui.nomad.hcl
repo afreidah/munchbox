@@ -20,7 +20,7 @@ job "hashi-ui" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
-      value     = "mccoy"
+      value     = "stabler"
     }
 
     # --- Vault block to declare secret dependency ---

@@ -133,6 +133,12 @@ EOF
   entryPoints = ["web"]
   service     = "gitlab"
 
+# Docker Registry UI (REMOTE node — set the IP below)
+[http.routers.docker-registry-ui]
+  rule        = "Host(`registry.munchbox`)"
+  entryPoints = ["web"]
+  service     = "docker-registry-ui"
+
 [http.middlewares]
 # Protect Traefik dashboard + restrict to LAN
 [http.middlewares.dashboard-auth.basicAuth]
@@ -167,6 +173,11 @@ EOF
 [http.services.gitlab.loadBalancer]
   [[http.services.gitlab.loadBalancer.servers]]
     url = "http://cabot:8080"
+
+# Registry-UI
+[http.services.docker-registry-ui.loadBalancer]
+  [[http.services.docker-registry-ui.loadBalancer.servers]]
+    url = "http://goren:5001"
 EOF
         destination = "local/traefik_dynamic.toml"
         change_mode = "noop"
