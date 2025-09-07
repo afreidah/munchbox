@@ -93,6 +93,7 @@ default['nomad']['client']['host_volumes'] = [
   { 'name' => 'registry-ui', 'path' => '/opt/nomad/data/registry-ui-data', 'read_only' => false },
   { 'name' => 'grafana-data', 'path' => '/opt/nomad/data/grafana-data', 'read_only' => false },
   { 'name' => 'deluge-data', 'path' => '/opt/nomad/data/deluge-data', 'read_only' => false },
+  { 'name' => 'nginx-resume', 'path' => '/opt/nomad/data/nginx-resume', 'read_only' => false },
   { 'name' => 'gitlab', 'path' => '/opt/nomad/data/gitlab', 'read_only' => false }
 ]
 

@@ -139,6 +139,12 @@ EOF
   entryPoints = ["web"]
   service     = "docker-registry-ui"
 
+# Resume Static Site Router
+[http.routers.nginx-resume]
+  rule        = "Host(`resume.munchbox`)"
+  entryPoints = ["web"]
+  service     = "nginx-resume"
+
 [http.middlewares]
 # Protect Traefik dashboard + restrict to LAN
 [http.middlewares.dashboard-auth.basicAuth]
@@ -178,6 +184,11 @@ EOF
 [http.services.docker-registry-ui.loadBalancer]
   [[http.services.docker-registry-ui.loadBalancer.servers]]
     url = "http://goren:5001"
+
+# Resume Static Page
+[http.services.nginx-resume.loadBalancer]
+  [[http.services.nginx-resume.loadBalancer.servers]]
+    url = "http://mccoy:8080"
 EOF
         destination = "local/traefik_dynamic.toml"
         change_mode = "noop"
