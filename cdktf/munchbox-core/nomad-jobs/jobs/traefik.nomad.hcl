@@ -91,18 +91,35 @@ job "traefik" {
       trustedIPs = ["127.0.0.1/32"]
   [entryPoints.websecure]
     address = ":443"
-    [entryPoints.websecure.forwardedHeaders]          # ADDED: mirror trust on websecure
-      trustedIPs = ["127.0.0.1/32"]                   # ADDED
+		[entryPoints.websecure.http.tls]
+    	options = "modern@file"
+    [entryPoints.websecure.forwardedHeaders] 
+      trustedIPs = ["127.0.0.1/32"] 
 
   [entryPoints.traefik]
     address = ":8081"
+
+[tls.options]
+  [tls.options.modern]
+    minVersion = "VersionTLS12"          # allow 1.2+; TLS 1.3 is auto-included
+    sniStrict  = true
+    curvePreferences = ["CurveP521", "CurveP384"]
+    cipherSuites = [                      # applies to TLS 1.0–1.2 only
+      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305",
+      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305",
+      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+    ]
+    disableSessionTickets = true          # full handshakes; no resumption tickets
 
 [api]
   dashboard = true
   insecure  = false
 
-[ping]                                             # ADDED: health endpoint
-  entryPoint = "traefik"                          # ADDED
+[ping]                                             
+  entryPoint = "traefik"                          
 
 # File provider drives our routers/services (rendered below)
 [providers.file]
@@ -196,7 +213,7 @@ EOF
   rule        = "Host(`resume.alexfreidah.com`,`www.resume.alexfreidah.com`)"
   entryPoints = ["web"]
   service     = "nginx-resume"
-  middlewares = ["redirect-resume-www", "resume-sec"]  # ADDED
+  middlewares = ["redirect-resume-www", "resume-sec", "resume-ratelimit", "resume-inflight"]
 
 # --------------------------------------------------------------------
 # Traefik Dynamic Config — Middlewares
@@ -209,6 +226,23 @@ EOF
 
 [http.middlewares.dashboard-allowlan.ipWhiteList]
   sourceRange = ["192.168.68.0/24", "127.0.0.1/32"]  # allow local (cloudflared) too
+
+# Per-IP token bucket (avg 20 r/s, burst 40)
+[http.middlewares.resume-ratelimit.rateLimit]
+  average = 20
+  burst   = 40
+  [http.middlewares.resume-ratelimit.rateLimit.sourceCriterion]
+    requestHeaderName = "CF-Connecting-IP"
+
+# --- COEP/COOP/CORP for cross-origin isolation on the resume host ---
+[http.middlewares.resume-sec.headers.customResponseHeaders]
+  Cross-Origin-Embedder-Policy = "require-corp"  # or "credentialless" (see notes)
+  Cross-Origin-Opener-Policy   = "same-origin"
+  Cross-Origin-Resource-Policy = "same-origin"
+
+# Global cap on concurrent requests reaching the backend
+[http.middlewares.resume-inflight.inFlightReq]
+  amount = 100
 
 # Redirect www.resume -> apex
 [http.middlewares.redirect-resume-www.redirectRegex]
@@ -325,7 +359,7 @@ EOF
         check {                                  # ADDED
           name     = "http-ping"                 # ADDED
           type     = "http"                      # ADDED
-          path     = "/ping"                     # ADDED (served by [ping] on :8081)
+          path     = "/ping"                     # ADDED 
           interval = "10s"                       # ADDED
           timeout  = "2s"                        # ADDED
         }                                        # ADDED

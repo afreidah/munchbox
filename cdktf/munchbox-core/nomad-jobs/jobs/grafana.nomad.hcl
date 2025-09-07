@@ -84,7 +84,6 @@ EOH
       }
 
       # --- Grafana env: sub-path operation at /grafana ----------------------------
-      # Use a RELATIVE root_url so direct :3000 testing and proxied /grafana both work.
       env = {
         GF_SERVER_SERVE_FROM_SUB_PATH = "false"
         GF_SERVER_ROOT_URL            = "http://grafana.munchbox/"
