@@ -35,7 +35,6 @@ job "prometheus" {
 
     # ---------------------------------------------------------------------------
     # Host networking: Prometheus listens on :9090 on the node; can reach 127.0.0.1:8500
-    # Define a labeled port so service/checks can reference it cleanly.
     # ---------------------------------------------------------------------------
     network {
       mode = "host"
@@ -70,7 +69,7 @@ job "prometheus" {
       }
 
       config {
-        image              = "prom/prometheus:v2.54.1" # Pin a stable version
+        image              = "prom/prometheus:v2.54.1" 
         ports              = ["web"]
         image_pull_timeout = "10m"
         extra_hosts = [

@@ -1,8 +1,5 @@
 # ------------------------------------------------------------------------------
 # Nginx Static Site — Serve prebuilt HTML from Nomad host_volume on mccoy
-# - Updates:
-#   * Health check now probes "/" (works with index resume.html)
-#   * Traefik router/tls/middleware tags added for resume.alexfreidah.com
 # ------------------------------------------------------------------------------
 
 job "nginx-resume-hostfile" {
@@ -14,20 +11,12 @@ job "nginx-resume-hostfile" {
   group "web" {
     count = 1
 
-    # Force this to run on mccoy (your ingress node)
+    # Force this to run on mccoy
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "mccoy"
     }
-
-    # host_volume declared in Nomad client config:
-    # client {
-    #   host_volume "nginx-resume" {
-    #     path      = "/opt/nomad/data/nginx-resume"
-    #     read_only = true
-    #   }
-    # }
 
     volume "site" {
       type      = "host"
@@ -38,7 +27,7 @@ job "nginx-resume-hostfile" {
     network {
       port "http" {
         to     = 80
-        static = 8080   # host:8080 -> container:80
+        static = 8080
       }
     }
 
@@ -58,25 +47,46 @@ job "nginx-resume-hostfile" {
         read_only   = true
       }
 
-      # minimal server: prefer resume.html
-      template {
-        destination = "local/default.conf"
-        data = <<-EOT
-          server {
-            listen 80;
-            server_name _;
-            root /usr/share/nginx/html;
+			# ------------------------------------------------------------------------
+			# Template — /etc/nginx/conf.d/default.conf (rendered into local/default.conf)
+			# - Serves resume.html at "/"
+			# - Adds per-IP rate/conn limits to resist floods
+			# ------------------------------------------------------------------------
+			template {
+				destination = "local/default.conf"
+				data = <<-EOT
+					# -----------------------------------------------------------------------------
+					# NGINX server for resume.alexfreidah.com — static, read-only content
+					# -----------------------------------------------------------------------------
 
-            # Serve resume.html at "/" without writing to the RO mount
-            index resume.html;
+					# --- Global zones (http context) ---
+					# Per-IP request rate: 10 req/s (burst allowed below)
+					limit_req_zone  $binary_remote_addr  zone=resume_req_zone:10m  rate=10r/s;
 
-            location / {
-              # Try request path first, then fallback to resume.html
-              try_files $uri $uri/ /resume.html;
-            }
-          }
-        EOT
-      }
+					# Per-IP concurrent connections cap
+					limit_conn_zone $binary_remote_addr  zone=resume_conn_zone:10m;
+
+					server {
+						listen 80;
+						server_name _;
+						root /usr/share/nginx/html;
+
+						# Serve resume.html at "/"
+						index resume.html index.html;
+
+						# Cap total concurrent connections per IP
+						limit_conn resume_conn_zone 20;
+
+						location / {
+							# Try request path first, then fallback to resume.html
+							try_files $uri $uri/ /resume.html;
+
+							# Apply per-IP rate limit: allow short bursts without delay
+							limit_req zone=resume_req_zone burst=20 nodelay;
+						}
+					}
+				EOT
+			}
 
       resources {
         cpu    = 200

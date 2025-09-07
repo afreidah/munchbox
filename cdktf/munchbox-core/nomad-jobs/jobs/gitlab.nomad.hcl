@@ -54,7 +54,6 @@ job "gitlab" {
 
       config {
         # Pin to a specific tag to avoid surprise major/minor upgrades.
-        # You can bump this deliberately later (e.g., 17.6.x).
         image              = "gitlab/gitlab-ce:latest"
         image_pull_timeout = "10m"
         ports              = ["http", "ssh"]

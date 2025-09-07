@@ -12,7 +12,7 @@
 #       www.resume.alexfreidah.com
 #   so either hostname works.
 #
-# Requirements (already satisfied in your setup):
+# Requirements
 # - Consul KV keys:
 #     secrets/cloudflared/credentials.json  (full JSON from `cloudflared tunnel create`)
 #     secrets/cloudflared/tunnel_uuid       (UUID of the tunnel)
@@ -43,7 +43,7 @@ job "cloudflared-tunnel" {
 
       config {
         image        = "cloudflare/cloudflared:latest"
-        # Host net mode inside Docker as well (belt-and-suspenders)
+        # Host net mode inside Docker as well
         network_mode = "host"
 
         # Use the mounted file-mode config

@@ -31,7 +31,7 @@ job "registry" {
       value     = "goren"
     }
 
-    # Update host volume to match your client config
+    # Update host volume to match client config
     volume "registry-data" {
       type      = "host"
       source    = "registry-data"
