@@ -91,12 +91,18 @@ job "traefik" {
       trustedIPs = ["127.0.0.1/32"]
   [entryPoints.websecure]
     address = ":443"
+    [entryPoints.websecure.forwardedHeaders]          # ADDED: mirror trust on websecure
+      trustedIPs = ["127.0.0.1/32"]                   # ADDED
+
   [entryPoints.traefik]
     address = ":8081"
 
 [api]
   dashboard = true
   insecure  = false
+
+[ping]                                             # ADDED: health endpoint
+  entryPoint = "traefik"                          # ADDED
 
 # File provider drives our routers/services (rendered below)
 [providers.file]
@@ -179,6 +185,7 @@ EOF
   rule        = "Host(`resume.munchbox`)"
   entryPoints = ["web"]
   service     = "nginx-resume"
+  middlewares = ["resume-sec"]                       # ADDED
 
 # --------------------------------------------------------------------
 # Public hostname via Cloudflare Tunnel
@@ -189,9 +196,10 @@ EOF
   rule        = "Host(`resume.alexfreidah.com`,`www.resume.alexfreidah.com`)"
   entryPoints = ["web"]
   service     = "nginx-resume"
+  middlewares = ["redirect-resume-www", "resume-sec"]  # ADDED
 
 # --------------------------------------------------------------------
-# Middlewares
+# Traefik Dynamic Config — Middlewares
 # --------------------------------------------------------------------
 [http.middlewares]
 
@@ -202,10 +210,50 @@ EOF
 [http.middlewares.dashboard-allowlan.ipWhiteList]
   sourceRange = ["192.168.68.0/24", "127.0.0.1/32"]  # allow local (cloudflared) too
 
+# Redirect www.resume -> apex
 [http.middlewares.redirect-resume-www.redirectRegex]
   regex       = "^https?://www\\.resume\\.alexfreidah\\.com/(.*)"
   replacement = "https://resume.alexfreidah.com/$1"
   permanent   = true
+
+# Resume security headers (HSTS, XFO, nosniff, Referrer-Policy, Permissions-Policy, CSP)
+[http.middlewares.resume-sec.headers]
+  # --- HSTS ---
+  stsSeconds           = 31536000
+  stsIncludeSubdomains = true
+  forceSTSHeader       = true
+  # Only set true if you intend to submit to the preload list and ALL subdomains are HTTPS
+  stsPreload           = false
+
+  # --- Classic hardening ---
+  contentTypeNosniff       = true
+  customFrameOptionsValue  = "SAMEORIGIN"
+  referrerPolicy           = "no-referrer"
+
+  # --- Permissions-Policy: disable sensitive features by default ---
+  permissionsPolicy = """
+    geolocation=(), microphone=(), camera=(), usb=(),
+    fullscreen=(self), payment=(), accelerometer=(),
+    gyroscope=(), magnetometer=(), midi=(),
+    picture-in-picture=(), clipboard-read=(), clipboard-write=(),
+    browsing-topics=()
+  """
+
+  # --- CSP: allow inline scripts so the theme boot/toggle works; keep tight otherwise ---
+  contentSecurityPolicy = """
+    default-src 'self';
+    base-uri 'self';
+    object-src 'none';
+    frame-ancestors 'self';
+    img-src 'self' data: blob:;
+    font-src 'self' data:;
+    style-src 'self' 'unsafe-inline';
+    script-src 'self' 'unsafe-inline';
+    connect-src 'none';
+    form-action 'self';
+    upgrade-insecure-requests;
+  """
+
 
 # --------------------------------------------------------------------
 # Services (backends)
@@ -264,10 +312,23 @@ EOF
       service {
         name = "traefik"
         port = "https"
+        check {                                  # ADDED
+          name     = "tcp-https"                 # ADDED
+          type     = "tcp"                       # ADDED
+          interval = "10s"                       # ADDED
+          timeout  = "2s"                        # ADDED
+        }                                        # ADDED
       }
       service {
         name = "traefik-dashboard"
         port = "dashboard"
+        check {                                  # ADDED
+          name     = "http-ping"                 # ADDED
+          type     = "http"                      # ADDED
+          path     = "/ping"                     # ADDED (served by [ping] on :8081)
+          interval = "10s"                       # ADDED
+          timeout  = "2s"                        # ADDED
+        }                                        # ADDED
       }
     }
   }

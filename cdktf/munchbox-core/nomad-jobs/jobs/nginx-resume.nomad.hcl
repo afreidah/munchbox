@@ -1,5 +1,8 @@
 # ------------------------------------------------------------------------------
 # Nginx Static Site — Serve prebuilt HTML from Nomad host_volume on mccoy
+# - Updates:
+#   * Health check now probes "/" (works with index resume.html)
+#   * Traefik router/tls/middleware tags added for resume.alexfreidah.com
 # ------------------------------------------------------------------------------
 
 job "nginx-resume-hostfile" {
@@ -63,9 +66,13 @@ job "nginx-resume-hostfile" {
             listen 80;
             server_name _;
             root /usr/share/nginx/html;
-            index resume.html index.html;
+
+            # Serve resume.html at "/" without writing to the RO mount
+            index resume.html;
+
             location / {
-              try_files /resume.html $uri $uri/ =404;
+              # Try request path first, then fallback to resume.html
+              try_files $uri $uri/ /resume.html;
             }
           }
         EOT
@@ -79,12 +86,23 @@ job "nginx-resume-hostfile" {
       service {
         name = "nginx-resume"
         port = "http"
+
+        # --- Health check probes "/" now that index is set to resume.html ---
         check {
           type     = "http"
-          path     = "/resume.html"
+          path     = "/"
           interval = "10s"
           timeout  = "2s"
         }
+
+        # --- Traefik (Consul Catalog) tags for HTTPS routing + security headers ---
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.resume.rule=Host(`resume.alexfreidah.com`)",
+          "traefik.http.routers.resume.entrypoints=websecure",
+          "traefik.http.routers.resume.tls=true",
+          "traefik.http.routers.resume.middlewares=resume-sec@file",
+        ]
       }
     }
   }
