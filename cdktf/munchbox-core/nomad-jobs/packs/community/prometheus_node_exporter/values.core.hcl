@@ -18,7 +18,7 @@ job_name = "node-exporter-core"
 # Network configuration for the node exporter group
 node_exporter_group_network = {
   mode  = "host"
-  ports = { http = 9100 }
+  ports = 9100
 }
 
 # Additional task configuration (e.g., version)

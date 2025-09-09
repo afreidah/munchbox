@@ -96,6 +96,7 @@ job "nginx-resume-hostfile" {
       service {
         name = "nginx-resume"
         port = "http"
+				provider = "consul"
 
         # --- Health check probes "/" now that index is set to resume.html ---
         check {
