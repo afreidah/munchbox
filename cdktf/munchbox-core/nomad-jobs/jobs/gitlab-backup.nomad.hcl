@@ -9,14 +9,16 @@
 # -------------------------------------------------------------------------------
 
 job "gitlab-backup" {
+  region      = "global"
   datacenters = ["pi-dc"]
   type        = "batch"
+  node_pool   = "core"
 
   # Ensure backup runs on the same node as GitLab
   constraint {
     attribute = "${node.unique.name}"
     operator  = "="
-    value     = "cabot"
+    value     = "goren"
   }
 
   periodic {

@@ -6,19 +6,32 @@
 // Package common provides shared utilities for Nomad CDKTF stacks.
 package common
 
+// ============================================================================
+// Imports — CDKTF core + Generated Providers (Nomad, Consul, Vault)
+// - Use unique aliases to avoid collisions between Nomad and Consul resources.
+// - If you don't need Vault yet, drop the vault* lines and related code.
+// ============================================================================
 import (
+	// Standard lib
+
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	// CDKTF core
+	"github.com/aws/jsii-runtime-go"
+	"github.com/hashicorp/terraform-cdk-go/cdktf"
+
+	// --- Consul (generated) ---
+	//consulacltoken "cdk.tf/go/stack/generated/hashicorp/consul/acltoken"
+	//consulprovider "cdk.tf/go/stack/generated/hashicorp/consul/provider"
 	"cdk.tf/go/stack/generated/hashicorp/nomad/aclpolicy"
 	"cdk.tf/go/stack/generated/hashicorp/nomad/acltoken"
 	"cdk.tf/go/stack/generated/hashicorp/nomad/job"
 	"cdk.tf/go/stack/generated/hashicorp/nomad/provider"
-	"github.com/aws/jsii-runtime-go"
-	"github.com/hashicorp/terraform-cdk-go/cdktf"
 
+	// --- Vault (generated) ---
 	vaultmount "cdk.tf/go/stack/generated/hashicorp/vault/mount"
 	vaultpolicy "cdk.tf/go/stack/generated/hashicorp/vault/policy"
 	vaultprovider "cdk.tf/go/stack/generated/hashicorp/vault/provider"
