@@ -54,7 +54,7 @@ job "prometheus" {
 
     task "prometheus" {
       driver = "docker"
-      user   = "root"   # run as root to avoid TSDB perms issues
+      user   = "root" # run as root to avoid TSDB perms issues
 
       # -------------------------------------------------------------------------
       # Register in Consul (Traefik tags kept). Service points at host :9090.
@@ -83,6 +83,7 @@ job "prometheus" {
       config {
         image              = "prom/prometheus:v2.54.1"
         ports              = ["web"]
+        network_mode       = "host"
         image_pull_timeout = "10m"
 
         # -----------------------------------------------------------------------
@@ -126,7 +127,7 @@ job "prometheus" {
       # -------------------------------------------------------------------------
       template {
         destination = "local/config/prometheus.yml"
-        change_mode = "restart"  # restart Prometheus on config changes
+        change_mode = "restart" # restart Prometheus on config changes
         perms       = "0644"
         data        = <<-EOT
           global:
@@ -158,24 +159,23 @@ job "prometheus" {
                     - 'cabot:4646'
                     - '192.168.68.60:4646'
 
-            # --- node_exporter via Consul SD (dynamic; no hardcoded hosts) ---
-            - job_name: 'node-exporter'
-              consul_sd_configs:
-                - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
-                  token: '{{ key "prometheus/sd/token" }}'
-              relabel_configs:
-                # Keep only services that look like node-exporter
-                - source_labels: [__meta_consul_service]
-                  regex: '.*node[-_]?exporter.*'
-                  action: keep
-                # Build __address__ = "<service_address>:<service_port>" in one step
-                - source_labels: [__meta_consul_service_address, __meta_consul_service_port]
-                  separator: ':'
-                  target_label: __address__
-                  replacement: '${1}:${2}'
-                # Optional: present a clean "instance" in UI
-                - source_labels: [__address__]
-                  target_label: instance
+						- job_name: 'node-exporter'
+							consul_sd_configs:
+								- server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
+									token: '{{ key "prometheus/sd/token" }}'
+							relabel_configs:
+								- source_labels: [__meta_consul_service]
+									regex: '.*node[-_]?exporter.*'
+									action: keep
+
+								# Build __address__ = "<svc_addr>:<svc_port>"
+								- source_labels: [__meta_consul_service_address, __meta_consul_service_port]
+									regex: '(.+);(.+)'           # two groups; default separator is ';'
+									replacement: '${1}:${2}'
+									target_label: __address__
+
+								- source_labels: [__address__]
+									target_label: instance
 
             # --- Blackbox INTERNAL vantage (discover exporter via local Consul) ---
             - job_name: 'blackbox_internal'

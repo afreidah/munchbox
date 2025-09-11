@@ -34,8 +34,8 @@ job "nginx-resume-hostfile" {
     task "nginx" {
       driver = "docker"
       config {
-        image  = "nginx:stable"
-        ports  = ["http"]
+        image = "nginx:stable"
+        ports = ["http"]
         volumes = [
           "local/default.conf:/etc/nginx/conf.d/default.conf:ro"
         ]
@@ -47,14 +47,14 @@ job "nginx-resume-hostfile" {
         read_only   = true
       }
 
-			# ------------------------------------------------------------------------
-			# Template — /etc/nginx/conf.d/default.conf (rendered into local/default.conf)
-			# - Serves resume.html at "/"
-			# - Adds per-IP rate/conn limits to resist floods
-			# ------------------------------------------------------------------------
-			template {
-				destination = "local/default.conf"
-				data = <<-EOT
+      # ------------------------------------------------------------------------
+      # Template — /etc/nginx/conf.d/default.conf (rendered into local/default.conf)
+      # - Serves resume.html at "/"
+      # - Adds per-IP rate/conn limits to resist floods
+      # ------------------------------------------------------------------------
+      template {
+        destination = "local/default.conf"
+        data        = <<-EOT
 					# -----------------------------------------------------------------------------
 					# NGINX server for resume.alexfreidah.com — static, read-only content
 					# -----------------------------------------------------------------------------
@@ -86,7 +86,7 @@ job "nginx-resume-hostfile" {
 						}
 					}
 				EOT
-			}
+      }
 
       resources {
         cpu    = 200
@@ -94,9 +94,9 @@ job "nginx-resume-hostfile" {
       }
 
       service {
-        name = "nginx-resume"
-        port = "http"
-				provider = "consul"
+        name     = "nginx-resume"
+        port     = "http"
+        provider = "consul"
 
         # --- Health check probes "/" now that index is set to resume.html ---
         check {
