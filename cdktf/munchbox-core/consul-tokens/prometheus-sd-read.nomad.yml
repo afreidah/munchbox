@@ -1,0 +1,6 @@
+name: prometheus-sd
+description: Prometheus Consul SD token
+local: true
+policies: ["prometheus-sd-read"]           # must exist (you already manage policies from files)
+roles: []                                   # optional
+kv_path: monitoring/prometheus/consul_token # optional: publish SecretID to KV

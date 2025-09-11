@@ -13,11 +13,15 @@ import (
 	"os"
 	"strings"
 
+	"cdk.tf/go/stack/common"
+
 	"github.com/aws/jsii-runtime-go"
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
-
-	"cdk.tf/go/stack/common"
 )
+
+// ============================================================================
+// Imports — CDKTF core + Generated Providers (Nomad, Consul, Vault)
+// ============================================================================
 
 func main() {
 	// --- CLI Flags for jobs ---
@@ -56,6 +60,10 @@ func main() {
 	common.SetupVaultProvider(stack)
 	common.RegisterVaultPolicies(stack, "vault-policy")
 	common.RegisterVaultKvMount(stack, "kv", "secret")
+
+	// --- Consul Policy and Token Registration ---
+	//common.SetupConsulProvider(stack)
+	//common.Register
 
 	app.Synth()
 }

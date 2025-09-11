@@ -1,13 +1,16 @@
 {
-  "language": "go",
-  "app": "./nomad-app",
-  "codeMakerOutput": "generated",
-  "projectId": "d5ae7775-bc4d-431b-afc6-6ae3bbdfcedf",
-  "sendCrashReports": true,
-  "terraformProviders": [
-      "hashicorp/nomad@~> 2.5",
-      "hashicorp/vault@~> 3.21"
-  ],
-  "terraformModules": [],
-  "context": { "disableDefaultBackend": true }
+	"language": "go",
+	"app": "./nomad-app",
+	"codeMakerOutput": "generated",
+	"projectId": "d5ae7775-bc4d-431b-afc6-6ae3bbdfcedf",
+	"sendCrashReports": true,
+	"terraformProviders": [
+		"hashicorp/nomad@~> 2.5",
+		"hashicorp/vault@~> 3.21",
+		"hashicorp/consul@~> 2.22.0"
+	],
+	"terraformModules": [],
+	"context": {
+		"disableDefaultBackend": true
+	}
 }
