@@ -4,7 +4,7 @@
 # What this does
 # - Runs cloudflared as a system job on ingress nodes.
 # - Uses *host networking* so 127.0.0.1:80 inside the container reaches Traefik
-#   on the host. This fixes “Unable to reach the origin service 127.0.0.1:80”.
+#   on the host.
 # - Renders both the credentials and the config *via Nomad templates* into
 #   /local, and bind-mounts them into /etc/cloudflared in the container.
 # - Ingress includes BOTH:
@@ -16,8 +16,9 @@
 # - Consul KV keys:
 #     secrets/cloudflared/credentials.json  (full JSON from `cloudflared tunnel create`)
 #     secrets/cloudflared/tunnel_uuid       (UUID of the tunnel)
-# - Traefik is listening on host :80 and serves your resume routes.
+# - Traefik is listening on host :80 and serves the resume routes.
 # - A DNS route for each hostname (create with `cloudflared tunnel route dns ...`).
+# TODO: automate the creation of tunnel and publish to consul, and the dns routes
 # ------------------------------------------------------------------------------
 
 job "cloudflared-tunnel" {
@@ -42,7 +43,7 @@ job "cloudflared-tunnel" {
       driver = "docker"
 
       config {
-        image        = "cloudflare/cloudflared:latest"
+        image = "cloudflare/cloudflared:latest"
         # Host net mode inside Docker as well
         network_mode = "host"
 
@@ -67,7 +68,7 @@ job "cloudflared-tunnel" {
         destination   = "local/credentials.json"
         change_mode   = "restart"
         change_signal = "SIGTERM"
-        data = <<EOF
+        data          = <<EOF
 {{ key "secrets/cloudflared/credentials.json" }}
 EOF
       }
@@ -76,12 +77,11 @@ EOF
       # IMPORTANT:
       # - Heredoc starts at column 0 (no leading spaces).
       # - YAML uses spaces only (no tabs).
-      # - Both hostnames are included.
       template {
         destination   = "local/config.yml"
         change_mode   = "restart"
         change_signal = "SIGTERM"
-        data = <<EOF
+        data          = <<EOF
 tunnel: {{ key "secrets/cloudflared/tunnel_uuid" }}
 credentials-file: /etc/cloudflared/credentials.json
 ingress:

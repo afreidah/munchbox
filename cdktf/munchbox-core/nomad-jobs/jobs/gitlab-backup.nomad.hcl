@@ -14,13 +14,6 @@ job "gitlab-backup" {
   type        = "batch"
   node_pool   = "core"
 
-  # Ensure backup runs on the same node as GitLab
-  constraint {
-    attribute = "${node.unique.name}"
-    operator  = "="
-    value     = "goren"
-  }
-
   periodic {
     crons            = ["0 3 * * *"] # Daily at 3am
     prohibit_overlap = true
@@ -30,6 +23,7 @@ job "gitlab-backup" {
     task "backup" {
       driver = "docker"
 
+      # TODO use consul dns here instead of hahrdcoding target
       env = {
         GITLAB_OMNIBUS_CONFIG = <<-OMNI
           external_url 'http://cabot:8080';

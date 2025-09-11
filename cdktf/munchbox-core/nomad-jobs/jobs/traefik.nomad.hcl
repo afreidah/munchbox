@@ -82,7 +82,7 @@ job "traefik" {
       # -----------------------------------------------------------------------
       template {
         destination = "local/traefik.toml"
-        data = <<EOF
+        data        = <<EOF
 [entryPoints]
   [entryPoints.web]
     address = ":80"
@@ -138,8 +138,8 @@ EOF
       # -----------------------------------------------------------------------
       template {
         destination = "local/traefik_dynamic.toml"
-        change_mode = "restart"   # Operator-managed; restart task to re-render
-        data = <<EOF
+        change_mode = "restart" # Operator-managed; restart task to re-render
+        data        = <<EOF
 # --------------------------------------------------------------------
 # Traefik Dynamic Config — subdomain-based dashboards and services
 # --------------------------------------------------------------------
@@ -346,23 +346,23 @@ EOF
       service {
         name = "traefik"
         port = "https"
-        check {                                  # ADDED
-          name     = "tcp-https"                 # ADDED
-          type     = "tcp"                       # ADDED
-          interval = "10s"                       # ADDED
-          timeout  = "2s"                        # ADDED
-        }                                        # ADDED
+        check {                  # ADDED
+          name     = "tcp-https" # ADDED
+          type     = "tcp"       # ADDED
+          interval = "10s"       # ADDED
+          timeout  = "2s"        # ADDED
+        }                        # ADDED
       }
       service {
         name = "traefik-dashboard"
         port = "dashboard"
-        check {                                  # ADDED
-          name     = "http-ping"                 # ADDED
-          type     = "http"                      # ADDED
-          path     = "/ping"                     # ADDED 
-          interval = "10s"                       # ADDED
-          timeout  = "2s"                        # ADDED
-        }                                        # ADDED
+        check {                  # ADDED
+          name     = "http-ping" # ADDED
+          type     = "http"      # ADDED
+          path     = "/ping"     # ADDED 
+          interval = "10s"       # ADDED
+          timeout  = "2s"        # ADDED
+        }                        # ADDED
       }
     }
   }

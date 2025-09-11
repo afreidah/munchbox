@@ -33,7 +33,7 @@ job "blackbox-exporter" {
         ports = ["http"]
 
         # IMPORTANT: Nomad templates land under /local inside the container
-        args  = ["--config.file=/local/blackbox.yml"]
+        args = ["--config.file=/local/blackbox.yml"]
       }
 
       template {
@@ -41,7 +41,7 @@ job "blackbox-exporter" {
         change_mode   = "signal"
         change_signal = "SIGHUP"
         perms         = "0644"
-        data = <<-EOT
+        data          = <<-EOT
           modules:
             https_2xx:
               prober: http
