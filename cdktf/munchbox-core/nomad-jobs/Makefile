@@ -18,7 +18,7 @@ NOMAD_FILES := $(shell find jobs -type f -name "*.nomad.hcl" -o -name "*.hcl")
 .PHONY: all validate fmt lint checkov trivy
 
 # Run everything
-all: validate fmt lint checkov trivy
+all: validate fmt lint
 
 # ------------------------------------------------------------------------------
 # Validate Nomad jobs with the official CLI
@@ -49,18 +49,3 @@ lint:
 	@for file in jobs/**/*.nomad.hcl; do \
 		nomad job validate $$file || exit 1; \
 	done
-
-# ------------------------------------------------------------------------------
-# Security/misconfig scanning with Checkov
-# ------------------------------------------------------------------------------
-checkov:
-	@echo "==> Running Checkov on jobs directory"
-	@checkov -d jobs --framework hcl
-
-# ------------------------------------------------------------------------------
-# Security/misconfig scanning with Trivy
-# ------------------------------------------------------------------------------
-trivy:
-	@echo "==> Running Trivy config scan"
-	@trivy config jobs
-

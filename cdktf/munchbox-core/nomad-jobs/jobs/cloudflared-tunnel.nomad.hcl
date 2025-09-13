@@ -27,8 +27,6 @@ job "cloudflared-tunnel" {
   node_pool   = "core"
   type        = "system"
 
-  # Only run on nodes that act as ingress
-  # If you paste this into Terraform/CDKTF, escape as $${meta.role}
   constraint {
     attribute = "${meta.role}"
     operator  = "="

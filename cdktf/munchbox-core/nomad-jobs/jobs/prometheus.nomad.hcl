@@ -157,7 +157,7 @@ job "prometheus" {
                     - 'mccoy:4646'
                     - '127.0.0.1:4646'   # stabler (local)
                     - 'cabot:4646'
-                    - '192.168.68.60:4646'
+                    - 'goren:4646'
 
 						- job_name: 'node-exporter'
 							consul_sd_configs:
