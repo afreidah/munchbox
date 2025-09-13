@@ -1,9 +1,11 @@
 # -------------------------------------------------------------------------------
-# Blackbox Exporter — Nomad Job (internal vantage; port :9115; Consul service)
+# Blackbox Exporter — Nomad Job (internal vantage; host :9115; Consul service)
 #
-# - Fix: point --config.file to /local/blackbox.yml (where Nomad renders template files)
-# - If you want *outside-in*, also run another blackbox_exporter on an external VM
-#   and keep Prometheus scraping that one as configured above.
+# CHANGES:
+# - Force host networking at group + Docker layer (reachable by Prometheus).
+# - Static host port 9115 (no ephemeral host port mapping).
+# - Consul service registration uses address_mode=host for LAN IP.
+# - Config path remains /local/blackbox.yml (Nomad template dir).
 # -------------------------------------------------------------------------------
 
 job "blackbox-exporter" {
@@ -15,27 +17,32 @@ job "blackbox-exporter" {
   group "blackbox" {
     count = 1
 
+    # Pin to stabler
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "stabler"
     }
 
+    # --- Networking -----------------------------------------------------------
     network {
-      port "http" { to = 9115 }
+      mode = "host"
+      port "http" { static = 9115 }   # exporter listens on host:9115
     }
 
     task "exporter" {
       driver = "docker"
 
       config {
-        image = "prom/blackbox-exporter:v0.25.0"
-        ports = ["http"]
+        image        = "prom/blackbox-exporter:v0.25.0"
+        ports        = ["http"]
+        network_mode = "host"         # belt + suspenders with group mode
 
         # IMPORTANT: Nomad templates land under /local inside the container
         args = ["--config.file=/local/blackbox.yml"]
       }
 
+      # Blackbox modules config rendered by Nomad
       template {
         destination   = "local/blackbox.yml"
         change_mode   = "signal"
@@ -60,10 +67,21 @@ job "blackbox-exporter" {
         memory = 64
       }
 
+      restart {
+        attempts = 5
+        interval = "10m"
+        delay    = "5s"
+        mode     = "delay"
+      }
+
+      # --- Consul Service Registration ---------------------------------------
       service {
-        name = "blackbox-exporter"
-        port = "http"
-        tags = ["metrics", "prometheus"]
+        name         = "blackbox-exporter"
+        port         = "http"
+        tags         = ["metrics", "prometheus"]
+        provider     = "consul"
+        address_mode = "host"   # register the node’s LAN IP + 9115
+
         check {
           type     = "http"
           path     = "/metrics"

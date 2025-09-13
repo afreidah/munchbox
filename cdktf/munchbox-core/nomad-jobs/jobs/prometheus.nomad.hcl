@@ -5,14 +5,14 @@
 # - Host networking so Prometheus can reach local Consul agent on stabler
 # - TSDB persisted under /opt/nomad/data/prometheus-data
 # - Traefik tags preserved for service discovery/routing
-# - Scrapes self, Nomad servers, node_exporter (Consul SD), and blackbox
-#   (internal via Consul SD + external exporter)
+# - Scrapes: self, Nomad servers, node_exporter (Consul SD), and site HTTPS via
+#   internal blackbox (one URL probe for https://resume.alexfreidah.com/)
 # - /etc/hosts-style entries via Docker extra_hosts for reliable hostname resolution
 # - RUNS AS ROOT to avoid host-volume permission issues on /opt/nomad/data/prometheus-data
 # - UPDATES:
-#   • node_exporter discovery fixed (no bogus 0.0.0.1:2) and fully dynamic via Consul SD
-#   • blackbox_internal uses Consul SD; external keeps static exporter
-#   • Consul SD server uses env fallback: CONSUL_HTTP_ADDR or 127.0.0.1:8500 (no 'default' func)
+#   • node_exporter discovery fixed (no bogus addresses) and fully dynamic via Consul SD
+#   • blackbox: single internal vantage “is the site up” probe; external removed
+#   • Consul SD server uses env fallback: CONSUL_HTTP_ADDR or 127.0.0.1:8500
 #   • Rules file rendered and hot-reloaded with SIGHUP
 #   • Nomad scrape uses stable hostnames (no 127.0.0.1 for remote agents)
 # -------------------------------------------------------------------------------
@@ -138,12 +138,12 @@ job "prometheus" {
             - /etc/prometheus/config/alert_rules.yml
 
           scrape_configs:
-            # --- Prometheus self ---
+            # --- Prometheus self ------------------------------------------------
             - job_name: 'prometheus'
               static_configs:
                 - targets: ['127.0.0.1:9090']
 
-            # --- Nomad metrics (HTTPS /v1/metrics?format=prometheus)
+            # --- Nomad metrics (HTTPS /v1/metrics?format=prometheus) ------------
             #     Use stable hostnames; avoid 127.0.0.1 except on the local host.
             - job_name: 'nomad'
               metrics_path: '/v1/metrics'
@@ -155,12 +155,13 @@ job "prometheus" {
               static_configs:
                 - targets:
                     - 'mccoy:4646'
-                    - 'stabler:4646'   # was 127.0.0.1; use hostname for consistency
+                    - 'stabler:4646'   # local host (Prometheus box)
                     - 'cabot:4646'
                     - 'goren:4646'
 
-            # --- Node Exporter (Consul SD, minimal + safe)
-            #     Prefilter by service name; do NOT rewrite __address__; set instance=Consul node.
+            # --- Node Exporter (Consul SD, minimal + safe) ----------------------
+            #     Prefilter by service name; do NOT rewrite __address__;
+            #     set instance=Consul node for human-friendly legends.
             - job_name: 'node-exporter'
               scrape_interval: 15s
               metrics_path: /metrics
@@ -174,42 +175,25 @@ job "prometheus" {
                 - source_labels: [__meta_consul_dc]
                   target_label: consul_dc
 
-            # --- Blackbox INTERNAL vantage (discover exporter via local Consul) ---
-            - job_name: 'blackbox_internal'
+            # --- Site HTTPS — internal blackbox vantage (stabler) ---------------
+            #     One URL probe: "is the site up" using https_2xx module.
+            - job_name: 'site_https'
               metrics_path: /probe
               params:
                 module: ['https_2xx']                        # must exist in blackbox.yml
-                target: ['https://resume.alexfreidah.com/'] # URL to probe
+                target: ['https://resume.alexfreidah.com/']  # URL to probe
               consul_sd_configs:
                 - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
                   token: '{{ key "prometheus/sd/token" }}'
-                  services: ['blackbox-exporter']
+                  services: ['blackbox-exporter']           # internal exporter on stabler
               relabel_configs:
-                # Use the discovered exporter as the scrape address
-                - source_labels: [__meta_consul_service_address, __meta_consul_service_port]
-                  regex: '(.+);(.+)'
-                  target_label: __address__
-                  replacement: '${1}:${2}'
+                # DO NOT rewrite __address__; rely on Consul SD (fixes 0.0.0.1:2 bug)
                 # Show the probed URL as the instance label
                 - source_labels: [__param_target]
                   target_label: instance
                 # Mark this vantage explicitly
                 - target_label: vantage
                   replacement: internal
-
-            # --- Blackbox EXTERNAL vantage (outside-in from remote exporter) ---
-            - job_name: 'blackbox_external'
-              metrics_path: /probe
-              params:
-                module: ['https_2xx']                        # ensure external exporter defines this
-                target: ['https://resume.alexfreidah.com/']
-              static_configs:
-                - targets: ['blackbox.example.net:9115']     # remote exporter address:port
-                  labels:
-                    vantage: "external"
-              relabel_configs:
-                - source_labels: [__param_target]
-                  target_label: instance
         EOT
       }
 
@@ -241,109 +225,25 @@ job "prometheus" {
                     runbook: "nomad job status {{ $labels.job }}"
 
             # ===========================================================================
-            # Blackbox — Core Availability / Status / TLS Expiry
+            # Site uptime & TLS (internal vantage via blackbox)
             # ===========================================================================
-            - name: blackbox-core
+            - name: site-uptime
               rules:
-                - record: probe:duration_seconds:avg5m
-                  expr: avg_over_time(probe_duration_seconds[5m])
-                  labels: { source: "blackbox" }
-
-                - alert: BlackboxTargetDown
-                  expr: probe_success == 0
+                - alert: SiteDown
+                  expr: probe_success{job="site_https"} == 0
                   for: 2m
                   labels: { severity: critical, team: web }
                   annotations:
-                    summary: "Target DOWN — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Blackbox probe is failing for >2m."
+                    summary: "SITE DOWN — {{ $labels.instance }} ({{ $labels.vantage }})"
+                    description: "Blackbox probe failing for >2m."
 
-                - alert: BlackboxTargetSlow
-                  expr: quantile_over_time(0.95, probe_duration_seconds[10m]) > 1.5
-                  for: 10m
-                  labels: { severity: warning, team: web }
-                  annotations:
-                    summary: "High latency (p95 > 1.5s) — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Sustained high latency over the last 10 minutes."
-
-                - alert: BlackboxHTTPBadStatus
-                  expr: probe_http_status_code >= 400
-                  for: 2m
-                  labels: { severity: critical, team: web }
-                  annotations:
-                    summary: "Bad HTTP status {{ $value }} — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Probe returned HTTP status >= 400 for >2m."
-
-                - alert: BlackboxTLSSoonExpiry
-                  expr: (probe_ssl_earliest_cert_expiry - time()) < 21*24*60*60
+                - alert: SiteTLSSoonExpiry
+                  expr: (probe_ssl_earliest_cert_expiry{job="site_https"} - time()) < 21*24*60*60
                   for: 5m
                   labels: { severity: warning, team: web }
                   annotations:
                     summary: "TLS cert expiring soon — {{ $labels.instance }}"
                     description: "Earliest certificate expires within 21 days."
-
-            # ===========================================================================
-            # Blackbox — Correlation (compare internal vs external vantage)
-            # ===========================================================================
-            - name: blackbox-correlation
-              rules:
-                - alert: BlackboxExternalOnlyDown
-                  expr: |
-                    (probe_success{vantage="external"} == 0)
-                    and on(instance)
-                    (probe_success{vantage="internal"} == 1)
-                  for: 2m
-                  labels: { severity: warning, team: web }
-                  annotations:
-                    summary: "External-only outage — {{ $labels.instance }}"
-                    description: "External vantage failing while internal is healthy. Check DNS, CDN, ISP, geofencing, or perimeter."
-
-                - alert: BlackboxGlobalDown
-                  expr: |
-                    (probe_success{vantage="external"} == 0)
-                    and on(instance)
-                    (probe_success{vantage="internal"} == 0)
-                  for: 2m
-                  labels: { severity: critical, team: web }
-                  annotations:
-                    summary: "Global outage — {{ $labels.instance }}"
-                    description: "Both internal and external vantages failing (origin/app issue likely)."
-
-            # ===========================================================================
-            # Blackbox — Phase Diagnostics (pinpoint slow stage)
-            # ===========================================================================
-            - name: blackbox-phases
-              rules:
-                - alert: BlackboxDNSSlow
-                  expr: avg_over_time(probe_http_duration_seconds{phase="resolve"}[10m]) > 0.5
-                  for: 10m
-                  labels: { severity: warning, team: web }
-                  annotations:
-                    summary: "DNS slow — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Average DNS resolution time > 500ms over 10 minutes."
-
-                - alert: BlackboxConnectSlow
-                  expr: avg_over_time(probe_http_duration_seconds{phase="connect"}[10m]) > 0.5
-                  for: 10m
-                  labels: { severity: warning, team: web }
-                  annotations:
-                    summary: "Connect slow — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Average TCP connect time > 500ms over 10 minutes."
-
-                - alert: BlackboxTLSSlow
-                  expr: avg_over_time(probe_http_duration_seconds{phase="tls"}[10m]) > 0.75
-                  for: 10m
-                  labels: { severity: warning, team: web }
-                  annotations:
-                    summary: "TLS handshake slow — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Average TLS handshake time > 750ms over 10 minutes."
-
-                - alert: BlackboxTooManyRedirects
-                  expr: probe_http_redirects > 5
-                  for: 5m
-                  labels: { severity: warning, team: web }
-                  annotations:
-                    summary: "Too many redirects — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Observed > 5 HTTP redirects. Check canonical URL and ingress/LB rules."
         EOT
       }
 
@@ -372,4 +272,3 @@ job "prometheus" {
     }
   }
 }
-

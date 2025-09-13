@@ -1,5 +1,7 @@
 # -----------------------------------------------------------------------------
 # Waypoint - Nomad Job (server + runner)
+# - Dedicated Consul token (policy read on system-services/waypoint_server_token)
+#   is passed only to the runner's template via `consul_token = "<SECRET_ID>"`
 # -----------------------------------------------------------------------------
 job "waypoint" {
   region      = "global"
@@ -29,16 +31,19 @@ job "waypoint" {
       read_only = false
     }
 
+    # Expose gRPC + UI on static host ports
     network {
       mode = "bridge"
       port "grpc" { static = 9701 }
       port "ui"   { static = 9702 }
     }
 
+    # Register services in Consul using the node's host address (reachable)
     service {
-      name     = "waypoint-grpc"
-      provider = "consul"
-      port     = "grpc"
+      name         = "waypoint-grpc"
+      provider     = "consul"
+      port         = "grpc"
+      address_mode = "host"
       check {
         name     = "grpc-tcp"
         type     = "tcp"
@@ -48,9 +53,10 @@ job "waypoint" {
     }
 
     service {
-      name     = "waypoint-ui"
-      provider = "consul"
-      port     = "ui"
+      name         = "waypoint-ui"
+      provider     = "consul"
+      port         = "ui"
+      address_mode = "host"
       check {
         name     = "ui-http"
         type     = "http"
@@ -67,7 +73,7 @@ job "waypoint" {
         image        = "hashicorp/waypoint:0.11.4"
         userns_mode  = "host"  # map container root to host root (fixes bind mount perms)
         entrypoint   = ["/bin/sh","-lc"]
-        args         = [
+        args = [
           "mkdir -p /var/lib/waypoint; exec waypoint server run -accept-tos -db=/var/lib/waypoint/waypoint.db -listen-grpc=0.0.0.0:9701 -listen-http=0.0.0.0:9702"
         ]
         ports = ["grpc","ui"]
@@ -94,7 +100,7 @@ job "waypoint" {
   }
 
   # -----------------------------------------------------------------------------
-  # Runner group (token from Consul KV, server address via env)
+  # Runner group (reads server token from Consul KV via dedicated Consul ACL token)
   # -----------------------------------------------------------------------------
   group "runner" {
     count = 1
@@ -106,9 +112,9 @@ job "waypoint" {
       value     = "mccoy"
     }
 
-    network { 
-			mode = "bridge" 
-		}
+    network {
+      mode = "bridge"
+    }
 
     task "runner" {
       driver = "docker"
@@ -116,23 +122,25 @@ job "waypoint" {
       config {
         image      = "hashicorp/waypoint:0.11.4"
         entrypoint = ["/bin/sh","-lc"]
-        args       = [
+        args = [
           "test -n \"$WAYPOINT_SERVER_TOKEN\" || { echo 'WAYPOINT_SERVER_TOKEN missing'; exit 1; }; exec waypoint runner agent"
         ]
       }
 
-      # Inject token from Consul KV into env (no mounts)
-      # Put the token at: system-services/waypoint_server_token
+      # Inject token from Consul KV into env using a DEDICATED Consul token that
+      # has read access ONLY to key: system-services/waypoint_server_token
+      #
+      # Replace <CONSUL_SECRET_ID_WAYPOINT_RUNNER_KV_READ> with the SecretID
+      # of your 'waypoint-runner-kv-read' Consul token created by CDKTF.
       template {
         destination = "local/env/waypoint.env"
         env         = true
         change_mode = "restart"
+        consul_token = "<CONSUL_SECRET_ID_WAYPOINT_RUNNER_KV_READ>"
         data        = "WAYPOINT_SERVER_TOKEN={{ keyOrDefault \"system-services/waypoint_server_token\" \"\" }}"
-        # If the client lacks read on that prefix, add a read-only token scoped to it:
-        # consul_token = "<token with key_prefix \"system-services/\" { policy = \"read\" }>"
       }
 
-      # The runner reads server address from env (no CLI flag needed)
+      # Runner talks to the server via Consul service name (host-registered ports)
       env {
         TZ                   = "America/Los_Angeles"
         WAYPOINT_SERVER_ADDR = "waypoint-grpc.service.consul:9701"
