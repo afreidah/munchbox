@@ -4,7 +4,7 @@
 # PURPOSE:
 # - Run node_exporter on every node via a Nomad "system" job.
 # - Host networking on static port 9100 per node.
-# - Exporter explicitly binds IPv4 to the Nomad-assigned port (== 9100 here).
+# - Exporter explicitly binds IPv4 to the static port (== 9100).
 # - Consul service registration with HTTP health check on /metrics.
 # - address_mode=host so Consul probes the node’s LAN IP (not container/bridge).
 # - Slightly relaxed health timeouts and check_restart for resilience.
@@ -36,17 +36,20 @@ job "node-exporter-core" {
       config {
         image = "quay.io/prometheus/node-exporter:v1.8.2"
 
-        # IMPORTANT:
-        # - Bind exporter to the exact port Nomad assigned for label "http".
-        # - Force IPv4 bind to avoid IPv6-only socket behavior ([::] not accepting IPv4).
-        args = [
-          "--path.rootfs=/host",
-          "--web.listen-address=0.0.0.0:${NOMAD_PORT_http}",
-          "--web.telemetry-path=/metrics"
-        ]
+        # Ensure host networking at the Docker layer too (belt + suspenders).
+        network_mode = "host"
 
         # Share host PID namespace to improve visibility for some collectors.
         pid_mode = "host"
+
+        # IMPORTANT:
+        # - Bind exporter explicitly to the static port on all IPv4 addresses.
+        # - Avoid ${NOMAD_PORT_http} to remove any interpolation ambiguity.
+        args = [
+          "--path.rootfs=/host",
+          "--web.listen-address=0.0.0.0:9100",
+          "--web.telemetry-path=/metrics"
+        ]
 
         # Mount the host rootfs as read-only under /host for filesystem collectors.
         volumes = [
@@ -57,6 +60,14 @@ job "node-exporter-core" {
       resources {
         cpu    = 50
         memory = 64
+      }
+
+      # Optional: make restarts resilient if the binary ever flaps during upgrades.
+      restart {
+        attempts = 10
+        interval = "5m"
+        delay    = "5s"
+        mode     = "delay"
       }
 
       # --- Consul Service Registration ---------------------------------------
@@ -75,9 +86,9 @@ job "node-exporter-core" {
           port     = "http"
           interval = "5s"
           timeout  = "3s"
+          # check_restart { limit = 3, grace = "10s" }  # uncomment if desired
         }
       }
     }
   }
 }
-
