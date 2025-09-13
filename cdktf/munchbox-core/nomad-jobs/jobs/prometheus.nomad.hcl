@@ -14,7 +14,7 @@
 #   • blackbox_internal uses Consul SD; external keeps static exporter
 #   • Consul SD server uses env fallback: CONSUL_HTTP_ADDR or 127.0.0.1:8500 (no 'default' func)
 #   • Rules file rendered and hot-reloaded with SIGHUP
-#   • Nomad scrape uses 127.0.0.1 for stabler (Prometheus host)
+#   • Nomad scrape uses stable hostnames (no 127.0.0.1 for remote agents)
 # -------------------------------------------------------------------------------
 
 job "prometheus" {
@@ -144,7 +144,7 @@ job "prometheus" {
                 - targets: ['127.0.0.1:9090']
 
             # --- Nomad metrics (HTTPS /v1/metrics?format=prometheus)
-            #     Use 127.0.0.1 for stabler since Prometheus runs on this host
+            #     Use stable hostnames; avoid 127.0.0.1 except on the local host.
             - job_name: 'nomad'
               metrics_path: '/v1/metrics'
               params:
@@ -155,34 +155,31 @@ job "prometheus" {
               static_configs:
                 - targets:
                     - 'mccoy:4646'
-                    - '127.0.0.1:4646'   # stabler (local)
+                    - 'stabler:4646'   # was 127.0.0.1; use hostname for consistency
                     - 'cabot:4646'
                     - 'goren:4646'
 
-						- job_name: 'node-exporter'
-							consul_sd_configs:
-								- server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
-									token: '{{ key "prometheus/sd/token" }}'
-							relabel_configs:
-								- source_labels: [__meta_consul_service]
-									regex: '.*node[-_]?exporter.*'
-									action: keep
-
-								# Build __address__ = "<svc_addr>:<svc_port>"
-								- source_labels: [__meta_consul_service_address, __meta_consul_service_port]
-									regex: '(.+);(.+)'           # two groups; default separator is ';'
-									replacement: '${1}:${2}'
-									target_label: __address__
-
-								- source_labels: [__address__]
-									target_label: instance
+            # --- Node Exporter (Consul SD, minimal + safe)
+            #     Prefilter by service name; do NOT rewrite __address__; set instance=Consul node.
+            - job_name: 'node-exporter'
+              scrape_interval: 15s
+              metrics_path: /metrics
+              consul_sd_configs:
+                - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
+                  token: '{{ key "prometheus/sd/token" }}'
+                  services: ['prometheus-node-exporter']
+              relabel_configs:
+                - source_labels: [__meta_consul_node]
+                  target_label: instance
+                - source_labels: [__meta_consul_dc]
+                  target_label: consul_dc
 
             # --- Blackbox INTERNAL vantage (discover exporter via local Consul) ---
             - job_name: 'blackbox_internal'
               metrics_path: /probe
               params:
-                module: ['https_2xx']                     # must exist in blackbox.yml
-                target: ['https://resume.alexfreidah.com/']  # URL to probe
+                module: ['https_2xx']                        # must exist in blackbox.yml
+                target: ['https://resume.alexfreidah.com/'] # URL to probe
               consul_sd_configs:
                 - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
                   token: '{{ key "prometheus/sd/token" }}'
@@ -204,10 +201,10 @@ job "prometheus" {
             - job_name: 'blackbox_external'
               metrics_path: /probe
               params:
-                module: ['https_2xx']                     # ensure external exporter defines this
+                module: ['https_2xx']                        # ensure external exporter defines this
                 target: ['https://resume.alexfreidah.com/']
               static_configs:
-                - targets: ['blackbox.example.net:9115']  # remote exporter address:port
+                - targets: ['blackbox.example.net:9115']     # remote exporter address:port
                   labels:
                     vantage: "external"
               relabel_configs:
@@ -375,3 +372,4 @@ job "prometheus" {
     }
   }
 }
+
