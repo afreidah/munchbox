@@ -49,7 +49,10 @@ job "prometheus" {
     # ---------------------------------------------------------------------------
     network {
       mode = "host"
-      port "web" { static = 9090 }
+
+      port "web" {
+        static = 9090
+      }
     }
 
     task "prometheus" {
@@ -129,72 +132,73 @@ job "prometheus" {
         destination = "local/config/prometheus.yml"
         change_mode = "restart" # restart Prometheus on config changes
         perms       = "0644"
-        data        = <<-EOT
-          global:
-            scrape_interval: 15s
-            evaluation_interval: 15s
+        data        = <<-YAML
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
 
-          rule_files:
-            - /etc/prometheus/config/alert_rules.yml
+rule_files:
+  - /etc/prometheus/config/alert_rules.yml
 
-          scrape_configs:
-            # --- Prometheus self ------------------------------------------------
-            - job_name: 'prometheus'
-              static_configs:
-                - targets: ['127.0.0.1:9090']
+scrape_configs:
+  # --- Prometheus self ------------------------------------------------
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['127.0.0.1:9090']
 
-            # --- Nomad metrics (HTTPS /v1/metrics?format=prometheus) ------------
-            #     Use stable hostnames; avoid 127.0.0.1 except on the local host.
-            - job_name: 'nomad'
-              metrics_path: '/v1/metrics'
-              params:
-                format: [prometheus]
-              scheme: https
-              tls_config:
-                insecure_skip_verify: true
-              static_configs:
-                - targets:
-                    - 'mccoy:4646'
-                    - 'stabler:4646'   # local host (Prometheus box)
-                    - 'cabot:4646'
-                    - 'goren:4646'
+  # --- Nomad metrics (HTTPS /v1/metrics?format=prometheus) ------------
+  #     Use stable hostnames; avoid 127.0.0.1 except on the local host.
+  - job_name: 'nomad'
+    metrics_path: '/v1/metrics'
+    params:
+      format: [prometheus]
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets:
+          - 'mccoy:4646'
+          - 'stabler:4646'   # local host (Prometheus box)
+          - 'cabot:4646'
+          - 'goren:4646'
 
-            # --- Node Exporter (Consul SD, minimal + safe) ----------------------
-            #     Prefilter by service name; do NOT rewrite __address__;
-            #     set instance=Consul node for human-friendly legends.
-            - job_name: 'node-exporter'
-              scrape_interval: 15s
-              metrics_path: /metrics
-              consul_sd_configs:
-                - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
-                  token: '{{ key "prometheus/sd/token" }}'
-                  services: ['prometheus-node-exporter']
-              relabel_configs:
-                - source_labels: [__meta_consul_node]
-                  target_label: instance
-                - source_labels: [__meta_consul_dc]
-                  target_label: consul_dc
+  # --- Node Exporter (Consul SD, minimal + safe) ----------------------
+  #     Prefilter by service name; set instance=Consul node for human-friendly legends.
+  - job_name: 'node-exporter'
+    scrape_interval: 15s
+    metrics_path: /metrics
+    consul_sd_configs:
+      - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
+        token: '{{ key "prometheus/sd/token" }}'
+        services: ['prometheus-node-exporter']
+    relabel_configs:
+      - source_labels: [__meta_consul_node]
+        target_label: instance
+      - source_labels: [__meta_consul_dc]
+        target_label: consul_dc
 
-            # --- Site HTTPS — internal blackbox vantage (stabler) ---------------
-            #     One URL probe: "is the site up" using https_2xx module.
-            - job_name: 'site_https'
-              metrics_path: /probe
-              params:
-                module: ['https_2xx']                        # must exist in blackbox.yml
-                target: ['https://resume.alexfreidah.com/']  # URL to probe
-              consul_sd_configs:
-                - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
-                  token: '{{ key "prometheus/sd/token" }}'
-                  services: ['blackbox-exporter']           # internal exporter on stabler
-              relabel_configs:
-                # DO NOT rewrite __address__; rely on Consul SD (fixes 0.0.0.1:2 bug)
-                # Show the probed URL as the instance label
-                - source_labels: [__param_target]
-                  target_label: instance
-                # Mark this vantage explicitly
-                - target_label: vantage
-                  replacement: internal
-        EOT
+  # --- Site HTTPS — internal blackbox vantage (simple & reliable) ---
+  - job_name: 'site_https'
+    metrics_path: /probe
+    params:
+      module: ['https_2xx']
+    static_configs:
+      - targets:
+          - https://resume.alexfreidah.com/
+    relabel_configs:
+      # Pass the target URL to the exporter as the 'target' param
+      - source_labels: [__address__]
+        target_label: __param_target
+      # Show the probed URL as the instance label
+      - source_labels: [__param_target]
+        target_label: instance
+      # Tell Prometheus to scrape the exporter itself here:
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+      # Mark vantage if you like
+      - target_label: vantage
+        replacement: internal
+YAML
       }
 
       # -------------------------------------------------------------------------
@@ -207,44 +211,55 @@ job "prometheus" {
         perms           = "0644"
         left_delimiter  = "[["
         right_delimiter = "]]"
-        data            = <<-EOT
-          groups:
+        data            = <<-YAML
+groups:
+- name: nomad-jobs
+  rules:
+    - alert: NomadJobDown
+      expr: |
+        (
+          sum by (job, namespace) (
+            max_over_time(
+              nomad_nomad_job_summary_running{namespace!="__internal"}[2m]
+            )
+          ) > 0
+        )
+        unless on (job, namespace)
+        (
+          sum by (job, namespace) (
+            nomad_nomad_job_summary_running{namespace!="__internal"}
+          ) > 0
+        )
+      for: 2m
+      labels:
+        severity: critical
+        team: ops
+      annotations:
+        summary: "Nomad job down: {{ $labels.job }} (ns={{ $labels.namespace }})"
+        description: "Job had running allocs within the last 2m but has none now (or disappeared)."
 
-            # ===========================================================================
-            # Nomad MUST-RUN (example retained)
-            # ===========================================================================
-            - name: nomad-jobs
-              rules:
-                - alert: NomadJobDown
-                  expr: sum by (job, namespace) (nomad_nomad_job_summary_running{job=~"traefik|prometheus|api|web"}) < 1
-                  for: 2m
-                  labels: { severity: critical, team: ops }
-                  annotations:
-                    summary: "Nomad job down: {{ $labels.job }} (ns={{ $labels.namespace }})"
-                    description: "No running allocations for {{ $labels.job }} for 2 minutes. Check evaluations/allocs in Nomad."
-                    runbook: "nomad job status {{ $labels.job }}"
+- name: site-uptime
+  rules:
+  - alert: SiteDown
+    expr: probe_success{job="site_https"} == 0
+    for: 2m
+    labels:
+      severity: critical
+      team: web
+    annotations:
+      summary: "SITE DOWN — {{ $labels.instance }} ({{ $labels.vantage }})"
+      description: "Blackbox probe failing for >2m."
 
-            # ===========================================================================
-            # Site uptime & TLS (internal vantage via blackbox)
-            # ===========================================================================
-            - name: site-uptime
-              rules:
-                - alert: SiteDown
-                  expr: probe_success{job="site_https"} == 0
-                  for: 2m
-                  labels: { severity: critical, team: web }
-                  annotations:
-                    summary: "SITE DOWN — {{ $labels.instance }} ({{ $labels.vantage }})"
-                    description: "Blackbox probe failing for >2m."
-
-                - alert: SiteTLSSoonExpiry
-                  expr: (probe_ssl_earliest_cert_expiry{job="site_https"} - time()) < 21*24*60*60
-                  for: 5m
-                  labels: { severity: warning, team: web }
-                  annotations:
-                    summary: "TLS cert expiring soon — {{ $labels.instance }}"
-                    description: "Earliest certificate expires within 21 days."
-        EOT
+  - alert: SiteTLSSoonExpiry
+    expr: (probe_ssl_earliest_cert_expiry{job="site_https"} - time()) < 21*24*60*60
+    for: 5m
+    labels:
+      severity: warning
+      team: web
+    annotations:
+      summary: "TLS cert expiring soon — {{ $labels.instance }}"
+      description: "Earliest certificate expires within 21 days."
+YAML
       }
 
       # -------------------------------------------------------------------------
@@ -252,7 +267,7 @@ job "prometheus" {
       # - CONSUL_HTTP_TOKEN provides ACL for Consul SD (read-only)
       # - CONSUL_HTTP_ADDR optional; config falls back to 127.0.0.1:8500 if unset
       # -------------------------------------------------------------------------
-      env = {
+      env {
         TZ = "America/Los_Angeles"
         # CONSUL_HTTP_ADDR  = "127.0.0.1:8500"
         # CONSUL_HTTP_TOKEN = "REDACTED_put_your_consul_token_here"  # or use a file+token_file

@@ -36,10 +36,11 @@ job "blackbox-exporter" {
       config {
         image        = "prom/blackbox-exporter:v0.25.0"
         ports        = ["http"]
-        network_mode = "host"         # belt + suspenders with group mode
-
-        # IMPORTANT: Nomad templates land under /local inside the container
+        network_mode = "host"
         args = ["--config.file=/local/blackbox.yml"]
+
+        # Optional: map domain to internal IP if your router can't hairpin NAT
+        # extra_hosts = ["resume.alexfreidah.com:192.168.68.61"]
       }
 
       # Blackbox modules config rendered by Nomad
@@ -56,9 +57,12 @@ job "blackbox-exporter" {
                 method: GET
                 fail_if_not_ssl: true
                 preferred_ip_protocol: "ip4"
-                valid_http_versions: ["HTTP/1.1","HTTP/2"]
+                valid_http_versions: ["HTTP/1.1","HTTP/2.0"]   # ← key fix
                 tls_config:
                   insecure_skip_verify: false
+                # headers:
+                #   User-Agent: "Mozilla/5.0"
+                #   Accept: "*/*"
         EOT
       }
 

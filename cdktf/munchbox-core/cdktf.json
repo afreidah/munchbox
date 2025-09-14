@@ -7,7 +7,7 @@
 	"terraformProviders": [
 		"hashicorp/nomad@~> 2.5",
 		"hashicorp/vault@~> 3.21",
-		"hashicorp/consul@~> 2.22.0"
+		"hashicorp/consul@~> 2.20"
 	],
 	"terraformModules": [],
 	"context": {
