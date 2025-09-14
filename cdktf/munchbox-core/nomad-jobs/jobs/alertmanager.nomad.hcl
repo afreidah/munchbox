@@ -95,20 +95,20 @@ job "alertmanager" {
                   # chat_id must be numeric; render without quotes:
                   chat_id: [[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_chat_id ]][[ end ]]
                   parse_mode: "HTML"
+                  # In your alertmanager job's template data block, change the message:
                   message: |
-                    <b>{{ .CommonLabels.alertname }}</b> {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }}<br/>
-                    <b>Status:</b> {{ .Status }}<br/>
-                    <b>Instance:</b> {{ .CommonLabels.instance }}<br/>
+                    <b>{{ .CommonLabels.alertname }}</b> {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }}
+                    <b>Status:</b> {{ .Status }}
+                    <b>Instance:</b> {{ .CommonLabels.instance }}
                     {{- with (index .Alerts 0).Annotations.summary }}
-                    <b>Summary:</b> {{ . }}<br/>
+                    <b>Summary:</b> {{ . }}
                     {{- end }}
                     {{- with (index .Alerts 0).Annotations.description }}
-                    <b>Description:</b> {{ . }}<br/>
+                    <b>Description:</b> {{ . }}
                     {{- end }}
                     {{- if .ExternalURL }}
                     <a href="{{ .ExternalURL }}">Open Alertmanager</a>
                     {{- end }}
-                  send_resolved: true
 
           inhibit_rules:
             - source_matchers: [ 'severity="critical"' ]
