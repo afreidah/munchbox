@@ -15,7 +15,8 @@
 #   • Consul SD server uses env fallback: CONSUL_HTTP_ADDR or 127.0.0.1:8500
 #   • Rules file rendered and hot-reloaded with SIGHUP
 #   • Nomad scrape uses stable hostnames (no 127.0.0.1 for remote agents)
-#   • Vault scrape uses bearer_token_file on the mounted data volume
+#   • Vault scrape uses bearer_token_file under /etc/prometheus/secrets (mounted)
+#   • ALERTING WIRED: sends to Alertmanager on 127.0.0.1:9093 (host networking)
 # -------------------------------------------------------------------------------
 
 job "prometheus" {
@@ -113,14 +114,15 @@ job "prometheus" {
         ]
 
         volumes = [
+          # Read-only secrets dir: drop Vault token at /opt/nomad/secrets/prometheus/vault_token on the host
           "/opt/nomad/secrets/prometheus:/etc/prometheus/secrets:ro",
+          # Rendered config (prometheus.yml + alert_rules.yml)
           "local/config:/etc/prometheus/config"
         ]
       }
 
       # -------------------------------------------------------------------------
-      # Mount persistent data volume for TSDB (and a place to drop vault token)
-      # Place your token at: /opt/nomad/data/prometheus-data/bao/token on the host
+      # Mount persistent data volume for TSDB
       # -------------------------------------------------------------------------
       volume_mount {
         volume      = "prometheus-data"
@@ -145,6 +147,16 @@ global:
 
 rule_files:
   - /etc/prometheus/config/alert_rules.yml
+
+# -----------------------------------------------------------------------------
+# Alerting: wire Prometheus to Alertmanager (host net on the same node)
+# -----------------------------------------------------------------------------
+alerting:
+  alertmanagers:
+    - scheme: http
+      static_configs:
+        - targets:
+            - "127.0.0.1:9093"
 
 scrape_configs:
   # --- Prometheus self ------------------------------------------------
@@ -227,31 +239,68 @@ YAML
         right_delimiter = "]]"
         data            = <<-YAML
 groups:
-- name: nomad-jobs
+# -------------------------------------------------------------------------------
+# Nomad job health
+# - Uses only metrics you confirmed are present.
+# - Shrink-from-recent and bad-state coverage (no 'desired' dependency).
+# -------------------------------------------------------------------------------
+- name: nomad-health
   rules:
-    - alert: NomadJobDown
+    - alert: NomadJobRunningShrank
+      expr: |
+        sum by (job_id) (nomad_nomad_job_status_running)
+          <
+        sum by (job_id) (max_over_time(nomad_nomad_job_status_running[2m]))
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Nomad job running count shrank: {{ $labels.job_id }}"
+        description: "Current running is below its 2m recent max for {{ $labels.job_id }}."
+
+    - alert: NomadJobDegradedFromRecent
       expr: |
         (
           sum by (job, namespace) (
-            max_over_time(
-              nomad_nomad_job_summary_running{namespace!="__internal"}[2m]
-            )
+            max_over_time(nomad_nomad_job_summary_running{namespace!="__internal"}[10m])
           ) > 0
         )
-        unless on (job, namespace)
+        and
         (
           sum by (job, namespace) (
             nomad_nomad_job_summary_running{namespace!="__internal"}
-          ) > 0
+          )
+          <
+          sum by (job, namespace) (
+            max_over_time(nomad_nomad_job_summary_running{namespace!="__internal"}[10m])
+          )
         )
       for: 2m
       labels:
         severity: critical
-        team: ops
       annotations:
-        summary: "Nomad job down: {{ $labels.job }} (ns={{ $labels.namespace }})"
-        description: "Job had running allocs within the last 2m but has none now (or disappeared)."
+        summary: "Nomad job degraded: {{ $labels.job }} (ns={{ $labels.namespace }})"
+        description: "Running allocs are below the 10m recent max for 5m."
 
+    - alert: NomadJobBadState
+      expr: |
+        sum by (job, namespace) (
+            nomad_nomad_job_summary_failed{namespace!="__internal"}
+          + nomad_nomad_job_summary_lost{namespace!="__internal"}
+          + nomad_nomad_job_summary_unknown{namespace!="__internal"}
+          + nomad_nomad_job_summary_dead{namespace!="__internal"}
+          + nomad_nomad_job_summary_stopped{namespace!="__internal"}
+        ) > 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Nomad job in bad state: {{ $labels.job }} (ns={{ $labels.namespace }})"
+        description: "One or more of failed/lost/unknown/dead/stopped > 0 for 2m."
+
+# -------------------------------------------------------------------------------
+# Site uptime (blackbox exporter)
+# -------------------------------------------------------------------------------
 - name: site-uptime
   rules:
     - alert: SiteDown
