@@ -37,8 +37,6 @@ job "deluge" {
     }
 
     task "deluge" {
-      # Run as the 'vpnmark' user so all traffic is routed via the VPN
-      user   = "vpnmark"
       driver = "docker"
 
       config {
@@ -56,8 +54,8 @@ job "deluge" {
       }
 
       env = {
-        PUID                       = "1000"
-        PGID                       = "1000"
+        PUID                       = "1001"
+        PGID                       = "1001"
         TZ                         = "UTC"
         DELUGE_MOVE_COMPLETED_PATH = "/completed"
         DELUGE_MOVE_COMPLETED      = "true"

@@ -9,22 +9,37 @@
 # Ensures Docker is configured to allow insecure registry for goren:5000.
 # --------------------------------------------------------------------
 
-file_path = '/etc/docker/daemon.json'
-registry = node['pi_bootstrap']['docker_registry_node']
-
-ruby_block 'update_insecure_registries' do
-  block do
-    require 'json'
-    config = File.exist?(file_path) ? JSON.parse(File.read(file_path)) : {}
-    config['insecure-registries'] ||= []
-    unless config['insecure-registries'].include?("#{registry}:5000")
-      config['insecure-registries'] << "#{registry}:5000"
-      File.write(file_path, JSON.pretty_generate(config))
-      node.run_context.resource_collection.find('service[docker]').run_action(:restart)
-    end
-  end
+# --- Ensure the Docker config directory exists
+directory '/etc/docker' do
+  owner 'root'
+  group 'root'
+  mode  '0755'
+  recursive true
 end
 
+# --- Literal /etc/docker/daemon.json (no templating yet)
+file '/etc/docker/daemon.json' do
+  owner 'root'
+  group 'root'
+  mode  '0644'
+  content <<~JSON
+    {
+      "insecure-registries": [
+        "#{node['pi_bootstrap']['docker_registry_node']}:5000"
+      ],
+      "log-driver": "json-file",
+      "log-opts": {
+        "max-size": "10m",
+        "max-file": "5"
+      }
+    }
+  JSON
+  # Restart Docker if the file content changes
+  notifies :restart, 'service[docker]', :delayed
+end
+
+# --- Docker service handle (restart only when notified)
 service 'docker' do
   action :nothing
 end
+
