@@ -15,6 +15,7 @@
 #   • Consul SD server uses env fallback: CONSUL_HTTP_ADDR or 127.0.0.1:8500
 #   • Rules file rendered and hot-reloaded with SIGHUP
 #   • Nomad scrape uses stable hostnames (no 127.0.0.1 for remote agents)
+#   • Vault scrape uses bearer_token_file on the mounted data volume
 # -------------------------------------------------------------------------------
 
 job "prometheus" {
@@ -112,12 +113,14 @@ job "prometheus" {
         ]
 
         volumes = [
+          "/opt/nomad/secrets/prometheus:/etc/prometheus/secrets:ro",
           "local/config:/etc/prometheus/config"
         ]
       }
 
       # -------------------------------------------------------------------------
-      # Mount persistent data volume for TSDB
+      # Mount persistent data volume for TSDB (and a place to drop vault token)
+      # Place your token at: /opt/nomad/data/prometheus-data/bao/token on the host
       # -------------------------------------------------------------------------
       volume_mount {
         volume      = "prometheus-data"
@@ -127,12 +130,15 @@ job "prometheus" {
 
       # -------------------------------------------------------------------------
       # Render Prometheus config (dynamic discovery where possible)
+      # NOTE: Using [[ ... ]] delimiters to avoid conflicts with YAML
       # -------------------------------------------------------------------------
       template {
-        destination = "local/config/prometheus.yml"
-        change_mode = "restart" # restart Prometheus on config changes
-        perms       = "0644"
-        data        = <<-YAML
+        destination     = "local/config/prometheus.yml"
+        change_mode     = "restart" # restart Prometheus on config changes
+        perms           = "0644"
+        left_delimiter  = "[["
+        right_delimiter = "]]"
+        data            = <<-YAML
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -142,62 +148,70 @@ rule_files:
 
 scrape_configs:
   # --- Prometheus self ------------------------------------------------
-  - job_name: 'prometheus'
+  - job_name: "prometheus"
     static_configs:
-      - targets: ['127.0.0.1:9090']
+      - targets: ["127.0.0.1:9090"]
 
   # --- Nomad metrics (HTTPS /v1/metrics?format=prometheus) ------------
   #     Use stable hostnames; avoid 127.0.0.1 except on the local host.
-  - job_name: 'nomad'
-    metrics_path: '/v1/metrics'
+  - job_name: "nomad"
+    metrics_path: "/v1/metrics"
     params:
-      format: [prometheus]
-    scheme: https
+      format: ["prometheus"]
+    scheme: "https"
     tls_config:
       insecure_skip_verify: true
     static_configs:
       - targets:
-          - 'mccoy:4646'
-          - 'stabler:4646'   # local host (Prometheus box)
-          - 'cabot:4646'
-          - 'goren:4646'
+          - "mccoy:4646"
+          - "stabler:4646"
+          - "cabot:4646"
+          - "goren:4646"
+
+  # --- Vault (OpenBao) metrics ---------------------------------------
+  - job_name: "vault"
+    metrics_path: "/v1/sys/metrics"
+    scheme: "https"
+    bearer_token_file: "/etc/prometheus/secrets/vault_token"
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ["mccoy:8200"]
+        labels:
+          cluster: "vault-cluster-b193d95f"
 
   # --- Node Exporter (Consul SD, minimal + safe) ----------------------
   #     Prefilter by service name; set instance=Consul node for human-friendly legends.
-  - job_name: 'node-exporter'
+  - job_name: "node-exporter"
     scrape_interval: 15s
-    metrics_path: /metrics
+    metrics_path: "/metrics"
     consul_sd_configs:
-      - server: '{{ with env "CONSUL_HTTP_ADDR" }}{{ . }}{{ else }}127.0.0.1:8500{{ end }}'
-        token: '{{ key "prometheus/sd/token" }}'
-        services: ['prometheus-node-exporter']
+      - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.0.1:8500[[ end ]]'
+        token:  '[[ key "prometheus/sd/token" ]]'
+        services: ["prometheus-node-exporter"]
     relabel_configs:
-      - source_labels: [__meta_consul_node]
-        target_label: instance
-      - source_labels: [__meta_consul_dc]
-        target_label: consul_dc
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - source_labels: ["__meta_consul_dc"]
+        target_label: "consul_dc"
 
-  # --- Site HTTPS — internal blackbox vantage (simple & reliable) ---
-  - job_name: 'site_https'
-    metrics_path: /probe
+  # --- Site HTTPS — internal blackbox vantage (simple & reliable) ----
+  - job_name: "site_https"
+    metrics_path: "/probe"
     params:
-      module: ['https_2xx']
+      module: ["https_2xx"]
     static_configs:
       - targets:
-          - https://resume.alexfreidah.com/
+          - "https://resume.alexfreidah.com/"
     relabel_configs:
-      # Pass the target URL to the exporter as the 'target' param
-      - source_labels: [__address__]
-        target_label: __param_target
-      # Show the probed URL as the instance label
-      - source_labels: [__param_target]
-        target_label: instance
-      # Tell Prometheus to scrape the exporter itself here:
-      - target_label: __address__
-        replacement: 127.0.0.1:9115
-      # Mark vantage if you like
-      - target_label: vantage
-        replacement: internal
+      - source_labels: ["__address__"]
+        target_label: "__param_target"
+      - source_labels: ["__param_target"]
+        target_label: "instance"
+      - target_label: "__address__"
+        replacement: "127.0.0.1:9115"
+      - target_label: "vantage"
+        replacement: "internal"
 YAML
       }
 
@@ -240,25 +254,25 @@ groups:
 
 - name: site-uptime
   rules:
-  - alert: SiteDown
-    expr: probe_success{job="site_https"} == 0
-    for: 2m
-    labels:
-      severity: critical
-      team: web
-    annotations:
-      summary: "SITE DOWN — {{ $labels.instance }} ({{ $labels.vantage }})"
-      description: "Blackbox probe failing for >2m."
+    - alert: SiteDown
+      expr: probe_success{job="site_https"} == 0
+      for: 2m
+      labels:
+        severity: critical
+        team: web
+      annotations:
+        summary: "SITE DOWN — {{ $labels.instance }} ({{ $labels.vantage }})"
+        description: "Blackbox probe failing for >2m."
 
-  - alert: SiteTLSSoonExpiry
-    expr: (probe_ssl_earliest_cert_expiry{job="site_https"} - time()) < 21*24*60*60
-    for: 5m
-    labels:
-      severity: warning
-      team: web
-    annotations:
-      summary: "TLS cert expiring soon — {{ $labels.instance }}"
-      description: "Earliest certificate expires within 21 days."
+    - alert: SiteTLSSoonExpiry
+      expr: (probe_ssl_earliest_cert_expiry{job="site_https"} - time()) < 21*24*60*60
+      for: 5m
+      labels:
+        severity: warning
+        team: web
+      annotations:
+        summary: "TLS cert expiring soon — {{ $labels.instance }}"
+        description: "Earliest certificate expires within 21 days."
 YAML
       }
 
