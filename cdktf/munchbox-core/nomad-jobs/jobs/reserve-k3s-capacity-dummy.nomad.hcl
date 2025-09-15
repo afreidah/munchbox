@@ -13,7 +13,7 @@ job "reserve-k3s-capacity" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
-      value     = "mccoy"
+      value     = "goren"
     }
 
     task "sleep" {

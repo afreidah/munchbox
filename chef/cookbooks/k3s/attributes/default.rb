@@ -37,3 +37,20 @@ default['k3s']['allow_cidrs'] = [
   { name: 'k3s-pod-cidr',     cidr: '10.42.0.0/16' },  # pods
   { name: 'k3s-service-cidr', cidr: '10.43.0.0/16' },  # services
 ]
+
+# Owner of kubeconfig
+default['k3s']['user'] = 'root'  # e.g., 'root' or 'debian'
+
+# Paths derived from user
+default['k3s']['home']        = node['k3s']['user'] == 'root' ? '/root' : "/home/#{node['k3s']['user']}"
+default['k3s']['kube_dir']    = ::File.join(node['k3s']['home'], '.kube')
+default['k3s']['kube_config'] = ::File.join(node['k3s']['kube_dir'], 'config')
+default['k3s']['server_kube'] = '/etc/rancher/k3s/k3s.yaml'
+
+# Installer options (nil -> upstream defaults)
+default['k3s']['install_exec'] = 'server'   # passed to INSTALL_K3S_EXEC
+default['k3s']['version']      = nil        # e.g., 'v1.30.4+k3s1'
+default['k3s']['channel']      = nil        # e.g., 'stable' or 'latest'
+
+# Minimal prerequisites for the install script
+default['k3s']['install_packages'] = %w[curl ca-certificates]
