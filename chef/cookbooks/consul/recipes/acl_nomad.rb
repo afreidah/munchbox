@@ -6,6 +6,7 @@
 # Purpose:: Ensure Nomad Consul ACL policies exist; optionally mint tokens once.
 # --------------------------------------------------------------------
 
+# TODO re-token here...old token is missing so can't run this until I update
 # --- Configuration knobs (set these in role/env or attrs) ---
 provisioner  = node['consul']['acl']['provisioner']   # run token mint here? (true on exactly one node)
 mgmt_secret  = nil
