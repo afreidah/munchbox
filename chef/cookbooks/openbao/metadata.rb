@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------------
 # metadata.rb
 #
-#  This file contains metadata for the edo_openbao Chef cookbook.
+#  This file contains metadata for the openbao Chef cookbook.
 #
 #  Defines cookbook name, maintainer, license, description, version, supported
 #  platforms, and dependencies.
