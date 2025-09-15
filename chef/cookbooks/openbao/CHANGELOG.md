@@ -1,4 +1,4 @@
-edo_openbao CHANGELOG
+openbao CHANGELOG
 ===========================
 
 This file is used to list changes made in each version of the collection_server cookbook.
@@ -6,7 +6,7 @@ This file is used to list changes made in each version of the collection_server 
 
 1.0.0
 -----
-- [Alex] - Initial edo_openbao release.
+- [Alex] - Initial openbao release.
 
 - - -
 Check the [Markdown Syntax Guide](http://daringfireball.net/projects/markdown/syntax) for help with Markdown.

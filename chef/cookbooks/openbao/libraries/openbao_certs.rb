@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # ------------------------------------------------------------------------------
-# Cookbook:: edo_openbao
+# Cookbook:: openbao
 # Library:: certs
 #
 # Provides helper functions for certificate file mapping and path resolution.

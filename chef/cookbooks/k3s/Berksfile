@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+# ------------------------------------------------------------------------------
+#  Berksfile — k3s Cookbook Dependencies
+# ------------------------------------------------------------------------------
+#  Defines dependencies for the k3s cookbook.
+# ------------------------------------------------------------------------------
+
+source 'https://supermarket.chef.io'
+
+cookbook 'k3s', path: '.'
+cookbook 'firewall'

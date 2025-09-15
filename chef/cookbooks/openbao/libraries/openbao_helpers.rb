@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # ------------------------------------------------------------------------------
-# Cookbook:: edo_openbao
+# Cookbook:: openbao
 # Library:: helpers
 #
 # Provides helper functions for the vpn cookbook include:

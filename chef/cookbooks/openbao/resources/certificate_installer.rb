@@ -5,19 +5,19 @@
 # Resource:: certificate_installer
 #
 # Installs known cert/key/bundle files to a target directory using a predefined
-# mapping and a centralized data bag (e.g., bdbo/ssl[edo.com]).
+# mapping and a centralized data bag (e.g., bdbo/ssl[munchbox.com]).
 #
 # Properties:
 #   databag       - Data bag name (e.g., 'bdbo')
 #   item          - Data bag item (e.g., 'ssl')
-#   section       - Key inside the item (e.g., 'edo.com')
+#   section       - Key inside the item (e.g., 'munchbox.com')
 #   target_path   - Base path to write the files (e.g., /etc/bao/certs)
 #
 # Example:
 #   certificate_installer 'install bao certs' do
 #     databag 'bdbo'
 #     item 'ssl'
-#     section 'edo.com'
+#     section 'munchbox.com'
 #     target_path '/etc/bao/certs'
 #   end
 # -----------------------------------------------------------------------------
