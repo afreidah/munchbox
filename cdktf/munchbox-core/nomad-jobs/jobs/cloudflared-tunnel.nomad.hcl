@@ -19,6 +19,7 @@
 # - Traefik is listening on host :80 and serves the resume routes.
 # - A DNS route for each hostname (create with `cloudflared tunnel route dns ...`).
 # TODO: automate the creation of tunnel and publish to consul, and the dns routes
+# TODO: I should set up tagging of nodes via chef or terraform
 # ------------------------------------------------------------------------------
 
 job "cloudflared-tunnel" {
@@ -28,9 +29,9 @@ job "cloudflared-tunnel" {
   type        = "system"
 
   constraint {
-    attribute = "${meta.role}"
+    attribute = "${meta.tunnel}"
     operator  = "="
-    value     = "ingress"
+    value     = "1"
   }
 
   group "cloudflared" {
@@ -60,8 +61,6 @@ job "cloudflared-tunnel" {
       }
 
       # ---- credentials.json (rendered from Consul KV) -----------------------
-      # NOTE: Do not indent YAML in heredocs; keep column 0 to avoid stray
-      #       spaces/tabs that can break parsing when templates render.
       template {
         destination   = "local/credentials.json"
         change_mode   = "restart"
@@ -72,25 +71,25 @@ EOF
       }
 
       # ---- config.yml (rendered from Consul KV + static ingress) ------------
-      # IMPORTANT:
-      # - Heredoc starts at column 0 (no leading spaces).
-      # - YAML uses spaces only (no tabs).
-      template {
-        destination   = "local/config.yml"
-        change_mode   = "restart"
-        change_signal = "SIGTERM"
-        data          = <<EOF
+  template {
+    destination   = "local/config.yml"
+    change_mode   = "restart"
+    change_signal = "SIGTERM"
+    data          = <<EOF
 tunnel: {{ key "secrets/cloudflared/tunnel_uuid" }}
 credentials-file: /etc/cloudflared/credentials.json
 ingress:
+  # NOTE: Pin these origins to the node that actually runs Traefik (mccoy).
   - hostname: "resume.alexfreidah.com"
-    service: http://127.0.0.1:80
+    service: http://traefik.munchbox:80
   - hostname: "www.resume.alexfreidah.com"
-    service: http://127.0.0.1:80
+    service: http://traefik.munchbox:80
   - service: http_status:404
-EOF
-      }
 
+warp-routing:
+  enabled: true
+EOF
+  }
       resources {
         cpu    = 50
         memory = 64
