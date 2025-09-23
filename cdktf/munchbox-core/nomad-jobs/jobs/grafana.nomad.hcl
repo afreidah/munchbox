@@ -59,7 +59,7 @@ job "grafana" {
 
       # --- Container config -------------------------------------------------------
       config {
-        image              = "grafana/grafana:10.4.2"
+        image              = "grafana/grafana:12.1"
         ports              = ["web"]
         image_pull_timeout = "10m"
         volumes = [
