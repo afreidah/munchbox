@@ -197,6 +197,12 @@ EOF
   entryPoints = ["web"]
   service     = "docker-registry-ui"
 
+# emby
+[http.routers.emby]
+  rule        = "Host(`emby.munchbox`)"
+  entryPoints = ["web"]
+  service     = "emby"
+
 # Resume Static Site (LAN hostname)
 [http.routers.nginx-resume]
   rule        = "Host(`resume.munchbox`)"
@@ -323,6 +329,11 @@ EOF
 [http.services.docker-registry-ui.loadBalancer]
   [[http.services.docker-registry-ui.loadBalancer.servers]]
     url = "http://goren:5001"
+
+# Emby
+[http.services.emby.loadBalancer]
+  [[http.services.emby.loadBalancer.servers]]
+    url = "http://mccoy:8096"
 
 # Resume Static Page
 # NOTE: The resume job is pinned to host 'mccoy' with host port 8080 in its group.
