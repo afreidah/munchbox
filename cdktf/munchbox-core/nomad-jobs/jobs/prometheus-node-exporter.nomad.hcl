@@ -174,11 +174,4 @@ job "node-exporter-core" {
       kill_signal  = "SIGTERM" # Use standard termination signal
     }
   }
-
-  # Job-level constraints to ensure compatibility
-  constraint {
-    attribute = "${driver.docker}"
-    operator  = "="
-    value     = "1"  # Ensure Docker driver is available
-  }
 }

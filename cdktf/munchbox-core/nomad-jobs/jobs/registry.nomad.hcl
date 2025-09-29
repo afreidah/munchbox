@@ -7,12 +7,10 @@
 # - Exposes HTTP API on port 5000.
 # - Registers service with Consul for discovery and health checks.
 # -------------------------------------------------------------------------------
-
 job "registry" {
   datacenters = ["pi-dc"]
   type        = "service"
   node_pool   = "core"
-
   group "mirror" {
     network {
       port "registry" {
@@ -23,31 +21,26 @@ job "registry" {
         to     = 80
       }
     }
-
     # --- Placement: run only on the specified node (goren) ---------------------
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "goren"
     }
-
     # Update host volume to match client config
     volume "registry-data" {
       type      = "host"
       source    = "registry-data"
       read_only = false
     }
-
     # Volume for registry authentication
     volume "registry-auth" {
       type      = "host"
       source    = "registry-auth"
       read_only = true
     }
-
     task "registry" {
       driver = "docker"
-
       config {
         image              = "registry:2"
         image_pull_timeout = "10m"
@@ -56,23 +49,19 @@ job "registry" {
           "local/config/config.yml:/etc/docker/registry/config.yml"
         ]
       }
-
       env {
         TZ = "UTC"
       }
-
       volume_mount {
         volume      = "registry-data"
         destination = "/var/lib/registry"
         read_only   = false
       }
-
       volume_mount {
         volume      = "registry-auth"
         destination = "/auth"
         read_only   = true
       }
-
       template {
         destination = "local/config/config.yml"
         change_mode = "restart"
@@ -92,12 +81,10 @@ http:
     Access-Control-Allow-Headers: ["Authorization", "Accept", "Cache-Control", "Content-Type", "Origin"]
 EOT
       }
-
       service {
         name     = "docker-mirror"
         provider = "consul"
         port     = "registry"
-
         check {
           name     = "http-registry"
           type     = "http"
@@ -107,15 +94,21 @@ EOT
         }
       }
     }
-
     task "registry-ui" {
       driver = "docker"
-
       config {
         image = "joxit/docker-registry-ui:latest"
         ports = ["ui"]
       }
-
+      template {
+        data = <<EOH
+{{ with secret "kv/data/docker-registry" }}
+REGISTRY_PASSWORD="{{ .Data.data.password }}"
+{{ end }}
+EOH
+        destination = "secrets/registry.env"
+        env         = true
+      }
       env {
         REGISTRY_URL        = "http://goren:5000"
         REGISTRY_TITLE      = "Docker Registry Mirror"
@@ -123,14 +116,20 @@ EOT
         PORT                = "5001"
         REGISTRY_BASIC_AUTH = "true"
         REGISTRY_USERNAME   = "alex.freidah"
-        REGISTRY_PASSWORD   = "changeme"
       }
-
+      vault {
+        policies = ["docker-registry-read"]
+      }
       service {
         name     = "docker-registry-ui"
         provider = "consul"
         port     = "ui"
-
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.docker-registry-ui.rule=Host(`registry.munchbox`)",
+          "traefik.http.routers.docker-registry-ui.entrypoints=websecure",
+          "traefik.http.routers.docker-registry-ui.tls=true",
+        ]
         check {
           name                   = "http-registry-ui"
           type                   = "http"

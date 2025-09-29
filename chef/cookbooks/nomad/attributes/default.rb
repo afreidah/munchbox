@@ -107,7 +107,6 @@ default['nomad']['docker']['caps']               = %w(
   NET_ADMIN
   NET_BIND_SERVICE
 )
-# Optional: non-default Docker socket path (template only emits if set)
 default['nomad']['docker']['socket']             = '/var/run/docker.sock'
 
 # --------------------------------------------------------------------
@@ -146,16 +145,14 @@ default['nomad']['cni']['enable']   = true
 
 default['nomad']['vault']['enabled']         = true
 default['nomad']['vault']['tls_skip_verify'] = true
-default['nomad']['vault']['address']         = 'http://mccoy:8200'
-# Token is sourced from encrypted data bag at converge time (do not store here)
+default['nomad']['vault']['address']         = 'https://mccoy:8200'
 
 # --------------------------------------------------------------------
 # ACL / Cluster Bootstrap
 # --------------------------------------------------------------------
 
 default['nomad']['acl']['enabled']             = true
-default['nomad']['acl']['bootstrap_this_node'] = false # Set true on exactly one server node
-# Optional hardening: default token TTL for issued tokens (rendered only if set in template)
+default['nomad']['acl']['bootstrap_this_node'] = false
 default['nomad']['acl']['token_ttl']           = '72h'
 
 # --------------------------------------------------------------------

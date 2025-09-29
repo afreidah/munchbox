@@ -5,9 +5,10 @@
 	"projectId": "d5ae7775-bc4d-431b-afc6-6ae3bbdfcedf",
 	"sendCrashReports": true,
 	"terraformProviders": [
-		"hashicorp/nomad@~> 2.5",
-		"hashicorp/vault@~> 3.21",
-		"hashicorp/consul@~> 2.20"
+    "hashicorp/nomad@2.5.1",
+    "hashicorp/consul@2.20.0",
+    "hashicorp/vault@3.25.0",
+    "hashicorp/null@3.2.4"
 	],
 	"terraformModules": [],
 	"context": {

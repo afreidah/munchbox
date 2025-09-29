@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# Alertmanager — Nomad Job with Telegram Integration
+# Alertmanager — Nomad Job with Telegram Integration (v0.28.1)
 #
 # Purpose:
 #   - Receives alerts from Prometheus and handles notification routing
@@ -35,8 +35,8 @@ job "alertmanager" {
 
   # Job metadata
   meta {
-    version     = "0.27.0"
-    updated     = "2025-01-23"
+    version     = "0.28.1"
+    updated     = "2025-09-28"
     description = "Alertmanager with Telegram notifications"
   }
 
@@ -80,7 +80,7 @@ job "alertmanager" {
       driver = "docker"
 
       config {
-        image        = "quay.io/prometheus/alertmanager:v0.27.0"
+        image        = "quay.io/prometheus/alertmanager:v0.28.1"
         network_mode = "host"
         ports        = ["web"]
         
@@ -88,7 +88,7 @@ job "alertmanager" {
         args = [
           "--config.file=/etc/alertmanager/alertmanager.yml",
           "--web.listen-address=0.0.0.0:9093",
-          "--web.external-url=https://alertmanager.munchbox/",  # For proper link generation
+          "--web.external-url=https://alertmanager.munchbox/",  # External URL handled here
           "--cluster.listen-address="  # Disable clustering for single instance
         ]
 
@@ -175,15 +175,13 @@ job "alertmanager" {
         left_delimiter  = "[["
         right_delimiter = "]]"
         data = <<-YAML
-# Alertmanager Configuration
+# Alertmanager Configuration v0.28.1
 # Handles alert routing, grouping, and notification delivery
 
 global:
   # Default timeout for resolving alerts
   resolve_timeout: 5m
-  
-  # External URL for link generation in notifications
-  external_url: 'https://alertmanager.munchbox/'
+  # Note: external_url is handled via command line argument, not here
 
 # Alert routing configuration
 route:
@@ -205,15 +203,15 @@ route:
   # Child routes for specific alert handling
   routes:
     # Critical alerts - send immediately with shorter repeat
-    - match:
-        severity: critical
+    - matchers:
+        - severity="critical"
       receiver: 'telegram-critical'
       group_wait: 10s
       repeat_interval: 30m
     
     # Warning alerts - group longer to reduce noise  
-    - match:
-        severity: warning
+    - matchers:
+        - severity="warning"
       receiver: 'telegram-warnings'
       group_wait: 2m
       group_interval: 10m
@@ -227,7 +225,7 @@ receivers:
       - bot_token: '[[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_bot_token ]][[ end ]]'
         chat_id: [[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_chat_id ]][[ end ]]
         parse_mode: 'HTML'
-        disable_notification: false
+        send_resolved: true
         message: |
           <b>🚨 {{ .GroupLabels.alertname }}</b> {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }}
           
@@ -257,7 +255,7 @@ receivers:
       - bot_token: '[[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_bot_token ]][[ end ]]'
         chat_id: [[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_chat_id ]][[ end ]]
         parse_mode: 'HTML'
-        disable_notification: false
+        send_resolved: true
         message: |
           🚨🚨 <b>CRITICAL ALERT</b> 🚨🚨
           
@@ -278,7 +276,8 @@ receivers:
       - bot_token: '[[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_bot_token ]][[ end ]]'
         chat_id: [[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_chat_id ]][[ end ]]
         parse_mode: 'HTML'
-        disable_notification: true  # Silent notifications for warnings
+        send_resolved: true
+        # Note: For silent notifications, handle via Telegram Bot API or client settings
         message: |
           ⚠️ <b>{{ .GroupLabels.alertname }}</b>
           

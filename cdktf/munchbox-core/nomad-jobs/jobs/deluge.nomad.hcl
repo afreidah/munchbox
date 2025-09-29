@@ -70,7 +70,12 @@ job "deluge" {
       service {
         name = "deluge"
         port = "web"
-        tags = ["traefik"]
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.deluge.rule=Host(`deluge.munchbox`)",
+          "traefik.http.routers.deluge.entrypoints=websecure",
+          "traefik.http.routers.deluge.tls=true",
+        ]
         check {
           type     = "http"
           path     = "/"

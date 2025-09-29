@@ -67,6 +67,13 @@ job "hashi-ui" {
         name = "hashi-ui"
         port = "http"
 
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.nomad.rule=Host(`nomad.munchbox`)",
+          "traefik.http.routers.nomad.entrypoints=websecure",
+          "traefik.http.routers.nomad.tls=true",
+        ]
+
         check {
           name     = "http"
           type     = "http"

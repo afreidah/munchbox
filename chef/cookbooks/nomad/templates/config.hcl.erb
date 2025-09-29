@@ -154,5 +154,11 @@ vault {
   address         = "<%= node['nomad']['vault']['address'] %>"
   token           = "<%= @token || '' %>"
   tls_skip_verify = <%= node['nomad']['vault']['tls_skip_verify'] %>
+
+  # Workload identity configuration for servers
+  default_identity {
+    aud  = ["vault.io"]
+    ttl  = "1h"
+  }
 }
 <% end %>

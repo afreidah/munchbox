@@ -46,6 +46,12 @@ job "grafana" {
         name     = "grafana"
         port     = "web"
         provider = "consul"
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.grafana.rule=Host(`grafana.munchbox`)",
+          "traefik.http.routers.grafana.entrypoints=websecure",
+          "traefik.http.routers.grafana.tls=true",
+        ]
 
         check {
           name     = "grafana-alive"

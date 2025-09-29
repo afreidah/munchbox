@@ -55,37 +55,37 @@ job "nginx-resume-hostfile" {
       template {
         destination = "local/default.conf"
         data        = <<-EOT
-					# -----------------------------------------------------------------------------
-					# NGINX server for resume.alexfreidah.com — static, read-only content
-					# -----------------------------------------------------------------------------
+                                        # -----------------------------------------------------------------------------
+                                        # NGINX server for resume.alexfreidah.com — static, read-only content
+                                        # -----------------------------------------------------------------------------
 
-					# --- Global zones (http context) ---
-					# Per-IP request rate: 10 req/s (burst allowed below)
-					limit_req_zone  $binary_remote_addr  zone=resume_req_zone:10m  rate=10r/s;
+                                        # --- Global zones (http context) ---
+                                        # Per-IP request rate: 10 req/s (burst allowed below)
+                                        limit_req_zone  $binary_remote_addr  zone=resume_req_zone:10m  rate=10r/s;
 
-					# Per-IP concurrent connections cap
-					limit_conn_zone $binary_remote_addr  zone=resume_conn_zone:10m;
+                                        # Per-IP concurrent connections cap
+                                        limit_conn_zone $binary_remote_addr  zone=resume_conn_zone:10m;
 
-					server {
-						listen 80;
-						server_name _;
-						root /usr/share/nginx/html;
+                                        server {
+                                                listen 80;
+                                                server_name _;
+                                                root /usr/share/nginx/html;
 
-						# Serve resume.html at "/"
-						index resume.html index.html;
+                                                # Serve resume.html at "/"
+                                                index resume.html index.html;
 
-						# Cap total concurrent connections per IP
-						limit_conn resume_conn_zone 20;
+                                                # Cap total concurrent connections per IP
+                                                limit_conn resume_conn_zone 20;
 
-						location / {
-							# Try request path first, then fallback to resume.html
-							try_files $uri $uri/ /resume.html;
+                                                location / {
+                                                        # Try request path first, then fallback to resume.html
+                                                        try_files $uri $uri/ /resume.html;
 
-							# Apply per-IP rate limit: allow short bursts without delay
-							limit_req zone=resume_req_zone burst=20 nodelay;
-						}
-					}
-				EOT
+                                                        # Apply per-IP rate limit: allow short bursts without delay
+                                                        limit_req zone=resume_req_zone burst=20 nodelay;
+                                                }
+                                        }
+                                EOT
       }
 
       resources {
@@ -106,13 +106,19 @@ job "nginx-resume-hostfile" {
           timeout  = "2s"
         }
 
-        # --- Traefik (Consul Catalog) tags for HTTPS routing + security headers ---
+        # --- Traefik (Consul Catalog) tags for routing ---
         tags = [
           "traefik.enable=true",
-          "traefik.http.routers.resume.rule=Host(`resume.alexfreidah.com`)",
-          "traefik.http.routers.resume.entrypoints=websecure",
-          "traefik.http.routers.resume.tls=true",
-          "traefik.http.routers.resume.middlewares=resume-sec@file",
+
+          # Public route via Cloudflare Tunnel (HTTP locally)
+          "traefik.http.routers.resume-public.rule=Host(`resume.alexfreidah.com`,`www.resume.alexfreidah.com`)",
+          "traefik.http.routers.resume-public.entrypoints=web",
+          "traefik.http.routers.resume-public.priority=100",
+
+          # LAN route (HTTPS)
+          "traefik.http.routers.resume-lan.rule=Host(`resume.munchbox`)",
+          "traefik.http.routers.resume-lan.entrypoints=websecure",
+          "traefik.http.routers.resume-lan.tls=true",
         ]
       }
     }

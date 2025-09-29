@@ -175,7 +175,13 @@ job "gitlab" {
       service {
         name = "gitlab"
         port = "http"
-        tags = ["traefik"] # Traefik watches Consul and routes HTTP to this task
+
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.gitlab.rule=Host(`gitlab.munchbox`)",
+          "traefik.http.routers.gitlab.entrypoints=websecure",
+          "traefik.http.routers.gitlab.tls=true",
+        ]
 
         # Be lenient while GitLab boots the first time to avoid flappy restarts
         check {
