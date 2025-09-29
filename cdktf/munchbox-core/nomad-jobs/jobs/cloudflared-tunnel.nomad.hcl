@@ -2,9 +2,8 @@
 # Cloudflare Tunnel (cloudflared) — File-mode with YAML config
 # ------------------------------------------------------------------------------
 # What this does
-# - Runs cloudflared as a system job on ingress nodes.
-# - Uses *host networking* so 127.0.0.1:80 inside the container reaches Traefik
-#   on the host.
+# - Runs cloudflared as a system job on the ingress node (mccoy only).
+# - Uses *host networking* so connections originate from the host namespace.
 # - Renders both the credentials and the config *via Nomad templates* into
 #   /local, and bind-mounts them into /etc/cloudflared in the container.
 # - Ingress includes BOTH:
@@ -28,22 +27,23 @@ job "cloudflared-tunnel" {
   node_pool   = "core"
   type        = "system"
 
+  # Run only on the ingress node (mccoy)
   constraint {
-    attribute = "${meta.tunnel}"
+    attribute = "${node.unique.name}"
     operator  = "="
-    value     = "1"
+    value     = "mccoy"
   }
 
   group "cloudflared" {
-    # Host networking so 127.0.0.1 inside the container = host network namespace
+    # Host networking so the container sees the host network namespace
     network { mode = "host" }
 
     task "cloudflared" {
       driver = "docker"
 
       config {
-        image = "cloudflare/cloudflared:latest"
-        # Host net mode inside Docker as well
+        image        = "cloudflare/cloudflared:latest"  # always use the newest container
+        force_pull   = true                              # ensure we actually pull the latest on deploy
         network_mode = "host"
 
         # Use the mounted file-mode config
@@ -71,25 +71,31 @@ EOF
       }
 
       # ---- config.yml (rendered from Consul KV + static ingress) ------------
-  template {
-    destination   = "local/config.yml"
-    change_mode   = "restart"
-    change_signal = "SIGTERM"
-    data          = <<EOF
+      template {
+        destination   = "local/config.yml"
+        change_mode   = "restart"
+        change_signal = "SIGTERM"
+        data          = <<EOF
 tunnel: {{ key "secrets/cloudflared/tunnel_uuid" }}
 credentials-file: /etc/cloudflared/credentials.json
+
 ingress:
-  # NOTE: Pin these origins to the node that actually runs Traefik (mccoy).
+  # Route both hostnames to Traefik on mccoy (reachable via cluster DNS)
   - hostname: "resume.alexfreidah.com"
     service: http://traefik.munchbox:80
+    originRequest:
+      httpHostHeader: resume.alexfreidah.com
   - hostname: "www.resume.alexfreidah.com"
     service: http://traefik.munchbox:80
+    originRequest:
+      httpHostHeader: resume.alexfreidah.com
   - service: http_status:404
 
 warp-routing:
-  enabled: true
+  enabled: false
 EOF
-  }
+      }
+
       resources {
         cpu    = 50
         memory = 64

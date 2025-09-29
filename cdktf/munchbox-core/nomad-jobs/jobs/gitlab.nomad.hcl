@@ -28,7 +28,7 @@ job "gitlab" {
   type        = "service"
   node_pool   = "edge"
 
-  # Long deployment windows so pulling the image / first boot doesn’t fail the job
+  # Long deployment windows so pulling the image / first boot doesn't fail the job
   update {
     max_parallel       = 1
     min_healthy_time   = "15s"
@@ -104,6 +104,9 @@ job "gitlab" {
           install -d -m 0700 "$BASE/data/postgresql"
           install -d -m 0755 "$BASE/logs/postgresql"
           chown -R "$UID_PG:$GID_PG" "$BASE/data/postgresql" "$BASE/logs/postgresql"
+
+          # Remove SSH host keys with wrong perms; GitLab will regenerate them
+          rm -f "$BASE/config/ssh_host_"*"_key"* 2>/dev/null || true
 
           # DO NOT blanket chown $BASE/data or $BASE/config.
           # Omnibus will create/chown the rest correctly on first run.
