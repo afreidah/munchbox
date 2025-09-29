@@ -117,7 +117,13 @@ job "emby" {
       service {
         name = "emby"
         port = "web"
-        tags = ["traefik"]
+
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.emby.rule=Host(`emby.munchbox`)",
+          "traefik.http.routers.emby.entrypoints=websecure",
+          "traefik.http.routers.emby.tls=true",
+        ]
 
         check {
           type     = "http"

@@ -33,3 +33,5 @@ encrypted_data_bag_secret
 .kitchen/*
 chef/cookbooks/vault/files/vault-armv6
 chef/community-cookbooks/*
+
+nomad-app
