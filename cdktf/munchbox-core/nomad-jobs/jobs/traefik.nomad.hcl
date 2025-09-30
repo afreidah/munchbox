@@ -71,7 +71,7 @@ job "traefik" {
     # -------------------------------------------------------------------------
     task "certgen" {
       driver = "docker"
-      
+
       lifecycle {
         hook    = "prestart"
         sidecar = false
@@ -190,7 +190,7 @@ EOF
   refreshInterval = "15s"
   prefix          = "traefik"
   exposedByDefault = false
-  
+
   [providers.consulCatalog.endpoint]
     address = "127.0.0.1:8500"
 
@@ -261,6 +261,27 @@ EOF
   entryPoints = ["traefik"]
   service     = "api@internal"
   middlewares = ["dashboard-auth", "dashboard-allowlan", "dashboard-redirect"]
+
+# --------------------------------------------------------------------
+# Prometheus UI on HTTPS — file router pointing to consul-catalog backend
+# (tiny shim to ensure Host(`prometheus.munchbox`) always resolves)
+# --------------------------------------------------------------------
+[http.routers.prometheus-ui]
+  rule        = "Host(`prometheus.munchbox`)"
+  entryPoints = ["websecure"]
+  service     = "prometheus-svc"
+  middlewares = ["dashboard-allowlan"]
+  [http.routers.prometheus-ui.tls]
+
+# --------------------------------------------------------------------
+# Dashboard by IP on :8081 (LAN only, redirects to /dashboard/)
+# --------------------------------------------------------------------
+[http.routers.traefik-by-ip]
+  rule        = "HostRegexp(`{any:.*}`) && PathPrefix(`/`)"
+  entryPoints = ["traefik"]
+  service     = "api@internal"
+  middlewares = ["dashboard-auth", "dashboard-allowlan", "dashboard-redirect"]
+  priority    = 2
 
 # --------------------------------------------------------------------
 # Public hostname via Cloudflare Tunnel (HTTP locally by design)
@@ -383,6 +404,11 @@ EOF
 [http.services.nginx-resume.loadBalancer]
   [[http.services.nginx-resume.loadBalancer.servers]]
     url = "http://192.168.68.63:8080"
+
+# Prometheus backend (host network on node "stabler")
+[http.services."prometheus-svc".loadBalancer]
+  [[http.services."prometheus-svc".loadBalancer.servers]]
+    url = "http://stabler:9090"
 
 # Health forwarder for HTTPS /ping router (fronts the internal /ping ep)
 [http.services.ping-svc.loadBalancer]
