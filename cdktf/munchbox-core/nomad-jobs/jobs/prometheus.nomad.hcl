@@ -308,7 +308,6 @@ scrape_configs:
       module: ["https_2xx"]
     static_configs:
       - targets:
-          - "https://traefik.munchbox/ping"     # HTTPS health endpoint (no-auth or 401/403)
           - "https://resume.alexfreidah.com/"   # Public site via Cloudflare
         labels:
           vantage: "internal"
