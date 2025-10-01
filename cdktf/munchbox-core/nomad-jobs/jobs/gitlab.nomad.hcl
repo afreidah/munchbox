@@ -70,6 +70,7 @@ job "gitlab" {
     # ---------------------------------------------------------------------------
     task "permfix" {
       driver = "raw_exec"
+      user   = "root"   # run as root so we can invoke docker and adjust ownership
 
       lifecycle {
         hook    = "prestart"
@@ -79,37 +80,39 @@ job "gitlab" {
       config {
         command = "/bin/bash"
         args = [
-          "-lc",
+          "-c",
           <<-EOF
           set -euo pipefail
           BASE="/opt/nomad/data/gitlab"
+          IMAGE="gitlab/gitlab-ce:18.4.1-ce.0"
 
-          # Service user IDs inside Omnibus:
-          UID_GIT=998        # 'git'
-          GID_GIT=998
-          UID_PG=996         # 'gitlab-psql'
-          GID_PG=996
+          # Ensure docker exists and can talk to the daemon
+          command -v docker >/dev/null 2>&1 || { echo "docker not found"; exit 1; }
+          docker image inspect "$IMAGE" >/dev/null 2>&1 || docker pull "$IMAGE"
 
-          # Ensure base dirs exist
-          install -d -m 0755 "$BASE/config" "$BASE/logs" "$BASE/data"
+          # Use the same image to create/chown by NAME (robust across UID/GID shifts)
+          docker run --rm \
+            -v "$BASE/config:/etc/gitlab" \
+            -v "$BASE/logs:/var/log/gitlab" \
+            -v "$BASE/data:/var/opt/gitlab" \
+            "$IMAGE" sh -c '
+              set -e
+              install -d -m 0750 /var/opt/gitlab/redis
+              install -d -m 0755 /var/opt/gitlab/prometheus/data
+              install -d -m 0700 /var/opt/gitlab/postgresql
+              install -d -m 0755 /var/opt/gitlab/gitaly /var/opt/gitlab/git-data
+              install -d -m 0755 /var/log/gitlab/gitlab-rails /var/log/gitlab/postgresql
+              : > /var/log/gitlab/gitlab-rails/production.log
+              : > /var/log/gitlab/gitlab-rails/application_json.log
 
-          # Prepare rails logs for the 'git' user
-          install -d -m 0755 "$BASE/logs/gitlab-rails"
-          touch "$BASE/logs/gitlab-rails/production.log" \
-                "$BASE/logs/gitlab-rails/application_json.log"
-          chown -R "$UID_GIT:$GID_GIT" "$BASE/logs/gitlab-rails"
-          chmod 0664 "$BASE/logs/gitlab-rails/"*.log
+              chown -R gitlab-redis:gitlab-redis /var/opt/gitlab/redis
+              chown -R gitlab-prometheus:gitlab-prometheus /var/opt/gitlab/prometheus
+              chown -R gitlab-psql:gitlab-psql /var/opt/gitlab/postgresql /var/log/gitlab/postgresql
+              chown -R git:git /var/opt/gitlab/gitaly /var/opt/gitlab/git-data /var/log/gitlab/gitlab-rails /var/log/gitlab
 
-          # Ensure Postgres paths exist and are owned by gitlab-psql
-          install -d -m 0700 "$BASE/data/postgresql"
-          install -d -m 0755 "$BASE/logs/postgresql"
-          chown -R "$UID_PG:$GID_PG" "$BASE/data/postgresql" "$BASE/logs/postgresql"
-
-          # Remove SSH host keys with wrong perms; GitLab will regenerate them
-          rm -f "$BASE/config/ssh_host_"*"_key"* 2>/dev/null || true
-
-          # DO NOT blanket chown $BASE/data or $BASE/config.
-          # Omnibus will create/chown the rest correctly on first run.
+              # Remove SSH host keys with wrong perms; GitLab will regenerate them
+              rm -f /etc/gitlab/ssh_host_*_key* 2>/dev/null || true
+            '
           EOF
         ]
       }
@@ -128,7 +131,7 @@ job "gitlab" {
 
       config {
         # Pin to a specific tag to avoid surprise major/minor upgrades.
-        image              = "gitlab/gitlab-ce:latest"
+        image              = "gitlab/gitlab-ce:18.4.1-ce.0"
         image_pull_timeout = "2h"     # allow very slow pulls
         ports              = ["http", "ssh"]
         privileged         = true
