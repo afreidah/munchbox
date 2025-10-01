@@ -132,13 +132,18 @@ EOF
 
       config {
         network_mode = "host"
-        image        = "traefik:v3.2"
+        image        = "traefik:v3.5.3"
         ports        = ["http", "https", "dashboard"]
 
         volumes = [
           "local/traefik.toml:/etc/traefik/traefik.toml",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml"
         ]
+      }
+
+      # --- NEW: allow this task to read the Bao secret holding the Consul token -
+      vault {
+        policies = ["nomad-traefik-read"]
       }
 
       # -----------------------------------------------------------------------
@@ -193,6 +198,8 @@ EOF
 
   [providers.consulCatalog.endpoint]
     address = "127.0.0.1:8500"
+    # Token pulled from Bao/Vault (KV v2) at secret/infra/traefik
+    token   = "{{ with secret "secret/data/infra/traefik" }}{{ .Data.data.consul_catalog_token }}{{ end }}"
 
 # File provider drives our routers/services (rendered below)
 [providers.file]
@@ -261,6 +268,7 @@ EOF
   entryPoints = ["traefik"]
   service     = "api@internal"
   middlewares = ["dashboard-auth", "dashboard-allowlan", "dashboard-redirect"]
+  priority    = 2
 
 # --------------------------------------------------------------------
 # Prometheus UI on HTTPS — file router pointing to consul-catalog backend
@@ -272,16 +280,6 @@ EOF
   service     = "prometheus-svc"
   middlewares = ["dashboard-allowlan"]
   [http.routers.prometheus-ui.tls]
-
-# --------------------------------------------------------------------
-# Dashboard by IP on :8081 (LAN only, redirects to /dashboard/)
-# --------------------------------------------------------------------
-[http.routers.traefik-by-ip]
-  rule        = "HostRegexp(`{any:.*}`) && PathPrefix(`/`)"
-  entryPoints = ["traefik"]
-  service     = "api@internal"
-  middlewares = ["dashboard-auth", "dashboard-allowlan", "dashboard-redirect"]
-  priority    = 2
 
 # --------------------------------------------------------------------
 # Public hostname via Cloudflare Tunnel (HTTP locally by design)
@@ -408,7 +406,7 @@ EOF
 # Prometheus backend (host network on node "stabler")
 [http.services."prometheus-svc".loadBalancer]
   [[http.services."prometheus-svc".loadBalancer.servers]]
-    url = "http://stabler:9090"
+    url = "http://192.168.68.61:9090"
 
 # Health forwarder for HTTPS /ping router (fronts the internal /ping ep)
 [http.services.ping-svc.loadBalancer]
