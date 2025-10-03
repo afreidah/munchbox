@@ -55,7 +55,7 @@ func main() {
 	// --- Nomad resources ---
 	common.RegisterNomadPolicies(stack, "nomad-policy")
 	common.RegisterNomadTokens(stack, "nomad-token")
-	common.RegisterNomadJobs(stack, "nomad-jobs/jobs", *jobsFlag)
+	common.RegisterNomadJobs(stack, "nomad-jobs", *jobsFlag)
 
 	// --- Consul resources (policies + tokens) ---
 	common.RegisterConsulPolicies(stack, "consul-policy")

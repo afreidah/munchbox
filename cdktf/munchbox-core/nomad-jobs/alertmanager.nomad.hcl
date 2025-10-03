@@ -55,7 +55,7 @@ job "alertmanager" {
       mode = "host"
 
       port "web" {
-        static = 9093  # Standard Alertmanager port
+        static = 9093 # Standard Alertmanager port
       }
     }
 
@@ -89,7 +89,7 @@ job "alertmanager" {
           "--config.file=/etc/alertmanager/alertmanager.yml",
           "--web.listen-address=0.0.0.0:9093",
           "--web.external-url=https://alertmanager.munchbox/",
-          "--cluster.listen-address="  # Disable clustering for single instance
+          "--cluster.listen-address=" # Disable clustering for single instance
         ]
 
         # Volume mounts
@@ -167,7 +167,7 @@ job "alertmanager" {
         perms           = "0644"
         left_delimiter  = "[["
         right_delimiter = "]]"
-        data = <<-YAML
+        data            = <<-YAML
 # Alertmanager Configuration v0.28.1
 # Handles alert routing, grouping, and notification delivery
 
@@ -306,8 +306,8 @@ YAML
         TZ = "America/Los_Angeles"
 
         # Alertmanager specific settings
-        ALERTMANAGER_WEB_EXTERNAL_URL = "https://alertmanager.munchbox/"
-        ALERTMANAGER_CLUSTER_LISTEN_ADDRESS = ""  # Disable clustering
+        ALERTMANAGER_WEB_EXTERNAL_URL       = "https://alertmanager.munchbox/"
+        ALERTMANAGER_CLUSTER_LISTEN_ADDRESS = "" # Disable clustering
       }
 
       # Resource allocation - lightweight for alerting service

@@ -27,8 +27,8 @@ job "reserve-k3s-capacity" {
       # Reserve ~4 vCPU and 4 GB RAM for the dummy placeholder job
       # --------------------------------------------------------------------
       resources {
-        cpu    = 4000   # ≈ 4 vCPU worth of scheduler shares
-        memory = 4096   # 4 GB (MB units)
+        cpu    = 4000 # ≈ 4 vCPU worth of scheduler shares
+        memory = 4096 # 4 GB (MB units)
       }
     }
   }

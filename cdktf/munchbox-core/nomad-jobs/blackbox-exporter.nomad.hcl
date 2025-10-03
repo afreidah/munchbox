@@ -27,7 +27,7 @@ job "blackbox-exporter" {
     # --- Networking -----------------------------------------------------------
     network {
       mode = "host"
-      port "http" { static = 9115 }   # exporter listens on host:9115
+      port "http" { static = 9115 } # exporter listens on host:9115
     }
 
     task "exporter" {
@@ -37,7 +37,7 @@ job "blackbox-exporter" {
         image        = "prom/blackbox-exporter:v0.25.0"
         ports        = ["http"]
         network_mode = "host"
-        args = ["--config.file=/local/blackbox.yml"]
+        args         = ["--config.file=/local/blackbox.yml"]
 
         # Optional: map domain to internal IP if your router can't hairpin NAT
         # extra_hosts = ["resume.alexfreidah.com:192.168.68.61"]
@@ -84,7 +84,7 @@ job "blackbox-exporter" {
         port         = "http"
         tags         = ["metrics", "prometheus"]
         provider     = "consul"
-        address_mode = "host"   # register the node’s LAN IP + 9115
+        address_mode = "host" # register the node’s LAN IP + 9115
 
         check {
           type     = "http"

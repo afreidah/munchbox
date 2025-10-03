@@ -25,7 +25,7 @@ job "gitlab-full-backup" {
 
   # ----- Schedule -----
   periodic {
-    cron             = "0 2 * * *"                 # daily 02:00 PT
+    cron             = "0 2 * * *" # daily 02:00 PT
     prohibit_overlap = true
     time_zone        = "America/Los_Angeles"
   }
@@ -127,8 +127,8 @@ job "gitlab-full-backup" {
       }
 
       resources {
-        cpu    = 200      # conservative bump for compression
-        memory = 256      # adjust per dataset size
+        cpu    = 200 # conservative bump for compression
+        memory = 256 # adjust per dataset size
       }
 
       restart {

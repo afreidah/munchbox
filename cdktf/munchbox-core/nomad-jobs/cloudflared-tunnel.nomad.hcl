@@ -42,8 +42,8 @@ job "cloudflared-tunnel" {
       driver = "docker"
 
       config {
-        image        = "cloudflare/cloudflared:latest"  # always use the newest container
-        force_pull   = true                              # ensure we actually pull the latest on deploy
+        image        = "cloudflare/cloudflared:latest" # always use the newest container
+        force_pull   = true                            # ensure we actually pull the latest on deploy
         network_mode = "host"
 
         # Use the mounted file-mode config

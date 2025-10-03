@@ -29,8 +29,8 @@
 job "node-exporter-core" {
   region      = "global"
   datacenters = ["pi-dc"]
-  node_pool   = "all"  # Deploy to all node pools
-  type        = "system"  # Runs on every eligible node
+  node_pool   = "all"    # Deploy to all node pools
+  type        = "system" # Runs on every eligible node
 
   # Job metadata for tracking and management
   meta {
@@ -41,30 +41,30 @@ job "node-exporter-core" {
 
   group "prometheus_node_exporter" {
     # System jobs don't specify count - automatically runs everywhere
-    
+
     # Network configuration - host mode for direct port binding
     network {
-      mode = "host"  # Direct access to host networking stack
-      
+      mode = "host" # Direct access to host networking stack
+
       port "http" {
-        static = 9100  # Standard node_exporter port across industry
+        static = 9100 # Standard node_exporter port across industry
       }
     }
 
     # Restart policy - resilient for critical system monitoring
     restart {
-      attempts = 10        # More attempts since this is system-critical
-      interval = "5m"      # Reset attempt counter every 5 minutes
-      delay    = "5s"      # Brief delay between restart attempts
-      mode     = "delay"   # Use delay mode for gradual backoff
+      attempts = 10      # More attempts since this is system-critical
+      interval = "5m"    # Reset attempt counter every 5 minutes
+      delay    = "5s"    # Brief delay between restart attempts
+      mode     = "delay" # Use delay mode for gradual backoff
     }
 
     # Update strategy for system job - careful rolling updates
     update {
-      max_parallel      = 2   # Update only 2 nodes at a time
-      min_healthy_time  = "10s"
-      healthy_deadline  = "2m"
-      auto_revert       = true  # Rollback on failure
+      max_parallel     = 2 # Update only 2 nodes at a time
+      min_healthy_time = "10s"
+      healthy_deadline = "2m"
+      auto_revert      = true # Rollback on failure
     }
 
     task "prometheus_node_exporter" {
@@ -72,44 +72,44 @@ job "node-exporter-core" {
 
       config {
         image = "quay.io/prometheus/node-exporter:v1.8.2"
-        
+
         # Networking configuration for host access
-        network_mode = "host"  # Container shares host network namespace
-        pid_mode     = "host"  # Access to host PID namespace for better metrics
-        
+        network_mode = "host" # Container shares host network namespace
+        pid_mode     = "host" # Access to host PID namespace for better metrics
+
         # Command arguments - configure node_exporter behavior
         args = [
-          "--path.rootfs=/host",                  # Root filesystem mounted at /host
-          "--web.listen-address=0.0.0.0:9100",  # Listen on all interfaces
-          "--web.telemetry-path=/metrics",       # Standard metrics endpoint path
-          
+          "--path.rootfs=/host",               # Root filesystem mounted at /host
+          "--web.listen-address=0.0.0.0:9100", # Listen on all interfaces
+          "--web.telemetry-path=/metrics",     # Standard metrics endpoint path
+
           # Enable useful collectors
-          "--collector.systemd",                 # Systemd service metrics
-          "--collector.processes",               # Process count metrics
-          
+          "--collector.systemd",   # Systemd service metrics
+          "--collector.processes", # Process count metrics
+
           # Disable noisy/unnecessary collectors for server environment
-          "--no-collector.wifi",                 # No wifi on servers
-          "--no-collector.hwmon"                 # Hardware monitoring can be noisy
+          "--no-collector.wifi", # No wifi on servers
+          "--no-collector.hwmon" # Hardware monitoring can be noisy
         ]
 
         # Volume mounts - mount host filesystem for metric collection
         volumes = [
-          "/:/host:ro,rslave"  # Read-only recursive mount of entire host FS
+          "/:/host:ro,rslave" # Read-only recursive mount of entire host FS
         ]
 
         # Logging configuration - integrate with system logging
         logging {
           type = "journald"
           config {
-            tag = "node-exporter"  # Tag for easy log filtering
+            tag = "node-exporter" # Tag for easy log filtering
           }
         }
       }
 
       # Resource allocation - lightweight for system service
       resources {
-        cpu    = 50   # Minimal CPU - just reading /proc and /sys
-        memory = 64   # Small memory footprint
+        cpu    = 50 # Minimal CPU - just reading /proc and /sys
+        memory = 64 # Small memory footprint
       }
 
       # Consul service registration for Prometheus discovery
@@ -117,16 +117,16 @@ job "node-exporter-core" {
         name         = "prometheus-node-exporter"
         port         = "http"
         provider     = "consul"
-        address_mode = "host"  # Register the actual node IP, not container IP
-        
+        address_mode = "host" # Register the actual node IP, not container IP
+
         # Service tags - metadata for service discovery
         tags = [
-          "monitoring",      # General monitoring service
-          "node-exporter",   # Specific exporter type
-          "metrics",         # Provides metrics endpoint
-          "system"           # System-level monitoring
+          "monitoring",    # General monitoring service
+          "node-exporter", # Specific exporter type
+          "metrics",       # Provides metrics endpoint
+          "system"         # System-level monitoring
         ]
-        
+
         # Primary health check - ensure metrics endpoint responds
         check {
           name     = "node-exporter-alive"
@@ -134,13 +134,13 @@ job "node-exporter-core" {
           method   = "GET"
           path     = "/metrics"
           port     = "http"
-          interval = "15s"      # Check every 15 seconds
-          timeout  = "3s"       # 3 second timeout
-          
+          interval = "15s" # Check every 15 seconds
+          timeout  = "3s"  # 3 second timeout
+
           # Restart task if health checks fail consistently
           check_restart {
-            limit = 3         # Restart after 3 consecutive failures
-            grace = "10s"     # 10 second grace period before restart
+            limit = 3     # Restart after 3 consecutive failures
+            grace = "10s" # 10 second grace period before restart
           }
         }
 
@@ -151,20 +151,20 @@ job "node-exporter-core" {
           method   = "GET"
           path     = "/metrics"
           port     = "http"
-          interval = "60s"      # Less frequent detailed check
+          interval = "60s" # Less frequent detailed check
           timeout  = "5s"
-          
+
           # Validate response headers
           header {
-            Accept = ["text/plain"]  # Prometheus text format
+            Accept = ["text/plain"] # Prometheus text format
           }
         }
       }
 
       # Environment variables
       env {
-        TZ = "America/Los_Angeles"  # Consistent timezone across cluster
-        
+        TZ = "America/Los_Angeles" # Consistent timezone across cluster
+
         # Node exporter specific environment
         NODE_EXPORTER_WEB_TELEMETRY_PATH = "/metrics"
       }

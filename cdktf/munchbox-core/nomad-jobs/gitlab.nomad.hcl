@@ -30,14 +30,14 @@ job "gitlab" {
 
   # Long deployment windows so pulling the image / first boot doesn't fail the job
   update {
-    max_parallel       = 1
-    min_healthy_time   = "15s"
-    healthy_deadline   = "1h59m"  # must be < progress_deadline to pass validation
-    progress_deadline  = "2h"
-    stagger            = "5s"     # must be > 0s to pass validation
-    auto_promote       = true
-    auto_revert        = false
-    canary             = 1
+    max_parallel      = 1
+    min_healthy_time  = "15s"
+    healthy_deadline  = "1h59m" # must be < progress_deadline to pass validation
+    progress_deadline = "2h"
+    stagger           = "5s" # must be > 0s to pass validation
+    auto_promote      = true
+    auto_revert       = false
+    canary            = 1
   }
 
   group "gitlab" {
@@ -62,7 +62,7 @@ job "gitlab" {
     network {
       mode = "bridge"
       port "http" { static = 8080 } # GitLab web UI (proxied by Traefik)
-      port "ssh"  { static = 2222 } # Git over SSH
+      port "ssh" { static = 2222 }  # Git over SSH
     }
 
     # ---------------------------------------------------------------------------
@@ -70,7 +70,7 @@ job "gitlab" {
     # ---------------------------------------------------------------------------
     task "permfix" {
       driver = "raw_exec"
-      user   = "root"   # run as root so we can invoke docker and adjust ownership
+      user   = "root" # run as root so we can invoke docker and adjust ownership
 
       lifecycle {
         hook    = "prestart"
@@ -132,7 +132,7 @@ job "gitlab" {
       config {
         # Pin to a specific tag to avoid surprise major/minor upgrades.
         image              = "gitlab/gitlab-ce:18.4.1-ce.0"
-        image_pull_timeout = "2h"     # allow very slow pulls
+        image_pull_timeout = "2h" # allow very slow pulls
         ports              = ["http", "ssh"]
         privileged         = true
 
@@ -210,8 +210,8 @@ job "gitlab" {
           timeout  = "3s"
 
           check_restart {
-            limit  = 10
-            grace  = "15m"  # give rails/nginx time to come up on first boot
+            limit = 10
+            grace = "15m" # give rails/nginx time to come up on first boot
           }
         }
       }

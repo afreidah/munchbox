@@ -35,8 +35,8 @@ job "emby" {
 
     network {
       mode = "host"
-      port "web"   { static = 8096 }  # Emby HTTP
-      port "https" { static = 8920 }  # Emby HTTPS (optional)
+      port "web" { static = 8096 }   # Emby HTTP
+      port "https" { static = 8920 } # Emby HTTPS (optional)
     }
 
     task "emby" {
@@ -46,9 +46,9 @@ job "emby" {
       # Resource profile (moderate)
       # -----------------------------
       resources {
-        cpu        = 2000        # ~2 CPU shares
-        memory     = 4096        # soft memory (MB)
-        memory_max = 6144        # hard cap (MB); container OOM-killed if exceeded
+        cpu        = 2000 # ~2 CPU shares
+        memory     = 4096 # soft memory (MB)
+        memory_max = 6144 # hard cap (MB); container OOM-killed if exceeded
       }
 
       # Robust restart behavior for spikes/updates
@@ -109,7 +109,7 @@ job "emby" {
       }
 
       env = {
-        PUID = "1001"   # Match ownership of your media/config paths
+        PUID = "1001" # Match ownership of your media/config paths
         PGID = "1001"
         TZ   = "UTC"
       }
