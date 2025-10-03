@@ -15,16 +15,16 @@
 #   - /mnt/gdrive/consul-snapshots reachable (job will mkdir -p)
 # -----------------------------------------------------------------------------
 job "backup-consul-snapshot" {
-  region      = "global"                         # [scope] single region batch
-  datacenters = ["pi-dc"]                        # [placement] same DC as your cluster
-  type        = "batch"                          # [mode] periodic batch job
-  node_pool   = "all"                            # [pool] use pool with stabler
+  region      = "global"  # [scope] single region batch
+  datacenters = ["pi-dc"] # [placement] same DC as your cluster
+  type        = "batch"   # [mode] periodic batch job
+  node_pool   = "all"     # [pool] use pool with stabler
 
   # ----- Schedule -----
   periodic {
-    cron             = "0 2 * * *"               # [when] daily at 02:00 PT
-    prohibit_overlap = true                      # [safety] no overlapping runs
-    time_zone        = "America/Los_Angeles"     # [tz] schedule in PT
+    cron             = "0 2 * * *"           # [when] daily at 02:00 PT
+    prohibit_overlap = true                  # [safety] no overlapping runs
+    time_zone        = "America/Los_Angeles" # [tz] schedule in PT
   }
 
   # ----- Placement: run on stabler only -----
@@ -32,14 +32,14 @@ job "backup-consul-snapshot" {
     count = 1
 
     constraint {
-      attribute = "$${node.unique.name}"         # [nomad interp] escaped for Terraform
+      attribute = "$${node.unique.name}" # [nomad interp] escaped for Terraform
       operator  = "="
       value     = "stabler"
     }
 
     task "consul-snapshot" {
       driver = "raw_exec"
-      user   = "root"                             # [fs perms] write under /mnt/gdrive
+      user   = "root" # [fs perms] write under /mnt/gdrive
 
       # ----- Inject configuration from Consul KV into env/files -----
       # Keys:
@@ -119,7 +119,7 @@ job "backup-consul-snapshot" {
       }
 
       restart {
-        attempts = 0 
+        attempts = 0
         mode     = "fail"
       }
     }

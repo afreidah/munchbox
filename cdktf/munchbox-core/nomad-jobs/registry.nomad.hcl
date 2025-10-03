@@ -101,7 +101,7 @@ EOT
         ports = ["ui"]
       }
       template {
-        data = <<EOH
+        data        = <<EOH
 {{ with secret "kv/data/docker-registry" }}
 REGISTRY_PASSWORD="{{ .Data.data.password }}"
 {{ end }}

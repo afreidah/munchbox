@@ -42,7 +42,7 @@ job "grafana" {
         read_only   = false
       }
       resources {
-        cpu = 50
+        cpu    = 50
         memory = 64
       }
     }
@@ -56,8 +56,8 @@ job "grafana" {
       # Workload Identity JWT (so we can verify iss/aud easily)
       identity {
         env  = true
-        file = true          # <-- bool, writes to secrets/identity/jwt
-        aud  = ["vault.io"]  # must match role.bound_audiences
+        file = true         # <-- bool, writes to secrets/identity/jwt
+        aud  = ["vault.io"] # must match role.bound_audiences
       }
 
       service {
@@ -74,10 +74,10 @@ job "grafana" {
           "monitoring", "grafana",
         ]
         check {
-          name = "grafana-alive"
-          type = "http"
-          path = "/api/health"
-          port = "web"
+          name     = "grafana-alive"
+          type     = "http"
+          path     = "/api/health"
+          port     = "web"
           interval = "10s"
           timeout  = "2s"
         }
@@ -135,7 +135,7 @@ YAML
       }
 
       resources {
-        cpu = 250
+        cpu    = 250
         memory = 512
       }
 

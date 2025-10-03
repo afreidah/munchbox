@@ -34,7 +34,7 @@ job "prometheus" {
     # Host volume for persistent TSDB data
     volume "prometheus-data" {
       type      = "host"
-      source    = "prometheus-data"  # Defined in client.hcl
+      source    = "prometheus-data" # Defined in client.hcl
       read_only = false
     }
 
@@ -43,7 +43,7 @@ job "prometheus" {
       mode = "host"
 
       port "web" {
-        static = 9090  # Standard Prometheus port
+        static = 9090 # Standard Prometheus port
       }
     }
 
@@ -52,7 +52,7 @@ job "prometheus" {
       attempts = 5
       interval = "10m"
       delay    = "30s"
-      mode     = "fail"  # Don't restart indefinitely
+      mode     = "fail" # Don't restart indefinitely
     }
 
     # Update strategy - zero downtime not critical for monitoring
@@ -66,7 +66,7 @@ job "prometheus" {
 
     task "prometheus" {
       driver = "docker"
-      user   = "root"  # Required for host volume permissions
+      user   = "root" # Required for host volume permissions
 
       config {
         image              = "prom/prometheus:v2.54.1"
@@ -344,7 +344,7 @@ YAML
       # --- Alert rules (HTTPS-only site alerts; keep 401/403 ignore) ----------
       template {
         destination     = "local/config/alert_rules.yml"
-        change_mode     = "signal"    # Hot reload with SIGHUP
+        change_mode     = "signal" # Hot reload with SIGHUP
         change_signal   = "SIGHUP"
         perms           = "0644"
         left_delimiter  = "[["
@@ -542,8 +542,8 @@ YAML
       }
 
       # Lifecycle management
-      kill_timeout = "60s"
-      kill_signal  = "SIGTERM"
+      kill_timeout   = "60s"
+      kill_signal    = "SIGTERM"
       shutdown_delay = "30s"
     }
   }
