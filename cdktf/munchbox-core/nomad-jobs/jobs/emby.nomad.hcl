@@ -120,9 +120,22 @@ job "emby" {
 
         tags = [
           "traefik.enable=true",
+
+          # Router configuration
           "traefik.http.routers.emby.rule=Host(`emby.munchbox`)",
           "traefik.http.routers.emby.entrypoints=websecure",
           "traefik.http.routers.emby.tls=true",
+
+          # Restrict to LAN (middleware defined in Traefik file provider)
+          "traefik.http.routers.emby.middlewares=dashboard-allowlan@file",
+
+          # Explicit backend port
+          "traefik.http.services.emby.loadbalancer.server.port=8096",
+
+          # Metadata tags
+          "media",
+          "emby",
+          "streaming",
         ]
 
         check {

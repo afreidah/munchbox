@@ -141,11 +141,6 @@ EOF
         ]
       }
 
-      # --- NEW: allow this task to read the Bao secret holding the Consul token -
-      vault {
-        policies = ["nomad-traefik-read"]
-      }
-
       # -----------------------------------------------------------------------
       # Static configuration
       # - Entrypoints: web (:80), websecure (:443), traefik (:8081)
@@ -198,8 +193,8 @@ EOF
 
   [providers.consulCatalog.endpoint]
     address = "127.0.0.1:8500"
-    # Token pulled from Bao/Vault (KV v2) at secret/infra/traefik
-    token   = "{{ with secret "secret/data/infra/traefik" }}{{ .Data.data.consul_catalog_token }}{{ end }}"
+    # Token for Consul ACL authentication
+    token = "04ce588b-6d3c-e44f-f231-f869514e7676"
 
 # File provider drives our routers/services (rendered below)
 [providers.file]
@@ -212,20 +207,20 @@ EOF
       }
 
       # -----------------------------------------------------------------------
-      # Dynamic configuration (routers, middlewares, services)
-      # - Switch internal routers to HTTPS (websecure) with TLS enabled.
-      # - Add HTTP->HTTPS redirect for *.munchbox.
-      # - Keep public Cloudflare-hosted router on HTTP (web) by design.
-      # - Add /ping router on HTTPS that forwards to internal /ping handler.
-      # - Add fallback dashboard router on :8081 (traefik entrypoint).
-      # - TLS options configured here in v3.x (not in static config)
+      # Dynamic configuration - MINIMAL (Consul-first approach)
+      # Only defines:
+      #   - TLS certificates
+      #   - Global middlewares (auth, IP allowlist, security headers)
+      #   - Static routes that can't use Consul (resume public, ping, dashboard)
+      # Everything else discovered via Consul Catalog Provider
       # -----------------------------------------------------------------------
       template {
         destination = "local/traefik_dynamic.toml"
-        change_mode = "restart" # Operator-managed; restart task to re-render
+        change_mode = "restart"
         data        = <<EOF
 # --------------------------------------------------------------------
-# Traefik Dynamic Config — HTTPS-first dashboards and services
+# Traefik Dynamic Config — Consul-First Approach
+# All services discovered via Consul Catalog except static routes below
 # --------------------------------------------------------------------
 
 # TLS certificate for *.munchbox (generated dynamically)
@@ -233,13 +228,19 @@ EOF
   certFile = "/alloc/data/munchbox.crt"
   keyFile  = "/alloc/data/munchbox.key"
 
+# Default TLS store certificate (covers unknown SNI / direct-IP)
+[tls.stores]
+  [tls.stores.default.defaultCertificate]
+    certFile = "/alloc/data/munchbox.crt"
+    keyFile  = "/alloc/data/munchbox.key"
+
 # TLS options (v3.x requires these in dynamic config, not static)
 [tls.options]
   [tls.options.default]
-    minVersion = "VersionTLS12"          # allow 1.2+; TLS 1.3 is auto-included
+    minVersion = "VersionTLS12"
     sniStrict  = true
     curvePreferences = ["CurveP521", "CurveP384"]
-    cipherSuites = [                      # applies to TLS 1.0–1.2 only
+    cipherSuites = [
       "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
       "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
       "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
@@ -251,18 +252,8 @@ EOF
 [http.routers]
 
 # --------------------------------------------------------------------
-# Internal dashboards (LAN only; now HTTPS)
+# Traefik dashboard fallback on :8081 (does not depend on TLS/certs)
 # --------------------------------------------------------------------
-
-# Traefik dashboard (HTTPS)
-[http.routers.traefik]
-  rule        = "Host(`traefik.munchbox`)"
-  entryPoints = ["websecure"]
-  service     = "api@internal"
-  middlewares = ["dashboard-auth", "dashboard-allowlan", "dashboard-redirect"]
-  [http.routers.traefik.tls]
-
-# Fallback dashboard on :8081 (does not depend on TLS/certs)
 [http.routers.traefik-fallback]
   rule        = "Host(`traefik.munchbox`) || PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
   entryPoints = ["traefik"]
@@ -271,21 +262,7 @@ EOF
   priority    = 2
 
 # --------------------------------------------------------------------
-# Prometheus UI on HTTPS — file router pointing to consul-catalog backend
-# (tiny shim to ensure Host(`prometheus.munchbox`) always resolves)
-# --------------------------------------------------------------------
-[http.routers.prometheus-ui]
-  rule        = "Host(`prometheus.munchbox`)"
-  entryPoints = ["websecure"]
-  service     = "prometheus-svc"
-  middlewares = ["dashboard-allowlan"]
-  [http.routers.prometheus-ui.tls]
-
-# --------------------------------------------------------------------
 # Public hostname via Cloudflare Tunnel (HTTP locally by design)
-# - cloudflared forwards resume.alexfreidah.com -> http://127.0.0.1:80
-# - This router matches that Host header and points to the same backend.
-# - Hardcoded backend (Consul discovery broken for this service)
 # --------------------------------------------------------------------
 [http.routers.resume-public]
   rule        = "Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)"
@@ -295,7 +272,7 @@ EOF
   priority    = 100
 
 # --------------------------------------------------------------------
-# Global HTTP -> HTTPS redirect for *.munchbox (keeps LAN tidy)
+# Global HTTP -> HTTPS redirect for *.munchbox
 # --------------------------------------------------------------------
 [http.routers.http-redirect]
   rule        = "HostRegexp(`{host:.+\\.munchbox}`)"
@@ -312,16 +289,17 @@ EOF
   [http.routers.ping.tls]
 
 # --------------------------------------------------------------------
-# Middlewares
+# Middlewares (shared by both file and Consul-discovered routers)
 # --------------------------------------------------------------------
 [http.middlewares]
 
-# Protect Traefik dashboard + restrict to LAN
+# Dashboard authentication
 [http.middlewares.dashboard-auth.basicAuth]
   users = ["alex:$2y$05$2pwj9TDZZ29xWxv.eUAKLeKOhm/RrbbrbNewMkzjg1aGm4Bp81yKS"]
 
+# LAN-only access (used by all internal dashboards via @file reference)
 [http.middlewares.dashboard-allowlan.ipAllowList]
-  sourceRange = ["192.168.68.0/24", "127.0.0.1/32"]  # allow local (cloudflared) too
+  sourceRange = ["192.168.68.0/24", "127.0.0.1/32"]
 
 [http.middlewares.dashboard-redirect.redirectRegex]
   regex       = "^https?://traefik\\.munchbox/?$"
@@ -332,20 +310,19 @@ EOF
 [http.middlewares.redirect-https.redirectScheme]
   scheme = "https"
 
-# Per-IP token bucket (avg 20 r/s, burst 40)
+# Resume rate limiting
 [http.middlewares.resume-ratelimit.rateLimit]
   average = 20
   burst   = 40
   [http.middlewares.resume-ratelimit.rateLimit.sourceCriterion]
     requestHeaderName = "CF-Connecting-IP"
 
-# --- COEP/COOP/CORP for cross-origin isolation on the resume host ---
+# Resume CORS headers
 [http.middlewares.resume-sec.headers.customResponseHeaders]
   Cross-Origin-Embedder-Policy = "unsafe-none"
   Cross-Origin-Opener-Policy   = "unsafe-none"
   Cross-Origin-Resource-Policy = "cross-origin"
 
-# Global cap on concurrent requests reaching the backend
 [http.middlewares.resume-inflight.inFlightReq]
   amount = 100
 
@@ -357,19 +334,13 @@ EOF
 
 # Resume security headers (HSTS, XFO, nosniff, Referrer-Policy, Permissions-Policy, CSP)
 [http.middlewares.resume-sec.headers]
-  # --- HSTS ---
   stsSeconds           = 31536000
   stsIncludeSubdomains = true
   forceSTSHeader       = true
-  # Only set true if you intend to submit to the preload list and ALL subdomains are HTTPS
   stsPreload           = false
-
-  # --- Classic hardening ---
   contentTypeNosniff       = true
   customFrameOptionsValue  = "SAMEORIGIN"
   referrerPolicy           = "no-referrer"
-
-  # --- Permissions-Policy: disable sensitive features by default ---
   permissionsPolicy = """
     geolocation=(), microphone=(), camera=(), usb=(),
     fullscreen=(self), payment=(), accelerometer=(),
@@ -377,8 +348,6 @@ EOF
     picture-in-picture=(), clipboard-read=(), clipboard-write=(),
     browsing-topics=()
   """
-
-  # --- CSP: allow inline scripts so the theme boot/toggle works; keep tight otherwise ---
   contentSecurityPolicy = """
     default-src 'self';
     base-uri 'self';
@@ -394,21 +363,16 @@ EOF
   """
 
 # --------------------------------------------------------------------
-# Services (backends)
+# Services (only for non-Consul backends)
 # --------------------------------------------------------------------
 [http.services]
 
-# Resume backend - hardcoded since Consul discovery is broken for this service
+# Resume backend - points to nginx-resume service
 [http.services.nginx-resume.loadBalancer]
   [[http.services.nginx-resume.loadBalancer.servers]]
     url = "http://192.168.68.63:8080"
 
-# Prometheus backend (host network on node "stabler")
-[http.services."prometheus-svc".loadBalancer]
-  [[http.services."prometheus-svc".loadBalancer.servers]]
-    url = "http://192.168.68.61:9090"
-
-# Health forwarder for HTTPS /ping router (fronts the internal /ping ep)
+# Health forwarder for HTTPS /ping router
 [http.services.ping-svc.loadBalancer]
   [[http.services.ping-svc.loadBalancer.servers]]
     url = "http://127.0.0.1:8081/ping"

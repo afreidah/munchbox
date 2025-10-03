@@ -11,7 +11,7 @@
 #   - Stateless service (silences/history reset on restart)
 #   - Secrets stored in Nomad variables (secure, encrypted)
 #   - Telegram notifications with HTML formatting
-#   - Traefik routing with authentication for web UI access
+#   - Traefik routing with LAN-only access for web UI
 #
 # Setup Required:
 #   nomad var put -namespace=default nomad/jobs/alertmanager \
@@ -21,7 +21,7 @@
 # Alert Flow:
 #   1. Prometheus evaluates rules and fires alerts
 #   2. Alertmanager receives alerts from Prometheus
-#   3. Groups and routes alerts according to configuration  
+#   3. Groups and routes alerts according to configuration
 #   4. Sends formatted Telegram messages
 #   5. Manages silences and inhibition rules
 # -----------------------------------------------------------------------------
@@ -36,7 +36,7 @@ job "alertmanager" {
   # Job metadata
   meta {
     version     = "0.28.1"
-    updated     = "2025-09-28"
+    updated     = "2025-10-03"
     description = "Alertmanager with Telegram notifications"
   }
 
@@ -53,7 +53,7 @@ job "alertmanager" {
     # Network configuration
     network {
       mode = "host"
-      
+
       port "web" {
         static = 9093  # Standard Alertmanager port
       }
@@ -83,12 +83,12 @@ job "alertmanager" {
         image        = "quay.io/prometheus/alertmanager:v0.28.1"
         network_mode = "host"
         ports        = ["web"]
-        
+
         # Command line arguments
         args = [
           "--config.file=/etc/alertmanager/alertmanager.yml",
           "--web.listen-address=0.0.0.0:9093",
-          "--web.external-url=https://alertmanager.munchbox/",  # External URL handled here
+          "--web.external-url=https://alertmanager.munchbox/",
           "--cluster.listen-address="  # Disable clustering for single instance
         ]
 
@@ -115,34 +115,27 @@ job "alertmanager" {
 
         tags = [
           "traefik.enable=true",
-          
+
           # Router configuration
           "traefik.http.routers.alertmanager.rule=Host(`alertmanager.munchbox`)",
-          "traefik.http.routers.alertmanager.entrypoints=web,websecure",
-          "traefik.http.routers.alertmanager.priority=100",
-          
-          # TLS configuration
-          "traefik.http.routers.alertmanager.tls=true", 
-          "traefik.http.routers.alertmanager.tls.certresolver=letsencrypt",
-          
-          # Security middleware - authentication + local network only
-          "traefik.http.routers.alertmanager.middlewares=alertmanager-auth,local-only",
-          
+          "traefik.http.routers.alertmanager.entrypoints=websecure",
+          "traefik.http.routers.alertmanager.tls=true",
+
+          # Security middleware - LAN only (defined in file provider)
+          "traefik.http.routers.alertmanager.middlewares=dashboard-allowlan@file",
+
           # Service configuration
           "traefik.http.services.alertmanager.loadbalancer.server.port=9093",
           "traefik.http.services.alertmanager.loadbalancer.server.scheme=http",
-          
+
           # Health check configuration
           "traefik.http.services.alertmanager.loadbalancer.healthcheck.path=/-/ready",
           "traefik.http.services.alertmanager.loadbalancer.healthcheck.interval=30s",
           "traefik.http.services.alertmanager.loadbalancer.healthcheck.timeout=5s",
-          
-          # Authentication middleware - same as Prometheus
-          "traefik.http.middlewares.alertmanager-auth.basicauth.users=admin:$2y$10$8eKdKzFj7n7qLVKJKlJZiOfxbVVjKVHKBrBNaJGk6gJx4v3qZsQ4G",
-          
+
           # Metadata tags
           "monitoring",
-          "alertmanager", 
+          "alertmanager",
           "notifications",
           "telegram"
         ]
@@ -181,25 +174,24 @@ job "alertmanager" {
 global:
   # Default timeout for resolving alerts
   resolve_timeout: 5m
-  # Note: external_url is handled via command line argument, not here
 
 # Alert routing configuration
 route:
   # Default receiver for all alerts
   receiver: 'telegram'
-  
+
   # Group alerts by these labels to reduce noise
   group_by: ['alertname', 'instance', 'severity']
-  
+
   # Wait time before sending grouped alerts
   group_wait: 30s
-  
+
   # Interval between sending grouped alerts
   group_interval: 5m
-  
+
   # Minimum interval before resending an alert
   repeat_interval: 2h
-  
+
   # Child routes for specific alert handling
   routes:
     # Critical alerts - send immediately with shorter repeat
@@ -208,8 +200,8 @@ route:
       receiver: 'telegram-critical'
       group_wait: 10s
       repeat_interval: 30m
-    
-    # Warning alerts - group longer to reduce noise  
+
+    # Warning alerts - group longer to reduce noise
     - matchers:
         - severity="warning"
       receiver: 'telegram-warnings'
@@ -228,14 +220,14 @@ receivers:
         send_resolved: true
         message: |
           <b>🚨 {{ .GroupLabels.alertname }}</b> {{ if eq .Status "firing" }}🔥{{ else }}✅{{ end }}
-          
+
           <b>Status:</b> {{ .Status | toUpper }}
           <b>Severity:</b> {{ .CommonLabels.severity | toUpper }}
           <b>Instance:</b> {{ .CommonLabels.instance }}
           {{- if .CommonLabels.job }}
           <b>Job:</b> {{ .CommonLabels.job }}
           {{- end }}
-          
+
           {{- range .Alerts }}
           {{- if .Annotations.summary }}
           <b>Summary:</b> {{ .Annotations.summary }}
@@ -244,11 +236,11 @@ receivers:
           <b>Description:</b> {{ .Annotations.description }}
           {{- end }}
           {{- end }}
-          
+
           {{- if .ExternalURL }}
           <a href="{{ .ExternalURL }}">🔗 View in Alertmanager</a>
           {{- end }}
-  
+
   # Critical alerts receiver - more urgent formatting
   - name: 'telegram-critical'
     telegram_configs:
@@ -258,32 +250,31 @@ receivers:
         send_resolved: true
         message: |
           🚨🚨 <b>CRITICAL ALERT</b> 🚨🚨
-          
+
           <b>{{ .GroupLabels.alertname }}</b>
           <b>Status:</b> {{ .Status | toUpper }}
           <b>Instance:</b> {{ .CommonLabels.instance }}
-          
+
           {{- range .Alerts }}
           <b>⚠️ {{ .Annotations.summary }}</b>
           {{ .Annotations.description }}
           {{- end }}
-          
+
           <a href="{{ .ExternalURL }}">🔗 RESOLVE NOW</a>
-  
+
   # Warning alerts receiver - less urgent formatting
-  - name: 'telegram-warnings' 
+  - name: 'telegram-warnings'
     telegram_configs:
       - bot_token: '[[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_bot_token ]][[ end ]]'
         chat_id: [[ with nomadVar "nomad/jobs/alertmanager" ]][[ .telegram_chat_id ]][[ end ]]
         parse_mode: 'HTML'
         send_resolved: true
-        # Note: For silent notifications, handle via Telegram Bot API or client settings
         message: |
           ⚠️ <b>{{ .GroupLabels.alertname }}</b>
-          
+
           <b>Status:</b> {{ .Status }}
           <b>Instance:</b> {{ .CommonLabels.instance }}
-          
+
           {{- range .Alerts }}
           {{ .Annotations.summary }}
           {{- end }}
@@ -291,12 +282,12 @@ receivers:
 # Inhibition rules - suppress lower severity alerts when higher ones are active
 inhibit_rules:
   # Suppress warnings when critical alerts are firing for same instance
-  - source_matchers: 
+  - source_matchers:
       - severity="critical"
     target_matchers:
       - severity=~"warning|info"
     equal: ['alertname', 'instance']
-  
+
   # Suppress node alerts when the entire node is down
   - source_matchers:
       - alertname="ServiceDown"
@@ -313,7 +304,7 @@ YAML
       # Environment variables
       env {
         TZ = "America/Los_Angeles"
-        
+
         # Alertmanager specific settings
         ALERTMANAGER_WEB_EXTERNAL_URL = "https://alertmanager.munchbox/"
         ALERTMANAGER_CLUSTER_LISTEN_ADDRESS = ""  # Disable clustering
@@ -328,7 +319,7 @@ YAML
       # Lifecycle management
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
-      
+
       # Allow time for pending notifications to be sent
       shutdown_delay = "15s"
     }

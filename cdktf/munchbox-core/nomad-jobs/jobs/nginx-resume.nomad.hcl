@@ -94,32 +94,35 @@ job "nginx-resume-hostfile" {
       }
 
       service {
-        name     = "nginx-resume"
-        port     = "http"
-        provider = "consul"
+        name = "nginx-resume"
+        port = "http"
 
-        # --- Health check probes "/" now that index is set to resume.html ---
+        tags = [
+          "traefik.enable=true",
+
+          # Router configuration - INTERNAL access only
+          "traefik.http.routers.resume-internal.rule=Host(`resume.munchbox`)",
+          "traefik.http.routers.resume-internal.entrypoints=websecure",
+          "traefik.http.routers.resume-internal.tls=true",
+
+          # Restrict to LAN (middleware defined in Traefik file provider)
+          "traefik.http.routers.resume-internal.middlewares=dashboard-allowlan@file",
+
+          # Explicit backend port
+          "traefik.http.services.nginx-resume.loadbalancer.server.port=8080",
+
+          # Metadata tags
+          "web",
+          "resume",
+          "nginx",
+        ]
+
         check {
           type     = "http"
           path     = "/"
           interval = "10s"
           timeout  = "2s"
         }
-
-        # --- Traefik (Consul Catalog) tags for routing ---
-        tags = [
-          "traefik.enable=true",
-
-          # Public route via Cloudflare Tunnel (HTTP locally)
-          "traefik.http.routers.resume-public.rule=Host(`resume.alexfreidah.com`,`www.resume.alexfreidah.com`)",
-          "traefik.http.routers.resume-public.entrypoints=web",
-          "traefik.http.routers.resume-public.priority=100",
-
-          # LAN route (HTTPS)
-          "traefik.http.routers.resume-lan.rule=Host(`resume.munchbox`)",
-          "traefik.http.routers.resume-lan.entrypoints=websecure",
-          "traefik.http.routers.resume-lan.tls=true",
-        ]
       }
     }
   }

@@ -120,15 +120,29 @@ EOH
       vault {
         policies = ["docker-registry-read"]
       }
+
       service {
         name     = "docker-registry-ui"
         provider = "consul"
         port     = "ui"
         tags = [
           "traefik.enable=true",
+
+          # Router configuration
           "traefik.http.routers.docker-registry-ui.rule=Host(`registry.munchbox`)",
           "traefik.http.routers.docker-registry-ui.entrypoints=websecure",
           "traefik.http.routers.docker-registry-ui.tls=true",
+
+          # Restrict to LAN (middleware defined in Traefik file provider)
+          "traefik.http.routers.docker-registry-ui.middlewares=dashboard-allowlan@file",
+
+          # Explicit backend port
+          "traefik.http.services.docker-registry-ui.loadbalancer.server.port=5001",
+
+          # Metadata tags
+          "docker",
+          "registry",
+          "ui",
         ]
         check {
           name                   = "http-registry-ui"

@@ -72,9 +72,22 @@ job "deluge" {
         port = "web"
         tags = [
           "traefik.enable=true",
+
+          # Router configuration
           "traefik.http.routers.deluge.rule=Host(`deluge.munchbox`)",
           "traefik.http.routers.deluge.entrypoints=websecure",
           "traefik.http.routers.deluge.tls=true",
+
+          # Restrict to LAN (middleware defined in Traefik file provider)
+          "traefik.http.routers.deluge.middlewares=dashboard-allowlan@file",
+
+          # Explicit backend port
+          "traefik.http.services.deluge.loadbalancer.server.port=8112",
+
+          # Metadata tags
+          "torrent",
+          "deluge",
+          "downloads",
         ]
         check {
           type     = "http"

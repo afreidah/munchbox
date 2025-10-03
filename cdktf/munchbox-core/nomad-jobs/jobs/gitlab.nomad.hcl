@@ -169,7 +169,7 @@ job "gitlab" {
       # Omnibus inline config (heredoc to avoid quoting issues).
       env = {
         GITLAB_OMNIBUS_CONFIG = <<-OMNI
-          external_url 'http://cabot:8080';
+          external_url 'https://gitlab.munchbox';
           gitlab_rails['gitlab_shell_ssh_port'] = 2222;
           puma['port'] = 8081
         OMNI
@@ -184,9 +184,22 @@ job "gitlab" {
 
         tags = [
           "traefik.enable=true",
+
+          # Router configuration
           "traefik.http.routers.gitlab.rule=Host(`gitlab.munchbox`)",
           "traefik.http.routers.gitlab.entrypoints=websecure",
           "traefik.http.routers.gitlab.tls=true",
+
+          # Restrict to LAN (middleware defined in Traefik file provider)
+          "traefik.http.routers.gitlab.middlewares=dashboard-allowlan@file",
+
+          # Explicit backend port
+          "traefik.http.services.gitlab.loadbalancer.server.port=8080",
+
+          # Metadata tags
+          "gitlab",
+          "git",
+          "scm",
         ]
 
         # Be lenient while GitLab boots the first time to avoid flappy restarts

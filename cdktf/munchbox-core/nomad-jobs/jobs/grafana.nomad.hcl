@@ -71,14 +71,21 @@ job "grafana" {
         provider = "consul"
         tags = [
           "traefik.enable=true",
+
           # Router: https://grafana.munchbox (TLS on :443)
           "traefik.http.routers.grafana.rule=Host(`grafana.munchbox`)",
           "traefik.http.routers.grafana.entrypoints=websecure",
           "traefik.http.routers.grafana.tls=true",
+
           # Restrict to LAN (middleware defined in Traefik file provider)
           "traefik.http.routers.grafana.middlewares=dashboard-allowlan@file",
+
           # Explicit backend port
           "traefik.http.services.grafana.loadbalancer.server.port=3000",
+
+          # Metadata tags
+          "monitoring",
+          "grafana",
         ]
 
         check {

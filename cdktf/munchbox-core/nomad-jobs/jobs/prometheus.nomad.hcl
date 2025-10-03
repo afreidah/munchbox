@@ -136,8 +136,8 @@ job "prometheus" {
           "traefik.http.routers.prometheus.entrypoints=websecure",
           "traefik.http.routers.prometheus.tls=true",
 
-          # Security middleware - authentication + IP restriction
-          "traefik.http.routers.prometheus.middlewares=prometheus-auth,dashboard-allowlan@file",
+          # Security middleware - reference file provider
+          "traefik.http.routers.prometheus.middlewares=dashboard-allowlan@file",
 
           # Explicit port for Consul discovery
           "traefik.http.services.prometheus.loadbalancer.server.port=9090",
@@ -146,9 +146,6 @@ job "prometheus" {
           "traefik.http.services.prometheus.loadbalancer.healthcheck.path=/-/ready",
           "traefik.http.services.prometheus.loadbalancer.healthcheck.interval=30s",
           "traefik.http.services.prometheus.loadbalancer.healthcheck.timeout=5s",
-
-          # Authentication middleware
-          "traefik.http.middlewares.prometheus-auth.basicauth.users=admin:$$2y$$10$$8eKdKzFj7n7qLVKJKlJZiOfxbVVjKVHKBrBNaJGk6gJx4v3qZsQ4G",
 
           # Metadata tags
           "monitoring",
