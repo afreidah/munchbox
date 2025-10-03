@@ -150,10 +150,11 @@ telemetry {
 # --------------------------------------------------------------------
 <% if node.dig('nomad','vault','enabled') %>
 vault {
-  enabled         = true
-  address         = "<%= node['nomad']['vault']['address'] %>"
-  token           = "<%= @token || '' %>"
-  tls_skip_verify = <%= node['nomad']['vault']['tls_skip_verify'] %>
+  enabled           = true
+  address           = "<%= node['nomad']['vault']['address'] %>"
+  token             = "<%= @token || '' %>"
+  tls_skip_verify   = <%= node['nomad']['vault']['tls_skip_verify'] %>
+  create_from_role  = "nomad-cluster"
 
   # Workload identity configuration for servers
   default_identity {
