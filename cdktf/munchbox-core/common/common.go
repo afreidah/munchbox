@@ -313,40 +313,60 @@ func RegisterVaultKvMount(stack cdktf.TerraformStack, id string, path string) va
 	})
 }
 
-// RegisterVaultJwtAuth configures JWT auth backend for Nomad workload identity
-func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadAddress string, nomadCaCert string) {
-	// Enable JWT auth backend
-	backend := vaultjwtauthbackend.NewJwtAuthBackend(
-		stack,
+// RegisterVaultJwtAuth configures Vault JWT auth for Nomad Workload Identity.
+// nomadAddress: e.g. "https://mccoy:4646"
+// nomadCaCert:  contents of /opt/nomad/tls/nomad-agent-ca.pem (or a path you read beforehand)
+func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadAddress, nomadCaCert string) {
+	// JWT auth backend (mount)
+	backend := vaultjwtauthbackend.NewJwtAuthBackend(stack,
 		jsii.String("jwt-auth-backend"),
 		&vaultjwtauthbackend.JwtAuthBackendConfig{
 			Path:        jsii.String("jwt-nomad"),
 			Description: jsii.String("JWT auth for Nomad workload identity"),
 			JwksUrl:     jsii.String(nomadAddress + "/.well-known/jwks.json"),
 			JwksCaPem:   jsii.String(nomadCaCert),
+			BoundIssuer: jsii.String("nomad"), // <-- add this
 			DefaultRole: jsii.String("nomad-workloads"),
 		},
 	)
 
-	// Create role for Nomad workloads
+	// Default, minimal role for workloads that don't set a role in their job
 	vaultjwtauthbackendrole.NewJwtAuthBackendRole(
 		stack,
 		jsii.String("jwt-nomad-workloads-role"),
 		&vaultjwtauthbackendrole.JwtAuthBackendRoleConfig{
 			Backend:              backend.Path(),
 			RoleName:             jsii.String("nomad-workloads"),
-			BoundAudiences:       &[]*string{jsii.String("vault.io")},
-			UserClaim:            jsii.String("/nomad_namespace"),
+			RoleType:             jsii.String("jwt"),
+			BoundAudiences:       &[]*string{jsii.String("vault.io")}, // must match Nomad default_identity.aud
+			UserClaim:            jsii.String("/nomad_job_id"),        // use JSON pointer to claim
 			UserClaimJsonPointer: jsii.Bool(true),
-			ClaimMappings: &map[string]*string{
-				"nomad_namespace": jsii.String("nomad_namespace"),
-				"nomad_job_id":    jsii.String("nomad_job_id"),
-				"nomad_task":      jsii.String("nomad_task"),
+			// No strict bound_claims here: it's truly a generic default
+			TokenType:     jsii.String("service"),
+			TokenPolicies: &[]*string{jsii.String("default")},
+			TokenPeriod:   jsii.Number(3600), // 1h
+		},
+	)
+
+	// Least-privileged role bound to the Grafana job only
+	vaultjwtauthbackendrole.NewJwtAuthBackendRole(
+		stack,
+		jsii.String("jwt-nomad-grafana-role"),
+		&vaultjwtauthbackendrole.JwtAuthBackendRoleConfig{
+			Backend:              backend.Path(),
+			RoleName:             jsii.String("nomad-grafana"),
+			RoleType:             jsii.String("jwt"),
+			BoundAudiences:       &[]*string{jsii.String("vault.io")},
+			UserClaim:            jsii.String("/nomad_job_id"),
+			UserClaimJsonPointer: jsii.Bool(true),
+			// Bind to *this* job in *this* namespace so only Grafana can use this role
+			BoundClaims: &map[string]*string{
+				"nomad_namespace": jsii.String("default"),
+				"nomad_job_id":    jsii.String("grafana"),
 			},
 			TokenType:     jsii.String("service"),
-			TokenPolicies: &[]*string{jsii.String("docker-registry-read")},
-			TokenPeriod:   jsii.Number(1800), // 30 minutes
-			RoleType:      jsii.String("jwt"),
+			TokenPolicies: &[]*string{jsii.String("default"), jsii.String("cdktf-grafana-read")},
+			TokenPeriod:   jsii.Number(3600),
 		},
 	)
 }
