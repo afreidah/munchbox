@@ -35,3 +35,5 @@ chef/cookbooks/vault/files/vault-armv6
 chef/community-cookbooks/*
 
 nomad-app
+cdktf/bin/*
+
