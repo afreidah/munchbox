@@ -175,7 +175,7 @@ job "prometheus" {
       template {
         destination     = "local/secrets/vault_token"
         change_mode     = "restart"
-        perms           = "0600"
+        perms           = "0644"
         left_delimiter  = "[["
         right_delimiter = "]]"
         data            = "[[ key \"monitoring/prometheus/vault_token\" ]]"
