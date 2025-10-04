@@ -1,6 +1,6 @@
 # -------------------------------------------------------------------------------
 # Prometheus Node Exporter — Nomad System Job
-# 
+#
 # Purpose:
 #   - Run node_exporter on every node via Nomad "system" job
 #   - Expose system metrics on port 9100 for Prometheus scraping
@@ -15,7 +15,7 @@
 #
 # Metrics Exposed:
 #   - CPU usage, load averages
-#   - Memory and swap usage  
+#   - Memory and swap usage
 #   - Disk space and I/O statistics
 #   - Network interface statistics
 #   - System uptime and boot time
@@ -26,7 +26,7 @@
 #   - Automatically starts on new nodes added to cluster
 # -------------------------------------------------------------------------------
 
-job "node-exporter-core" {
+job "node-exporter" {
   region      = "global"
   datacenters = ["pi-dc"]
   node_pool   = "all"    # Deploy to all node pools
@@ -79,17 +79,17 @@ job "node-exporter-core" {
 
         # Command arguments - configure node_exporter behavior
         args = [
-          "--path.rootfs=/host",               # Root filesystem mounted at /host
-          "--web.listen-address=0.0.0.0:9100", # Listen on all interfaces
-          "--web.telemetry-path=/metrics",     # Standard metrics endpoint path
+          "--path.rootfs=/host",
+          "--web.listen-address=0.0.0.0:9100",
+          "--web.telemetry-path=/metrics",
 
           # Enable useful collectors
-          "--collector.systemd",   # Systemd service metrics
-          "--collector.processes", # Process count metrics
+          "--collector.systemd",
+          "--collector.processes",
 
           # Disable noisy/unnecessary collectors for server environment
-          "--no-collector.wifi", # No wifi on servers
-          "--no-collector.hwmon" # Hardware monitoring can be noisy
+          "--no-collector.wifi",
+          "--no-collector.hwmon"
         ]
 
         # Volume mounts - mount host filesystem for metric collection

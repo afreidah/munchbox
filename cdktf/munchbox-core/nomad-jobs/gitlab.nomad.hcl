@@ -3,7 +3,7 @@
 #
 #  * Runs GitLab Community Edition using the official Docker image.
 #  * Persists configuration, logs, and data on the host for durability.
-#  * Exposes HTTP web UI on :8080 and SSH on :2222.
+#  * Exposes HTTP web UI on :10080 and SSH on :2222.
 #  * Registers a "gitlab" service in Consul (Traefik routes off that).
 #  * Designed for personal use, light CI, and small repositories.
 #
@@ -26,7 +26,7 @@ job "gitlab" {
   region      = "global"
   datacenters = ["pi-dc"]
   type        = "service"
-  node_pool   = "edge"
+  node_pool   = "core"
 
   # Long deployment windows so pulling the image / first boot doesn't fail the job
   update {
@@ -43,11 +43,11 @@ job "gitlab" {
   group "gitlab" {
     count = 1
 
-    # --- Placement: run only on the specified node (cabot) ---------------------
+    # --- Placement: run only on the specified node (mccoy) ---------------------
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
-      value     = "cabot"
+      value     = "mccoy"
     }
 
     volume "gitlab" {
@@ -61,12 +61,13 @@ job "gitlab" {
     # ---------------------------------------------------------------------------
     network {
       mode = "bridge"
-      port "http" { static = 8080 } # GitLab web UI (proxied by Traefik)
+      port "http" { static = 10080 } # GitLab web UI (proxied by Traefik)
       port "ssh" { static = 2222 }  # Git over SSH
     }
 
     # ---------------------------------------------------------------------------
     #  Prestart: fix host perms for bind mounts so Rails can write logs
+    #           (+ Alertmanager data ownership/“stale nflog” handling)
     # ---------------------------------------------------------------------------
     task "permfix" {
       driver = "raw_exec"
@@ -105,10 +106,18 @@ job "gitlab" {
               : > /var/log/gitlab/gitlab-rails/production.log
               : > /var/log/gitlab/gitlab-rails/application_json.log
 
+              # --- Alertmanager: ensure data dir exists and is owned by gitlab-prometheus
+              install -d -m 0755 /var/opt/gitlab/alertmanager/data
+
               chown -R gitlab-redis:gitlab-redis /var/opt/gitlab/redis
-              chown -R gitlab-prometheus:gitlab-prometheus /var/opt/gitlab/prometheus
+              chown -R gitlab-prometheus:gitlab-prometheus /var/opt/gitlab/prometheus /var/opt/gitlab/alertmanager
               chown -R gitlab-psql:gitlab-psql /var/opt/gitlab/postgresql /var/log/gitlab/postgresql
               chown -R git:git /var/opt/gitlab/gitaly /var/opt/gitlab/git-data /var/log/gitlab/gitlab-rails /var/log/gitlab
+
+              # If a stale root-owned nflog exists, move it away so Alertmanager can recreate it
+              if [ -e /var/opt/gitlab/alertmanager/data/nflog ]; then
+                mv /var/opt/gitlab/alertmanager/data/nflog /var/opt/gitlab/alertmanager/data/nflog.bak.$(date +%s) || true
+              fi
 
               # Remove SSH host keys with wrong perms; GitLab will regenerate them
               rm -f /etc/gitlab/ssh_host_*_key* 2>/dev/null || true
@@ -171,7 +180,7 @@ job "gitlab" {
         GITLAB_OMNIBUS_CONFIG = <<-OMNI
           external_url 'https://gitlab.munchbox';
           gitlab_rails['gitlab_shell_ssh_port'] = 2222;
-          puma['port'] = 8081
+          puma['port'] = 10080
         OMNI
       }
 
@@ -194,7 +203,7 @@ job "gitlab" {
           "traefik.http.routers.gitlab.middlewares=dashboard-allowlan@file",
 
           # Explicit backend port
-          "traefik.http.services.gitlab.loadbalancer.server.port=8080",
+          "traefik.http.services.gitlab.loadbalancer.server.port=10080",
 
           # Metadata tags
           "gitlab",
@@ -205,13 +214,14 @@ job "gitlab" {
         # Be lenient while GitLab boots the first time to avoid flappy restarts
         check {
           type     = "http"
-          path     = "/users/sign_in"
+          path     = "/-/readiness"
           interval = "15s"
           timeout  = "3s"
+          success_before_passing = 1
 
           check_restart {
             limit = 10
-            grace = "15m" # give rails/nginx time to come up on first boot
+            grace = "8m" # give rails/nginx time to come up on first boot
           }
         }
       }
