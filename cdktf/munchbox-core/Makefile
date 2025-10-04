@@ -13,7 +13,7 @@
 # ------------------------------------------------------------------------------
 
 # --- Variables ---
-NOMAD_FILES := $(shell find jobs -type f -name "*.nomad.hcl" -o -name "*.hcl")
+NOMAD_FILES := $(shell find nomad-jobs -type f -name "*.nomad.hcl" -o -name "*.hcl")
 
 .PHONY: all validate fmt lint checkov trivy
 
@@ -49,3 +49,12 @@ lint:
 	@for file in jobs/**/*.nomad.hcl; do \
 		nomad job validate $$file || exit 1; \
 	done
+
+build:
+	@echo "==> Building nomad-app"
+	@rm -rf cdktf.out/ nomad-app
+	@go build -o nomad-app
+
+deploy:
+	@echo "==> Deploying..."
+	@cdktf deploy

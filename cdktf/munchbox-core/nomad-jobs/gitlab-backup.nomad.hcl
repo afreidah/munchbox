@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # GitLab — Full Backup (standalone job; maintenance-mode wrapped)
 #
-# - Runs on: cabot (host running GitLab Omnibus container)
+# - Runs on: mccoy (host running GitLab Omnibus container)
 # - Schedule: daily 02:00 PT (no overlap)
 # - Backup tool: `gitlab-backup create STRATEGY=copy` (inside GitLab container)
 # - Output: /mnt/gdrive/gitlab-backups/<timestamp>/
@@ -31,7 +31,7 @@ job "gitlab-full-backup" {
   }
 
   # -----------------------------------------------------------------------------
-  # Backup group (runs on cabot)
+  # Backup group (runs on mccoy)
   # -----------------------------------------------------------------------------
   group "gitlab" {
     count = 1
@@ -39,7 +39,7 @@ job "gitlab-full-backup" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
-      value     = "cabot"
+      value     = "mccoy"
     }
 
     task "gitlab-backup" {

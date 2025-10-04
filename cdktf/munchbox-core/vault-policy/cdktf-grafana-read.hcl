@@ -1,5 +1,5 @@
-# KV v2: data + metadata + allow the trailing-slash preflight
-path "secret/data/grafana"      { capabilities = ["read"] }
-path "secret/data/grafana/*"    { capabilities = ["read"] }
-path "secret/metadata/grafana"  { capabilities = ["read"] }
-path "secret/metadata/grafana/*"{ capabilities = ["read"] }
+# KV v2: allow reads of grafana secrets and listing the prefix
+path "secret/data/grafana"       { capabilities = ["read"] }
+path "secret/data/grafana/*"     { capabilities = ["read"] }
+path "secret/metadata/grafana"   { capabilities = ["list"] }
+path "secret/metadata/grafana/*" { capabilities = ["list"] }

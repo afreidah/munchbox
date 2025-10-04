@@ -89,11 +89,11 @@ job "prometheus" {
           "--config.file=/etc/prometheus/config/prometheus.yml",
           "--storage.tsdb.path=/opt/nomad/data/prometheus-data",
           "--web.listen-address=0.0.0.0:9090",
-          "--web.enable-lifecycle",              # Enable config reload via API
-          "--web.enable-admin-api",              # Enable admin APIs
-          "--storage.tsdb.retention.time=30d",   # Keep data for 30 days
-          "--storage.tsdb.wal-compression",      # Compress WAL files
-          "--web.page-title=Munchbox Prometheus" # Custom page title
+          "--web.enable-lifecycle",
+          "--web.enable-admin-api",
+          "--storage.tsdb.retention.time=30d",
+          "--storage.tsdb.wal-compression",
+          "--web.page-title=Munchbox Prometheus"
         ]
 
         # Volume mounts
