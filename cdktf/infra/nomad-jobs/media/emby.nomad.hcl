@@ -48,7 +48,6 @@ job "emby" {
       resources {
         cpu        = 2000 # ~2 CPU shares
         memory     = 4096 # soft memory (MB)
-        memory_max = 6144 # hard cap (MB); container OOM-killed if exceeded
       }
 
       # Robust restart behavior for spikes/updates

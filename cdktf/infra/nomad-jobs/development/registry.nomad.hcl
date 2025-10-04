@@ -94,14 +94,27 @@ EOT
         }
       }
     }
+
     task "registry-ui" {
       driver = "docker"
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
       config {
         image = "joxit/docker-registry-ui:latest"
         ports = ["ui"]
       }
+
       template {
-        data        = <<EOH
+        data = <<EOH
 {{ with secret "kv/data/docker-registry" }}
 REGISTRY_PASSWORD="{{ .Data.data.password }}"
 {{ end }}
@@ -109,6 +122,7 @@ EOH
         destination = "secrets/registry.env"
         env         = true
       }
+
       env {
         REGISTRY_URL        = "http://goren:5000"
         REGISTRY_TITLE      = "Docker Registry Mirror"
@@ -116,9 +130,6 @@ EOH
         PORT                = "5001"
         REGISTRY_BASIC_AUTH = "true"
         REGISTRY_USERNAME   = "alex.freidah"
-      }
-      vault {
-        policies = ["docker-registry-read"]
       }
 
       service {

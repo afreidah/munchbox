@@ -83,7 +83,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to read Nomad CA cert: %v", err)
 	}
-	common.RegisterVaultJwtAuth(stack, "https://192.168.68.63:4646", string(nomadCaCert))
+	common.RegisterVaultJwtAuth(stack, "https://mccoy:4646", string(nomadCaCert))
 
 	app.Synth()
 }
