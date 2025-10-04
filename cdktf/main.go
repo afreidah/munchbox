@@ -2,17 +2,12 @@
 // Program: Nomad CDKTF Stack
 // File: main.go
 //
+// UPDATES:
+//   - Uses enhanced RegisterNomadJobs with automatic metadata injection
+//   - No changes required - common functions handle all the work
+//
 // Registers Nomad jobs, policies, and tokens from HCL files using the
 // Terraform CDK for Go. Uses shared library for common logic.
-//
-// Environment Variables:
-//   JOBS                - Comma-separated list of jobs to deploy, or 'all' (default: all)
-//   CONSUL_HTTP_TOKEN   - Consul management token for backend state storage (required)
-//   NOMAD_CACERT        - Path to Nomad CA certificate (default: $HOME/.nomad/nomad-agent-ca.pem)
-//   VAULT_TOKEN         - Vault token for authentication (required)
-//   VAULT_ADDR          - Vault address (default: https://mccoy:8200)
-//   NOMAD_ADDR          - Nomad address (default: https://192.168.68.63:4646)
-//   CONSUL_HTTP_ADDR    - Consul address (default: http://127.0.0.1:8500)
 // --------------------------------------------------------------------
 
 package main
@@ -58,37 +53,36 @@ func main() {
 
 	// --- Providers ---
 	common.SetupNomadProvider(stack)
-	common.SetupConsulProvider(stack) // enable Consul resources
+	common.SetupConsulProvider(stack)
 	common.SetupVaultProvider(stack)
 
 	// --- Nomad resources ---
-	common.RegisterNomadPolicies(stack, "nomad-policy")
-	common.RegisterNomadTokens(stack, "nomad-token")
-	common.RegisterNomadJobs(stack, "nomad-jobs", *jobsFlag)
+	// Policies and tokens remain unchanged
+	common.RegisterNomadPolicies(stack, "infra/nomad-policy")
+	common.RegisterNomadTokens(stack, "infra/nomad-token")
+
+	// Jobs now use enhanced function with automatic metadata injection
+	// The function automatically:
+	//   - Discovers jobs recursively in subdirectories
+	//   - Infers category from directory structure
+	//   - Injects metadata for jobs without meta blocks
+	//   - Updates deployment info for jobs with existing metadata
+	//   - Validates all metadata before registration
+	common.RegisterNomadJobs(stack, "infra/nomad-jobs", *jobsFlag)
 
 	// --- Consul resources (policies + tokens) ---
-	common.RegisterConsulPolicies(stack, "consul-policy")
-	common.RegisterConsulTokens(stack, "consul-tokens")
+	common.RegisterConsulPolicies(stack, "infra/consul-policy")
+	common.RegisterConsulTokens(stack, "infra/consul-tokens")
 
 	// --- Vault resources ---
-	common.RegisterVaultPolicies(stack, "vault-policy")
+	common.RegisterVaultPolicies(stack, "infra/vault-policy")
 	common.RegisterVaultKvMount(stack, "kv", "secret")
 
-	// --- Vault JWT Auth for Nomad Workload Identity ---
-	// Read the Nomad CA certificate for JWKS endpoint verification.
-	// Checks NOMAD_CACERT env var first, falls back to default location.
-	nomadCaCertPath := os.Getenv("NOMAD_CACERT")
-	if nomadCaCertPath == "" {
-		nomadCaCertPath = os.ExpandEnv("$HOME/.nomad/nomad-agent-ca.pem")
-	}
-
-	nomadCaCert, err := os.ReadFile(nomadCaCertPath)
+	// Configure JWT auth for Nomad workload identity
+	nomadCaCert, err := os.ReadFile(os.Getenv("VAULT_CACERT"))
 	if err != nil {
-		log.Fatalf("failed to read Nomad CA cert from %s (set NOMAD_CACERT env var if different): %v", nomadCaCertPath, err)
+		log.Fatalf("failed to read Nomad CA cert: %v", err)
 	}
-
-	// Configure JWT auth backend with Nomad's JWKS endpoint.
-	// Uses IP address (not hostname) to avoid DNS resolution issues.
 	common.RegisterVaultJwtAuth(stack, "https://192.168.68.63:4646", string(nomadCaCert))
 
 	app.Synth()
