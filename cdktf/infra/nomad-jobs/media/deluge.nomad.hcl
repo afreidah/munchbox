@@ -18,7 +18,6 @@ job "deluge" {
   group "deluge" {
     count = 1
 
-    # Ensure this job only runs on the node with the VPN (mccoy)
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
@@ -39,17 +38,26 @@ job "deluge" {
     task "deluge" {
       driver = "docker"
 
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
       config {
         image              = "goren:5000/deluge-with-vpnmark:latest"
         image_pull_timeout = "10m"
         ports              = ["web"]
-
-        readonly_rootfs = false
-        cap_add         = ["CHOWN", "FOWNER"]
-
+        readonly_rootfs    = false
+        cap_add            = ["CHOWN", "FOWNER"]
         volumes = [
           "/opt/nomad/data/deluge-data/downloads:/downloads",
-          "/mnt/gdrive/nomad_deluge_downloads:/completed"
+          "/mnt/gdrive/nomad_deluge_downloads:/completed",
+          "local/auth:/config/auth"
         ]
       }
 
@@ -67,24 +75,26 @@ job "deluge" {
         read_only   = false
       }
 
+      template {
+        data = <<EOH
+{{ with secret "kv/data/deluge" }}
+localclient:{{ .Data.data.password }}:10
+{{ end }}
+EOH
+        destination = "local/auth"
+        perms       = "0600"
+      }
+
       service {
         name = "deluge"
         port = "web"
         tags = [
           "traefik.enable=true",
-
-          # Router configuration
           "traefik.http.routers.deluge.rule=Host(`deluge.munchbox`)",
           "traefik.http.routers.deluge.entrypoints=websecure",
           "traefik.http.routers.deluge.tls=true",
-
-          # Restrict to LAN (middleware defined in Traefik file provider)
           "traefik.http.routers.deluge.middlewares=dashboard-allowlan@file",
-
-          # Explicit backend port
           "traefik.http.services.deluge.loadbalancer.server.port=8112",
-
-          # Metadata tags
           "torrent",
           "deluge",
           "downloads",

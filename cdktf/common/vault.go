@@ -152,6 +152,7 @@ func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCe
 			TokenPolicies: &[]*string{
 				jsii.String("default"),
 				jsii.String("docker-registry-read"),
+				jsii.String("cdktf-deluge-read"),
 			},
 			TokenPeriod: jsii.Number(3600),
 		},
@@ -176,9 +177,12 @@ func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCe
 				"nomad_namespace": jsii.String("nomad_namespace"),
 				"nomad_task":      jsii.String("nomad_task"),
 			},
-			TokenType:     jsii.String("service"),
-			TokenPolicies: &[]*string{jsii.String("default"), jsii.String("cdktf-grafana-read")},
-			TokenPeriod:   jsii.Number(3600),
+			TokenType: jsii.String("service"),
+			TokenPolicies: &[]*string{
+				jsii.String("default"),
+				jsii.String("cdktf-grafana-read"), // ← Keep this, don't add deluge/docker-registry
+			},
+			TokenPeriod: jsii.Number(3600),
 		},
 	)
 }
