@@ -1,21 +1,19 @@
-;name: Test Self-Hosted Runner
+name: Test Self-Hosted Runner
 
 on:
   pull_request:
-    branches: [ main, master ]
   push:
-    branches: [ main, master ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   test-runner:
     name: Test Nomad Runner
     runs-on: [self-hosted, nomad, linux]
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      
       - name: Show runner info
         run: |
           echo "=== Runner Information ==="
@@ -25,13 +23,13 @@ jobs:
           echo "CPU cores: $(nproc)"
           echo "Memory: $(free -h)"
           echo "Disk: $(df -h /)"
-
+      
       - name: Test Docker availability
         run: |
           echo "=== Docker Info ==="
           docker --version
           docker ps
-
+      
       - name: Simple build test
         run: |
           echo "=== Build Test ==="
@@ -42,6 +40,6 @@ jobs:
           docker build -t test-build .
           docker run --rm test-build
           docker rmi test-build
-
+      
       - name: Success
-        run: echo "✅ Self-hosted runner is working!"
+        run: echo "Self-hosted runner is working!"
