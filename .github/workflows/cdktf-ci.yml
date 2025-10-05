@@ -54,6 +54,12 @@ on:
       - '.github/workflows/cdktf-ci.yml'
   workflow_dispatch:                        # Allow manual triggering from GitHub UI
 
+# Cancel in-progress runs when a new run is triggered on the same ref
+# This prevents duplicate runs when pushing to a PR branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # --------------------------------------------------------------------------
   # Job: Lint & Validate
