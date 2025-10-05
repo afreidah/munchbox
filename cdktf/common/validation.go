@@ -10,7 +10,6 @@
 // Validation Rules:
 //   Required fields:
 //     - version: Must be present and non-empty
-//     - updated: Must be present in YYYY-MM-DD format
 //     - owner: Must be present and non-empty
 //     - category: Must be present and non-empty
 //     - tier: Must be present and match tier-0, tier-1, tier-2, or tier-3
@@ -34,7 +33,6 @@ import (
 //
 // Required fields:
 //   - version: Service version (e.g., "2.54.1" or "dev")
-//   - updated: Last update date (YYYY-MM-DD format)
 //   - owner: Owner identifier (e.g., "alex.freidah")
 //   - category: Service category (monitoring, infrastructure, etc.)
 //   - tier: Service tier (tier-0, tier-1, tier-2, tier-3)
@@ -49,7 +47,6 @@ func ValidateMetadata(hcl string) error {
 	// Define required metadata fields
 	required := []string{
 		"version",
-		"updated",
 		"owner",
 		"category",
 		"tier",
@@ -73,11 +70,6 @@ func ValidateMetadata(hcl string) error {
 
 	// Validate tier value if present
 	if err := validateTierValue(hcl); err != nil {
-		return err
-	}
-
-	// Validate date format if present
-	if err := validateDateFormat(hcl); err != nil {
 		return err
 	}
 
@@ -120,36 +112,6 @@ func validateTierValue(hcl string) error {
 		if !isValid {
 			return fmt.Errorf("invalid tier value: %s (must be one of: %s)",
 				tier, strings.Join(validTiers, ", "))
-		}
-	}
-
-	return nil
-}
-
-// ============================================================================
-// Date Format Validation
-// ============================================================================
-
-// validateDateFormat ensures the updated field contains a valid ISO date.
-//
-// Expected format: YYYY-MM-DD (e.g., "2025-10-03")
-//
-// Parameters:
-//   - hcl: HCL content to validate
-//
-// Returns:
-//   - error: nil if valid, error if date format is invalid
-func validateDateFormat(hcl string) error {
-	datePattern := regexp.MustCompile(`updated\s*=\s*"([^"]+)"`)
-	matches := datePattern.FindStringSubmatch(hcl)
-
-	if len(matches) > 1 {
-		date := matches[1]
-
-		// Validate YYYY-MM-DD format
-		validDatePattern := regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
-		if !validDatePattern.MatchString(date) {
-			return fmt.Errorf("invalid date format for 'updated' field: %s (expected YYYY-MM-DD)", date)
 		}
 	}
 
