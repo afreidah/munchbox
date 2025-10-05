@@ -85,5 +85,6 @@ func main() {
 	}
 	common.RegisterVaultJwtAuth(stack, "https://mccoy:4646", string(nomadCaCert))
 
+	// synth the application now
 	app.Synth()
 }

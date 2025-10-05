@@ -35,9 +35,9 @@
 #   - Trivy (for config scanning)
 #
 # Runner Environment:
-#   - Uses Debian 13 container to match production cluster environment
+#   - Uses Debian latest container to match production cluster environment
 #   - GitHub Actions doesn't provide native Debian runners, so we use
-#     a Debian container on ubuntu-latest runner
+#     a Debian container on debian-latest runner
 # ============================================================================
 
 name: CDKTF CI
@@ -61,9 +61,9 @@ jobs:
   # --------------------------------------------------------------------------
   lint-and-validate:
     name: Lint & Validate
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
     container:
-      image: debian:13
+      image: debian:latest
     defaults:
       run:
         working-directory: cdktf
@@ -137,9 +137,9 @@ jobs:
   # --------------------------------------------------------------------------
   security-scan:
     name: Security Scanning
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
     container:
-      image: debian:13
+      image: debian:latest
     defaults:
       run:
         working-directory: cdktf
@@ -177,9 +177,9 @@ jobs:
   # --------------------------------------------------------------------------
   test:
     name: Go Tests
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
     container:
-      image: debian:13
+      image: debian:latest
     defaults:
       run:
         working-directory: cdktf
@@ -212,9 +212,9 @@ jobs:
   # --------------------------------------------------------------------------
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
     container:
-      image: debian:13
+      image: debian:latest
     needs: [lint-and-validate, test]  # Only run if validation and tests pass
     defaults:
       run:
