@@ -3,6 +3,8 @@
 #
 # Single Makefile for building, validating, and deploying all infrastructure.
 # No need to change directories - everything runs from the root.
+#
+# Also used in Github Actions Pipelines
 # ------------------------------------------------------------------------------
 
 # --- Variables ---
