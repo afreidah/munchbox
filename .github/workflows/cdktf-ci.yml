@@ -86,7 +86,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y curl wget gnupg lsb-release git ca-certificates
+          apt-get install -y curl wget gnupg lsb-release git ca-certificates build-essential
 
       # Setup Go using the version specified in go.mod
       - name: Setup Go
