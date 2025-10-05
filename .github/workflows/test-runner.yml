@@ -10,12 +10,10 @@ on:
 jobs:
   test-runner:
     name: Test Nomad Runner
-    runs-on: [self-hosted, nomad, linux]
-    
+    runs-on: [self-hosted, nomad, linux]    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
       - name: Show runner info
         run: |
           echo "=== Runner Information ==="
