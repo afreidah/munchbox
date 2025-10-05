@@ -8,6 +8,7 @@
 # Triggers:
 #   - Push to any branch when cdktf/ directory changes
 #   - Pull requests that modify cdktf/ directory
+#   - Manual workflow dispatch (for testing)
 #
 # Jobs:
 #   1. lint-and-validate: Structure validation, Go linting, Nomad job validation
@@ -35,9 +36,9 @@
 #   - Trivy (for config scanning)
 #
 # Runner Environment:
-#   - Uses Debian latest container to match production cluster environment
+#   - Uses Debian 12 container to match production cluster environment
 #   - GitHub Actions doesn't provide native Debian runners, so we use
-#     a Debian container on debian-latest runner
+#     a Debian container on ubuntu-latest runner
 # ============================================================================
 
 name: CDKTF CI
@@ -51,6 +52,7 @@ on:
     paths:
       - 'cdktf/**'
       - '.github/workflows/cdktf-ci.yml'
+  workflow_dispatch:                        # Allow manual triggering from GitHub UI
 
 jobs:
   # --------------------------------------------------------------------------
@@ -61,32 +63,32 @@ jobs:
   # --------------------------------------------------------------------------
   lint-and-validate:
     name: Lint & Validate
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     container:
-      image: debian:latest
+      image: debian:12
     defaults:
       run:
         working-directory: cdktf
-    
+
     steps:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       # Install basic dependencies needed for the workflow
       # Debian containers don't come with git, curl, etc.
       - name: Install system dependencies
         run: |
           apt-get update
           apt-get install -y curl wget gnupg lsb-release git ca-certificates
-      
+
       # Setup Go using the version specified in go.mod
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: 'cdktf/go.mod'
           cache-dependency-path: 'cdktf/go.sum'  # Cache Go modules for faster builds
-      
+
       # Install HashiCorp Nomad CLI for job validation
       # Required by 'make validate' to run 'nomad job validate'
       - name: Install Nomad CLI
@@ -94,21 +96,21 @@ jobs:
           wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
           echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
           apt-get update && apt-get install -y nomad
-      
+
       # Build utility tools (validate-structure, nomad-query)
       # These are custom Go tools used for validation
       - name: Build tools
         run: make build-tools
-      
+
       # Validate that the directory structure matches expected layout
       # Uses the validate-structure tool built in previous step
       - name: Check directory structure
         run: make check-structure
-      
+
       # Run Go linter to check code quality and catch common issues
       - name: Lint Go code
         run: make lint-go
-      
+
       # Check that all code is properly formatted
       # Fails if 'make fmt' would change any files
       - name: Format check
@@ -119,12 +121,12 @@ jobs:
             git diff
             exit 1
           fi
-      
+
       # Validate all Nomad job HCL files
       # Runs 'nomad job validate' on each job definition
       - name: Validate Nomad jobs
         run: make validate
-      
+
       # Lint HCL files for style and best practices
       - name: Lint HCL files
         run: make lint
@@ -137,33 +139,33 @@ jobs:
   # --------------------------------------------------------------------------
   security-scan:
     name: Security Scanning
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     container:
-      image: debian:latest
+      image: debian:12
     defaults:
       run:
         working-directory: cdktf
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install system dependencies
         run: |
           apt-get update
           apt-get install -y curl wget git ca-certificates
-      
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: 'cdktf/go.mod'
-      
+
       # Run Semgrep for static analysis security scanning
       # continue-on-error: Security findings are informational initially
       - name: Run Semgrep security scan
         run: make semgrep
         continue-on-error: true
-      
+
       # Run Trivy for infrastructure configuration scanning
       # Checks for misconfigurations in Terraform/Nomad configs
       - name: Run Trivy config scan
@@ -177,28 +179,28 @@ jobs:
   # --------------------------------------------------------------------------
   test:
     name: Go Tests
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     container:
-      image: debian:latest
+      image: debian:12
     defaults:
       run:
         working-directory: cdktf
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install system dependencies
         run: |
           apt-get update
           apt-get install -y curl wget git ca-certificates
-      
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: 'cdktf/go.mod'
           cache-dependency-path: 'cdktf/go.sum'
-      
+
       # Run all Go tests in the cdktf directory
       - name: Run Go tests
         run: make test
@@ -212,44 +214,39 @@ jobs:
   # --------------------------------------------------------------------------
   build:
     name: Build
-    runs-on: debian-latest
+    runs-on: ubuntu-latest
     container:
-      image: debian:latest
+      image: debian:12
     needs: [lint-and-validate, test]  # Only run if validation and tests pass
     defaults:
       run:
         working-directory: cdktf
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Install system dependencies
         run: |
           apt-get update
           apt-get install -y curl wget git ca-certificates
-      
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: 'cdktf/go.mod'
           cache-dependency-path: 'cdktf/go.sum'
-      
+
       # Build all binaries (nomad-app, validate-structure, nomad-query)
       - name: Build all binaries
         run: make build-all
-      
-      # Generate Terraform JSON from CDKTF code
-      # This validates that CDKTF synthesis works correctly
-      # Note: May require credentials if it queries Nomad/Consul/Vault APIs
-      #- name: Synthesize Terraform plan
-      #  run: make synth
-      #  env:
-          # Uncomment and configure if synth needs access to live cluster:
-          # NOMAD_ADDR: ${{ secrets.NOMAD_ADDR }}
-          # CONSUL_HTTP_ADDR: ${{ secrets.CONSUL_HTTP_ADDR }}
-          # VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      
+
+      # Note: Synth step commented out for initial testing
+      # Requires live cluster access (NOMAD_ADDR, CONSUL_HTTP_ADDR, VAULT_ADDR)
+      # Run 'make synth' locally before deploying
+      # - name: Synthesize Terraform plan
+      #   run: make synth
+
       # Save compiled binaries as artifacts
       # Can be downloaded from the GitHub Actions UI or used in other workflows
       - name: Upload build artifacts
