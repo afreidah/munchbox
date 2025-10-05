@@ -1,11 +1,9 @@
-;name: Test Self-Hosted Runner
+name: Test Self-Hosted Runner
 
 on:
   pull_request:
-    branches: [ main, master ]
   push:
-    branches: [ main, master ]
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   test-runner:
@@ -44,4 +42,4 @@ jobs:
           docker rmi test-build
       
       - name: Success
-        run: echo "✅ Self-hosted runner is working!"
+        run: echo "Self-hosted runner is working!"
