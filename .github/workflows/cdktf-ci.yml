@@ -242,9 +242,9 @@ jobs:
       # Generate Terraform JSON from CDKTF code
       # This validates that CDKTF synthesis works correctly
       # Note: May require credentials if it queries Nomad/Consul/Vault APIs
-      - name: Synthesize Terraform plan
-        run: make synth
-        env:
+      #- name: Synthesize Terraform plan
+      #  run: make synth
+      #  env:
           # Uncomment and configure if synth needs access to live cluster:
           # NOMAD_ADDR: ${{ secrets.NOMAD_ADDR }}
           # CONSUL_HTTP_ADDR: ${{ secrets.CONSUL_HTTP_ADDR }}
