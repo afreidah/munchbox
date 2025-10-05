@@ -29,17 +29,44 @@ COLOR_CYAN    := \033[0;36m
 .PHONY: all build build-tools build-all synth deploy deploy-jobs plan diff \
         validate validate-jobs validate-category fmt fmt-jobs lint check-structure query \
         list-categories category-report deploy-category semgrep trivy \
-        test clean clean-all help
+        test clean clean-all help install-cdktf deps init
 
 # Default target
-all: build-all validate
+all: deps build-all validate
+
+# ------------------------------------------------------------------------------
+# Setup & Dependency Targets
+# ------------------------------------------------------------------------------
+
+# Install CDKTF CLI if not already installed
+install-cdktf:
+	@if ! command -v cdktf >/dev/null 2>&1; then \
+		echo "$(COLOR_CYAN)==> Installing CDKTF CLI...$(COLOR_RESET)"; \
+		npm install -g cdktf-cli@latest; \
+		echo "$(COLOR_GREEN)[OK]$(COLOR_RESET) CDKTF CLI installed"; \
+	else \
+		echo "$(COLOR_GREEN)[OK]$(COLOR_RESET) CDKTF CLI already installed"; \
+	fi
+
+# Fetch dependencies and CDKTF providers
+deps: install-cdktf
+	@echo "$(COLOR_CYAN)==> Tidying Go dependencies...$(COLOR_RESET)"
+	@cdktf get
+	@echo "$(COLOR_GREEN)[OK]$(COLOR_RESET) CDKTF providers fetched"
+	@echo "$(COLOR_CYAN)==> Fetching CDKTF providers...$(COLOR_RESET)"
+	@go mod tidy
+	@echo "$(COLOR_GREEN)[OK]$(COLOR_RESET) Go dependencies updated"
+
+# Initialize project (first-time setup)
+init: deps
+	@echo "$(COLOR_GREEN)[OK]$(COLOR_RESET) Project initialized and ready to build"
 
 # ------------------------------------------------------------------------------
 # Build Targets
 # ------------------------------------------------------------------------------
 
 # Build main CDKTF application
-build:
+build: deps
 	@echo "$(COLOR_CYAN)==> Building CDKTF application...$(COLOR_RESET)"
 	go build -o nomad-app .
 	@echo "$(COLOR_GREEN)[OK]$(COLOR_RESET) nomad-app built"
@@ -278,6 +305,11 @@ help:
 	@echo "  Munchbox CDKTF Infrastructure - Command Reference"
 	@echo "================================================================"
 	@echo ""
+	@echo "$(COLOR_CYAN)SETUP COMMANDS$(COLOR_RESET)"
+	@echo "  make init                     - First-time setup (install deps, fetch providers)"
+	@echo "  make install-cdktf            - Install CDKTF CLI"
+	@echo "  make deps                     - Update Go deps and fetch CDKTF providers"
+	@echo ""
 	@echo "$(COLOR_CYAN)BUILD COMMANDS$(COLOR_RESET)"
 	@echo "  make build                    - Build CDKTF application (nomad-app)"
 	@echo "  make build-tools              - Build utility tools (validate-structure, nomad-query)"
@@ -319,6 +351,9 @@ help:
 	@echo "================================================================"
 	@echo "$(COLOR_BLUE)EXAMPLES$(COLOR_RESET)"
 	@echo "================================================================"
+	@echo "  # First time setup"
+	@echo "  make init"
+	@echo ""
 	@echo "  # Full workflow"
 	@echo "  make build-all validate deploy"
 	@echo ""
