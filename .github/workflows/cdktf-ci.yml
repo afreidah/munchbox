@@ -159,7 +159,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y curl wget git ca-certificates
+          apt-get install -y curl wget git ca-certificates build-essential
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -199,7 +199,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y curl wget git ca-certificates
+          apt-get install -y curl wget git ca-certificates build-essential
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -235,7 +235,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y curl wget git ca-certificates
+          apt-get install -y curl wget git ca-certificates build-essential
 
       - name: Setup Go
         uses: actions/setup-go@v5
