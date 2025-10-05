@@ -88,3 +88,4 @@ func main() {
 	// synth the application now
 	app.Synth()
 }
+
