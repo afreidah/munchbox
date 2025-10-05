@@ -12,7 +12,6 @@
 //   Version Tracking:
 //     - version: Semantic version (e.g., "2.54.1") or "dev"
 //     - image_tag: Docker image tag
-//     - updated: Last update date in ISO format (YYYY-MM-DD)
 //
 //   Ownership:
 //     - owner: Owner name (alex.freidah for personal projects)
@@ -56,7 +55,6 @@ type StandardMetadata struct {
 	// Version tracking - identifies what version of the service is deployed
 	Version  string // Semantic version (e.g., "2.54.1") or "dev" for development
 	ImageTag string // Docker image tag, preferably
-	Updated  string // Last update date in ISO format (YYYY-MM-DD)
 
 	// Ownership - identifies who owns and maintains this job
 	Owner string // Owner name (e.g., "alex.freidah")
@@ -109,7 +107,6 @@ func GetGitMetadata() (branch string) {
 //	  # Version tracking
 //	  version     = "2.54.1"
 //	  image_tag   = "abc123f"
-//	  updated     = "2025-10-03"
 //
 //	  # Ownership
 //	  owner       = "alex.freidah"
@@ -137,7 +134,6 @@ func (m StandardMetadata) ToHCL() string {
     # Version tracking
     version     = "%s"
     image_tag   = "%s"
-    updated     = "%s"
     
     # Ownership
     owner       = "%s"
@@ -154,7 +150,7 @@ func (m StandardMetadata) ToHCL() string {
     # Deployment info (auto-populated)
     git_branch  = "%s"
   }`,
-		m.Version, m.ImageTag, m.Updated,
+		m.Version, m.ImageTag,
 		m.Owner,
 		m.Category, m.Tier, m.Environment,
 		m.Description,
@@ -173,7 +169,6 @@ func (m StandardMetadata) ToHCL() string {
 // Default values:
 //   - version: "dev"
 //   - image_tag:
-//   - updated: Current date (YYYY-MM-DD)
 //   - owner: "alex.freidah"
 //   - category: "infrastructure" (should be overridden with InferCategoryFromPath)
 //   - tier: "tier-2" (should be overridden with InferTierFromCategory)
@@ -192,7 +187,6 @@ func DefaultMetadata() StandardMetadata {
 	return StandardMetadata{
 		Version:     "dev",
 		ImageTag:    branch, // Use Git branch as default image tag
-		Updated:     time.Now().Format("2006-01-02"),
 		Owner:       "alex.freidah",
 		Category:    "infrastructure", // Default, should be overridden
 		Tier:        "tier-2",         // Default, should be overridden

@@ -153,6 +153,7 @@ func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCe
 				jsii.String("default"),
 				jsii.String("docker-registry-read"),
 				jsii.String("cdktf-deluge-read"),
+				jsii.String("cdktf-github-runner-read"),
 			},
 			TokenPeriod: jsii.Number(3600),
 		},

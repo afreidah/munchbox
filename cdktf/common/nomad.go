@@ -18,7 +18,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/aws/jsii-runtime-go"
 	"github.com/hashicorp/terraform-cdk-go/cdktf"
@@ -118,7 +117,6 @@ func findJobFiles(dir string) ([]string, error) {
 //
 // Metadata Injection (static fields only):
 //   - version: "1.0.0"
-//   - updated: Current date (YYYY-MM-DD)
 //   - owner: "alex.freidah"
 //   - category: Inferred from directory structure
 //   - tier: Inferred from category
@@ -260,7 +258,6 @@ func injectMetadata(hcl string, jobName string, category string, tier string) st
 	metaBlock := fmt.Sprintf(`  meta {
     # Version tracking
     version     = "1.0.0"
-    updated     = "%s"
 
     # Ownership
     owner       = "%s"
@@ -273,7 +270,6 @@ func injectMetadata(hcl string, jobName string, category string, tier string) st
     # Description
     description = "%s service"
   }`,
-		time.Now().Format("2006-01-02"), // Just date, not timestamp
 		owner,
 		category,
 		tier,
