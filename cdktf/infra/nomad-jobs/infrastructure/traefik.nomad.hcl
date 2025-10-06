@@ -223,7 +223,7 @@ EOH
     entryPoint             = "traefik"
     addEntryPointsLabels   = true
     addServicesLabels      = true
-# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 # ============================================================================
 # CONSUL CATALOG PROVIDER - Automatic Service Discovery
@@ -235,8 +235,9 @@ EOH
 
   [providers.consulCatalog.endpoint]
     address = "127.0.0.1:8500"
-    # Token pulled from Vault via environment variable
-    token = "{{ env "CONSUL_TOKEN" }}"
+{{ with secret "kv/data/traefik" }}
+    token = "{{ .Data.data.consul_token }}"
+{{ end }}
 
 # File provider drives our routers/services (rendered below)
 [providers.file]
