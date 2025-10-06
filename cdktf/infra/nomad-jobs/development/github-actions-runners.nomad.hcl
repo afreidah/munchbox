@@ -158,7 +158,7 @@ job "github-runner" {
       #    - repo_url: Target repository URL (or org_url for organization-wide)
       # ---------------------------------------------------------------------------
       template {
-  data = <<EOH
+        data        = <<EOH
 {{ with secret "kv/data/github/runner" }}
 # GitHub authentication token (PAT with repo + admin:org scopes)
 ACCESS_TOKEN="{{ .Data.data.token }}"

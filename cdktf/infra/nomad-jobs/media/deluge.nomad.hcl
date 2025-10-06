@@ -130,7 +130,7 @@ job "deluge" {
       # * Format: "localclient:<password>:10" (Deluge 2.x)
       # -----------------------------------------------------------------------------
       template {
-        data = <<EOH
+        data        = <<EOH
 {{ with secret "kv/data/deluge" }}
 localclient:{{ .Data.data.password }}:10
 {{ end }}
@@ -145,9 +145,9 @@ EOH
       # * Expected key: kv/data/deluge -> data.web_password
       # -----------------------------------------------------------------------------
       template {
-        env  = true
+        env         = true
         destination = "secrets/deluge.env"
-        data = <<EOENV
+        data        = <<EOENV
 {{ with secret "kv/data/deluge" -}}
 DELUGE_WEB_PASSWORD={{ .Data.data.web_password }}
 {{- end }}
