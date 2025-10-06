@@ -62,7 +62,6 @@ job "deluge" {
         volumes = [
           "/opt/nomad/data/deluge-data/downloads:/downloads",
           "/mnt/gdrive/nomad_deluge_downloads:/completed"
-          # REMOVED (auth mismatch/root cause): "local/auth:/config/auth"
         ]
 
         # -----------------------------------------------------------------------------
