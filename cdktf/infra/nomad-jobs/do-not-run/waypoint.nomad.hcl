@@ -35,7 +35,7 @@ job "waypoint" {
     network {
       mode = "bridge"
       port "grpc" { static = 9701 }
-      port "ui"   { static = 9702 }
+      port "ui" { static = 9702 }
     }
 
     # Register services in Consul using the node's host address (reachable)
@@ -70,13 +70,13 @@ job "waypoint" {
       driver = "docker"
 
       config {
-        image        = "hashicorp/waypoint:0.11.4"
-        userns_mode  = "host"  # map container root to host root (fixes bind mount perms)
-        entrypoint   = ["/bin/sh","-lc"]
+        image       = "hashicorp/waypoint:0.11.4"
+        userns_mode = "host" # map container root to host root (fixes bind mount perms)
+        entrypoint  = ["/bin/sh", "-lc"]
         args = [
           "mkdir -p /var/lib/waypoint; exec waypoint server run -accept-tos -db=/var/lib/waypoint/waypoint.db -listen-grpc=0.0.0.0:9701 -listen-http=0.0.0.0:9702"
         ]
-        ports = ["grpc","ui"]
+        ports = ["grpc", "ui"]
       }
 
       volume_mount {
@@ -121,7 +121,7 @@ job "waypoint" {
 
       config {
         image      = "hashicorp/waypoint:0.11.4"
-        entrypoint = ["/bin/sh","-lc"]
+        entrypoint = ["/bin/sh", "-lc"]
         args = [
           "test -n \"$WAYPOINT_SERVER_TOKEN\" || { echo 'WAYPOINT_SERVER_TOKEN missing'; exit 1; }; exec waypoint runner agent"
         ]
@@ -133,11 +133,11 @@ job "waypoint" {
       # Replace <CONSUL_SECRET_ID_WAYPOINT_RUNNER_KV_READ> with the SecretID
       # of your 'waypoint-runner-kv-read' Consul token created by CDKTF.
       template {
-        destination = "local/env/waypoint.env"
-        env         = true
-        change_mode = "restart"
+        destination  = "local/env/waypoint.env"
+        env          = true
+        change_mode  = "restart"
         consul_token = "<CONSUL_SECRET_ID_WAYPOINT_RUNNER_KV_READ>"
-        data        = "WAYPOINT_SERVER_TOKEN={{ keyOrDefault \"system-services/waypoint_server_token\" \"\" }}"
+        data         = "WAYPOINT_SERVER_TOKEN={{ keyOrDefault \"system-services/waypoint_server_token\" \"\" }}"
       }
 
       # Runner talks to the server via Consul service name (host-registered ports)

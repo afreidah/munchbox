@@ -46,8 +46,8 @@ job "emby" {
       # Resource profile (moderate)
       # -----------------------------
       resources {
-        cpu        = 2000 # ~2 CPU shares
-        memory     = 4096 # soft memory (MB)
+        cpu    = 2000 # ~2 CPU shares
+        memory = 4096 # soft memory (MB)
       }
 
       # Robust restart behavior for spikes/updates
