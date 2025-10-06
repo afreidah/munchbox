@@ -235,7 +235,7 @@ jobs:
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y curl wget git ca-certificates build-essential
+          apt-get install -y curl wget gnupg lsb-release git ca-certificates build-essential
 
       # Install Node.js (required for CDKTF CLI)
       - name: Install Node.js
@@ -246,6 +246,13 @@ jobs:
       # Install CDKTF CLI
       - name: Install CDKTF CLI
         run: npm install -g cdktf-cli@latest
+
+      # Install Terraform CLI (required for CDKTF synth)
+      - name: Install Terraform CLI
+        run: |
+          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
+          apt-get update && apt-get install -y terraform
 
       - name: Setup Go
         uses: actions/setup-go@v5
