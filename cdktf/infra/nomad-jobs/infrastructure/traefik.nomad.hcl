@@ -42,6 +42,22 @@ job "traefik" {
     value     = "ingress"
   }
 
+  # ---------------------------------------------------------------------------
+  # Update strategy: ensure zero-downtime deployments
+  # - Canary deployment tests new version before full rollout
+  # - Auto-promote only after health checks pass
+  # - Auto-revert on any failure
+  # ---------------------------------------------------------------------------
+  update {
+    max_parallel      = 1
+    min_healthy_time  = "30s"
+    healthy_deadline  = "5m"
+    progress_deadline = "10m"
+    auto_revert       = true
+    auto_promote      = true
+    canary            = 1
+  }
+
   group "traefik" {
 
     # -------------------------------------------------------------------------
@@ -130,6 +146,19 @@ EOF
     task "traefik" {
       driver = "docker"
 
+      # -----------------------------------------------------------------------
+      # Vault Workload Identity integration for pulling Consul token
+      # -----------------------------------------------------------------------
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
       config {
         network_mode = "host"
         image        = "traefik:v3.5.3"
@@ -139,6 +168,19 @@ EOF
           "local/traefik.toml:/etc/traefik/traefik.toml",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml"
         ]
+      }
+
+      # -----------------------------------------------------------------------
+      # Pull Consul token from Vault
+      # -----------------------------------------------------------------------
+      template {
+        destination = "secrets/consul.env"
+        env         = true
+        data        = <<EOH
+{{ with secret "kv/data/traefik" }}
+CONSUL_TOKEN={{ .Data.data.consul_token }}
+{{ end }}
+EOH
       }
 
       # -----------------------------------------------------------------------
@@ -181,7 +223,7 @@ EOF
     entryPoint             = "traefik"
     addEntryPointsLabels   = true
     addServicesLabels      = true
-# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 # ============================================================================
 # CONSUL CATALOG PROVIDER - Automatic Service Discovery
@@ -193,8 +235,8 @@ EOF
 
   [providers.consulCatalog.endpoint]
     address = "127.0.0.1:8500"
-    # Token for Consul ACL authentication
-    token = "04ce588b-6d3c-e44f-f231-f869514e7676"
+    # Token pulled from Vault via environment variable
+    token = "{{ env "CONSUL_TOKEN" }}"
 
 # File provider drives our routers/services (rendered below)
 [providers.file]
