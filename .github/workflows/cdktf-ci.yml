@@ -237,6 +237,16 @@ jobs:
           apt-get update
           apt-get install -y curl wget git ca-certificates build-essential
 
+      # Install Node.js (required for CDKTF CLI)
+      - name: Install Node.js
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y nodejs
+
+      # Install CDKTF CLI
+      - name: Install CDKTF CLI
+        run: npm install -g cdktf-cli@latest
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
