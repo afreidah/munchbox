@@ -171,14 +171,38 @@ job "prometheus" {
         }
       }
 
-      # --- Render Vault token from Consul KV into the alloc (self-contained) ---
+      # Vault integration for secrets
+      vault {
+        role     = "nomad-workloads"
+        policies = ["cdktf-prometheus-read"]
+      }
+
+      # --- Render Vault token from Vault into the alloc (self-contained) ---
       template {
         destination     = "local/secrets/vault_token"
         change_mode     = "restart"
         perms           = "0644"
         left_delimiter  = "[["
         right_delimiter = "]]"
-        data            = "[[ key \"monitoring/prometheus/vault_token\" ]]"
+        data            = <<-EOH
+[[ with secret "kv/data/prometheus" ]]
+[[ .Data.data.vault_token ]]
+[[ end ]]
+EOH
+      }
+
+      # --- Render Consul token from Vault KV ---
+      template {
+        destination     = "local/secrets/consul_token"
+        change_mode     = "restart"
+        perms           = "0644"
+        left_delimiter  = "[["
+        right_delimiter = "]]"
+        data            = <<-EOH
+[[ with secret "kv/data/prometheus" ]]
+[[ .Data.data.consul_token ]]
+[[ end ]]
+EOH
       }
 
       # --- Main Prometheus configuration --------------------------------------
@@ -267,7 +291,7 @@ scrape_configs:
     metrics_path: "/metrics"
     consul_sd_configs:
       - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.0.1:8500[[ end ]]'
-        token: '[[ key "monitoring/prometheus/consul_token" ]]'
+        token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["prometheus-node-exporter"]
         datacenter: "dc1"
     relabel_configs:
@@ -285,8 +309,9 @@ scrape_configs:
     metrics_path: "/v1/agent/metrics"
     params:
       format: ["prometheus"]
-      token: ['[[ key "monitoring/prometheus/consul_token" ]]']
     scheme: "http"
+    authorization:
+      credentials_file: "/etc/prometheus/local-secrets/consul_token"
     static_configs:
       - targets:
           - "mccoy:8500"
@@ -323,7 +348,7 @@ scrape_configs:
     scheme: "http"
     consul_sd_configs:
       - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.0.1:8500[[ end ]]'
-        token: '[[ key "monitoring/prometheus/consul_token" ]]'
+        token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["traefik"]
         datacenter: "dc1"
     relabel_configs:

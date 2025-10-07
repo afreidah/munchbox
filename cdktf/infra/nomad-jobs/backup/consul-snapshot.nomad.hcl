@@ -4,10 +4,12 @@
 # - Target node: stabler
 # - Output dir: /mnt/gdrive/consul-snapshots (mkdir -p)
 #
-# Consul KV keys expected (create these):
-#   system-snapshots/consul_http_token            # [required] Consul ACL token
-#   (optional) system-snapshots/consul_http_addr  # default http://127.0.0.1:8500
-#   (optional) system-snapshots/consul_ca_pem     # PEM string for CA when using HTTPS
+# Vault secret path: kv/data/consul-snapshot
+#   Required fields:
+#     - consul_http_token: Consul ACL token
+#   Optional fields:
+#     - consul_http_addr: Consul address (default: http://127.0.0.1:8500)
+#     - consul_ca_pem: CA certificate for HTTPS
 #
 # Requirements on target host:
 #   - raw_exec driver enabled
@@ -41,25 +43,36 @@ job "backup-consul-snapshot" {
       driver = "raw_exec"
       user   = "root" # [fs perms] write under /mnt/gdrive
 
-      # ----- Inject configuration from Consul KV into env/files -----
-      # Keys:
-      #   system-snapshots/consul_http_addr   e.g., http://127.0.0.1:8500 or https://127.0.0.1:8501
-      #   system-snapshots/consul_http_token  ACL token (required)
-      #   system-snapshots/consul_ca_pem      CA PEM (required only if HTTPS + verify)
+      # ----- Vault Workload Identity -----
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      # ----- Inject configuration from Vault into env/files -----
       template {
         destination = "local/env/consul.env"
         env         = true
         change_mode = "restart"
         data        = <<-EOT
-          CONSUL_HTTP_ADDR={{ keyOrDefault "system-snapshots/consul_http_addr" "http://127.0.0.1:8500" }}
-          CONSUL_HTTP_TOKEN={{ key "system-snapshots/consul_http_token" }}
+{{ with secret "kv/data/consul-snapshot" }}
+CONSUL_HTTP_ADDR={{ if .Data.data.consul_http_addr }}{{ .Data.data.consul_http_addr }}{{ else }}http://127.0.0.1:8500{{ end }}
+CONSUL_HTTP_TOKEN={{ .Data.data.consul_http_token }}
+{{ end }}
         EOT
       }
 
       template {
         destination = "secrets/consul-ca.pem"
         change_mode = "restart"
-        data        = "{{ keyOrDefault \"system-snapshots/consul_ca_pem\" \"\" }}"
+        data        = <<-EOT
+{{ with secret "kv/data/consul-snapshot" }}{{ if .Data.data.consul_ca_pem }}{{ .Data.data.consul_ca_pem }}{{ end }}{{ end }}
+        EOT
       }
 
       env {
