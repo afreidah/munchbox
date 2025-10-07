@@ -155,6 +155,8 @@ func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCe
 				jsii.String("cdktf-deluge-read"),
 				jsii.String("cdktf-github-runner-read"),
 				jsii.String("cdktf-traefik-nomad-read"),
+				jsii.String("cdktf-prometheus-read"),
+				jsii.String("cdktf-consul-snapshot-read"),
 			},
 			TokenPeriod: jsii.Number(3600),
 		},

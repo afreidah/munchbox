@@ -295,6 +295,24 @@ EOF
 [http.routers]
 
 # --------------------------------------------------------------------
+# Consul UI on this node (HTTPS, LAN-restricted)
+# Reason:
+#   - Consul Catalog provider has exposedByDefault=false, so the agent's
+#     own UI won't appear unless tagged. We pin a static router/service
+#     to guarantee routing to https://consul.munchbox.
+# --------------------------------------------------------------------
+[http.routers.consul]
+  rule        = "Host(`consul.munchbox`)"
+  entryPoints = ["websecure"]
+  service     = "consul-ui"
+  middlewares = ["dashboard-allowlan"]     # Reuse LAN allowlist
+  [http.routers.consul.tls]
+
+# Service: forward to local Consul UI (HTTP on 127.0.0.1:8500/ui)
+[http.services.consul-ui.loadBalancer]
+  [[http.services.consul-ui.loadBalancer.servers]]
+    url = "http://127.0.0.1:8500/ui/"
+# --------------------------------------------------------------------
 # Traefik dashboard fallback on :8081 (does not depend on TLS/certs)
 # --------------------------------------------------------------------
 [http.routers.traefik-fallback]
