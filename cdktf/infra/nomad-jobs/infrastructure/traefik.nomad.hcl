@@ -168,6 +168,14 @@ EOF
           "local/traefik.toml:/etc/traefik/traefik.toml",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml"
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "traefik"
+          }
+        }
       }
 
       # -----------------------------------------------------------------------

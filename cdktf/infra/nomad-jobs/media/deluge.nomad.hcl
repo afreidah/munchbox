@@ -104,6 +104,14 @@ job "deluge" {
           exec /init
           EOS
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "deluge"
+          }
+        }
       }
 
       env = {

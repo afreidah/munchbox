@@ -48,20 +48,32 @@ job "registry" {
         volumes = [
           "local/config/config.yml:/etc/docker/registry/config.yml"
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "docker-registry"
+          }
+        }
       }
+
       env {
         TZ = "UTC"
       }
+
       volume_mount {
         volume      = "registry-data"
         destination = "/var/lib/registry"
         read_only   = false
       }
+
       volume_mount {
         volume      = "registry-auth"
         destination = "/auth"
         read_only   = true
       }
+
       template {
         destination = "local/config/config.yml"
         change_mode = "restart"
@@ -81,10 +93,12 @@ http:
     Access-Control-Allow-Headers: ["Authorization", "Accept", "Cache-Control", "Content-Type", "Origin"]
 EOT
       }
+
       service {
         name     = "docker-mirror"
         provider = "consul"
         port     = "registry"
+
         check {
           name     = "http-registry"
           type     = "http"
@@ -155,6 +169,7 @@ EOH
           "registry",
           "ui",
         ]
+
         check {
           name                   = "http-registry-ui"
           type                   = "http"
