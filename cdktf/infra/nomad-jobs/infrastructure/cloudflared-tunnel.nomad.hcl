@@ -18,7 +18,6 @@
 # - Traefik is listening on host :80 and serves the resume routes.
 # - A DNS route for each hostname (create with `cloudflared tunnel route dns ...`).
 # TODO: automate the creation of tunnel and publish to consul, and the dns routes
-# TODO: I should set up tagging of nodes via chef or terraform
 # ------------------------------------------------------------------------------
 
 job "cloudflared-tunnel" {
@@ -58,6 +57,14 @@ job "cloudflared-tunnel" {
           "local/config.yml:/etc/cloudflared/config.yml:ro",
           "local/credentials.json:/etc/cloudflared/credentials.json:ro"
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "cloudflared-tunnel"
+          }
+        }
       }
 
       # ---- credentials.json (rendered from Consul KV) -----------------------

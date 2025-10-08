@@ -39,6 +39,14 @@ job "nginx-resume-hostfile" {
         volumes = [
           "local/default.conf:/etc/nginx/conf.d/default.conf:ro"
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "nginx-resume"
+          }
+        }
       }
 
       volume_mount {

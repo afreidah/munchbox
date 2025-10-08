@@ -124,6 +124,14 @@ CONSUL_HTTP_TOKEN={{ .Data.data.consul_http_token }}
             done
           EOS
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "consul-snapshot"
+          }
+        }
       }
 
       resources {

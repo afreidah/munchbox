@@ -88,6 +88,14 @@ job "grafana" {
         ports              = ["web"]
         image_pull_timeout = "10m"
         volumes            = ["local/grafana-provisioning:/etc/grafana/provisioning"]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "grafana"
+          }
+        }
       }
 
       volume_mount {
@@ -131,6 +139,11 @@ datasources:
     access: proxy
     url: http://127.0.0.1:9090
     isDefault: true
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki.service.consul:3100
+    isDefault: false
 YAML
       }
 
