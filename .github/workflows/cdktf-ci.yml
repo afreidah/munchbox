@@ -45,6 +45,8 @@ name: CDKTF CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'cdktf/**'                          # Any changes in the cdktf directory
       - '.github/workflows/cdktf-ci.yml'    # Changes to this workflow itself
