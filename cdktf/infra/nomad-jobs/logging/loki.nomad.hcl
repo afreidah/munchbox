@@ -42,11 +42,11 @@ job "loki" {
       mode = "host"
 
       port "http" {
-        static = 3100  # Standard Loki port
+        static = 3100 # Standard Loki port
       }
 
       port "grpc" {
-        static = 9096  # gRPC port for distributor/querier
+        static = 9096 # gRPC port for distributor/querier
       }
     }
 
@@ -261,8 +261,8 @@ YAML
 
       # Resource allocation
       resources {
-        cpu    = 500   # MHz
-        memory = 512   # MB
+        cpu    = 500 # MHz
+        memory = 512 # MB
       }
 
       # Lifecycle management
