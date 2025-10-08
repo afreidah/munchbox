@@ -26,7 +26,7 @@ job "promtail" {
       mode = "host"
 
       port "http" {
-        static = 9080  # Promtail metrics/status port
+        static = 9080 # Promtail metrics/status port
       }
     }
 
@@ -44,7 +44,7 @@ job "promtail" {
       min_healthy_time = "10s"
       healthy_deadline = "3m"
       auto_revert      = true
-      stagger          = "30s"  # Wait between node updates
+      stagger          = "30s" # Wait between node updates
     }
 
     task "promtail" {
@@ -147,14 +147,14 @@ YAML
 
       # Environment variables
       env {
-        TZ         = "America/Los_Angeles"
-        HOSTNAME   = "${node.unique.name}"
+        TZ       = "America/Los_Angeles"
+        HOSTNAME = "${node.unique.name}"
       }
 
       # Resource allocation - very lightweight
       resources {
-        cpu    = 100   # MHz
-        memory = 128   # MB
+        cpu    = 100 # MHz
+        memory = 128 # MB
       }
 
       # Lifecycle management
