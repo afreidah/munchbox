@@ -133,6 +133,45 @@ scrape_configs:
           nomad_group:
           nomad_task:
 
+    # Scrape journald from /run/log/journal (Raspbian nodes)  
+  - job_name: journal-volatile
+    journal:
+      path: /run/log/journal
+      max_age: 12h
+      labels:
+        job: systemd-journal
+        host: ${node.unique.name}
+    relabel_configs:
+      # Add node name
+      - source_labels: ['__journal__hostname']
+        target_label: 'node'
+      
+      # Add systemd unit name
+      - source_labels: ['__journal__systemd_unit']
+        target_label: 'unit'
+      
+      # Extract Nomad job info from journald tag (if present)
+      - source_labels: ['__journal_syslog_identifier']
+        regex: '(.+)'
+        target_label: 'syslog_identifier'
+      
+      # Add priority level
+      - source_labels: ['__journal_priority']
+        target_label: 'priority'
+
+    # Pipeline stages to parse Nomad logs
+    pipeline_stages:
+      # Extract Nomad allocation info from container name in journald
+      - regex:
+          expression: '(?P<nomad_job>[a-zA-Z0-9_-]+)\.(?P<nomad_group>[a-zA-Z0-9_-]+)\.(?P<nomad_task>[a-zA-Z0-9_-]+)'
+          source: syslog_identifier
+      
+      # Add extracted labels
+      - labels:
+          nomad_job:
+          nomad_group:
+          nomad_task:
+
 # Positions file to track what's been read
 positions:
   filename: /tmp/positions.yaml
