@@ -7,8 +7,8 @@
 # - Renders both the credentials and the config *via Nomad templates* into
 #   /local, and bind-mounts them into /etc/cloudflared in the container.
 # - Ingress includes BOTH:
-#       resume.alexfreidah.com
-#       www.resume.alexfreidah.com
+#       alexfreidah.com
+#       www.alexfreidah.com
 #   so either hostname works.
 #
 # Requirements
@@ -18,7 +18,6 @@
 # - Traefik is listening on host :80 and serves the resume routes.
 # - A DNS route for each hostname (create with `cloudflared tunnel route dns ...`).
 # TODO: automate the creation of tunnel and publish to consul, and the dns routes
-# TODO: I should set up tagging of nodes via chef or terraform
 # ------------------------------------------------------------------------------
 
 job "cloudflared-tunnel" {
@@ -58,6 +57,14 @@ job "cloudflared-tunnel" {
           "local/config.yml:/etc/cloudflared/config.yml:ro",
           "local/credentials.json:/etc/cloudflared/credentials.json:ro"
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "cloudflared-tunnel"
+          }
+        }
       }
 
       # ---- credentials.json (rendered from Consul KV) -----------------------
@@ -81,14 +88,14 @@ credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   # Route both hostnames to Traefik on mccoy (reachable via cluster DNS)
-  - hostname: "resume.alexfreidah.com"
+  - hostname: "alexfreidah.com"
     service: http://traefik.munchbox:80
     originRequest:
-      httpHostHeader: resume.alexfreidah.com
-  - hostname: "www.resume.alexfreidah.com"
+      httpHostHeader: alexfreidah.com
+  - hostname: "www.alexfreidah.com"
     service: http://traefik.munchbox:80
     originRequest:
-      httpHostHeader: resume.alexfreidah.com
+      httpHostHeader: alexfreidah.com
   - service: http_status:404
 
 warp-routing:

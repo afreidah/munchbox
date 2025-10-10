@@ -40,3 +40,4 @@ cdktf/bin/*
 *.swo
 *.swp
 *.nomad-github-token
+AGENTS.md

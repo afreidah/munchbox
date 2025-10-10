@@ -1,3 +1,4 @@
+// filepath: /path/to/your/file.go
 // --------------------------------------------------------------------
 // Vault provider utilities for CDKTF
 // File: common/vault.go
@@ -9,9 +10,11 @@
 //   - RegisterVaultJwtAuth(): Configure JWT auth for Nomad workloads
 // --------------------------------------------------------------------
 
+// Package common
 package common
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,13 +35,6 @@ import (
 // ============================================================================
 
 // SetupVaultProvider configures the Vault provider for Terraform CDK.
-//
-// Configuration sources:
-//  1. Environment variables (VAULT_ADDR, VAULT_TOKEN)
-//  2. Default address: https://mccoy:8200
-//
-// Parameters:
-//   - stack: CDKTF Terraform stack
 func SetupVaultProvider(stack cdktf.TerraformStack) {
 	addr := os.Getenv("VAULT_ADDR")
 	if addr == "" {
@@ -60,10 +56,6 @@ func SetupVaultProvider(stack cdktf.TerraformStack) {
 // ============================================================================
 
 // RegisterVaultPolicies registers Vault policies from HCL files.
-//
-// Parameters:
-//   - stack: CDKTF Terraform stack
-//   - dir: Directory containing policy HCL files
 func RegisterVaultPolicies(stack cdktf.TerraformStack, dir string) {
 	policyFiles, err := filepath.Glob(filepath.Join(dir, "*.hcl"))
 	if err != nil {
@@ -88,14 +80,6 @@ func RegisterVaultPolicies(stack cdktf.TerraformStack, dir string) {
 // ============================================================================
 
 // RegisterVaultKvMount creates a KV v2 secrets engine mount in Vault.
-//
-// Parameters:
-//   - stack: CDKTF Terraform stack
-//   - id: Unique identifier for the mount resource
-//   - path: Mount path in Vault
-//
-// Returns:
-//   - vaultmount.Mount: The created mount resource
 func RegisterVaultKvMount(stack cdktf.TerraformStack, id string, path string) vaultmount.Mount {
 	return vaultmount.NewMount(stack, jsii.String(id), &vaultmount.MountConfig{
 		Path: jsii.String(path),
@@ -111,15 +95,6 @@ func RegisterVaultKvMount(stack cdktf.TerraformStack, id string, path string) va
 // ============================================================================
 
 // RegisterVaultJwtAuth configures JWT authentication for Nomad workload identity.
-//
-// Creates a JWT auth backend and two roles:
-//   - nomad-workloads: Generic role for all Nomad workloads
-//   - nomad-grafana: Specific role for Grafana with additional policies
-//
-// Parameters:
-//   - stack: CDKTF Terraform stack
-//   - nomadUrl: Nomad server URL (for JWKS and issuer validation)
-//   - nomadCaCert: CA certificate for Nomad TLS verification
 func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCert string) {
 	backend := vaultjwtauthbackend.NewJwtAuthBackend(stack,
 		jsii.String("jwt-auth-backend"),
@@ -129,64 +104,66 @@ func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCe
 			JwksUrl:     jsii.String(nomadUrl + "/.well-known/jwks.json"),
 			JwksCaPem:   jsii.String(nomadCaCert),
 			BoundIssuer: jsii.String(nomadUrl),
-			DefaultRole: jsii.String("nomad-workloads"),
+			DefaultRole: jsii.String("nomad-workloads"), // This should remain as 'nomad-workloads'
 		},
 	)
 
+	policies, err := loadVaultPolicies("infra/vault-policy")
+	if err != nil {
+		log.Printf("failed to load vault policies: %v", err)
+		return
+	}
+
+	// Create the roles with the correct names
+	createJwtAuthBackendRole(stack, *backend.Path(), "nomad-workloads", nil, policies) // Correct role name for workloads
+	createJwtAuthBackendRole(stack, *backend.Path(), "nomad-grafana", &map[string]*string{
+		"nomad_namespace": jsii.String("default"),
+		"nomad_job_id":    jsii.String("grafana"),
+	}, []*string{
+		jsii.String("cdktf-grafana-read"),
+		jsii.String("default"),
+	}) // Correct role name for Grafana
+}
+
+// LoadVaultPolicies dynamically loads policies from the specified directory.
+func loadVaultPolicies(directory string) ([]*string, error) {
+	var policies []*string
+
+	files, err := ioutil.ReadDir(directory)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".hcl" {
+			policyName := strings.TrimSuffix(file.Name(), ".hcl")
+			policies = append(policies, jsii.String(policyName)) // Use original policy name
+		}
+	}
+	return policies, nil
+}
+
+// CreateJwtAuthBackendRole creates a JWT auth backend role.
+func createJwtAuthBackendRole(stack cdktf.TerraformStack, backendPath string, roleName string, boundClaims *map[string]*string, tokenPolicies []*string) {
 	vaultjwtauthbackendrole.NewJwtAuthBackendRole(
 		stack,
-		jsii.String("jwt-nomad-workloads-role"),
+		jsii.String("jwt-"+roleName+"-role"), // Use the correct name
 		&vaultjwtauthbackendrole.JwtAuthBackendRoleConfig{
-			Backend:              backend.Path(),
-			RoleName:             jsii.String("nomad-workloads"),
+			Backend:              jsii.String(backendPath),
+			RoleName:             jsii.String(roleName), // This should match existing roles
 			RoleType:             jsii.String("jwt"),
 			BoundAudiences:       &[]*string{jsii.String("vault.io")},
 			UserClaim:            jsii.String("/nomad_job_id"),
 			UserClaimJsonPointer: jsii.Bool(true),
+			BoundClaims:          boundClaims,
 			ClaimMappings: &map[string]*string{
 				"nomad_job_id":    jsii.String("nomad_job_id"),
 				"nomad_namespace": jsii.String("nomad_namespace"),
 				"nomad_task":      jsii.String("nomad_task"),
 			},
-			TokenType: jsii.String("service"),
-			TokenPolicies: &[]*string{
-				jsii.String("default"),
-				jsii.String("docker-registry-read"),
-				jsii.String("cdktf-deluge-read"),
-				jsii.String("cdktf-github-runner-read"),
-				jsii.String("cdktf-traefik-nomad-read"),
-				jsii.String("cdktf-prometheus-read"),
-				jsii.String("cdktf-consul-snapshot-read"),
-			},
-			TokenPeriod: jsii.Number(3600),
-		},
-	)
-
-	vaultjwtauthbackendrole.NewJwtAuthBackendRole(
-		stack,
-		jsii.String("jwt-nomad-grafana-role"),
-		&vaultjwtauthbackendrole.JwtAuthBackendRoleConfig{
-			Backend:              backend.Path(),
-			RoleName:             jsii.String("nomad-grafana"),
-			RoleType:             jsii.String("jwt"),
-			BoundAudiences:       &[]*string{jsii.String("vault.io")},
-			UserClaim:            jsii.String("/nomad_job_id"),
-			UserClaimJsonPointer: jsii.Bool(true),
-			BoundClaims: &map[string]*string{
-				"nomad_namespace": jsii.String("default"),
-				"nomad_job_id":    jsii.String("grafana"),
-			},
-			ClaimMappings: &map[string]*string{
-				"nomad_job_id":    jsii.String("nomad_job_id"),
-				"nomad_namespace": jsii.String("nomad_namespace"),
-				"nomad_task":      jsii.String("nomad_task"),
-			},
-			TokenType: jsii.String("service"),
-			TokenPolicies: &[]*string{
-				jsii.String("default"),
-				jsii.String("cdktf-grafana-read"), // ← Keep this, don't add deluge/docker-registry
-			},
-			TokenPeriod: jsii.Number(3600),
+			TokenType:     jsii.String("service"),
+			TokenPolicies: &tokenPolicies,
+			TokenPeriod:   jsii.Number(3600),
 		},
 	)
 }

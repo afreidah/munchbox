@@ -25,7 +25,7 @@ group :development, :test do
   gem 'cinc' # Cinc CLI: command-line interface for Cinc (Chef) tools.
 
   # --- Utilities & Ruby stdlib stuff ---
-  gem 'archive-tar-minitar'               # Tarball archiving (used by some Chef tools)
+  #gem 'archive-tar-minitar'               # Tarball archiving (used by some Chef tools)
   gem 'syslog', '~> 0.3'                  # Syslog Ruby bindings (for syslog support).
 
   # --- CI & Notifications ---
@@ -50,7 +50,6 @@ group :development, :test do
   # --- Linting & Style ---
   gem 'cookstyle'                         # Cookstyle: Ruby style and linting for Chef cookbooks.
   gem 'colorize'                          # Colored output (makes lint and test output easier to read).
-  gem 'ruby-lsp'                          # Ruby Language Server Protocol support for IDEs/editors.
   gem 'syntax_tree'                       # Syntax tree parsing for Ruby (used by Cookstyle).
 
   # --- Test Kitchen & Drivers ---

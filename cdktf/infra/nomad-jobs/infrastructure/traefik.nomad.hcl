@@ -168,6 +168,14 @@ EOF
           "local/traefik.toml:/etc/traefik/traefik.toml",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml"
         ]
+
+        # Logging configuration
+        logging {
+          type = "journald"
+          config {
+            tag = "traefik"
+          }
+        }
       }
 
       # -----------------------------------------------------------------------
@@ -312,6 +320,7 @@ EOF
 [http.services.consul-ui.loadBalancer]
   [[http.services.consul-ui.loadBalancer.servers]]
     url = "http://127.0.0.1:8500/ui/"
+
 # --------------------------------------------------------------------
 # Traefik dashboard fallback on :8081 (does not depend on TLS/certs)
 # --------------------------------------------------------------------
@@ -331,6 +340,13 @@ EOF
   service     = "nginx-resume"
   middlewares = ["redirect-resume-www", "resume-sec", "resume-ratelimit", "resume-inflight"]
   priority    = 100
+
+[http.routers.resume-apex-public]
+  rule        = "Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)"
+  entryPoints = ["web"]
+  service     = "nginx-resume"
+  middlewares = ["redirect-apex-www", "resume-sec", "resume-ratelimit", "resume-inflight"]
+  priority    = 101
 
 # --------------------------------------------------------------------
 # Global HTTP -> HTTPS redirect for *.munchbox
@@ -378,7 +394,7 @@ EOF
   [http.middlewares.resume-ratelimit.rateLimit.sourceCriterion]
     requestHeaderName = "CF-Connecting-IP"
 
-# Resume CORS headers
+# Resume CORS/security base
 [http.middlewares.resume-sec.headers.customResponseHeaders]
   Cross-Origin-Embedder-Policy = "unsafe-none"
   Cross-Origin-Opener-Policy   = "unsafe-none"
@@ -391,6 +407,11 @@ EOF
 [http.middlewares.redirect-resume-www.redirectRegex]
   regex       = "^https?://www\\.resume\\.alexfreidah\\.com/(.*)"
   replacement = "https://resume.alexfreidah.com/$1"
+  permanent   = true
+
+[http.middlewares.redirect-apex-www.redirectRegex]
+  regex       = "^https?://www\\.alexfreidah\\.com/(.*)"
+  replacement = "https://alexfreidah.com/$1"
   permanent   = true
 
 # Resume security headers (HSTS, XFO, nosniff, Referrer-Policy, Permissions-Policy, CSP)
