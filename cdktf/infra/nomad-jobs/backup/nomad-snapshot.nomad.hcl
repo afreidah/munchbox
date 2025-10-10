@@ -15,16 +15,16 @@
 #   - /mnt/gdrive/nomad-snapshots reachable (job will mkdir -p)
 # -----------------------------------------------------------------------------
 job "backup-nomad-snapshot" {
-  region      = "global"  # [scope] single region batch
-  datacenters = ["pi-dc"] # [placement] same DC as your cluster
-  type        = "batch"   # [mode] periodic batch job
-  node_pool   = "all"     # [pool] use pool with goren
+  region      = "global"
+  datacenters = ["pi-dc"]
+  type        = "batch"
+  node_pool   = "all"
 
   # ----- Schedule -----
   periodic {
-    cron             = "0 2 * * *"           # [when] daily at 02:00 PT
-    prohibit_overlap = true                  # [safety] no overlapping runs
-    time_zone        = "America/Los_Angeles" # [tz] schedule in PT
+    crons            = ["0 2 * * *"]
+    prohibit_overlap = true
+    time_zone        = "America/Los_Angeles"
   }
 
   # -----------------------------------------------------------------------------
@@ -42,7 +42,7 @@ job "backup-nomad-snapshot" {
 
     task "nomad-snapshot" {
       driver = "raw_exec"
-      user   = "root" # [fs perms] write under /mnt/gdrive
+      user   = "root"
 
       # ----- Inject TLS bits from Consul KV into env and files -----
       # Keys:
@@ -77,7 +77,7 @@ job "backup-nomad-snapshot" {
           <<-EOS
             set -euo pipefail
 
-            SNAP_DIR="/mnt/gdrive/nomad-snapshots"         # [output] destination folder
+            SNAP_DIR="/mnt/gdrive/nomad-snapshots"
             mkdir -p "$SNAP_DIR"
 
             # [tls handling] use CA if provided; else skip verify for HTTPS endpoints
