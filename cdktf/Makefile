@@ -254,8 +254,8 @@ semgrep:
 # Scan with trivy (if available)
 trivy:
 	@if command -v trivy >/dev/null 2>&1; then \
-		echo "$(COLOR_CYAN)==> Running Trivy configuration scan...$(COLOR_RESET)"; \
-		trivy config $(JOBS_DIR); \
+		echo "$(COLOR_CYAN)==> Running Trivy fs scan...$(COLOR_RESET)"; \
+		trivy fs ../.; \
 	else \
 		echo "$(COLOR_YELLOW)[WARN]$(COLOR_RESET) Trivy not installed, skipping"; \
 	fi
