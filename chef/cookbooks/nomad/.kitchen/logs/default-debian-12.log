@@ -1,3 +1,0 @@
-I, [2025-08-10T13:47:13.336207 #46575]  INFO -- default-debian-12: -----> Verifying <default-debian-12>...
-I, [2025-08-10T13:47:15.049638 #46575]  INFO -- default-debian-12: Loaded tests from {:path=>".Users.alexfreidah.tools.munchbox.chef.cookbooks.nomad.test.integration.default"} 
-I, [2025-08-10T13:47:15.355259 #46575]  INFO -- default-debian-12: Finished verifying <default-debian-12> (0m2.02s).

@@ -84,12 +84,16 @@ job "node-exporter" {
           "--web.telemetry-path=/metrics",
 
           # Enable useful collectors
-          "--collector.systemd",
           "--collector.processes",
 
           # Disable noisy/unnecessary collectors for server environment
           "--no-collector.wifi",
-          "--no-collector.hwmon"
+          "--no-collector.hwmon",
+
+          "--collector.filesystem.fs-types-exclude=^(fuse\\.sshfs|overlay|nsfs|tmpfs)$",
+          "--collector.filesystem.mount-points-exclude=^/(mnt/gdrive|var/lib/docker/.+|run/.+)($|/)",
+          "--collector.filesystem.ignored-fs-types=autofs",
+          "--no-collector.systemd"
         ]
 
         # Volume mounts - mount host filesystem for metric collection

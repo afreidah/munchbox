@@ -45,6 +45,8 @@ name: CDKTF CI
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'cdktf/**'                          # Any changes in the cdktf directory
       - '.github/workflows/cdktf-ci.yml'    # Changes to this workflow itself
@@ -69,9 +71,7 @@ jobs:
   # --------------------------------------------------------------------------
   lint-and-validate:
     name: Lint & Validate
-    runs-on: ubuntu-latest
-    container:
-      image: debian:12
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: cdktf
@@ -145,9 +145,7 @@ jobs:
   # --------------------------------------------------------------------------
   security-scan:
     name: Security Scanning
-    runs-on: ubuntu-latest
-    container:
-      image: debian:12
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: cdktf
@@ -174,7 +172,7 @@ jobs:
 
       # Run Trivy for infrastructure configuration scanning
       # Checks for misconfigurations in Terraform/Nomad configs
-      - name: Run Trivy config scan
+      - name: Run Trivy fs .
         run: make trivy
         continue-on-error: true
 
@@ -185,9 +183,7 @@ jobs:
   # --------------------------------------------------------------------------
   test:
     name: Go Tests
-    runs-on: ubuntu-latest
-    container:
-      image: debian:12
+    runs-on: self-hosted
     defaults:
       run:
         working-directory: cdktf
@@ -220,9 +216,7 @@ jobs:
   # --------------------------------------------------------------------------
   build:
     name: Build
-    runs-on: ubuntu-latest
-    container:
-      image: debian:12
+    runs-on: self-hosted
     needs: [lint-and-validate, test]  # Only run if validation and tests pass
     defaults:
       run:

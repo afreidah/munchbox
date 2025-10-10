@@ -244,19 +244,10 @@ func InferCategoryFromPath(jobPath string) string {
 
 // InferTierFromCategory maps service categories to appropriate service tiers.
 //
-// Tier definitions:
-//   - tier-0 (critical): Services whose failure causes immediate user impact
-//     (e.g., infrastructure, load balancers)
-//   - tier-1: Important services with user-facing impact
-//     (e.g., monitoring, alerting)
-//   - tier-2: Important but non-critical services
-//     (e.g., development tools, backups)
-//   - tier-3: Nice-to-have services with minimal impact if down
-//     (e.g., media servers, utility jobs)
-//
 // Category to Tier mapping:
 //
 //	monitoring     -> tier-1  (Important but not critical)
+//	logging        -> tier-1  (Important but not critical)
 //	infrastructure -> tier-0  (Critical - traefik, consul, etc.)
 //	media          -> tier-3  (Nice to have)
 //	development    -> tier-2  (Important tools)
@@ -277,6 +268,7 @@ func InferCategoryFromPath(jobPath string) string {
 func InferTierFromCategory(category string) string {
 	tierMapping := map[string]string{
 		"monitoring":     "tier-1", // Important but not critical
+		"logging":        "tier-1", // Important but not critical
 		"infrastructure": "tier-0", // Critical - traefik, consul, etc.
 		"media":          "tier-3", // Nice to have
 		"development":    "tier-2", // Important tools
