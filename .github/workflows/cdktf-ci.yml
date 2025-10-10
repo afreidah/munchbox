@@ -172,7 +172,7 @@ jobs:
 
       # Run Trivy for infrastructure configuration scanning
       # Checks for misconfigurations in Terraform/Nomad configs
-      - name: Run Trivy config scan
+      - name: Run Trivy fs .
         run: make trivy
         continue-on-error: true
 
