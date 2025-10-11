@@ -1,7 +1,7 @@
 # ============================================================================
 # Docker Build & Security Workflow (Two-Stage)
 # ============================================================================
-# Stage A (PR / non-main pushes):
+# Stage A (PRs):
 #   - checkov -> trivy -> build -> trivy-image
 #
 # Stage B (merge to main i.e., push to main):
@@ -14,17 +14,21 @@
 name: Docker Security
 
 on:
+  # Only run on pushes to main (prevents duplicates with PR runs)
   push:
-    # Run on any branch; branch logic handled via job-level "if"
-    branches:
-      - '**'
+    branches: [ main ]
     paths:
       - 'docker/**'
       - '.github/workflows/docker-ci.yml'
+
+  # Run on PRs targeting main (edits to docker/** or the workflow file)
   pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches: [ main ]
     paths:
       - 'docker/**'
       - '.github/workflows/docker-ci.yml'
+
   workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered on the same ref
@@ -34,24 +38,20 @@ concurrency:
 
 jobs:
   # --------------------------------------------------------------------------
-  # Stage A: PR / Non-main push checks (scan + build + image scan)
+  # Stage A: PR checks (scan + build + image scan)
   # --------------------------------------------------------------------------
   pr-and-branch-checks:
-    name: PR/Branch — Checkov • Trivy • Build • Trivy-Image
+    name: PR — Checkov • Trivy • Build • Trivy-Image
     runs-on: self-hosted
     timeout-minutes: 45
-    if: >
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'push' && github.ref != 'refs/heads/main')
+    if: github.event_name == 'pull_request'
 
     container:
       image: docker-mirror.service.consul/ops-build-image
-      # --------------------------------------------------------------------
       # Registry auth (commented out for now; enable when credentials exist)
       # credentials:
       #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
       #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
-      # --------------------------------------------------------------------
       options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
 
     defaults:
@@ -62,11 +62,9 @@ jobs:
       DOCKER_BUILDKIT: "1"
 
     steps:
-      # Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Traceability: show tool versions from the prebuilt image
       - name: Print tool versions
         run: |
           docker --version || true
@@ -74,7 +72,6 @@ jobs:
           trivy --version || true
           make --version || true
 
-      # Security scans (non-blocking for config scans)
       - name: Run Checkov on Dockerfiles
         run: make checkov
         continue-on-error: true
@@ -83,7 +80,6 @@ jobs:
         run: make trivy
         continue-on-error: true
 
-      # Build + image scan (blocking on CRITICAL in image)
       - name: Build Docker images
         run: make build
 
@@ -91,7 +87,6 @@ jobs:
         run: make trivy-image
         continue-on-error: false
 
-      # Artifact uploads
       - name: Upload scan results
         if: always()
         uses: actions/upload-artifact@v4
@@ -105,7 +100,6 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      # Cleanup
       - name: Clean up Docker resources
         if: always()
         run: docker system prune -f --volumes || true
@@ -121,12 +115,10 @@ jobs:
 
     container:
       image: docker-mirror.service.consul/ops-build-image
-      # --------------------------------------------------------------------
       # Registry auth for tooling image (commented out for now)
       # credentials:
       #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
       #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
-      # --------------------------------------------------------------------
       options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
 
     defaults:
@@ -135,7 +127,6 @@ jobs:
 
     env:
       DOCKER_BUILDKIT: "1"
-      # Optional: tag and publish registry variables consumed by your Makefile
       IMAGE_TAG: ${{ github.sha }}
       # DOCKER_REGISTRY: registry.internal.example.com
 
@@ -164,7 +155,6 @@ jobs:
       - name: Run Trivy build-time scan
         run: make trivy-build
 
-      # --------------------------------------------------------------------
       # Docker login for publish registry (commented out for now)
       # - name: Docker login (publish registry)
       #   if: env.DOCKER_REGISTRY != ''
@@ -173,7 +163,6 @@ jobs:
       #       docker login "${{ env.DOCKER_REGISTRY }}" \
       #         --username "${{ secrets.PUBLISH_REGISTRY_USERNAME }}" \
       #         --password-stdin
-      # --------------------------------------------------------------------
 
       - name: Push Docker images
         run: make push
