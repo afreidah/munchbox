@@ -35,7 +35,7 @@ job "node-exporter" {
   # Job metadata for tracking and management
   meta {
     version     = "1.8.2"
-    updated     = "2025-01-23"
+    updated     = "2025-10-11"
     description = "Prometheus Node Exporter - System metrics collection"
   }
 
@@ -90,10 +90,12 @@ job "node-exporter" {
           "--no-collector.wifi",
           "--no-collector.hwmon",
 
-          "--collector.filesystem.fs-types-exclude=^(fuse\\.sshfs|overlay|nsfs|tmpfs)$",
-          "--collector.filesystem.mount-points-exclude=^/(mnt/gdrive|var/lib/docker/.+|run/.+)($|/)",
-          "--collector.filesystem.ignored-fs-types=autofs",
-          "--no-collector.systemd"
+          # Filesystem collector configuration - use proper regex escaping
+          # Exclude virtual/temporary filesystems
+          "--collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs|fuse\\.sshfs|tmpfs)$",
+          
+          # Exclude specific mount points
+          "--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|run/.+|mnt/gdrive)($|/)",
         ]
 
         # Volume mounts - mount host filesystem for metric collection
