@@ -1,34 +1,42 @@
 # ============================================================================
-# Docker Build & Security Workflow (Two-Stage)
+# Docker Build & Security Workflow (Two-Stage, No Duplicates, Private Mirror)
 # ============================================================================
-# Stage A (PRs):
+# Stage A (PRs targeting main):
 #   - checkov -> trivy -> build -> trivy-image
 #
 # Stage B (merge to main i.e., push to main):
 #   - checkov -> trivy -> build -> trivy-build -> push
 #
-# Runs entirely inside your prebuilt tooling image from docker-mirror.service.consul
-# and talks to the host Docker daemon via /var/run/docker.sock.
+# Container Source:
+#   - Uses your private mirror at docker-mirror.service.consul:5000
+#   - IMPORTANT: The *host* Docker daemon on runner nodes must trust the mirror:
+#       /etc/docker/daemon.json -> { "insecure-registries": ["docker-mirror.service.consul:5000"] }
+#     Then restart Docker on those hosts.
+#
+# Duplication Avoidance:
+#   - push: only on main
+#   - pull_request: only PRs targeting main
 # ============================================================================
 
 name: Docker Security
 
 on:
-  # Only run on pushes to main (prevents duplicates with PR runs)
+  # Only on pushes to main (release path)
   push:
     branches: [ main ]
     paths:
       - 'docker/**'
       - '.github/workflows/docker-ci.yml'
 
-  # Run on PRs targeting main (edits to docker/** or the workflow file)
+  # PR validation (no duplicate runs alongside push on branches)
   pull_request:
-    types: [ opened, synchronize, reopened, ready_for_review ]
     branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
     paths:
       - 'docker/**'
       - '.github/workflows/docker-ci.yml'
 
+  # Manual trigger if needed
   workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered on the same ref
@@ -40,20 +48,24 @@ jobs:
   # --------------------------------------------------------------------------
   # Stage A: PR checks (scan + build + image scan)
   # --------------------------------------------------------------------------
-  pr-and-branch-checks:
+  pr-checks:
     name: PR — Checkov • Trivy • Build • Trivy-Image
     runs-on: self-hosted
     timeout-minutes: 45
     if: github.event_name == 'pull_request'
 
+    # Run all steps inside your prebuilt tooling image from the mirror
     container:
-      image: docker-mirror.service.consul/ops-build-image
-      # Registry auth (commented out for now; enable when credentials exist)
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
+      # --------------------------------------------------------------------
+      # Registry auth (commented for now; enable if mirror requires auth)
       # credentials:
       #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
       #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
+      # --------------------------------------------------------------------
       options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
 
+    # Default working directory for run steps
     defaults:
       run:
         working-directory: docker
@@ -62,9 +74,11 @@ jobs:
       DOCKER_BUILDKIT: "1"
 
     steps:
+      # Checkout repository
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Traceability: show tool versions packaged in the ops-build-image
       - name: Print tool versions
         run: |
           docker --version || true
@@ -72,6 +86,7 @@ jobs:
           trivy --version || true
           make --version || true
 
+      # Static/config security scans (non-blocking)
       - name: Run Checkov on Dockerfiles
         run: make checkov
         continue-on-error: true
@@ -80,13 +95,16 @@ jobs:
         run: make trivy
         continue-on-error: true
 
+      # Build images
       - name: Build Docker images
         run: make build
 
-      - name: Scan built Docker images with Trivy (fail on CRITICAL)
+      # Image vulnerability scan (blocking on CRITICAL)
+      - name: Scan built Docker images with Trivy
         run: make trivy-image
         continue-on-error: false
 
+      # Upload reports as artifacts
       - name: Upload scan results
         if: always()
         uses: actions/upload-artifact@v4
@@ -100,6 +118,7 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
+      # Cleanup to conserve disk on the runner
       - name: Clean up Docker resources
         if: always()
         run: docker system prune -f --volumes || true
@@ -114,11 +133,13 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     container:
-      image: docker-mirror.service.consul/ops-build-image
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
+      # --------------------------------------------------------------------
       # Registry auth for tooling image (commented out for now)
       # credentials:
       #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
       #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
+      # --------------------------------------------------------------------
       options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
 
     defaults:
@@ -127,7 +148,9 @@ jobs:
 
     env:
       DOCKER_BUILDKIT: "1"
+      # Optional: deterministic tag for release builds
       IMAGE_TAG: ${{ github.sha }}
+      # Optional: target registry for your Makefile push
       # DOCKER_REGISTRY: registry.internal.example.com
 
     steps:
@@ -152,6 +175,7 @@ jobs:
       - name: Build Docker images
         run: make build
 
+      # Build-time scan / SBOM or additional validation (per your Makefile)
       - name: Run Trivy build-time scan
         run: make trivy-build
 
