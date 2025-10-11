@@ -1,0 +1,31 @@
+# .pre-commit-config.yaml
+repos:
+  # Go formatting, linting, and module management
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+        files: ^cdktf/.*\.go$
+        
+      - id: go-vet
+        files: ^cdktf/.*\.go$
+        
+      - id: go-mod-tidy
+        files: ^cdktf/.*\.go$
+        # Change to cdktf directory before running
+        entry: bash -c 'cd cdktf && go mod tidy'
+        pass_filenames: false
+
+  # CDKTF synthesis
+  - repo: local
+    hooks:
+      - id: cdktf-synth
+        name: CDKTF Synth
+        # Run from cdktf directory where cdktf.json lives
+        entry: bash -c 'cd cdktf && cdktf synth'
+        language: system
+        pass_filenames: false
+        # Only run when cdktf directory files change
+        files: ^cdktf/
+        # Fail the commit if synth fails
+        verbose: true
