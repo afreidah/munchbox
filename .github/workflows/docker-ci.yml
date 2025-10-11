@@ -20,11 +20,11 @@ on:
       - '**'
     paths:
       - 'docker/**'
-      - '.github/workflows/docker-security.yml'
+      - '.github/workflows/docker-ci.yml'
   pull_request:
     paths:
       - 'docker/**'
-      - '.github/workflows/docker-security.yml'
+      - '.github/workflows/docker-ci.yml'
   workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered on the same ref
