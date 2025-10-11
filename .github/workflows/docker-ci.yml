@@ -1,193 +1,126 @@
+# ============================================================================
+# Docker Build & Security Workflow (Two-Tier, Private Mirror)
+# ============================================================================
+# Purpose:
+#   - Simple, explicit CI split:
+#       * PRs:       checkov -> trivy -> build(:latest) -> trivy-image
+#       * Merge(main): same as PR, then tag(:$GITHUB_SHA) -> push(:$GITHUB_SHA)
+#
+# Container/tooling:
+#   - Runs inside your prebuilt tooling image:
+#       docker-mirror.service.consul:5000/ops-build-image:latest
+#   - Talks to host Docker via /var/run/docker.sock.
+#
+# Registry notes:
+#   - Your mirror is HTTP on :5000. Ensure each runner host’s Docker daemon trusts it:
+#       /etc/docker/daemon.json -> { "insecure-registries": ["docker-mirror.service.consul:5000"] }
+#       sudo systemctl restart docker
+#   - Image must exist in the mirror with the exact name/tag referenced above.
+#
+# Dupes:
+#   - push triggers only on main; pull_request targets main. This avoids duplicate runs.
+# ============================================================================
+
 name: Docker Security
 
 on:
+  # Validate PRs that target main (no image push)
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-ci.yml'
+
+  # Release path: after merge to main (does tagging + push)
   push:
     branches: [ main ]
     paths:
       - 'docker/**'
       - '.github/workflows/docker-ci.yml'
-  pull_request:
-    branches: [ main ]
-    types: [ opened, synchronize, reopened, ready_for_review ]
-    paths:
-      - 'docker/**'
-      - '.github/workflows/docker-ci.yml'
+
+  # Manual trigger if needed
   workflow_dispatch:
 
+# Cancel in-progress runs when a new run is triggered on the same ref
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # --------------------------------------------------------------------------
+  # PR path: checkov • trivy • build(:latest) • trivy-image
+  # --------------------------------------------------------------------------
   pr-checks:
     name: PR — Checkov • Trivy • Build • Trivy-Image
     runs-on: self-hosted
-    timeout-minutes: 45
     if: github.event_name == 'pull_request'
+    timeout-minutes: 45
+
+    # Run steps inside your tooling image from the private mirror
+    container:
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
+      # --------------------------------------------------------------------
+      # If your mirror requires auth, uncomment and set these secrets:
+      # credentials:
+      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
+      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
+      # --------------------------------------------------------------------
+      options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
+
+    # All shell steps execute from the docker/ directory
     defaults:
       run:
         working-directory: docker
-    env:
-      DOCKER_BUILDKIT: "1"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Try mirror (with and without library/), else fall back to local image
-      - name: Resolve ops-build-image
-        id: img
-        shell: bash
-        run: |
-          set -euo pipefail
-          candidates=(
-            "docker-mirror.service.consul:5000/ops-build-image:latest"
-            "docker-mirror.service.consul:5000/library/ops-build-image:latest"
-            "ops-build-image:latest"  # preloaded locally
-          )
-          picked=""
-          for img in "${candidates[@]}"; do
-            if docker image inspect "$img" >/dev/null 2>&1; then
-              picked="$img"; break
-            fi
-            if docker pull "$img" >/dev/null 2>&1; then
-              picked="$img"; break
-            fi
-          done
-          if [[ -z "$picked" ]]; then
-            echo "ERROR: Could not pull ops-build-image from mirror (tried ${candidates[*]}), and not found locally." >&2
-            echo "Hint: tag & push it: docker tag ops-build-image:latest docker-mirror.service.consul:5000/ops-build-image:latest && docker push docker-mirror.service.consul:5000/ops-build-image:latest" >&2
-            exit 1
-          fi
-          echo "image=$picked" >> "$GITHUB_OUTPUT"
+      # Single target runs the whole PR pipeline (no push)
+      - name: Run PR pipeline
+        run: make pull_request
 
-      - name: Print tool versions
-        run: |
-          docker run --rm "${{ steps.img.outputs.image }}" bash -lc 'docker --version || true; checkov --version || true; trivy --version || true; make --version || true'
-
-      - name: Run Checkov on Dockerfiles
-        run: |
-          docker run --rm --privileged \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$PWD:/work" -w /work \
-            "${{ steps.img.outputs.image }}" \
-            bash -lc 'make checkov'
-        continue-on-error: true
-
-      - name: Run Trivy config scan on Dockerfiles
-        run: |
-          docker run --rm --privileged \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$PWD:/work" -w /work \
-            "${{ steps.img.outputs.image }}" \
-            bash -lc 'make trivy'
-        continue-on-error: true
-
-      - name: Build Docker images
-        run: |
-          docker run --rm --privileged \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$PWD:/work" -w /work \
-            "${{ steps.img.outputs.image }}" \
-            bash -lc 'make build'
-
-      - name: Scan built Docker images with Trivy
-        run: |
-          docker run --rm --privileged \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v "$PWD:/work" -w /work \
-            "${{ steps.img.outputs.image }}" \
-            bash -lc 'make trivy-image'
-
-      - name: Upload scan results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-scan-results-${{ github.run_id }}-stageA
-          path: |
-            docker/**/*checkov*.txt
-            docker/**/*checkov*.json
-            docker/**/*trivy*.txt
-            docker/**/*trivy*.json
-          retention-days: 30
-          if-no-files-found: ignore
-
-      - name: Clean up Docker resources
-        if: always()
-        run: docker system prune -f --volumes || true
-
+  # --------------------------------------------------------------------------
+  # Merge path (main): PR steps + tag(:$GITHUB_SHA) + push(:$GITHUB_SHA)
+  # --------------------------------------------------------------------------
   release-main:
-    name: Main — Checkov • Trivy • Build • Trivy-Build • Push
+    name: Merge — Checkov • Trivy • Build • Trivy-Image • Tag • Push
     runs-on: self-hosted
-    timeout-minutes: 60
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 60
+
+    container:
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
+      # --------------------------------------------------------------------
+      # If your mirror requires auth, uncomment and set these secrets:
+      # credentials:
+      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
+      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
+      # --------------------------------------------------------------------
+      options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
+
     defaults:
       run:
         working-directory: docker
+
+    # Pass the release tag (commit SHA) to Makefile's TAG variable
     env:
-      DOCKER_BUILDKIT: "1"
-      IMAGE_TAG: ${{ github.sha }}
+      TAG: ${{ github.sha }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Resolve ops-build-image
-        id: img
-        shell: bash
-        run: |
-          set -euo pipefail
-          candidates=(
-            "docker-mirror.service.consul:5000/ops-build-image:latest"
-            "docker-mirror.service.consul:5000/library/ops-build-image:latest"
-            "ops-build-image:latest"
-          )
-          picked=""
-          for img in "${candidates[@]}"; do
-            if docker image inspect "$img" >/dev/null 2>&1; then
-              picked="$img"; break
-            fi
-            if docker pull "$img" >/dev/null 2>&1; then
-              picked="$img"; break
-            fi
-          done
-          if [[ -z "$picked" ]]; then
-            echo "ERROR: Could not pull ops-build-image. Push it to the mirror or preload locally." >&2
-            exit 1
-          fi
-          echo "image=$picked" >> "$GITHUB_OUTPUT"
+      # Single target runs PR pipeline + tag + push
+      - name: Run merge pipeline
+        run: make merge
 
-      - name: Print tool versions
-        run: |
-          docker run --rm "${{ steps.img.outputs.image }}" bash -lc 'docker --version || true; checkov --version || true; trivy --version || true; make --version || true'
-
-      - name: Run Checkov on Dockerfiles
-        run: |
-          docker run --rm --privileged -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work "${{ steps.img.outputs.image }}" bash -lc 'make checkov'
-        continue-on-error: true
-
-      - name: Run Trivy config scan on Dockerfiles
-        run: |
-          docker run --rm --privileged -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work "${{ steps.img.outputs.image }}" bash -lc 'make trivy'
-        continue-on-error: true
-
-      - name: Build Docker images
-        run: |
-          docker run --rm --privileged -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work "${{ steps.img.outputs.image }}" bash -lc 'make build'
-
-      - name: Run Trivy build-time scan
-        run: |
-          docker run --rm --privileged -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work "${{ steps.img.outputs.image }}" bash -lc 'make trivy-build'
-
-      - name: Push Docker images
-        run: |
-          docker run --rm --privileged -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/work" -w /work "${{ steps.img.outputs.image }}" bash -lc 'make push'
-
+      # Optional: upload scan artifacts if your Makefile writes them under docker/**
       - name: Upload scan results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: docker-scan-results-${{ github.run_id }}-stageB
+          name: docker-scan-results-${{ github.run_id }}
           path: |
             docker/**/*checkov*.txt
             docker/**/*checkov*.json
@@ -195,8 +128,3 @@ jobs:
             docker/**/*trivy*.json
           retention-days: 30
           if-no-files-found: ignore
-
-      - name: Clean up Docker resources
-        if: always()
-        run: docker system prune -f --volumes || true
-
