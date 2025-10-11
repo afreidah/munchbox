@@ -6,17 +6,18 @@
 #   Nomad jobs, Consul/Vault policies, and related infrastructure.
 #
 # Triggers:
-#   - Push to any branch when cdktf/ directory changes
+#   - Push to main when cdktf/ directory changes
 #   - Pull requests that modify cdktf/ directory
 #   - Manual workflow dispatch (for testing)
 #
 # Jobs:
-#   1. lint-and-validate: Structure validation, Go linting, Nomad job validation
-#   2. security-scan: Semgrep and Trivy security analysis
-#   3. test: Go unit tests
-#   4. build: Full build and Terraform synthesis
+#   1. build-tooling: Build ops-build-image with all required tools
+#   2. lint-and-validate: Structure validation, Go linting, Nomad job validation
+#   3. security-scan: Semgrep and Trivy security analysis
+#   4. test: Go unit tests
+#   5. build: Full build and Terraform synthesis
 #
-# Make Targets Used:
+# Make Targets Used (from cdktf/Makefile):
 #   - build-tools: Compile validate-structure and nomad-query utilities
 #   - check-structure: Validate directory organization
 #   - lint-go: Run Go linter
@@ -27,18 +28,13 @@
 #   - trivy: Configuration scanning
 #   - test: Run Go tests
 #   - build-all: Build all binaries
-#   - synth: Generate Terraform JSON from CDKTF
 #
 # Requirements:
-#   - Go (version from go.mod)
-#   - Nomad CLI (for job validation)
-#   - Semgrep (for security scanning)
-#   - Trivy (for config scanning)
+#   - ops-build-image contains: Go, Node.js, CDKTF CLI, Terraform, Nomad,
+#     Semgrep, Trivy, and all other required tools
 #
 # Runner Environment:
-#   - Uses Debian 12 container to match production cluster environment
-#   - GitHub Actions doesn't provide native Debian runners, so we use
-#     a Debian container on ubuntu-latest runner
+#   - Uses self-hosted runner with Docker support
 # ============================================================================
 
 name: CDKTF CI
@@ -48,13 +44,15 @@ on:
     branches:
       - main
     paths:
-      - 'cdktf/**'                          # Any changes in the cdktf directory
-      - '.github/workflows/cdktf-ci.yml'    # Changes to this workflow itself
+      - 'cdktf/**'
+      - 'docker/ops-build-image/**'
+      - '.github/workflows/cdktf-ci.yml'
   pull_request:
     paths:
       - 'cdktf/**'
+      - 'docker/ops-build-image/**'
       - '.github/workflows/cdktf-ci.yml'
-  workflow_dispatch:                        # Allow manual triggering from GitHub UI
+  workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered on the same ref
 # This prevents duplicate runs when pushing to a PR branch
@@ -64,211 +62,207 @@ concurrency:
 
 jobs:
   # --------------------------------------------------------------------------
+  # Job: Build Tooling Image
+  # --------------------------------------------------------------------------
+  # Builds the ops-build-image that contains all required tools:
+  # Go, Node.js, CDKTF CLI, Terraform, Nomad CLI, Trivy, Semgrep, etc.
+  # --------------------------------------------------------------------------
+  build-tooling:
+    name: Build Tooling Image
+    runs-on: self-hosted
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install make
+        run: apt-get update && apt-get install -y make
+
+      - name: Verify Docker installation
+        run: docker --version
+
+      - name: Build ops-build-image
+        working-directory: docker
+        run: make build
+
+  # --------------------------------------------------------------------------
   # Job: Lint & Validate
   # --------------------------------------------------------------------------
   # Validates the structure, format, and syntax of all CDKTF code and Nomad
-  # job definitions. Ensures code follows standards before running tests.
+  # job definitions using the ops-build-image container.
   # --------------------------------------------------------------------------
   lint-and-validate:
     name: Lint & Validate
     runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: cdktf
+    needs: [build-tooling]
+    timeout-minutes: 15
 
     steps:
-      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install basic dependencies needed for the workflow
-      # Debian containers don't come with git, curl, etc.
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y curl wget gnupg lsb-release git ca-certificates build-essential
-
-      # Setup Go using the version specified in go.mod
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-          cache-dependency-path: 'cdktf/go.sum'  # Cache Go modules for faster builds
-
-      # Install HashiCorp Nomad CLI for job validation
-      # Required by 'make validate' to run 'nomad job validate'
-      - name: Install Nomad CLI
-        run: |
-          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-          apt-get update && apt-get install -y nomad
-
-      # Build utility tools (validate-structure, nomad-query)
-      # These are custom Go tools used for validation
+      # Build utility tools inside container
       - name: Build tools
-        run: make build-tools
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make build-tools
 
-      # Validate that the directory structure matches expected layout
-      # Uses the validate-structure tool built in previous step
+      # Validate directory structure
       - name: Check directory structure
-        run: make check-structure
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make check-structure
 
-      # Run Go linter to check code quality and catch common issues
+      # Run Go linter
       - name: Lint Go code
-        run: make lint-go
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make lint-go
 
-      # Check that all code is properly formatted
-      # Fails if 'make fmt' would change any files
+      # Check code formatting
       - name: Format check
         run: |
-          make fmt
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "❌ Files are not formatted. Please run 'make fmt'"
-            git diff
-            exit 1
-          fi
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            bash -c "make fmt && git status --porcelain"
 
-      # Validate all Nomad job HCL files
-      # Runs 'nomad job validate' on each job definition
+      # Validate all Nomad job files
       - name: Validate Nomad jobs
-        run: make validate
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make validate
 
-      # Lint HCL files for style and best practices
+      # Lint HCL files
       - name: Lint HCL files
-        run: make lint
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make lint
 
   # --------------------------------------------------------------------------
   # Job: Security Scanning
   # --------------------------------------------------------------------------
-  # Runs static analysis security tools to identify potential vulnerabilities
-  # and misconfigurations in code and infrastructure definitions.
+  # Runs static analysis security tools using the ops-build-image container.
   # --------------------------------------------------------------------------
   security-scan:
     name: Security Scanning
     runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: cdktf
+    needs: [build-tooling]
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y curl wget git ca-certificates build-essential
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-
-      # Run Semgrep for static analysis security scanning
-      # continue-on-error: Security findings are informational initially
+      # Run Semgrep security scan
       - name: Run Semgrep security scan
-        run: make semgrep
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make semgrep
         continue-on-error: true
 
-      # Run Trivy for infrastructure configuration scanning
-      # Checks for misconfigurations in Terraform/Nomad configs
-      - name: Run Trivy fs .
-        run: make trivy
+      # Run Trivy configuration scan
+      - name: Run Trivy configuration scan
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make trivy
         continue-on-error: true
 
   # --------------------------------------------------------------------------
   # Job: Go Tests
   # --------------------------------------------------------------------------
-  # Runs the Go test suite to verify application logic and utilities.
+  # Runs the Go test suite using the ops-build-image container.
   # --------------------------------------------------------------------------
   test:
     name: Go Tests
     runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: cdktf
+    needs: [build-tooling]
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y curl wget git ca-certificates build-essential
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-          cache-dependency-path: 'cdktf/go.sum'
-
-      # Run all Go tests in the cdktf directory
+      # Run all Go tests
       - name: Run Go tests
-        run: make test
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make test
 
   # --------------------------------------------------------------------------
   # Job: Build
   # --------------------------------------------------------------------------
-  # Builds all binaries and synthesizes Terraform configuration from CDKTF.
-  # Only runs if linting and tests pass. Saves build artifacts for potential
-  # use in deployment workflows.
+  # Builds all binaries using the ops-build-image container.
+  # Only runs if linting and tests pass.
   # --------------------------------------------------------------------------
   build:
     name: Build
     runs-on: self-hosted
-    needs: [lint-and-validate, test]  # Only run if validation and tests pass
-    defaults:
-      run:
-        working-directory: cdktf
+    needs: [lint-and-validate, test]
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y curl wget gnupg lsb-release git ca-certificates build-essential
-
-      # Install Node.js (required for CDKTF CLI)
-      - name: Install Node.js
-        run: |
-          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-          apt-get install -y nodejs
-
-      # Install CDKTF CLI
-      - name: Install CDKTF CLI
-        run: npm install -g cdktf-cli@latest
-
-      # Install Terraform CLI (required for CDKTF synth)
-      - name: Install Terraform CLI
-        run: |
-          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-          apt-get update && apt-get install -y terraform
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-          cache-dependency-path: 'cdktf/go.sum'
-
-      # Build all binaries (nomad-app, validate-structure, nomad-query)
+      # Build all binaries
       - name: Build all binaries
-        run: make build-all
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace/cdktf \
+            docker-mirror.service.consul/ops-build-image:latest \
+            make build-all
 
-      # Note: Synth step commented out for initial testing
+      # Note: Synth step commented out
       # Requires live cluster access (NOMAD_ADDR, CONSUL_HTTP_ADDR, VAULT_ADDR)
       # Run 'make synth' locally before deploying
       # - name: Synthesize Terraform plan
-      #   run: make synth
+      #   run: |
+      #     docker run --rm \
+      #       -v ${{ github.workspace }}:/workspace \
+      #       -w /workspace/cdktf \
+      #       -e NOMAD_ADDR=${{ secrets.NOMAD_ADDR }} \
+      #       -e CONSUL_HTTP_ADDR=${{ secrets.CONSUL_HTTP_ADDR }} \
+      #       -e VAULT_ADDR=${{ secrets.VAULT_ADDR }} \
+      #       docker-mirror.service.consul/ops-build-image:latest \
+      #       make synth
 
       # Save compiled binaries as artifacts
-      # Can be downloaded from the GitHub Actions UI or used in other workflows
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: cdktf-binaries
           path: cdktf/bin/
-          retention-days: 7  # Keep artifacts for 7 days
+          retention-days: 7
+
+      # Clean up Docker resources
+      - name: Clean up Docker resources
+        if: always()
+        run: docker system prune -f --volumes || true
