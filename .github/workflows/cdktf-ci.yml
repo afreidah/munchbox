@@ -1,60 +1,48 @@
 # ============================================================================
-# CDKTF Continuous Integration Workflow
+# Docker Build & Security Workflow
 # ============================================================================
 # Purpose:
-#   Validates, tests, and builds the CDKTF infrastructure code that manages
-#   Nomad jobs, Consul/Vault policies, and related infrastructure.
+#   Builds Docker images in the docker/ directory and performs security
+#   scanning on Dockerfiles and built images.
 #
 # Triggers:
-#   - Push to any branch when cdktf/ directory changes
-#   - Pull requests that modify cdktf/ directory
+#   - Push to main when docker/ directory changes (runs full pipeline + push)
+#   - Pull requests that modify docker/ directory (runs pipeline without push)
 #   - Manual workflow dispatch (for testing)
 #
 # Jobs:
-#   1. lint-and-validate: Structure validation, Go linting, Nomad job validation
-#   2. security-scan: Semgrep and Trivy security analysis
-#   3. test: Go unit tests
-#   4. build: Full build and Terraform synthesis
+#   1. docker-security: Scan, build, validate, and optionally push Docker images
 #
-# Make Targets Used:
-#   - build-tools: Compile validate-structure and nomad-query utilities
-#   - check-structure: Validate directory organization
-#   - lint-go: Run Go linter
-#   - fmt: Format Go and HCL files
-#   - validate: Validate all Nomad job files
-#   - lint: Lint HCL files
-#   - semgrep: Security scanning
-#   - trivy: Configuration scanning
-#   - test: Run Go tests
-#   - build-all: Build all binaries
-#   - synth: Generate Terraform JSON from CDKTF
+# Make Targets Used (from docker/Makefile):
+#   - checkov: Scan Dockerfiles with Checkov
+#   - trivy: Scan Dockerfiles with Trivy (config scan)
+#   - build: Build all Docker images
+#   - trivy-image: Scan built Docker images (depends on build)
+#   - push: Push images to registry (only on merge to main)
 #
 # Requirements:
-#   - Go (version from go.mod)
-#   - Nomad CLI (for job validation)
-#   - Semgrep (for security scanning)
-#   - Trivy (for config scanning)
+#   - Docker (for image building)
+#   - Checkov (for Dockerfile scanning)
+#   - Trivy (for Dockerfile and image scanning)
 #
 # Runner Environment:
-#   - Uses Debian 12 container to match production cluster environment
-#   - GitHub Actions doesn't provide native Debian runners, so we use
-#     a Debian container on ubuntu-latest runner
+#   - Uses self-hosted runner with Docker support
 # ============================================================================
 
-name: CDKTF CI
+name: Docker Security
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'cdktf/**'                          # Any changes in the cdktf directory
-      - '.github/workflows/cdktf-ci.yml'    # Changes to this workflow itself
+      - 'docker/**'
+      - '.github/workflows/docker-security.yml'
   pull_request:
     paths:
-      - 'cdktf/**'
-      - '.github/workflows/cdktf-ci.yml'
-  workflow_dispatch:                        # Allow manual triggering from GitHub UI
+      - 'docker/**'
+      - '.github/workflows/docker-security.yml'
+  workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered on the same ref
 # This prevents duplicate runs when pushing to a PR branch
@@ -64,211 +52,236 @@ concurrency:
 
 jobs:
   # --------------------------------------------------------------------------
-  # Job: Lint & Validate
+  # Job: Docker Security Scanning, Build & Push
   # --------------------------------------------------------------------------
-  # Validates the structure, format, and syntax of all CDKTF code and Nomad
-  # job definitions. Ensures code follows standards before running tests.
+  # Scans Dockerfiles for security issues, builds images, scans the built
+  # images for vulnerabilities, and pushes to registry on merge to main.
   # --------------------------------------------------------------------------
-  lint-and-validate:
-    name: Lint & Validate
+  docker-security:
+    name: Docker Build & Scan
     runs-on: self-hosted
+    timeout-minutes: 45
     defaults:
       run:
-        working-directory: cdktf
+        working-directory: docker
 
     steps:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Install basic dependencies needed for the workflow
-      # Debian containers don't come with git, curl, etc.
+      # Install system dependencies needed for security tools
       - name: Install system dependencies
         run: |
           apt-get update
-          apt-get install -y curl wget gnupg lsb-release git ca-certificates build-essential
+          apt-get install -y curl wget git ca-certificates python3 python3-pip make
 
-      # Setup Go using the version specified in go.mod
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-          cache-dependency-path: 'cdktf/go.sum'  # Cache Go modules for faster builds
-
-      # Install HashiCorp Nomad CLI for job validation
-      # Required by 'make validate' to run 'nomad job validate'
-      - name: Install Nomad CLI
+      # Verify Docker is available
+      # Self-hosted runners should have Docker pre-installed
+      - name: Verify Docker installation
         run: |
-          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-          apt-get update && apt-get install -y nomad
+          docker --version
+          docker info
 
-      # Build utility tools (validate-structure, nomad-query)
-      # These are custom Go tools used for validation
-      - name: Build tools
-        run: make build-tools
-
-      # Validate that the directory structure matches expected layout
-      # Uses the validate-structure tool built in previous step
-      - name: Check directory structure
-        run: make check-structure
-
-      # Run Go linter to check code quality and catch common issues
-      - name: Lint Go code
-        run: make lint-go
-
-      # Check that all code is properly formatted
-      # Fails if 'make fmt' would change any files
-      - name: Format check
+      # Install Checkov for Dockerfile security scanning
+      - name: Install Checkov
         run: |
-          make fmt
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "❌ Files are not formatted. Please run 'make fmt'"
-            git diff
-            exit 1
-          fi
+          pip3 install checkov
+          checkov --version
 
-      # Validate all Nomad job HCL files
-      # Runs 'nomad job validate' on each job definition
-      - name: Validate Nomad jobs
-        run: make validate
-
-      # Lint HCL files for style and best practices
-      - name: Lint HCL files
-        run: make lint
-
-  # --------------------------------------------------------------------------
-  # Job: Security Scanning
-  # --------------------------------------------------------------------------
-  # Runs static analysis security tools to identify potential vulnerabilities
-  # and misconfigurations in code and infrastructure definitions.
-  # --------------------------------------------------------------------------
-  security-scan:
-    name: Security Scanning
-    runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: cdktf
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
+      # Install Trivy for Dockerfile and image scanning
+      - name: Install Trivy
         run: |
-          apt-get update
-          apt-get install -y curl wget git ca-certificates build-essential
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy --version
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-
-      # Run Semgrep for static analysis security scanning
-      # continue-on-error: Security findings are informational initially
-      - name: Run Semgrep security scan
-        run: make semgrep
+      # Run Checkov security scan on all Dockerfiles
+      # Scans for misconfigurations and security issues
+      - name: Run Checkov on Dockerfiles
+        run: make checkov
         continue-on-error: true
 
-      # Run Trivy for infrastructure configuration scanning
-      # Checks for misconfigurations in Terraform/Nomad configs
-      - name: Run Trivy fs .
+      # Run Trivy config scan on all Dockerfiles
+      # Checks for vulnerabilities and misconfigurations
+      - name: Run Trivy config scan on Dockerfiles
         run: make trivy
         continue-on-error: true
 
-  # --------------------------------------------------------------------------
-  # Job: Go Tests
-  # --------------------------------------------------------------------------
-  # Runs the Go test suite to verify application logic and utilities.
-  # --------------------------------------------------------------------------
-  test:
-    name: Go Tests
-    runs-on: self-hosted
-    defaults:
-      run:
-        working-directory: cdktf
+      # Build all Docker images
+      # Builds images for all subdirectories (deluge-vpn, ops-build-image, etc.)
+      - name: Build Docker images
+        run: make build
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # Scan built Docker images with Trivy
+      # Checks for OS vulnerabilities, package vulnerabilities, and CVEs
+      # Fails on CRITICAL severity findings
+      - name: Scan Docker images with Trivy
+        run: make trivy-image
+        continue-on-error: false
 
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y curl wget git ca-certificates build-essential
+      # Push images to registry (only on merge to main, not on PRs)
+      # This step is skipped for pull requests
+      - name: Push Docker images to registry
+        if: github.event_name == 'push'
+        run: make push
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-          cache-dependency-path: 'cdktf/go.sum'
-
-      # Run all Go tests in the cdktf directory
-      - name: Run Go tests
-        run: make test
-
-  # --------------------------------------------------------------------------
-  # Job: Build
-  # --------------------------------------------------------------------------
-  # Builds all binaries and synthesizes Terraform configuration from CDKTF.
-  # Only runs if linting and tests pass. Saves build artifacts for potential
-  # use in deployment workflows.
-  # --------------------------------------------------------------------------
-  build:
-    name: Build
-    runs-on: self-hosted
-    needs: [lint-and-validate, test]  # Only run if validation and tests pass
-    defaults:
-      run:
-        working-directory: cdktf
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          apt-get update
-          apt-get install -y curl wget gnupg lsb-release git ca-certificates build-essential
-
-      # Install Node.js (required for CDKTF CLI)
-      - name: Install Node.js
-        run: |
-          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-          apt-get install -y nodejs
-
-      # Install CDKTF CLI
-      - name: Install CDKTF CLI
-        run: npm install -g cdktf-cli@latest
-
-      # Install Terraform CLI (required for CDKTF synth)
-      - name: Install Terraform CLI
-        run: |
-          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-          apt-get update && apt-get install -y terraform
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'cdktf/go.mod'
-          cache-dependency-path: 'cdktf/go.sum'
-
-      # Build all binaries (nomad-app, validate-structure, nomad-query)
-      - name: Build all binaries
-        run: make build-all
-
-      # Note: Synth step commented out for initial testing
-      # Requires live cluster access (NOMAD_ADDR, CONSUL_HTTP_ADDR, VAULT_ADDR)
-      # Run 'make synth' locally before deploying
-      # - name: Synthesize Terraform plan
-      #   run: make synth
-
-      # Save compiled binaries as artifacts
-      # Can be downloaded from the GitHub Actions UI or used in other workflows
-      - name: Upload build artifacts
+      # Upload scan results as artifacts
+      - name: Upload scan results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cdktf-binaries
-          path: cdktf/bin/
-          retention-days: 7  # Keep artifacts for 7 days
+          name: docker-scan-results
+          path: |
+            docker/**/*checkov*.txt
+            docker/**/*checkov*.json
+            docker/**/*trivy*.txt
+            docker/**/*trivy*.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # Clean up Docker resources to save disk space on self-hosted runner
+      # Removes dangling images and build cache
+      - name: Clean up Docker resources
+        if: always()
+        run: |
+          docker system prune -f --volumes || true
+# ============================================================================
+# Docker Build & Security Workflow
+# ============================================================================
+# Purpose:
+#   Builds Docker images in the docker/ directory and performs security
+#   scanning on Dockerfiles and built images.
+#
+# Triggers:
+#   - Push to main when docker/ directory changes
+#   - Pull requests that modify docker/ directory
+#   - Manual workflow dispatch (for testing)
+#
+# Jobs:
+#   1. docker-security: Scan, build, and validate Docker images
+#
+# Make Targets Used (from docker/Makefile):
+#   - checkov: Scan Dockerfiles with Checkov
+#   - trivy: Scan Dockerfiles with Trivy (config scan)
+#   - build: Build all Docker images
+#   - trivy-image: Scan built Docker images (depends on build)
+#
+# Requirements:
+#   - Docker (for image building)
+#   - Checkov (for Dockerfile scanning)
+#   - Trivy (for Dockerfile and image scanning)
+#
+# Runner Environment:
+#   - Uses self-hosted runner with Docker support
+# ============================================================================
+
+name: Docker Security
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-security.yml'
+  pull_request:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-security.yml'
+  workflow_dispatch:
+
+# Cancel in-progress runs when a new run is triggered on the same ref
+# This prevents duplicate runs when pushing to a PR branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Job: Docker Security Scanning & Build
+  # --------------------------------------------------------------------------
+  # Scans Dockerfiles for security issues, builds images, then scans the
+  # built images for vulnerabilities.
+  # --------------------------------------------------------------------------
+  docker-security:
+    name: Docker Build & Scan
+    runs-on: self-hosted
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: docker
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install system dependencies needed for security tools
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y curl wget git ca-certificates python3 python3-pip make
+
+      # Verify Docker is available
+      # Self-hosted runners should have Docker pre-installed
+      - name: Verify Docker installation
+        run: |
+          docker --version
+          docker info
+
+      # Install Checkov for Dockerfile security scanning
+      - name: Install Checkov
+        run: |
+          pip3 install checkov
+          checkov --version
+
+      # Install Trivy for Dockerfile and image scanning
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          trivy --version
+
+      # Run Checkov security scan on all Dockerfiles
+      # Scans for misconfigurations and security issues
+      - name: Run Checkov on Dockerfiles
+        run: make checkov
+        continue-on-error: true
+
+      # Run Trivy config scan on all Dockerfiles
+      # Checks for vulnerabilities and misconfigurations
+      - name: Run Trivy config scan on Dockerfiles
+        run: make trivy
+        continue-on-error: true
+
+      # Build all Docker images
+      # Builds images for all subdirectories (deluge-vpn, ops-build-image, etc.)
+      - name: Build Docker images
+        run: make build
+
+      # Scan built Docker images with Trivy
+      # Checks for OS vulnerabilities, package vulnerabilities, and CVEs
+      # Fails on CRITICAL severity findings
+      - name: Scan Docker images with Trivy
+        run: make trivy-image
+        continue-on-error: false
+
+      # Upload scan results as artifacts
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-scan-results
+          path: |
+            docker/**/*checkov*.txt
+            docker/**/*checkov*.json
+            docker/**/*trivy*.txt
+            docker/**/*trivy*.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # Clean up Docker resources to save disk space on self-hosted runner
+      # Removes dangling images and build cache
+      - name: Clean up Docker resources
+        if: always()
+        run: |
+          docker system prune -f --volumes || true
