@@ -215,4 +215,4 @@ HEALTHCHECK --interval=30m --timeout=30s --start-period=5m --retries=3 \
     && terragrunt --version >/dev/null 2>&1 \
     && hclfmt -help >/dev/null 2>&1 \
     && cdktf --version >/dev/null 2>&1 \
-    || exit 1'
+    || exit 1'j
