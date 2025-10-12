@@ -111,7 +111,7 @@ job "github-runner" {
 
       config {
         # Official community image with ephemeral runner support
-        image              = "myoung34/github-runner:latest"
+        image              = "myoung34/github-runner:debian-trixie"
         image_pull_timeout = "10m"
         network_mode       = "host"
 
