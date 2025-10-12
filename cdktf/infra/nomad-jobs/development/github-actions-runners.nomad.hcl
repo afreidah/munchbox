@@ -176,12 +176,13 @@ ACCESS_TOKEN="{{ .Data.data.token }}"
 # Runner configuration
 RUNNER_NAME={{ env "NOMAD_ALLOC_NAME" }}-{{ env "NOMAD_ALLOC_ID" }}
 RUNNER_WORKDIR=/tmp/runner-work
-EPHEMERAL=false
+EPHEMERAL=true
 
 # Labels for workflow job targeting
 LABELS=nomad,self-hosted,linux,x64,docker
 
 # Disable automatic updates (controlled via Docker image)
+RUNNER_VERSION=latest
 DISABLE_AUTO_UPDATE=true
 EOH
         destination = "secrets/github.env"
