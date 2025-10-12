@@ -1,17 +1,13 @@
 # ============================================================================
-# Docker Build & Security Workflow (Two-Stage, arch-safe job container)
+# Docker Build & Security Workflow (Two-Stage, multi-arch-safe)
 # ============================================================================
-# Stage A (PR / non-main pushes):
-#   - checkov -> trivy -> build -> trivy-image
+# PR / non-main pushes:
+#   checkov -> trivy -> build -> trivy-image
+# Main (merge/push to main):
+#   checkov -> trivy -> build -> trivy-image -> tag -> push
 #
-# Stage B (merge to main / push to main):
-#   - checkov -> trivy -> build -> trivy-image -> tag -> push
-#
-# NOTE (IMPORTANT):
-# - We select the job container tag by runner arch to avoid the
-#   "/__e/node20/bin/node: no such file or directory" error.
-#   Use :arm64 on ARM64 runners, :amd64 on x64 runners.
-# - The container talks to host Docker via /var/run/docker.sock.
+# Uses multi-arch image: docker-mirror.service.consul:5000/ops-build-image:latest
+# The host runner’s Docker will pull the correct platform image automatically.
 # ============================================================================
 
 name: Docker Security
@@ -33,12 +29,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  IMAGE_BASE: docker-mirror.service.consul:5000/ops-build-image
-  # Pick image tag by runner arch (ARM64 -> arm64, else amd64)
-  CI_IMAGE_TAG: ${{ runner.arch == 'ARM64' && 'arm64' || 'amd64' }}
-  DOCKER_BUILDKIT: "1"
-
 jobs:
   # --------------------------------------------------------------------------
   # Stage A: PR / Non-main push
@@ -46,14 +36,12 @@ jobs:
   pr-and-branch-checks:
     name: PR/Branch — Checkov • Trivy • Build • Trivy-Image
     runs-on: self-hosted
-    if: >
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'push' && github.ref != 'refs/heads/main')
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
     timeout-minutes: 45
 
     container:
-      image: ${{ env.IMAGE_BASE }}:${{ env.CI_IMAGE_TAG }}
-      # Registry auth (commented until you add creds)
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
+      # credentials (uncomment when you add creds):
       # credentials:
       #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
       #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
@@ -62,6 +50,9 @@ jobs:
     defaults:
       run:
         working-directory: docker
+
+    env:
+      DOCKER_BUILDKIT: "1"
 
     steps:
       - name: Checkout
@@ -115,7 +106,7 @@ jobs:
     timeout-minutes: 60
 
     container:
-      image: ${{ env.IMAGE_BASE }}:${{ env.CI_IMAGE_TAG }}
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
       # credentials:
       #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
       #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
@@ -126,6 +117,7 @@ jobs:
         working-directory: docker
 
     env:
+      DOCKER_BUILDKIT: "1"
       IMAGE_TAG: ${{ github.sha }}
 
     steps:
@@ -156,11 +148,11 @@ jobs:
       - name: Tag images
         run: make tag TAG=${{ env.IMAGE_TAG }}
 
-      # Login for publish registry (uncomment when ready)
+      # Optional: login to publish registry
       # - name: Docker login (publish)
       #   run: |
       #     echo "${{ secrets.PUBLISH_REGISTRY_PASSWORD }}" | \
-      #       docker login "${{ env.REGISTRY_HOST }}:${{ env.REGISTRY_PORT }}" \
+      #       docker login "docker-mirror.service.consul:5000" \
       #         --username "${{ secrets.PUBLISH_REGISTRY_USERNAME }}" \
       #         --password-stdin
 
