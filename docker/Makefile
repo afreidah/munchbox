@@ -12,7 +12,7 @@ TAG ?= latest
 # Only include subdirs that actually contain a Dockerfile (keeps it simple)
 IMAGES := $(patsubst %/Dockerfile,%, $(wildcard */Dockerfile))
 
-.PHONY: checkov trivy build trivy-image tag push pull_request merge
+.PHONY: checkov trivy build trivy-image tag push pull_request merge buildx-setup publish-multiarch
 
 # --- Orchestration -----------------------------------------------------------
 # PR: checkov -> trivy -> build -> trivy-image
@@ -68,3 +68,26 @@ push:
 		docker push "$(REGISTRY)/$$img:$(TAG)"; \
 	done
 
+# ========================= MULTI-ARCH PUBLISH (SIMPLE) =======================
+# Build & push each image for amd64+arm64 as :latest (for your runners)
+# Note: BuildKit needs to be told that $(REGISTRY) is HTTP/insecure.
+
+PLATFORMS        ?= linux/amd64,linux/arm64
+BUILDER_NAME     ?= munchbox-builder
+BUILDKITD_CONFIG ?= .buildkitd.toml
+
+buildx-setup:
+	@printf '[registry."%s"]\n  http = true\n  insecure = true\n' "$(REGISTRY)" > $(BUILDKITD_CONFIG)
+	@docker buildx rm $(BUILDER_NAME) >/dev/null 2>&1 || true
+	@docker run --privileged --rm tonistiigi/binfmt --install all >/dev/null 2>&1 || true
+	@docker buildx create --driver docker-container --name $(BUILDER_NAME) --use --config $(BUILDKITD_CONFIG) >/dev/null
+	@docker buildx inspect --bootstrap >/dev/null
+
+publish-multiarch: buildx-setup
+	@for img in $(IMAGES); do \
+		echo "Publishing multi-arch $(REGISTRY)/$$img:latest for $(PLATFORMS)"; \
+		docker buildx build "$$img" \
+			--platform $(PLATFORMS) \
+			-t "$(REGISTRY)/$$img:latest" \
+			--push; \
+	done
