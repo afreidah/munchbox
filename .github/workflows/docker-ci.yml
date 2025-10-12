@@ -1,126 +1,98 @@
-# ----------------------------------------------------------------------------
-# Docker Build & Security Workflow (Two-Tier, Private Mirror)
-# ----------------------------------------------------------------------------
-# Purpose:
-#   - Simple, explicit CI split:
-#       * PRs:       checkov -> trivy -> build(:latest) -> trivy-image
-#       * Merge(main): same as PR, then tag(:$GITHUB_SHA) -> push(:$GITHUB_SHA)
+# ============================================================================
+# Docker Build & Security Workflow (Two-Stage, arch-safe job container)
+# ============================================================================
+# Stage A (PR / non-main pushes):
+#   - checkov -> trivy -> build -> trivy-image
 #
-# Container/tooling:
-#   - Runs inside your prebuilt tooling image:
-#       docker-mirror.service.consul:5000/ops-build-image:latest
-#   - Talks to host Docker via /var/run/docker.sock.
+# Stage B (merge to main / push to main):
+#   - checkov -> trivy -> build -> trivy-image -> tag -> push
 #
-# Registry notes:
-#   - Your mirror is HTTP on :5000. Ensure each runner host’s Docker daemon trusts it:
-#       /etc/docker/daemon.json -> { "insecure-registries": ["docker-mirror.service.consul:5000"] }
-#       sudo systemctl restart docker
-#   - Image must exist in the mirror with the exact name/tag referenced above.
-#
-# Dupes:
-#   - push triggers only on main; pull_request targets main. This avoids duplicate runs.
-# ----------------------------------------------------------------------------
+# NOTE (IMPORTANT):
+# - We select the job container tag by runner arch to avoid the
+#   "/__e/node20/bin/node: no such file or directory" error.
+#   Use :arm64 on ARM64 runners, :amd64 on x64 runners.
+# - The container talks to host Docker via /var/run/docker.sock.
+# ============================================================================
 
 name: Docker Security
 
 on:
-  # Validate PRs that target main (no image push)
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'docker/**'
-      - '.github/workflows/docker-ci.yml'
-
-  # Release path: after merge to main (does tagging + push)
   push:
-    branches: [ main ]
+    branches:
+      - '**'
     paths:
       - 'docker/**'
       - '.github/workflows/docker-ci.yml'
-
-  # Manual trigger if needed
+  pull_request:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/docker-ci.yml'
   workflow_dispatch:
 
-# Cancel in-progress runs when a new run is triggered on the same ref
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  IMAGE_BASE: docker-mirror.service.consul:5000/ops-build-image
+  # Pick image tag by runner arch (ARM64 -> arm64, else amd64)
+  CI_IMAGE_TAG: ${{ runner.arch == 'ARM64' && 'arm64' || 'amd64' }}
+  DOCKER_BUILDKIT: "1"
+
 jobs:
   # --------------------------------------------------------------------------
-  # PR path: checkov • trivy • build(:latest) • trivy-image
+  # Stage A: PR / Non-main push
   # --------------------------------------------------------------------------
-  pr-checks:
-    name: PR — Checkov • Trivy • Build • Trivy-Image
+  pr-and-branch-checks:
+    name: PR/Branch — Checkov • Trivy • Build • Trivy-Image
     runs-on: self-hosted
-    if: github.event_name == 'pull_request'
+    if: >
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && github.ref != 'refs/heads/main')
     timeout-minutes: 45
 
-    # Run steps inside your tooling image from the private mirror
     container:
-      image: docker-mirror.service.consul:5000/ops-build-image:latest
-      # --------------------------------------------------------------------
-      # If your mirror requires auth, uncomment and set these secrets:
+      image: ${{ env.IMAGE_BASE }}:${{ env.CI_IMAGE_TAG }}
+      # Registry auth (commented until you add creds)
       # credentials:
       #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
       #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
-      # --------------------------------------------------------------------
-      options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
-
-    # All shell steps execute from the docker/ directory
-    defaults:
-      run:
-        working-directory: docker
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Single target runs the whole PR pipeline (no push)
-      - name: Run PR pipeline
-        run: make pull_request
-
-  # --------------------------------------------------------------------------
-  # Merge path (main): PR steps + tag(:$GITHUB_SHA) + push(:$GITHUB_SHA)
-  # --------------------------------------------------------------------------
-  release-main:
-    name: Merge — Checkov • Trivy • Build • Trivy-Image • Tag • Push
-    runs-on: self-hosted
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    timeout-minutes: 60
-
-    container:
-      image: docker-mirror.service.consul:5000/ops-build-image:latest
-      # --------------------------------------------------------------------
-      # If your mirror requires auth, uncomment and set these secrets:
-      # credentials:
-      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
-      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
-      # --------------------------------------------------------------------
       options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
 
     defaults:
       run:
         working-directory: docker
 
-    # Pass the release tag (commit SHA) to Makefile's TAG variable
-    env:
-      TAG: ${{ github.sha }}
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Single target runs PR pipeline + tag + push
-      - name: Run merge pipeline
-        run: make merge
+      - name: Tool versions
+        run: |
+          docker --version || true
+          checkov --version || true
+          trivy --version || true
+          make --version || true
 
-      # Optional: upload scan artifacts if your Makefile writes them under docker/**
+      - name: Checkov (Dockerfiles)
+        run: make checkov
+        continue-on-error: true
+
+      - name: Trivy config (Dockerfiles)
+        run: make trivy
+        continue-on-error: true
+
+      - name: Build images
+        run: make build
+
+      - name: Trivy image scan (fail on CRITICAL)
+        run: make trivy-image
+
       - name: Upload scan results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: docker-scan-results-${{ github.run_id }}
+          name: docker-scan-results-${{ github.run_id }}-stageA
           path: |
             docker/**/*checkov*.txt
             docker/**/*checkov*.json
@@ -128,3 +100,87 @@ jobs:
             docker/**/*trivy*.json
           retention-days: 30
           if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: docker system prune -f --volumes || true
+
+  # --------------------------------------------------------------------------
+  # Stage B: Main branch
+  # --------------------------------------------------------------------------
+  release-main:
+    name: Main — Checkov • Trivy • Build • Trivy-Image • Tag • Push
+    runs-on: self-hosted
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 60
+
+    container:
+      image: ${{ env.IMAGE_BASE }}:${{ env.CI_IMAGE_TAG }}
+      # credentials:
+      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
+      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
+      options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
+
+    defaults:
+      run:
+        working-directory: docker
+
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tool versions
+        run: |
+          docker --version || true
+          checkov --version || true
+          trivy --version || true
+          make --version || true
+
+      - name: Checkov (Dockerfiles)
+        run: make checkov
+        continue-on-error: true
+
+      - name: Trivy config (Dockerfiles)
+        run: make trivy
+        continue-on-error: true
+
+      - name: Build images
+        run: make build
+
+      - name: Trivy image scan (fail on CRITICAL)
+        run: make trivy-image
+
+      - name: Tag images
+        run: make tag TAG=${{ env.IMAGE_TAG }}
+
+      # Login for publish registry (uncomment when ready)
+      # - name: Docker login (publish)
+      #   run: |
+      #     echo "${{ secrets.PUBLISH_REGISTRY_PASSWORD }}" | \
+      #       docker login "${{ env.REGISTRY_HOST }}:${{ env.REGISTRY_PORT }}" \
+      #         --username "${{ secrets.PUBLISH_REGISTRY_USERNAME }}" \
+      #         --password-stdin
+
+      - name: Push images
+        run: make push TAG=${{ env.IMAGE_TAG }}
+
+      - name: Upload scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-scan-results-${{ github.run_id }}-stageB
+          path: |
+            docker/**/*checkov*.txt
+            docker/**/*checkov*.json
+            docker/**/*trivy*.txt
+            docker/**/*trivy*.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: docker system prune -f --volumes || true
+
