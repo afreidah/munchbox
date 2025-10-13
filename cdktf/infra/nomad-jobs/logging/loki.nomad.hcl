@@ -198,6 +198,7 @@ compactor:
 
 # Limits - 5 day retention
 limits_config:
+  volume_enabled: true
   retention_period: 120h  # 5 days
   max_query_lookback: 120h
   reject_old_samples: true

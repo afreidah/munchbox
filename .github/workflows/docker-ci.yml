@@ -1,31 +1,13 @@
 # ============================================================================
-# Docker Build & Security Workflow
+# Docker Build & Security Workflow (Two-Stage, multi-arch-safe)
 # ============================================================================
-# Purpose:
-#   Builds Docker images in the docker/ directory and performs security
-#   scanning on Dockerfiles and built images.
+# PR / non-main pushes:
+#   checkov -> trivy -> build -> trivy-image
+# Main (merge/push to main):
+#   checkov -> trivy -> build -> trivy-image -> tag -> push
 #
-# Triggers:
-#   - Push to main when docker/ directory changes
-#   - Pull requests that modify docker/ directory
-#   - Manual workflow dispatch (for testing)
-#
-# Jobs:
-#   1. docker-security: Scan, build, and validate Docker images
-#
-# Make Targets Used (from docker/Makefile):
-#   - checkov: Scan Dockerfiles with Checkov
-#   - trivy: Scan Dockerfiles with Trivy (config scan)
-#   - build: Build all Docker images
-#   - trivy-image: Scan built Docker images (depends on build)
-#
-# Requirements:
-#   - Docker (for image building)
-#   - Checkov (for Dockerfile scanning)
-#   - Trivy (for Dockerfile and image scanning)
-#
-# Runner Environment:
-#   - Uses self-hosted runner with Docker support
+# Uses multi-arch image: docker-mirror.service.consul:5000/ops-build-image:latest
+# The host runner’s Docker will pull the correct platform image automatically.
 # ============================================================================
 
 name: Docker Security
@@ -33,108 +15,164 @@ name: Docker Security
 on:
   push:
     branches:
-      - main
+      - '**'
     paths:
       - 'docker/**'
-      - '.github/workflows/docker-security.yml'
+      - '.github/workflows/docker-ci.yml'
   pull_request:
     paths:
       - 'docker/**'
-      - '.github/workflows/docker-security.yml'
+      - '.github/workflows/docker-ci.yml'
   workflow_dispatch:
 
-# Cancel in-progress runs when a new run is triggered on the same ref
-# This prevents duplicate runs when pushing to a PR branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   # --------------------------------------------------------------------------
-  # Job: Docker Security Scanning & Build
+  # Stage A: PR / Non-main push
   # --------------------------------------------------------------------------
-  # Scans Dockerfiles for security issues, builds images, then scans the
-  # built images for vulnerabilities.
-  # --------------------------------------------------------------------------
-  docker-security:
-    name: Docker Build & Scan
+  pr-and-branch-checks:
+    name: PR/Branch — Checkov • Trivy • Build • Trivy-Image
     runs-on: self-hosted
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
     timeout-minutes: 45
+
+    container:
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
+      # credentials (uncomment when you add creds):
+      # credentials:
+      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
+      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
+      options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
+
     defaults:
       run:
         working-directory: docker
 
+    env:
+      DOCKER_BUILDKIT: "1"
+
     steps:
-      # Checkout the repository
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Install system dependencies needed for security tools
-      - name: Install system dependencies
+      - name: Tool versions
         run: |
-          apt-get update
-          apt-get install -y curl wget git ca-certificates python3 python3-pip make
+          docker --version || true
+          checkov --version || true
+          trivy --version || true
+          make --version || true
 
-      # Verify Docker is available
-      # Self-hosted runners should have Docker pre-installed
-      - name: Verify Docker installation
-        run: |
-          docker --version
-          docker info
-
-      # Install Checkov for Dockerfile security scanning
-      - name: Install Checkov
-        run: |
-          pip3 install checkov
-          checkov --version
-
-      # Install Trivy for Dockerfile and image scanning
-      - name: Install Trivy
-        run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-          trivy --version
-
-      # Run Checkov security scan on all Dockerfiles
-      # Scans for misconfigurations and security issues
-      - name: Run Checkov on Dockerfiles
+      - name: Checkov (Dockerfiles)
         run: make checkov
         continue-on-error: true
 
-      # Run Trivy config scan on all Dockerfiles
-      # Checks for vulnerabilities and misconfigurations
-      - name: Run Trivy config scan on Dockerfiles
+      - name: Trivy config (Dockerfiles)
         run: make trivy
         continue-on-error: true
 
-      # Build all Docker images
-      # Builds images for all subdirectories (deluge-vpn, ops-build-image, etc.)
-      - name: Build Docker images
+      - name: Build images
         run: make build
 
-      # Scan built Docker images with Trivy
-      # Checks for OS vulnerabilities, package vulnerabilities, and CVEs
-      # Fails on CRITICAL severity findings
-      - name: Scan Docker images with Trivy
+      - name: Trivy image scan (fail on CRITICAL)
         run: make trivy-image
-        continue-on-error: false
 
-      # Upload scan results as artifacts
-      - name: Upload scan results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-scan-results
-          path: |
-            docker/**/*checkov*.txt
-            docker/**/*checkov*.json
-            docker/**/*trivy*.txt
-            docker/**/*trivy*.json
-          retention-days: 30
-          if-no-files-found: ignore
+      #- name: Upload scan results
+      #  if: always()
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: docker-scan-results-${{ github.run_id }}-stageA
+      #    path: |
+      #      docker/**/*checkov*.txt
+      #      docker/**/*checkov*.json
+      #      docker/**/*trivy*.txt
+      #      docker/**/*trivy*.json
+      #    retention-days: 30
+      #    if-no-files-found: ignore
 
-      # Clean up Docker resources to save disk space on self-hosted runner
-      # Removes dangling images and build cache
-      - name: Clean up Docker resources
+      - name: Cleanup
         if: always()
+        run: docker system prune -f --volumes || true
+
+  # --------------------------------------------------------------------------
+  # Stage B: Main branch
+  # --------------------------------------------------------------------------
+  release-main:
+    name: Main — Checkov • Trivy • Build • Trivy-Image • Tag • Push
+    runs-on: self-hosted
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    timeout-minutes: 60
+
+    container:
+      image: docker-mirror.service.consul:5000/ops-build-image:latest
+      # credentials:
+      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
+      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
+      options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
+
+    defaults:
+      run:
+        working-directory: docker
+
+    env:
+      DOCKER_BUILDKIT: "1"
+      IMAGE_TAG: ${{ github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tool versions
         run: |
-          docker system prune -f --volumes || true
+          docker --version || true
+          checkov --version || true
+          trivy --version || true
+          make --version || true
+
+      - name: Checkov (Dockerfiles)
+        run: make checkov
+        continue-on-error: true
+
+      - name: Trivy config (Dockerfiles)
+        run: make trivy
+        continue-on-error: true
+
+      - name: Build images
+        run: make build
+
+      - name: Trivy image scan (fail on CRITICAL)
+        run: make trivy-image
+
+      - name: Tag images
+        run: make tag TAG=${{ env.IMAGE_TAG }}
+
+      # Optional: login to publish registry
+      # - name: Docker login (publish)
+      #   run: |
+      #     echo "${{ secrets.PUBLISH_REGISTRY_PASSWORD }}" | \
+      #       docker login "docker-mirror.service.consul:5000" \
+      #         --username "${{ secrets.PUBLISH_REGISTRY_USERNAME }}" \
+      #         --password-stdin
+
+      - name: Push images
+        run: make push TAG=${{ env.IMAGE_TAG }}
+
+      #- name: Upload scan results
+      #  if: always()
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: docker-scan-results-${{ github.run_id }}-stageB
+      #    path: |
+      #      docker/**/*checkov*.txt
+      #      docker/**/*checkov*.json
+      #      docker/**/*trivy*.txt
+      #      docker/**/*trivy*.json
+      #    retention-days: 30
+      #    if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: docker system prune -f --volumes || true
+
