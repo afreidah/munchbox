@@ -1,0 +1,42 @@
+# frozen_string_literal: true
+# --------------------------------------------------------------------
+# Cookbook:: ceph
+# Recipe:: default
+#
+# Main entry point for Ceph installation and configuration.
+# Installs Ceph on all nodes, bootstraps on designated node.
+# --------------------------------------------------------------------
+
+# --------------------------------------------------------------------
+# Install Ceph Prerequisites & Packages
+# --------------------------------------------------------------------
+
+include_recipe 'ceph::install'
+
+# --------------------------------------------------------------------
+# Configure Firewall Rules
+# --------------------------------------------------------------------
+
+include_recipe 'ceph::firewall'
+
+# --------------------------------------------------------------------
+# Create OSD Directory (All Nodes)
+# --------------------------------------------------------------------
+
+include_recipe 'ceph::osd'
+
+# --------------------------------------------------------------------
+# Bootstrap Cluster (Bootstrap Node Only)
+# --------------------------------------------------------------------
+
+bootstrap_node = node['ceph']['bootstrap_node']
+current_node   = node['hostname']
+
+if current_node == bootstrap_node
+  include_recipe 'ceph::bootstrap'
+else
+  log 'ceph-node' do
+    message "Node #{current_node} will be added to cluster by bootstrap node #{bootstrap_node}"
+    level :info
+  end
+end

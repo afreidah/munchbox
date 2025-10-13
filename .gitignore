@@ -41,3 +41,4 @@ cdktf/bin/*
 *.swp
 *.nomad-github-token
 AGENTS.md
+berks-cookbooks
