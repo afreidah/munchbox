@@ -70,3 +70,29 @@ service 'docker' do
   action [:enable, :start]
   only_if { systemd? }
 end
+
+
+# --------------------------------------------------------------------
+# Download and install nvm
+# --------------------------------------------------------------------
+
+bash 'install_nvm' do
+  code <<-CODE
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+    nvm install node # Install the latest version of Node.js
+  CODE
+  not_if { ::File.exist?("#{ENV['HOME']}/.nvm/nvm.sh") }
+end
+
+# --------------------------------------------------------------------
+# Install Node.js using nvm
+# --------------------------------------------------------------------
+
+bash 'install_node' do
+  code <<-CODE
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+    nvm install node # Install the latest version of Node.js
+  CODE
+end
