@@ -79,18 +79,18 @@ jobs:
       - name: Trivy image scan (fail on CRITICAL)
         run: make trivy-image
 
-      - name: Upload scan results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-scan-results-${{ github.run_id }}-stageA
-          path: |
-            docker/**/*checkov*.txt
-            docker/**/*checkov*.json
-            docker/**/*trivy*.txt
-            docker/**/*trivy*.json
-          retention-days: 30
-          if-no-files-found: ignore
+      #- name: Upload scan results
+      #  if: always()
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: docker-scan-results-${{ github.run_id }}-stageA
+      #    path: |
+      #      docker/**/*checkov*.txt
+      #      docker/**/*checkov*.json
+      #      docker/**/*trivy*.txt
+      #      docker/**/*trivy*.json
+      #    retention-days: 30
+      #    if-no-files-found: ignore
 
       - name: Cleanup
         if: always()
@@ -159,18 +159,18 @@ jobs:
       - name: Push images
         run: make push TAG=${{ env.IMAGE_TAG }}
 
-      - name: Upload scan results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-scan-results-${{ github.run_id }}-stageB
-          path: |
-            docker/**/*checkov*.txt
-            docker/**/*checkov*.json
-            docker/**/*trivy*.txt
-            docker/**/*trivy*.json
-          retention-days: 30
-          if-no-files-found: ignore
+      #- name: Upload scan results
+      #  if: always()
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: docker-scan-results-${{ github.run_id }}-stageB
+      #    path: |
+      #      docker/**/*checkov*.txt
+      #      docker/**/*checkov*.json
+      #      docker/**/*trivy*.txt
+      #      docker/**/*trivy*.json
+      #    retention-days: 30
+      #    if-no-files-found: ignore
 
       - name: Cleanup
         if: always()
