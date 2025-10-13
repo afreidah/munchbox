@@ -59,64 +59,64 @@ job "github-runner" {
     # ---------------------------------------------------------------------------
     # Prestart: seed Node 20 so /actions-runner/externals/node20 always exists
     # ---------------------------------------------------------------------------
-    task "seed-node20" {
-      driver = "docker"
+    #task "seed-node20" {
+    #  driver = "docker"
 
-      lifecycle {
-        hook    = "prestart"
-        sidecar = false
-      }
+    #  lifecycle {
+    #    hook    = "prestart"
+    #    sidecar = false
+    #  }
 
-      config {
-        image        = "debian:trixie-slim"
-        network_mode = "host"
-        command      = "bash"
-        args = [
-          "-lc",
-          <<-EOT
-            set -euo pipefail
-            apt-get update -y
-            apt-get install -y --no-install-recommends ca-certificates curl xz-utils
-            rm -rf /var/lib/apt/lists/*
+    #  config {
+    #    image        = "debian:trixie-slim"
+    #    network_mode = "host"
+    #    command      = "bash"
+    #    args = [
+    #      "-lc",
+    #      <<-EOT
+    #        set -euo pipefail
+    #        apt-get update -y
+    #        apt-get install -y --no-install-recommends ca-certificates curl xz-utils
+    #        rm -rf /var/lib/apt/lists/*
 
-            mkdir -p "${NOMAD_ALLOC_DIR}/node20"
-            cd "${NOMAD_ALLOC_DIR}/node20"
+    #        mkdir -p "${NOMAD_ALLOC_DIR}/node20"
+    #        cd "${NOMAD_ALLOC_DIR}/node20"
 
-            ARCH=$(uname -m)
-            case "$ARCH" in
-              aarch64) NODE_ARCH="arm64" ;;
-              arm64)   NODE_ARCH="arm64" ;;
-              x86_64)  NODE_ARCH="x64" ;;
-              amd64)   NODE_ARCH="x64" ;;
-              *) echo "Unknown arch: $ARCH"; exit 1 ;;
-            esac
+    #        ARCH=$(uname -m)
+    #        case "$ARCH" in
+    #          aarch64) NODE_ARCH="arm64" ;;
+    #          arm64)   NODE_ARCH="arm64" ;;
+    #          x86_64)  NODE_ARCH="x64" ;;
+    #          amd64)   NODE_ARCH="x64" ;;
+    #          *) echo "Unknown arch: $ARCH"; exit 1 ;;
+    #        esac
 
-            NODE_VER="v20.18.0"
-            TARBALL="node-${NODE_VER}-linux-${NODE_ARCH}.tar.xz"
-            URL="https://nodejs.org/dist/${NODE_VER}/${TARBALL}"
+    #        NODE_VER="v20.18.0"
+    #        TARBALL="node-${NODE_VER}-linux-${NODE_ARCH}.tar.xz"
+    #        URL="https://nodejs.org/dist/${NODE_VER}/${TARBALL}"
 
-            echo "Fetching ${URL}"
-            curl -fsSLO "${URL}"
-            tar -xJf "${TARBALL}"
-            rm -f "${TARBALL}"
+    #        echo "Fetching ${URL}"
+    #        curl -fsSLO "${URL}"
+    #        tar -xJf "${TARBALL}"
+    #        rm -f "${TARBALL}"
 
-            mkdir -p externals/node20
-            mv "node-${NODE_VER}-linux-${NODE_ARCH}" externals/node20/node20
+    #        mkdir -p externals/node20
+    #        mv "node-${NODE_VER}-linux-${NODE_ARCH}" externals/node20/node20
 
-            mkdir -p externals/node20/bin
-            ln -sf ../node20/bin/node externals/node20/bin/node
+    #        mkdir -p externals/node20/bin
+    #        ln -sf ../node20/bin/node externals/node20/bin/node
 
-            ./externals/node20/bin/node --version
-            echo "Node20 preseed complete."
-          EOT
-        ]
-      }
+    #        ./externals/node20/bin/node --version
+    #        echo "Node20 preseed complete."
+    #      EOT
+    #    ]
+    #  }
 
-      resources {
-        cpu    = 100
-        memory = 128
-      }
-    }
+    #  resources {
+    #    cpu    = 100
+    #    memory = 128
+    #  }
+    #}
 
     # ---------------------------------------------------------------------------
     # Main runner
@@ -141,8 +141,8 @@ job "github-runner" {
         privileged         = true
 
         volumes = [
-          "/var/run/docker.sock:/var/run/docker.sock",
-          "${NOMAD_ALLOC_DIR}/node20/externals/node20:/actions-runner/externals/node20"
+          "/var/run/docker.sock:/var/run/docker.sock"
+          # "${NOMAD_ALLOC_DIR}/node20/externals/node20:/actions-runner/externals/node20"
         ]
 
         logging {
@@ -188,10 +188,8 @@ job "github-runner" {
 
       env {
         TZ = "America/Los_Angeles"
-
         START_DOCKER_SERVICE = "false"
-
-        ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION = "node20"
+        # ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION = "node20"
       }
 
       resources {
