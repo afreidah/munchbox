@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+# --------------------------------------------------------------------
+# Berksfile
+# Cookbook:: ceph
+#
+# Manages cookbook dependencies for Ceph installation.
+# --------------------------------------------------------------------
+
+source 'https://supermarket.chef.io'
+
+metadata
