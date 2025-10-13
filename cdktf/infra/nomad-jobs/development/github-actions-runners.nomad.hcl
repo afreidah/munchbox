@@ -189,6 +189,8 @@ job "github-runner" {
       env {
         TZ = "America/Los_Angeles"
         START_DOCKER_SERVICE = "false"
+      }
+
       resources {
         cpu    = 2000
         memory = 2048
