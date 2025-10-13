@@ -5,6 +5,9 @@
 # - Scrapes journald for all systemd/Nomad logs
 # - Ships logs to Loki server
 # - Adds labels for node, job, task for easy filtering
+# - Enhancements:
+#     * Derive friendly 'level' label from journald 'priority'
+#     * Parse JSON/logfmt fields for Grafana drilldowns (trace_id, status, etc.)
 # -------------------------------------------------------------------------------
 
 job "promtail" {
@@ -16,7 +19,7 @@ job "promtail" {
   # Job metadata
   meta {
     version     = "3.2.0"
-    updated     = "2025-10-07"
+    updated     = "2025-10-12"
     description = "Promtail log collection agent"
   }
 
@@ -57,6 +60,7 @@ job "promtail" {
 
         args = [
           "-config.file=/etc/promtail/config.yaml",
+          # "-log.level=debug", # uncomment for troubleshooting
         ]
 
         # Mount journald and Promtail config
@@ -78,8 +82,13 @@ job "promtail" {
 
       # Promtail configuration
       template {
-        destination = "local/config/config.yaml"
-        change_mode = "restart"
+        destination     = "local/config/config.yaml"
+        change_mode     = "restart"
+
+        # IMPORTANT: keep Nomad's delimiters different so Promtail's {{ }} survive
+        left_delimiter  = "[["
+        right_delimiter = "]]"
+
         data        = <<-YAML
 # Promtail Configuration
 server:
@@ -92,7 +101,7 @@ clients:
 
 # What to scrape
 scrape_configs:
-  # Scrape all journald logs
+  # Scrape all journald logs (persistent)
   - job_name: journal
     journal:
       path: /var/log/journal
@@ -100,40 +109,74 @@ scrape_configs:
       labels:
         job: systemd-journal
         host: ${node.unique.name}
-    
+
     # Extract labels from journald fields
     relabel_configs:
       # Add node name
       - source_labels: ['__journal__hostname']
         target_label: 'node'
-      
+
       # Add systemd unit name
       - source_labels: ['__journal__systemd_unit']
         target_label: 'unit'
-      
-      # Extract Nomad job info from journald tag (if present)
-      - source_labels: ['__journal_syslog_identifier']
+
+      # Extract syslog identifier safely (correct field name with double underscores)
+      - source_labels: ['__journal__syslog_identifier']
         regex: '(.+)'
         target_label: 'syslog_identifier'
-      
-      # Add priority level
-      - source_labels: ['__journal_priority']
+
+      # Add priority level (0..7) (correct field name with double underscores)
+      - source_labels: ['__journal__priority']
         target_label: 'priority'
 
-    # Pipeline stages to parse Nomad logs
+    # Pipeline stages to parse Nomad logs & enrich labels
     pipeline_stages:
-      # Extract Nomad allocation info from container name in journald
+      # Extract Nomad allocation info from journald identifier
       - regex:
           expression: '(?P<nomad_job>[a-zA-Z0-9_-]+)\.(?P<nomad_group>[a-zA-Z0-9_-]+)\.(?P<nomad_task>[a-zA-Z0-9_-]+)'
           source: syslog_identifier
-      
-      # Add extracted labels
+
+      # Promote extracted Nomad labels (low cardinality)
       - labels:
           nomad_job:
           nomad_group:
           nomad_task:
 
-    # Scrape journald from /run/log/journal (Raspbian nodes)  
+      # Derive human-readable 'level' from journald numeric 'priority'
+      - template:
+          source: level
+          template: |
+            {{- $p := .Labels.priority -}}
+            {{- if eq $p "0" -}}emerg
+            {{- else if eq $p "1" -}}alert
+            {{- else if eq $p "2" -}}crit
+            {{- else if eq $p "3" -}}err
+            {{- else if eq $p "4" -}}warning
+            {{- else if eq $p "5" -}}notice
+            {{- else if eq $p "6" -}}info
+            {{- else -}}debug{{- end -}}
+
+      - labels:
+          level:
+
+      # Parse structured payloads for Grafana drilldowns (no-op if not JSON/logfmt)
+      - json:
+          expressions:
+            level: level
+            msg: message
+            trace_id: trace_id
+            span_id: span_id
+            status: status
+
+      - logfmt:
+          mapping:
+            level: level
+            msg: msg
+            trace_id: trace_id
+            span_id: span_id
+            status: status
+
+  # Scrape journald from /run/log/journal (volatile; e.g., Raspbian nodes)
   - job_name: journal-volatile
     journal:
       path: /run/log/journal
@@ -141,36 +184,56 @@ scrape_configs:
       labels:
         job: systemd-journal
         host: ${node.unique.name}
+
     relabel_configs:
-      # Add node name
       - source_labels: ['__journal__hostname']
         target_label: 'node'
-      
-      # Add systemd unit name
       - source_labels: ['__journal__systemd_unit']
         target_label: 'unit'
-      
-      # Extract Nomad job info from journald tag (if present)
-      - source_labels: ['__journal_syslog_identifier']
+      - source_labels: ['__journal__syslog_identifier']
         regex: '(.+)'
         target_label: 'syslog_identifier'
-      
-      # Add priority level
-      - source_labels: ['__journal_priority']
+      - source_labels: ['__journal__priority']
         target_label: 'priority'
 
-    # Pipeline stages to parse Nomad logs
     pipeline_stages:
-      # Extract Nomad allocation info from container name in journald
       - regex:
           expression: '(?P<nomad_job>[a-zA-Z0-9_-]+)\.(?P<nomad_group>[a-zA-Z0-9_-]+)\.(?P<nomad_task>[a-zA-Z0-9_-]+)'
           source: syslog_identifier
-      
-      # Add extracted labels
       - labels:
           nomad_job:
           nomad_group:
           nomad_task:
+
+      - template:
+          source: level
+          template: |
+            {{- $p := .Labels.priority -}}
+            {{- if eq $p "0" -}}emerg
+            {{- else if eq $p "1" -}}alert
+            {{- else if eq $p "2" -}}crit
+            {{- else if eq $p "3" -}}err
+            {{- else if eq $p "4" -}}warning
+            {{- else if eq $p "5" -}}notice
+            {{- else if eq $p "6" -}}info
+            {{- else -}}debug{{- end -}}
+      - labels:
+          level:
+
+      - json:
+          expressions:
+            level: level
+            msg: message
+            trace_id: trace_id
+            span_id: span_id
+            status: status
+      - logfmt:
+          mapping:
+            level: level
+            msg: msg
+            trace_id: trace_id
+            span_id: span_id
+            status: status
 
 # Positions file to track what's been read
 positions:

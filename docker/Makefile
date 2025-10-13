@@ -1,61 +1,93 @@
 # filepath: docker/Makefile
+# ========================= SIMPLE TWO-TIER PIPELINE ==========================
+# Run from docker/ (as your workflow does)
 
-# use consul dns to find the service
-REGISTRY = docker-mirror.service.consul
+REGISTRY_HOST ?= docker-mirror.service.consul
+REGISTRY_PORT ?= 5000
+REGISTRY      ?= $(REGISTRY_HOST):$(REGISTRY_PORT)
 
-# Normalize subdir list to names without trailing slash (e.g. "deluge-vpn", "ops-build-image")
-IMAGES := $(patsubst %/,%,$(wildcard */))
+# PR builds use :latest; merge sets TAG (e.g. TAG=${GITHUB_SHA}) and pushes it
+TAG ?= latest
 
-.PHONY: checkov trivy trivy-image build push all
+# Only include subdirs that actually contain a Dockerfile (keeps it simple)
+IMAGES := $(patsubst %/Dockerfile,%, $(wildcard */Dockerfile))
 
-all: checkov trivy build push
+.PHONY: checkov trivy build trivy-image tag push pull_request merge buildx-setup publish-multiarch
 
-# ------------------------------------------------------------------------------
-# Checkov: scan Dockerfiles
-# ------------------------------------------------------------------------------
+# --- Orchestration -----------------------------------------------------------
+# PR: checkov -> trivy -> build -> trivy-image
+pull_request: checkov trivy build trivy-image
+
+# Merge: PR tasks -> tag -> push
+merge: pull_request tag push
+
+# --- Steps -------------------------------------------------------------------
 checkov:
-	@echo "Scanning Dockerfiles with Checkov..."
+	@echo "Checkov…"
 	@for img in $(IMAGES); do \
-		echo "Checking $$img/Dockerfile"; \
+		echo "  $$img/Dockerfile"; \
 		checkov -f "$$img/Dockerfile"; \
 	done
 
-# ------------------------------------------------------------------------------
-# Trivy (config): scan Dockerfiles for misconfigurations
-#   - This runs before build/push and does NOT require images to exist.
-#   - The file-patterns selector tells Trivy to parse Dockerfiles.
-# ------------------------------------------------------------------------------
 trivy:
-	@echo "Scanning Dockerfiles with Trivy (config scan)..."
+	@echo "Trivy config…"
 	@for img in $(IMAGES); do \
-		echo "Scanning $$img/Dockerfile"; \
+		echo "  $$img/Dockerfile"; \
 		trivy config --quiet --file-patterns "dockerfile:Dockerfile" "$$img"; \
 	done
 
-# ------------------------------------------------------------------------------
-# Optional: Trivy (image) scan — requires images to be built first
-#   - Use after `make build` or wire a dependency: trivy-image: build
-# ------------------------------------------------------------------------------
-trivy-image: build
-	@echo "Scanning built images with Trivy (image scan)..."
-	@for img in $(IMAGES); do \
-		echo "Scanning $(REGISTRY)/$$img:latest"; \
-		trivy image --quiet --severity CRITICAL "$(REGISTRY)/$$img:latest"; \
-	done
-
-# ------------------------------------------------------------------------------
-# Build & Push — fixed the shell var assignment pattern
-# ------------------------------------------------------------------------------
+# Always build as :latest for simplicity
 build:
-	@echo "Building Docker images..."
+	@echo "Build images as :latest…"
 	@for img in $(IMAGES); do \
-		echo "Building $(REGISTRY)/$$img:latest"; \
+		echo "  $(REGISTRY)/$$img:latest"; \
 		docker build -t "$(REGISTRY)/$$img:latest" "$$img"; \
 	done
 
-push:
-	@echo "Pushing Docker images to registry..."
+# Scan the built :latest images; fail on CRITICAL
+trivy-image:
+	@echo "Trivy image scan (fail on CRITICAL)…"
 	@for img in $(IMAGES); do \
-		echo "Pushing $(REGISTRY)/$$img:latest"; \
-		docker push "$(REGISTRY)/$$img:latest"; \
+		echo "  $(REGISTRY)/$$img:latest"; \
+		trivy image --quiet --severity CRITICAL "$(REGISTRY)/$$img:latest"; \
+	done
+
+# On merge, create the release tag (e.g., TAG=${GITHUB_SHA}) from :latest
+tag:
+	@echo "Tag :latest -> :$(TAG)…"
+	@for img in $(IMAGES); do \
+		echo "  $(REGISTRY)/$$img:latest -> $(REGISTRY)/$$img:$(TAG)"; \
+		docker tag "$(REGISTRY)/$$img:latest" "$(REGISTRY)/$$img:$(TAG)"; \
+	done
+
+# Push only the release tag
+push:
+	@echo "Push :$(TAG)…"
+	@for img in $(IMAGES); do \
+		echo "  $(REGISTRY)/$$img:$(TAG)"; \
+		docker push "$(REGISTRY)/$$img:$(TAG)"; \
+	done
+
+# ========================= MULTI-ARCH PUBLISH (SIMPLE) =======================
+# Build & push each image for amd64+arm64 as :latest (for your runners)
+# Note: BuildKit needs to be told that $(REGISTRY) is HTTP/insecure.
+
+PLATFORMS        ?= linux/amd64,linux/arm64
+BUILDER_NAME     ?= munchbox-builder
+BUILDKITD_CONFIG ?= .buildkitd.toml
+
+buildx-setup:
+	@printf '[registry."%s"]\n  http = true\n  insecure = true\n' "$(REGISTRY)" > $(BUILDKITD_CONFIG)
+	@docker buildx rm $(BUILDER_NAME) >/dev/null 2>&1 || true
+	@docker run --privileged --rm tonistiigi/binfmt --install all >/dev/null 2>&1 || true
+	@docker buildx create --driver docker-container --name $(BUILDER_NAME) --use --config $(BUILDKITD_CONFIG) >/dev/null
+	@docker buildx inspect --bootstrap >/dev/null
+
+publish-multiarch: buildx-setup
+	@for img in $(IMAGES); do \
+		echo "Publishing multi-arch $(REGISTRY)/$$img:latest for $(PLATFORMS)"; \
+		docker buildx build "$$img" \
+			--platform $(PLATFORMS) \
+			-t "$(REGISTRY)/$$img:latest" \
+			--push; \
 	done

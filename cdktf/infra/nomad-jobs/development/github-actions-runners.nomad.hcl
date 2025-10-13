@@ -1,36 +1,12 @@
 # -------------------------------------------------------------------------------
-#  GitHub Actions Runner — Nomad Service Job
+#  GitHub Actions Runner — Nomad Service Job (Debian Trixie + Node20 preseed)
 #
-#  * Self-hosted GitHub Actions runners for CI/CD workloads.
-#  * Dynamically registers/deregisters with GitHub on allocation start/stop.
-#  * Uses ephemeral runners (auto-removed after each job completes).
-#  * Supports Docker-in-Docker for container builds via privileged mode.
-#  * Scales horizontally across cluster nodes for concurrent job execution.
-#  * Pulls GitHub token from Vault (OpenBao) for secure registration.
-#  * Tags runners with labels for workflow job targeting (e.g., "nomad", "linux").
-#
-#  CONFIGURATION NOTES:
-#    - Set repo_url or org_url in Vault KV secret for target repo/org.
-#    - Ephemeral mode means runners auto-cleanup after each job.
-#    - Privileged mode is required for Docker builds; review security implications.
-#    - Consider Docker socket binding vs. DinD based on your security posture.
-#    - Scale count based on expected concurrent workflow runs.
-#
-#  VAULT SECRET PATH:
-#    - kv/data/github/runner
-#      Required fields:
-#        * token: GitHub PAT with repo + admin:org scopes
-#        * repo_url: Target repository URL (e.g., https://github.com/user/repo)
-#      Optional fields:
-#        * org_url: Organization URL (alternative to repo_url for org-wide runners)
-#        * runner_group: Runner group name (for organization runners)
-#
-#  CHANGELOG:
-#    - 2025-10-04: Initial job creation
-#    - Use myoung34/github-runner for ephemeral runner support
-#    - Migrate from Consul KV to Vault (OpenBao) for secret management
-#    - Spread runners across distinct hosts for better resource distribution
-#    - Added runner work directory cleanup on stop
+#  - Uses myoung34/github-runner:debian-trixie
+#  - EPHEMERAL runners (auto-cleanup per job)
+#  - Host Docker socket for builds (privileged)
+#  - Vault (OpenBao) for PAT + repo/org settings
+#  - Prestart task seeds Node 20 into /actions-runner/externals/node20
+#    to fix: "/__e/node20/bin/node: no such file or directory"
 # -------------------------------------------------------------------------------
 
 job "github-runner" {
@@ -39,7 +15,6 @@ job "github-runner" {
   type        = "service"
   node_pool   = "all"
 
-  # Update strategy - rolling updates to minimize disruption
   update {
     max_parallel      = 1
     min_healthy_time  = "30s"
@@ -50,40 +25,30 @@ job "github-runner" {
     canary            = 1
   }
 
-  # Spread runners across different nodes for better resource usage
   group "runner" {
-    count = 2 # Scale based on concurrent workflow needs
+    count = 2
 
-    # Distribute runners across distinct hosts
     constraint {
       operator = "distinct_hosts"
       value    = "true"
     }
 
-    # Avoid running on the same node as resource-heavy services
     constraint {
       attribute = "${node.unique.name}"
       operator  = "!="
-      value     = "mccoy" # Node running GitLab/heavy workloads
+      value     = "mccoy"
     }
 
-    # ---------------------------------------------------------------------------
-    #  Ephemeral storage for runner work directory
-    # ---------------------------------------------------------------------------
     ephemeral_disk {
-      size    = 5000 # 5GB for build artifacts and caches
+      size    = 5000
       migrate = false
       sticky  = false
     }
 
-    # ---------------------------------------------------------------------------
-    #  Networking - host mode for Docker socket access
-    # ---------------------------------------------------------------------------
     network {
       mode = "host"
     }
 
-    # Restart policy - runners should restart on failure
     restart {
       attempts = 10
       interval = "10m"
@@ -92,40 +57,94 @@ job "github-runner" {
     }
 
     # ---------------------------------------------------------------------------
-    #  GitHub Actions Runner Task
+    # Prestart: seed Node 20 so /actions-runner/externals/node20 always exists
+    # ---------------------------------------------------------------------------
+    #task "seed-node20" {
+    #  driver = "docker"
+
+    #  lifecycle {
+    #    hook    = "prestart"
+    #    sidecar = false
+    #  }
+
+    #  config {
+    #    image        = "debian:trixie-slim"
+    #    network_mode = "host"
+    #    command      = "bash"
+    #    args = [
+    #      "-lc",
+    #      <<-EOT
+    #        set -euo pipefail
+    #        apt-get update -y
+    #        apt-get install -y --no-install-recommends ca-certificates curl xz-utils
+    #        rm -rf /var/lib/apt/lists/*
+
+    #        mkdir -p "${NOMAD_ALLOC_DIR}/node20"
+    #        cd "${NOMAD_ALLOC_DIR}/node20"
+
+    #        ARCH=$(uname -m)
+    #        case "$ARCH" in
+    #          aarch64) NODE_ARCH="arm64" ;;
+    #          arm64)   NODE_ARCH="arm64" ;;
+    #          x86_64)  NODE_ARCH="x64" ;;
+    #          amd64)   NODE_ARCH="x64" ;;
+    #          *) echo "Unknown arch: $ARCH"; exit 1 ;;
+    #        esac
+
+    #        NODE_VER="v20.18.0"
+    #        TARBALL="node-${NODE_VER}-linux-${NODE_ARCH}.tar.xz"
+    #        URL="https://nodejs.org/dist/${NODE_VER}/${TARBALL}"
+
+    #        echo "Fetching ${URL}"
+    #        curl -fsSLO "${URL}"
+    #        tar -xJf "${TARBALL}"
+    #        rm -f "${TARBALL}"
+
+    #        mkdir -p externals/node20
+    #        mv "node-${NODE_VER}-linux-${NODE_ARCH}" externals/node20/node20
+
+    #        mkdir -p externals/node20/bin
+    #        ln -sf ../node20/bin/node externals/node20/bin/node
+
+    #        ./externals/node20/bin/node --version
+    #        echo "Node20 preseed complete."
+    #      EOT
+    #    ]
+    #  }
+
+    #  resources {
+    #    cpu    = 100
+    #    memory = 128
+    #  }
+    #}
+
+    # ---------------------------------------------------------------------------
+    # Main runner
     # ---------------------------------------------------------------------------
     task "runner" {
       driver = "docker"
 
-      # Workload identity for Vault authentication
       identity {
         env  = true
         file = true
         aud  = ["vault.io"]
       }
 
-      # Vault integration using nomad-workloads role
       vault {
         role = "nomad-workloads"
       }
 
       config {
-        # Official community image with ephemeral runner support
-        image              = "myoung34/github-runner:latest"
+        image              = "myoung34/github-runner:debian-trixie"
         image_pull_timeout = "10m"
         network_mode       = "host"
+        privileged         = true
 
-        # Privileged mode required for Docker-in-Docker builds
-        # SECURITY: Review if all workflows need this capability
-        privileged = true
-
-        # Mount Docker socket for container builds
-        # Alternative: Use Docker-in-Docker if security requires isolation
         volumes = [
           "/var/run/docker.sock:/var/run/docker.sock"
+          # "${NOMAD_ALLOC_DIR}/node20/externals/node20:/actions-runner/externals/node20"
         ]
 
-        # Logging configuration
         logging {
           type = "journald"
           config {
@@ -134,13 +153,9 @@ job "github-runner" {
         }
       }
 
-      # ---------------------------------------------------------------------------
-      #  Service registration - optional monitoring endpoint
-      # ---------------------------------------------------------------------------
       service {
         name     = "github-runner"
         provider = "consul"
-
         tags = [
           "ci",
           "github-actions",
@@ -149,74 +164,39 @@ job "github-runner" {
         ]
       }
 
-      # ---------------------------------------------------------------------------
-      #  GitHub configuration from Vault (OpenBao)
-      #
-      #  Pulls secrets from: kv/data/github/runner
-      #  Required secret fields:
-      #    - token: GitHub Personal Access Token (PAT) with repo + admin:org scopes
-      #    - repo_url: Target repository URL (or org_url for organization-wide)
-      # ---------------------------------------------------------------------------
       template {
-        data        = <<EOH
-{{ with secret "kv/data/github/runner" }}
-# GitHub authentication token (PAT with repo + admin:org scopes)
-ACCESS_TOKEN="{{ .Data.data.token }}"
-
-# Organization URL to register runner with
-{{ if .Data.data.org_url }}ORG_URL="{{ .Data.data.org_url }}"{{ end }}
-
-# Repository URL (alternative to ORG_URL for repo-specific runners)
-{{ if .Data.data.repo_url }}REPO_URL="{{ .Data.data.repo_url }}"{{ end }}
-
-# Optional: Runner group for organization runners
-{{ if .Data.data.runner_group }}RUNNER_GROUP="{{ .Data.data.runner_group }}"{{ end }}
-{{ end }}
-
-# Runner configuration
-RUNNER_NAME={{ env "NOMAD_ALLOC_NAME" }}-{{ env "NOMAD_ALLOC_ID" }}
-RUNNER_WORKDIR=/tmp/runner-work
-EPHEMERAL=false
-
-# Labels for workflow job targeting
-LABELS=nomad,self-hosted,linux,x64,docker
-
-# Disable automatic updates (controlled via Docker image)
-DISABLE_AUTO_UPDATE=true
-EOH
         destination = "secrets/github.env"
         env         = true
+        data        = <<-EOT
+          {{ with secret "kv/data/github/runner" }}
+          ACCESS_TOKEN="{{ .Data.data.token }}"
+          {{ if .Data.data.org_url }}ORG_URL="{{ .Data.data.org_url }}"{{ end }}
+          {{ if .Data.data.repo_url }}REPO_URL="{{ .Data.data.repo_url }}"{{ end }}
+          {{ if .Data.data.runner_group }}RUNNER_GROUP="{{ .Data.data.runner_group }}"{{ end }}
+          {{ end }}
+
+          RUNNER_NAME={{ env "NOMAD_ALLOC_NAME" }}-{{ env "NOMAD_ALLOC_ID" }}
+          RUNNER_WORKDIR=/tmp/runner-work
+          EPHEMERAL=true
+
+          LABELS=nomad,self-hosted,linux,${attr.cpu.arch},docker
+
+          RUNNER_VERSION=latest
+          DISABLE_AUTO_UPDATE=true
+        EOT
       }
 
-      # ---------------------------------------------------------------------------
-      #  Environment variables
-      # ---------------------------------------------------------------------------
       env {
-        # Timezone for log timestamps
         TZ = "America/Los_Angeles"
-
-        # Docker-in-Docker configuration (if not using socket binding)
-        # DOCKER_ENABLED = "true"
-        # DOCKER_TLS_VERIFY = "false"
-
-        # Runner behavior
-        START_DOCKER_SERVICE = "false" # Using host Docker socket
+        START_DOCKER_SERVICE = "false"
       }
 
-      # ---------------------------------------------------------------------------
-      #  Resource allocation
-      #
-      #  Memory: GitHub Actions jobs can be memory-intensive during builds.
-      #          Allocate based on your typical workflow requirements.
-      #  CPU: Reserve enough shares for parallel build steps.
-      # ---------------------------------------------------------------------------
       resources {
-        cpu    = 2000 # ~2 CPU cores worth of shares
-        memory = 2048 # 2GB RAM - adjust based on build requirements
+        cpu    = 2000
+        memory = 2048
       }
 
-      # Lifecycle management
-      kill_timeout   = "120s" # Allow time for job cleanup
+      kill_timeout   = "120s"
       kill_signal    = "SIGTERM"
       shutdown_delay = "10s"
     }
