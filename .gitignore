@@ -42,3 +42,4 @@ cdktf/bin/*
 *.nomad-github-token
 AGENTS.md
 berks-cookbooks
+*semgrep*
