@@ -68,6 +68,7 @@ job "emby" {
         image              = "linuxserver/emby:latest"
         image_pull_timeout = "10m"
         ports              = ["web", "https"]
+        network_mode       = "host"
         readonly_rootfs    = false
 
         # Direct host binds (no Nomad volume blocks)
