@@ -23,10 +23,10 @@
 #   - /mnt/gdrive/consul-snapshots reachable (job will mkdir -p)
 # -----------------------------------------------------------------------------
 job "backup-consul-snapshot" {
-  region      = "global"              # [scope] single region batch
-  datacenters = ["pi-dc"]             # [placement] same DC as your cluster
-  type        = "batch"               # [mode] periodic batch job
-  node_pool   = "all"                 # [pool] use pool with 'stabler'
+  region      = "global"  # [scope] single region batch
+  datacenters = ["pi-dc"] # [placement] same DC as your cluster
+  type        = "batch"   # [mode] periodic batch job
+  node_pool   = "all"     # [pool] use pool with 'stabler'
 
   # ----- Schedule (Periodic) --------------------------------------------------
   periodic {
@@ -40,7 +40,7 @@ job "backup-consul-snapshot" {
     count = 1
 
     constraint {
-      attribute = "node.unique.name"   # literal attribute key
+      attribute = "node.unique.name" # literal attribute key
       operator  = "="
       value     = "stabler"
     }
