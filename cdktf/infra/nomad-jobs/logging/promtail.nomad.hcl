@@ -82,14 +82,14 @@ job "promtail" {
 
       # Promtail configuration
       template {
-        destination     = "local/config/config.yaml"
-        change_mode     = "restart"
+        destination = "local/config/config.yaml"
+        change_mode = "restart"
 
         # IMPORTANT: keep Nomad's delimiters different so Promtail's {{ }} survive
         left_delimiter  = "[["
         right_delimiter = "]]"
 
-        data        = <<-YAML
+        data = <<-YAML
 # Promtail Configuration
 server:
   http_listen_port: 9080
