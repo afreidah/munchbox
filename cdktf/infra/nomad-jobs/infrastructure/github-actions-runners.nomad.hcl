@@ -187,7 +187,7 @@ job "github-runner" {
       }
 
       env {
-        TZ = "America/Los_Angeles"
+        TZ                   = "America/Los_Angeles"
         START_DOCKER_SERVICE = "false"
       }
 
