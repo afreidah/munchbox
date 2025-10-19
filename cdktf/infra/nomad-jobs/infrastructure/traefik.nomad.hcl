@@ -16,6 +16,8 @@
 #   - https://resume.munchbox          -> Local resume site (on mccoy:8080), via HTTPS
 #   - https://resume.alexfreidah.com   -> Public resume site via Cloudflare
 #                                         Tunnel -> Traefik (HTTP :80 locally) -> nginx-resume
+#   - http(s)://k3s-status.alexfreidah.com -> Cloudflare Tunnel -> Traefik (HTTP :80 locally)
+#                                            -> health-checker via Consul DNS
 #
 # Notes:
 #   - HTTP (:80) remains enabled. All *.munchbox requests on HTTP redirect to HTTPS,
@@ -349,6 +351,29 @@ EOF
   priority    = 101
 
 # --------------------------------------------------------------------
+# NEW: force www.alexfreidah.com -> https://resume.alexfreidah.com at Traefik
+# (Specific router with higher priority so it wins before resume-apex-public)
+# --------------------------------------------------------------------
+[http.routers.redirect-www-to-resume]
+  rule        = "Host(`www.alexfreidah.com`)"
+  entryPoints = ["web"]
+  service     = "ping-svc"
+  middlewares = ["redirect-www-to-resume"]
+  priority    = 110
+
+# --------------------------------------------------------------------
+# NEW: k3s-status public hostname via Cloudflare Tunnel (HTTP locally)
+# - Uses Consul DNS to reach health-checker (service may move nodes)
+# - Applies existing security headers; no rate limiting middleware
+# --------------------------------------------------------------------
+[http.routers.k3s-status-public]
+  rule        = "Host(`k3s-status.alexfreidah.com`)"
+  entryPoints = ["web"]
+  service     = "health-checker-svc"
+  middlewares = ["k3s-status-sec"]
+  priority    = 102
+
+# --------------------------------------------------------------------
 # Global HTTP -> HTTPS redirect for *.munchbox
 # --------------------------------------------------------------------
 [http.routers.http-redirect]
@@ -414,6 +439,12 @@ EOF
   replacement = "https://alexfreidah.com/$1"
   permanent   = true
 
+# NEW: Redirect www.alexfreidah.com -> resume.alexfreidah.com
+[http.middlewares.redirect-www-to-resume.redirectRegex]
+  regex       = "^https?://www\\.alexfreidah\\.com/(.*)"
+  replacement = "https://resume.alexfreidah.com/$1"
+  permanent   = true
+
 # Resume security headers (HSTS, XFO, nosniff, Referrer-Policy, Permissions-Policy, CSP)
 [http.middlewares.resume-sec.headers]
   stsSeconds           = 31536000
@@ -444,6 +475,40 @@ EOF
     upgrade-insecure-requests;
   """
 
+# Security headers for k3s-status UI (allow API calls & websockets; disable CF cache)
+[http.middlewares.k3s-status-sec.headers]
+  stsSeconds              = 31536000
+  stsIncludeSubdomains    = true
+  forceSTSHeader          = true
+  stsPreload              = false
+  contentTypeNosniff      = true
+  customFrameOptionsValue = "SAMEORIGIN"
+  referrerPolicy          = "no-referrer"
+
+  # Do not let Cloudflare cache k3s-status while we stabilize it
+  [http.middlewares.k3s-status-sec.headers.customResponseHeaders]
+    Cache-Control                    = "no-store, no-cache, must-revalidate"
+    Pragma                           = "no-cache"
+    Cross-Origin-Embedder-Policy     = "unsafe-none"
+    Cross-Origin-Opener-Policy       = "unsafe-none"
+    Cross-Origin-Resource-Policy     = "cross-origin"
+
+  # CSP relaxed for the SPA (scripts, blobs, websockets)
+  contentSecurityPolicy = """
+    default-src 'self' data: blob: https:;
+    base-uri 'self';
+    object-src 'none';
+    frame-ancestors 'self';
+    img-src 'self' data: blob: https:;
+    font-src 'self' data: https:;
+    style-src 'self' 'unsafe-inline' https:;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:;
+    connect-src 'self' https: ws: wss: data: blob:;
+    worker-src 'self' blob:;
+    form-action 'self';
+    upgrade-insecure-requests;
+  """
+
 # --------------------------------------------------------------------
 # Services (only for non-Consul backends)
 # --------------------------------------------------------------------
@@ -458,6 +523,12 @@ EOF
 [http.services.ping-svc.loadBalancer]
   [[http.services.ping-svc.loadBalancer.servers]]
     url = "http://127.0.0.1:8081/ping"
+
+# NEW: health-checker backend via Consul DNS (service can move nodes)
+# NOTE: adjust the port below if health-checker listens on a different port.
+[http.services.health-checker-svc.loadBalancer]
+  [[http.services.health-checker-svc.loadBalancer.servers]]
+    url = "http://health-checker.service.consul:18080"
 EOF
       }
 

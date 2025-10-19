@@ -12,7 +12,7 @@ job "blackbox-exporter" {
   region      = "global"
   datacenters = ["pi-dc"]
   type        = "service"
-  node_pool   = "core"
+  node_pool   = "all"
 
   group "blackbox" {
     count = 1
@@ -21,7 +21,7 @@ job "blackbox-exporter" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
-      value     = "stabler"
+      value     = "cabot"
     }
 
     # --- Networking -----------------------------------------------------------
