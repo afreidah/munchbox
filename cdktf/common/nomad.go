@@ -158,7 +158,7 @@ func RegisterNomadJobs(stack cdktf.TerraformStack, dir string, jobsFlag string) 
 			continue
 		}
 
-		hcl := string(raw)
+		hcl := injectTemplates(string(raw), filepath.Dir(f))
 
 		// Infer metadata from directory structure
 		category := InferCategoryFromPath(f)
@@ -345,6 +345,38 @@ func RegisterNomadPolicies(stack cdktf.TerraformStack, dir string) {
 			RulesHcl: jsii.String(hcl),
 		})
 	}
+}
+
+// injectTemplates replaces placeholder markers in a Nomad job HCL string with
+// the contents of local files.
+//
+// Placeholders must use the format <<INJECT:relative/path/to/file>> and are
+// resolved relative to the job file's directory.
+//
+// This enables dynamic file injection (e.g., scripts, templates) without using
+// Terraform's file() function, which is disabled in remote execution contexts.
+//
+// Parameters:
+//   - hcl: Original HCL string with <<INJECT:...>> placeholders
+//   - baseDir: Directory path to resolve relative file references
+//
+// Returns:
+//   - string: Updated HCL with file contents inlined in place of placeholders
+func injectTemplates(hcl string, baseDir string) string {
+	re := regexp.MustCompile(`<<INJECT:([^>]+)>>`)
+	return re.ReplaceAllStringFunc(hcl, func(match string) string {
+		fileMatch := re.FindStringSubmatch(match)
+		if len(fileMatch) < 2 {
+			return match
+		}
+		contentPath := filepath.Join(baseDir, fileMatch[1])
+		content, err := os.ReadFile(contentPath)
+		if err != nil {
+			log.Printf("warning: could not read file for placeholder %s: %v", match, err)
+			return match
+		}
+		return string(content)
+	})
 }
 
 // ============================================================================

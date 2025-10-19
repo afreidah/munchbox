@@ -21,8 +21,8 @@ job "ersatztv" {
       mode = "host"
 
       # ErsatzTV UI/API
-      port "ui" { 
-        static = 8409 
+      port "ui" {
+        static = 8409
         to     = 8409
       }
     }
