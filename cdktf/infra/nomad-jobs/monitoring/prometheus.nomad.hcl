@@ -12,7 +12,7 @@ job "prometheus" {
   region      = "global"
   datacenters = ["pi-dc"]
   type        = "service"
-  node_pool   = "core"
+  node_pool   = "all"
 
   # Job metadata
   meta {
@@ -28,7 +28,7 @@ job "prometheus" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
-      value     = "stabler"
+      value     = "cabot"
     }
 
     # Host volume for persistent TSDB data
