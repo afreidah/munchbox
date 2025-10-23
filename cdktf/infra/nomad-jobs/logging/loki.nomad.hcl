@@ -2,9 +2,10 @@
 # Loki — Nomad Job for centralized log aggregation
 #
 # - Receives logs from Promtail agents on all nodes
-# - 5-day log retention
-# - Persistent storage on cabot
+# - 5-day log retention (TSDB, filesystem backend)
+# - Persistent storage on cabot (host volume `loki-data`)
 # - Exposes HTTP API for Grafana queries
+# - Registers in Consul (address_mode=host) so loki.service.consul works
 # -------------------------------------------------------------------------------
 
 job "loki" {
@@ -13,44 +14,49 @@ job "loki" {
   type        = "service"
   node_pool   = "edge"
 
-  # Job metadata
+  # Metadata (informational)
   meta {
     version     = "3.2.0"
-    updated     = "2025-10-07"
+    updated     = "2025-10-22"
     description = "Loki log aggregation server"
+    owner       = "alex.freidah"
+    category    = "logging"
+    tier        = "tier-1"
+    environment = "production"
   }
 
   group "loki" {
     count = 1
 
-    # Pin to cabot for persistent storage
+    # Pin to cabot for persistent storage locality
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "cabot"
     }
 
-    # Host volume for log storage
+    # Host volume for persistent TSDB data (define 'loki-data' in client.hcl)
     volume "loki-data" {
       type      = "host"
       source    = "loki-data"
       read_only = false
     }
 
-    # Network configuration
+    # Networking: host mode + static ports (open 3100/tcp & 9096/tcp on host)
     network {
       mode = "host"
 
       port "http" {
-        static = 3100 # Standard Loki port
+        static = 3100
+        to     = 3100
       }
-
       port "grpc" {
-        static = 9096 # gRPC port for distributor/querier
+        static = 9096
+        to     = 9096
       }
     }
 
-    # Restart policy
+    # Restart/update policies
     restart {
       attempts = 3
       interval = "5m"
@@ -58,7 +64,6 @@ job "loki" {
       mode     = "fail"
     }
 
-    # Update strategy
     update {
       max_parallel      = 1
       min_healthy_time  = "30s"
@@ -67,30 +72,32 @@ job "loki" {
       auto_revert       = true
     }
 
-    # Prestart task to fix permissions
+    # -------------------------------------------------------------------------
+    # Prestart: ensure storage dirs exist & owned by Loki UID 10001
+    # -------------------------------------------------------------------------
     task "prepare-storage" {
       driver = "docker"
       user   = "root"
 
-      lifecycle {
-        hook    = "prestart"
-        sidecar = false
-      }
+      lifecycle { hook = "prestart" }
 
       config {
-        image   = "alpine:latest"
+        image   = "alpine:3.20"
         command = "sh"
         args = [
           "-c",
-          <<-EOT
-            mkdir -p /loki/chunks /loki/rules /loki/tsdb-index \
-                     /loki/tsdb-cache /loki/compactor
+          <<-EOS
+            set -euo pipefail
+            mkdir -p /loki/chunks /loki/rules /loki/tsdb-index /loki/tsdb-cache /loki/compactor
             chown -R 10001:10001 /loki
             chmod -R 775 /loki
             ls -la /loki
-            echo 'Permissions fixed!'
-          EOT
+          EOS
         ]
+        logging {
+          type = "journald"
+          config { tag = "loki-prepare-storage" }
+        }
       }
 
       volume_mount {
@@ -105,6 +112,9 @@ job "loki" {
       }
     }
 
+    # -------------------------------------------------------------------------
+    # Main Loki task
+    # -------------------------------------------------------------------------
     task "loki" {
       driver = "docker"
 
@@ -121,12 +131,9 @@ job "loki" {
           "local/config:/etc/loki:ro",
         ]
 
-        # Logging configuration
         logging {
           type = "journald"
-          config {
-            tag = "loki"
-          }
+          config { tag = "loki" }
         }
       }
 
@@ -137,136 +144,131 @@ job "loki" {
         read_only   = false
       }
 
-      # Loki configuration
+      # ---- Loki config (filesystem TSDB, 5-day retention) -------------------
       template {
         destination = "local/config/config.yaml"
         change_mode = "restart"
+        perms       = "0644"
         data        = <<-YAML
-# Loki Configuration
-auth_enabled: false
+          # Loki Configuration
+          auth_enabled: false
 
-server:
-  http_listen_port: 3100
-  grpc_listen_port: 9096
-  log_level: info
+          server:
+            http_listen_port: 3100
+            grpc_listen_port: 9096
+            log_level: info
 
-common:
-  path_prefix: /loki
-  storage:
-    filesystem:
-      chunks_directory: /loki/chunks
-      rules_directory: /loki/rules
-  replication_factor: 1
-  ring:
-    kvstore:
-      store: inmemory
+          common:
+            path_prefix: /loki
+            storage:
+              filesystem:
+                chunks_directory: /loki/chunks
+                rules_directory: /loki/rules
+            replication_factor: 1
+            ring:
+              kvstore:
+                store: inmemory
 
-# Query limits
-query_scheduler:
-  max_outstanding_requests_per_tenant: 2048
+          # Query limits
+          query_scheduler:
+            max_outstanding_requests_per_tenant: 2048
 
-querier:
-  max_concurrent: 4
+          querier:
+            max_concurrent: 4
 
-# Schema configuration
-schema_config:
-  configs:
-    - from: 2024-01-01
-      store: tsdb
-      object_store: filesystem
-      schema: v13
-      index:
-        prefix: index_
-        period: 24h
+          # Schema configuration (TSDB)
+          schema_config:
+            configs:
+              - from: 2024-01-01
+                store: tsdb
+                object_store: filesystem
+                schema: v13
+                index:
+                  prefix: index_
+                  period: 24h
 
-# Storage configuration
-storage_config:
-  tsdb_shipper:
-    active_index_directory: /loki/tsdb-index
-    cache_location: /loki/tsdb-cache
-  filesystem:
-    directory: /loki/chunks
+          # Storage configuration
+          storage_config:
+            tsdb_shipper:
+              active_index_directory: /loki/tsdb-index
+              cache_location: /loki/tsdb-cache
+            filesystem:
+              directory: /loki/chunks
 
-# Compactor for retention
-compactor:
-  working_directory: /loki/compactor
-  compaction_interval: 10m
-  retention_enabled: true
-  retention_delete_delay: 2h
-  retention_delete_worker_count: 150
-  delete_request_store: filesystem
+          # Compactor (for retention)
+          compactor:
+            working_directory: /loki/compactor
+            compaction_interval: 10m
+            retention_enabled: true
+            retention_delete_delay: 2h
+            retention_delete_worker_count: 150
+            delete_request_store: filesystem
 
-# Limits - 5 day retention
-limits_config:
-  volume_enabled: true
-  retention_period: 120h  # 5 days
-  max_query_lookback: 120h
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h
-  ingestion_rate_mb: 10
-  ingestion_burst_size_mb: 20
-  per_stream_rate_limit: 5MB
-  per_stream_rate_limit_burst: 15MB
+          # Limits - 5 day retention
+          limits_config:
+            volume_enabled: true
+            retention_period: 120h
+            max_query_lookback: 120h
+            reject_old_samples: true
+            reject_old_samples_max_age: 168h
+            ingestion_rate_mb: 10
+            ingestion_burst_size_mb: 20
+            per_stream_rate_limit: 5MB
+            per_stream_rate_limit_burst: 15MB
 
-# Table manager for cleanup
-table_manager:
-  retention_deletes_enabled: true
-  retention_period: 120h
+          # Cleanup (legacy table manager for some scans)
+          table_manager:
+            retention_deletes_enabled: true
+            retention_period: 120h
 
-# Analytics disabled
-analytics:
-  reporting_enabled: false
-YAML
+          # Telemetry
+          analytics:
+            reporting_enabled: false
+        YAML
       }
 
-      # Consul service registration
+      # Consul service registration (address_mode=host ensures host IP is used)
       service {
-        name     = "loki"
-        port     = "http"
-        provider = "consul"
+        name         = "loki"
+        port         = "http"
+        provider     = "consul"
+        address_mode = "host"
 
         tags = [
+          # Traefik routing (optional but kept from your setup)
           "traefik.enable=true",
-
-          # Router configuration
           "traefik.http.routers.loki.rule=Host(`loki.munchbox`)",
           "traefik.http.routers.loki.entrypoints=websecure",
           "traefik.http.routers.loki.tls=true",
-
-          # Security middleware - reference file provider
           "traefik.http.routers.loki.middlewares=dashboard-allowlan@file",
-
-          # Explicit port for Consul discovery
           "traefik.http.services.loki.loadbalancer.server.port=3100",
 
-          # Metadata tags
+          # Metadata
           "logging",
           "loki",
-          "observability"
+          "observability",
         ]
 
-        # Health check
+        # Health check: only PASSING instances appear in loki.service.consul DNS
         check {
           name     = "loki-ready"
           type     = "http"
           path     = "/ready"
+          port     = "http"
           interval = "10s"
           timeout  = "3s"
         }
       }
 
-      # Environment variables
       env {
         TZ = "America/Los_Angeles"
       }
 
-      # Resource allocation
       resources {
-        cpu    = 500 # MHz
-        memory = 512 # MB
+        cpu    = 500
+        memory = 512
       }
 
-      # Lifecycle management
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
     }

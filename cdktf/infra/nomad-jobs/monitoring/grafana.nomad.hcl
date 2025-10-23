@@ -69,7 +69,7 @@ job "grafana" {
       config {
         image   = "alpine:3.20"
         command = "sh"
-        args    = [
+        args = [
           "-c",
           "mkdir -p /var/lib/grafana && chown -R 472:472 /var/lib/grafana && ls -ld /var/lib/grafana"
         ]
@@ -145,11 +145,11 @@ job "grafana" {
 
         # Explicit host networking at Docker layer is optional when using Consul DNS.
         # Keeping host net simplifies Traefik/port binding; remove if you prefer bridge.
-        network_mode       = "host"
+        network_mode = "host"
 
         dns_servers        = ["192.168.68.62", "192.168.68.64"]
         dns_search_domains = ["service.consul"]
-        dns_options        = ["timeout:2", "attempts:3", "ndots:1"]  # no 'rotate'
+        dns_options        = ["timeout:2", "attempts:3", "ndots:1"] # no 'rotate'
 
         volumes = [
           "local/grafana-provisioning:/etc/grafana/provisioning"
