@@ -34,7 +34,7 @@ job "promtail" {
       mode = "host"
 
       port "http" {
-        static = 9080  # Promtail metrics/status port
+        static = 9080 # Promtail metrics/status port
       }
     }
 
@@ -56,7 +56,7 @@ job "promtail" {
       min_healthy_time = "10s"
       healthy_deadline = "3m"
       auto_revert      = true
-      stagger          = "30s"  # Wait between node updates
+      stagger          = "30s" # Wait between node updates
     }
 
     task "promtail" {
@@ -66,6 +66,10 @@ job "promtail" {
         image        = "grafana/promtail:3.2.0"
         network_mode = "host"
         ports        = ["http"]
+        # DNS configuration for Consul service discovery
+        dns_servers        = ["192.168.68.62", "192.168.68.64"]
+        dns_search_domains = ["service.consul"]
+        dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
 
         args = [
           "-config.file=/etc/promtail/config.yaml",
@@ -234,47 +238,50 @@ job "promtail" {
 
             # -----------------------------------------------------------------
             # NEW: Nomad allocation and task logs (stdout/stderr)
-            # - Covers both common directory layouts:
-            #     /opt/nomad/alloc/...           (your node)
-            #     /opt/nomad/data/alloc/...      (some nodes)
-            # - Tails both alloc-level and task-level logs.
             # -----------------------------------------------------------------
             - job_name: nomad-allocs
               static_configs:
-                # Alloc-level logs (stdout/stderr) - /opt/nomad/alloc
+                # Primary path structure: /opt/nomad/alloc
                 - targets: [localhost]
                   labels:
                     job: nomad
                     host: [[ env "HOSTNAME" ]]
-                    __path__: /opt/nomad/alloc/*/alloc/logs/*
-                # Task-level logs (stdout/stderr) - /opt/nomad/alloc
+                    __path__: /opt/nomad/alloc/*/alloc/logs/*.{stdout,stderr}.*
+                
+                # Alternative path structure: /opt/nomad/data/alloc  
                 - targets: [localhost]
                   labels:
                     job: nomad
                     host: [[ env "HOSTNAME" ]]
-                    __path__: /opt/nomad/alloc/*/task/*/logs/*
+                    __path__: /opt/nomad/data/alloc/*/alloc/logs/*.{stdout,stderr}.*
 
-                # Optional: also cover /opt/nomad/data/alloc for heterogeneous nodes
-                - targets: [localhost]
-                  labels:
-                    job: nomad
-                    host: [[ env "HOSTNAME" ]]
-                    __path__: /opt/nomad/data/alloc/*/alloc/logs/*
-                - targets: [localhost]
-                  labels:
-                    job: nomad
-                    host: [[ env "HOSTNAME" ]]
-                    __path__: /opt/nomad/data/alloc/*/task/*/logs/*
-
-              # Enrich labels from file path (low-cardinality, safe for Loki)
+              # Enhanced pipeline to extract task names from filenames
               pipeline_stages:
+                # Extract labels from the file path
                 - regex:
                     source: filename
-                    expression: '.*/alloc/(?P<alloc_id>[^/]+)/(?:alloc/logs|task/(?P<task>[^/]+)/logs)/(?P<stream>stdout|stderr)\.\d+'
+                    # Matches: /path/to/alloc/{alloc-id}/alloc/logs/{task}.{stdout|stderr}.{n}
+                    expression: '.*/alloc/(?P<alloc_id>[^/]+)/alloc/logs/(?P<task_name>[^.]+)\.(?P<stream>stdout|stderr)\.\d+'
+                
                 - labels:
-                    alloc:
-                    task:
+                    alloc_id:
+                    task_name:
                     stream:
+                
+                # Optional: Parse JSON logs if your services emit structured logs
+                - json:
+                    expressions:
+                      level: level
+                      msg: msg
+                      trace_id: trace_id
+                    source: log
+                
+                # Drop empty lines to reduce noise
+                - match:
+                    selector: '{job="nomad"}'
+                    stages:
+                      - drop:
+                          expression: '^\s*$'
 
           # -------------------------------------------------------------------
           # Positions file to track what's been read
@@ -304,8 +311,8 @@ job "promtail" {
       # Resource allocation - very lightweight
       # -----------------------------------------------------------------------
       resources {
-        cpu    = 100  # MHz
-        memory = 128  # MB
+        cpu    = 100 # MHz
+        memory = 128 # MB
       }
 
       # -----------------------------------------------------------------------
