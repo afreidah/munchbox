@@ -44,11 +44,11 @@ job "alertmanager" {
     count = 1
 
     # Pin to same node as Prometheus for reliable communication
-    constraint {
-      attribute = "${node.unique.name}"
-      operator  = "="
-      value     = "stabler"
-    }
+    #constraint {
+    #  attribute = "${node.unique.name}"
+    #  operator  = "="
+    #  value     = "stabler"
+    #}
 
     # Network configuration
     network {
