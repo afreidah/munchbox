@@ -44,6 +44,7 @@ job "prometheus" {
 
       port "web" {
         static = 9090 # Standard Prometheus port
+        to     = 9090
       }
     }
 
