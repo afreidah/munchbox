@@ -85,6 +85,10 @@ job "prometheus" {
           "cabot:192.168.68.59"
         ]
 
+        # >>> DNS so *.service.consul resolves inside the container <<<
+        dns_servers        = ["127.0.0.1", "192.168.68.59"]
+        dns_search_domains = ["service.consul"]
+
         # Prometheus command line arguments
         args = [
           "--config.file=/etc/prometheus/config/prometheus.yml",
@@ -233,7 +237,7 @@ alerting:
   alertmanagers:
     - scheme: http
       static_configs:
-        - targets: ["127.0.0.1:9093"]
+        - targets: ["alertmanager.service.consul:9093"]
 
 # Scrape configuration - what to monitor
 scrape_configs:
@@ -348,7 +352,7 @@ scrape_configs:
   - job_name: "traefik"
     scheme: "http"
     consul_sd_configs:
-      - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.0.1:8500[[ end ]]'
+      - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.01:8500[[ end ]]'
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["traefik"]
         datacenter: "dc1"
