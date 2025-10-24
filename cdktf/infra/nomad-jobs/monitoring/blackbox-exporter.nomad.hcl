@@ -41,14 +41,6 @@ job "blackbox-exporter" {
 
         # Optional: map domain to internal IP if your router can't hairpin NAT
         # extra_hosts = ["resume.alexfreidah.com:192.168.68.61"]
-
-        # Logging configuration
-        logging {
-          type = "journald"
-          config {
-            tag = "blackbox-exporter"
-          }
-        }
       }
 
       # Blackbox modules config rendered by Nomad

@@ -96,14 +96,6 @@ job "alertmanager" {
         volumes = [
           "local/config:/etc/alertmanager:ro"
         ]
-
-        # Logging configuration
-        logging {
-          type = "journald"
-          config {
-            tag = "alertmanager"
-          }
-        }
       }
 
       # Consul service registration with Traefik v3 tags

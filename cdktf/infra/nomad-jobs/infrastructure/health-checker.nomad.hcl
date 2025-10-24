@@ -47,14 +47,6 @@ job "health-checker" {
           "/var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro"
         ]
 
-        # Container logging via journald
-        logging {
-          type = "journald"
-          config {
-            tag = "health-checker"
-          }
-        }
-
         # Override ENTRYPOINT/CMD
         args = ["--service", "k3s", "--port", "18080", "--interval", "10"]
       }

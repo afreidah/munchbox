@@ -75,11 +75,6 @@ job "ersatztv" {
         # devices = [
         #   { host_path = "/dev/dri", container_path = "/dev/dri", cgroup_permissions = "rwm" }
         # ]
-
-        logging {
-          type = "journald"
-          config { tag = "ersatztv" }
-        }
       }
 
       env = {

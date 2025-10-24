@@ -111,14 +111,6 @@ job "backup-nomad-snapshot" {
             done
           EOS
         ]
-
-        # Logging configuration
-        logging {
-          type = "journald"
-          config {
-            tag = "nomad-snapshot"
-          }
-        }
       }
 
       resources {

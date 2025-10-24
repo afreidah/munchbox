@@ -94,10 +94,6 @@ job "loki" {
             ls -la /loki
           EOS
         ]
-        logging {
-          type = "journald"
-          config { tag = "loki-prepare-storage" }
-        }
       }
 
       volume_mount {
