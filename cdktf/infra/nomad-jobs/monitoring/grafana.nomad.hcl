@@ -154,11 +154,6 @@ job "grafana" {
         volumes = [
           "local/grafana-provisioning:/etc/grafana/provisioning"
         ]
-
-        logging {
-          type = "journald"
-          config { tag = "grafana" }
-        }
       }
 
       # Persist Grafana state

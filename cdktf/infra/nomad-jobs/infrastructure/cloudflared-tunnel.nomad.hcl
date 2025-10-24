@@ -57,14 +57,6 @@ job "cloudflared-tunnel" {
           "local/config.yml:/etc/cloudflared/config.yml:ro",
           "local/credentials.json:/etc/cloudflared/credentials.json:ro"
         ]
-
-        # Logging configuration
-        logging {
-          type = "journald"
-          config {
-            tag = "cloudflared-tunnel"
-          }
-        }
       }
 
       # ---- credentials.json (rendered from Consul KV) -----------------------

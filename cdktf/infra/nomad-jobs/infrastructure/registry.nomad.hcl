@@ -48,14 +48,6 @@ job "registry" {
         volumes = [
           "local/config/config.yml:/etc/docker/registry/config.yml"
         ]
-
-        # Logging configuration
-        logging {
-          type = "journald"
-          config {
-            tag = "docker-registry"
-          }
-        }
       }
 
       env {

@@ -102,14 +102,6 @@ job "node-exporter" {
         volumes = [
           "/:/host:ro,rslave" # Read-only recursive mount of entire host FS
         ]
-
-        # Logging configuration - integrate with system logging
-        logging {
-          type = "journald"
-          config {
-            tag = "node-exporter" # Tag for easy log filtering
-          }
-        }
       }
 
       # Resource allocation - lightweight for system service

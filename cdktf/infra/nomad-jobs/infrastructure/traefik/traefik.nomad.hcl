@@ -118,12 +118,6 @@ EOT
           "local/traefik.toml:/etc/traefik/traefik.toml",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml"
         ]
-        logging {
-          type = "journald"
-          config {
-            tag = "traefik"
-          }
-        }
       }
 
       template {

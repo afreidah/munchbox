@@ -110,14 +110,6 @@ job "prometheus" {
           # Configuration files (rendered by templates)
           "local/config:/etc/prometheus/config:ro"
         ]
-
-        # Logging configuration
-        logging {
-          type = "journald"
-          config {
-            tag = "prometheus"
-          }
-        }
       }
 
       # Mount persistent storage volume

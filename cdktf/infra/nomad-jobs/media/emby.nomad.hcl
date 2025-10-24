@@ -106,13 +106,6 @@ job "emby" {
 
         # Optional: route via VPN policy like Deluge (requires host policy rules)
         # user = "vpnmark"
-        # Logging configuration
-        logging {
-          type = "journald"
-          config {
-            tag = "emby"
-          }
-        }
       }
 
       env = {

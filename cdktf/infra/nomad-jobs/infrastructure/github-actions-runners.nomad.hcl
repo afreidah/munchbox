@@ -144,13 +144,6 @@ job "github-runner" {
           "/var/run/docker.sock:/var/run/docker.sock"
           # "${NOMAD_ALLOC_DIR}/node20/externals/node20:/actions-runner/externals/node20"
         ]
-
-        logging {
-          type = "journald"
-          config {
-            tag = "github-runner-${NOMAD_ALLOC_INDEX}"
-          }
-        }
       }
 
       service {
