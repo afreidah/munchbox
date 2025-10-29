@@ -1,9 +1,9 @@
 {
   "id": "agent",
   "token": {
-    "encrypted_data": "GrWeMYJL1sBxHwaJgHFZIuVB3TOctJTIDPdskodvm+DJQvVdfPUb5iy75ldS\n+CMwyJMZ0pE26w==\n",
-    "iv": "mbcCd2JbudhuvehW\n",
-    "auth_tag": "ZZGWsI7r6JtA67Eu5B4Fag==\n",
+    "encrypted_data": "dVQDYTsU8O75NT6mTOu8pX2VYUW3/qE7BvHau7cRw3DVNhgqdblLdWSForPB\n5WZSEZqrTJdqeg==\n",
+    "iv": "H3rVj/caAb5ZvO4W\n",
+    "auth_tag": "JbWXqiQcy/0XZkwt69H9Qg==\n",
     "version": 3,
     "cipher": "aes-256-gcm"
   }

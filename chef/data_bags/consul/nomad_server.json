@@ -1,9 +1,9 @@
 {
   "id": "nomad_server",
   "token": {
-    "encrypted_data": "OtcNJBGVachjjYnkk7m6+UkOP1aNbeIqBvNdXIMIGerHiNmFbyDRTu9FdCAV\nkrpnaKA0Si5g+g==\n",
-    "iv": "uYWOQ4SCA6knt5th\n",
-    "auth_tag": "Imy02JFtD7q+/wNqlpFKyQ==\n",
+    "encrypted_data": "aW3/OU2P1aCs0DgNFGEVVvaOJY2vS4qegmJFyYeMeuKfBCyu+SjHR+bTtWv6\nte4W9+qaNIXyGg==\n",
+    "iv": "IB52MXeyQb9Afh7r\n",
+    "auth_tag": "o51eyp4itt8TGRMAlf9Ytg==\n",
     "version": 3,
     "cipher": "aes-256-gcm"
   }

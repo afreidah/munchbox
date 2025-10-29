@@ -1,23 +1,9 @@
 {
   "id": "management",
   "secret_id": {
-    "encrypted_data": "1a8ND5MR9Uet8gLV/4nLiagdMnSljEQS16QE5lUBxQ5xtzjLwzHYIVQys/B1\nnDdVPI/Ej1VV2w==\n",
-    "iv": "ERT+RkMgr2fFHzeY\n",
-    "auth_tag": "0BBHqxRqXzsw3arAoKXy4g==\n",
-    "version": 3,
-    "cipher": "aes-256-gcm"
-  },
-  "name": {
-    "encrypted_data": "jssF3c4MxcM0MtTRSyDsYhA+aWkgvau1ByY5U+iBmw+SqQ==\n",
-    "iv": "6YPigI2ah+oWMu1C\n",
-    "auth_tag": "pBmjwM4y0O0OdiMLNc/jpQ==\n",
-    "version": 3,
-    "cipher": "aes-256-gcm"
-  },
-  "type": {
-    "encrypted_data": "qJWiOBAkRT99LbAUq8+wiMw3bSVn6R/wlJMJQ1E=\n",
-    "iv": "bFRSUTaLzZbvlFVl\n",
-    "auth_tag": "Bp6Qu8Om9u2BKFOKVfSskQ==\n",
+    "encrypted_data": "AF5KLf7s36pYvqVhUBflb6Xuux1PzfyveXCu2vu17HbU1ZnRHtDb6h7xdBPU\nsb78un3DkyvKRRNm/hC3aI5OABz/8zhPmFOQLTTLpk2HnZVSYZpwsswX3kWe\nfTs6Ol+NN0OpHR57Su9sT2FenQQnU6XYwQ1lpIjqoWtTZlEfwctPPM/3tMup\ncu+f12eQiSllYKs4z85Yg8pqkju9ZZQUFq1VeI3suwbGpIxjhiIz2v5KxseS\nHWfCuiAJnVs00/ouleVnc0Q/i4HOrHx6WzJ5FuBgortWBT8uJzbt\n",
+    "iv": "T8PscInkt/2HHenO\n",
+    "auth_tag": "CrHaH72KCE+jogAUogmQ7A==\n",
     "version": 3,
     "cipher": "aes-256-gcm"
   }
