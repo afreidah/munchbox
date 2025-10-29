@@ -1,9 +1,9 @@
 {
   "id": "nomad_client",
   "token": {
-    "encrypted_data": "dvE1iiLMiN/AjJiX3DnvXxPAzmKigvZR59BD0/cy43DE3incVsMLC1GiM0zA\noAC4sIN8A6tVbg==\n",
-    "iv": "Q9S1BSi3k87pGPJS\n",
-    "auth_tag": "9/nw6wSEWRS3EaEb+nR4+A==\n",
+    "encrypted_data": "osZvweS8twl+uLOkUhr+g/EuIdV5xn1TrSASNDOS8Gf2AwaENy3WwU7gG6Lr\nzSz/+76H1syLXw==\n",
+    "iv": "3fT0JYkJtczLzG1D\n",
+    "auth_tag": "f8YR9XKTVI8x9FMty+79HA==\n",
     "version": 3,
     "cipher": "aes-256-gcm"
   }

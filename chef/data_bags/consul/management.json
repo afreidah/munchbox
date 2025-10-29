@@ -1,9 +1,16 @@
 {
   "id": "management",
   "token": {
-    "encrypted_data": "yFsyNWj9Zr2BT31Kb9ezPlGMVjEVF2Sv79Lt/UXY3TqIS4FfpSgM1S/MBH9L\npWyTA9Bb1V6vfg==\n",
-    "iv": "H/WrIkeL8Dbm2BCw\n",
-    "auth_tag": "d7wEKZuGtCJ7ktHVR7l/Mg==\n",
+    "encrypted_data": "+/Elyt0OABQ6lysN/xS2L6Q1tXSmx2nCcqIQQbyZy7+PLGAqJib4oF1QSUjR\n1krLHDK2R8CSHw==\n",
+    "iv": "zre2kpwGYFVO0YJz\n",
+    "auth_tag": "BdIpAXrftNYYfH/gsyLs7Q==\n",
+    "version": 3,
+    "cipher": "aes-256-gcm"
+  },
+  "SecretID": {
+    "encrypted_data": "TEnpAh1gmEpUnrZQ2m5J7cBquAyW+ASIj3pWP+iGsZXSsfZVXG/Wo0OSpPgn\nhg9r+CjXIy2RAQ==\n",
+    "iv": "X2H/Uh1llYy2wXNR\n",
+    "auth_tag": "65UyLw91W3QBUhgsU8avlQ==\n",
     "version": 3,
     "cipher": "aes-256-gcm"
   }

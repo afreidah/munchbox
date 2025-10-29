@@ -1,9 +1,9 @@
 {
   "id": "vault_token",
   "token": {
-    "encrypted_data": "qPXXlo1QZayBVJUz7XjTrFjq6iQAoXP2pdKIHY216C/2kz2esUh5ILHwkzI5\n",
-    "iv": "2JtcCu4zscDqmutu\n",
-    "auth_tag": "qDKuTWMJZfxSRONoXAbPLA==\n",
+    "encrypted_data": "8U2bsNCFamgN9B33/ayoJjxYL0o+mosSE4wpw3iSfNJ10vmlIjAhQoa9\n",
+    "iv": "J6flCQK7EsZTzBpO\n",
+    "auth_tag": "GZP2lOYGl0PQZWl4bwqCcw==\n",
     "version": 3,
     "cipher": "aes-256-gcm"
   }

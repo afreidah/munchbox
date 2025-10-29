@@ -73,16 +73,28 @@ end
 
 
 # --------------------------------------------------------------------
-# Download and install nvm
+# Install nvm and Node.js (as root)
 # --------------------------------------------------------------------
 
-bash 'install_nvm' do
+bash 'install_nvm_and_node' do
   code <<-CODE
+    set -e
     export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-    nvm install node # Install the latest version of Node.js
+
+    # Install NVM if not already present
+    if [ ! -f "$NVM_DIR/nvm.sh" ]; then
+      curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    fi
+
+    # Load NVM for this session
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+    # Install and use latest Node.js
+    nvm install --lts
+    nvm alias default 'lts/*'
   CODE
-  not_if { ::File.exist?("#{ENV['HOME']}/.nvm/nvm.sh") }
+  environment({ 'HOME' => '/root', 'USER' => 'root' })
+  not_if { ::File.exist?('/root/.nvm/nvm.sh') }
 end
 
 # --------------------------------------------------------------------
