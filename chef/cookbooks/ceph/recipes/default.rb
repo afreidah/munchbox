@@ -17,7 +17,7 @@ include_recipe 'ceph::install'
 # Configure Firewall Rules
 # --------------------------------------------------------------------
 
-include_recipe 'ceph::firewall'
+# include_recipe 'ceph::firewall'
 
 # --------------------------------------------------------------------
 # Create OSD Directory (All Nodes)
@@ -34,6 +34,7 @@ current_node   = node['hostname']
 
 if current_node == bootstrap_node
   include_recipe 'ceph::bootstrap'
+  include_recipe 'ceph::deploy_osds'  # Add this line
 else
   log 'ceph-node' do
     message "Node #{current_node} will be added to cluster by bootstrap node #{bootstrap_node}"

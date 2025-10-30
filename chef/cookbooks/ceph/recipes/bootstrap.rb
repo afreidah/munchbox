@@ -61,7 +61,7 @@ end
 
 execute 'install-ceph-common' do
   command 'cephadm install ceph-common'
-  not_if  'command -v ceph'
+  not_if { ::File.exist?('/usr/bin/ceph') }
 end
 
 # --------------------------------------------------------------------
@@ -134,7 +134,7 @@ pool_size       = node['ceph']['pool']['size']
 pool_min_size   = node['ceph']['pool']['min_size']
 
 execute 'create-nomad-pool' do
-  command "ceph osd pool create --cleanup-on-failure #{pool_name} #{pool_pg_num} #{pool_pg_num}"
+  command "ceph osd pool create #{pool_name} #{pool_pg_num} #{pool_pg_num}"
   not_if  "ceph osd pool ls | grep -q '^#{pool_name}$'"
 end
 
