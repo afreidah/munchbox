@@ -11,7 +11,8 @@
     "recipe[consul::snapshot]",
     "recipe[nomad::default]",
     "recipe[nomad::consul_token]",
-    "recipe[nomad::tls]"
+    "recipe[nomad::tls]",
+    "recipe[ceph::default]"
   ],
   "normal": {
     "nomad": {

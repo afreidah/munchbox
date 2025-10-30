@@ -99,12 +99,11 @@ func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCe
 	backend := vaultjwtauthbackend.NewJwtAuthBackend(stack,
 		jsii.String("jwt-auth-backend"),
 		&vaultjwtauthbackend.JwtAuthBackendConfig{
-			Path:        jsii.String("jwt-nomad"),
-			Description: jsii.String("JWT auth for Nomad workload identity"),
-			JwksUrl:     jsii.String(nomadUrl + "/.well-known/jwks.json"),
-			JwksCaPem:   jsii.String(nomadCaCert),
-			BoundIssuer: jsii.String(nomadUrl),
-			DefaultRole: jsii.String("nomad-workloads"), // This should remain as 'nomad-workloads'
+			Path:               jsii.String("jwt-nomad"),
+			Description:        jsii.String("JWT auth for Nomad workload identity"),
+			OidcDiscoveryUrl:   jsii.String(nomadUrl),
+			OidcDiscoveryCaPem: jsii.String(nomadCaCert),
+			DefaultRole:        jsii.String("nomad-workloads"),
 		},
 	)
 

@@ -25,9 +25,9 @@ default['ceph']['mon_network']    = '192.168.68.0/24'
 
 default['ceph']['nodes'] = [
   'cabot',
-  'mccoy',
+  'mccoy.munchbox',
   'goren',
-  'stabler'
+  'stabler.munchbox'
 ]
 
 # --------------------------------------------------------------------
