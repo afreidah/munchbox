@@ -1,7 +1,5 @@
 # -----------------------------------------------------------------------------
 # Waypoint - Nomad Job (server + runner)
-# - Dedicated Consul token (policy read on system-services/waypoint_server_token)
-#   is passed only to the runner's template via `consul_token = "<SECRET_ID>"`
 # -----------------------------------------------------------------------------
 job "waypoint" {
   region      = "global"
@@ -15,14 +13,14 @@ job "waypoint" {
   group "server" {
     count = 1
 
-    # Force this to run on mccoy
+    # Pin to mccoy (your persistent disk lives there)
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "mccoy"
     }
 
-    # Host volume for DB (declare on each client that may run this)
+    # Host volume for DB (declare on the client)
     # client.hcl:
     #   host_volume "waypoint-data" { path = "/opt/nomad/data/waypoint-data" read_only = false }
     volume "waypoint-data" {
@@ -35,10 +33,10 @@ job "waypoint" {
     network {
       mode = "bridge"
       port "grpc" { static = 9701 }
-      port "ui" { static = 9702 }
+      port "ui"   { static = 9702 }
     }
 
-    # Register services in Consul using the node's host address (reachable)
+    # Consul service: gRPC
     service {
       name         = "waypoint-grpc"
       provider     = "consul"
@@ -52,6 +50,7 @@ job "waypoint" {
       }
     }
 
+    # Consul service: UI
     service {
       name         = "waypoint-ui"
       provider     = "consul"
@@ -71,7 +70,7 @@ job "waypoint" {
 
       config {
         image       = "hashicorp/waypoint:0.11.4"
-        userns_mode = "host" # map container root to host root (fixes bind mount perms)
+        userns_mode = "host" # keep bind mount writable
         entrypoint  = ["/bin/sh", "-lc"]
         args = [
           "mkdir -p /var/lib/waypoint; exec waypoint server run -accept-tos -db=/var/lib/waypoint/waypoint.db -listen-grpc=0.0.0.0:9701 -listen-http=0.0.0.0:9702"
@@ -100,12 +99,12 @@ job "waypoint" {
   }
 
   # -----------------------------------------------------------------------------
-  # Runner group (reads server token from Consul KV via dedicated Consul ACL token)
+  # Runner group (reads server token from Consul KV via a dedicated Consul token)
   # -----------------------------------------------------------------------------
   group "runner" {
     count = 1
 
-    # Force this to run on mccoy
+    # Pin to mccoy (co-located with server for now)
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
@@ -119,6 +118,15 @@ job "waypoint" {
     task "runner" {
       driver = "docker"
 
+      # -------------------------------------------------------------------------
+      # IMPORTANT: give this task a Consul token that can read
+      # key "system-services/waypoint_server_token" (read-only policy).
+      # This replaces the (unsupported) `consul_token` inside `template {}`.
+      # -------------------------------------------------------------------------
+      consul {
+        token = "<CONSUL_SECRET_ID_WAYPOINT_RUNNER_KV_READ>"
+      }
+
       config {
         image      = "hashicorp/waypoint:0.11.4"
         entrypoint = ["/bin/sh", "-lc"]
@@ -127,24 +135,18 @@ job "waypoint" {
         ]
       }
 
-      # Inject token from Consul KV into env using a DEDICATED Consul token that
-      # has read access ONLY to key: system-services/waypoint_server_token
-      #
-      # Replace <CONSUL_SECRET_ID_WAYPOINT_RUNNER_KV_READ> with the SecretID
-      # of your 'waypoint-runner-kv-read' Consul token created by CDKTF.
+      # Pull the server token from Consul KV into env
       template {
-        destination  = "local/env/waypoint.env"
-        env          = true
-        change_mode  = "restart"
-        consul_token = "<CONSUL_SECRET_ID_WAYPOINT_RUNNER_KV_READ>"
-        data         = "WAYPOINT_SERVER_TOKEN={{ keyOrDefault \"system-services/waypoint_server_token\" \"\" }}"
+        destination = "local/env/waypoint.env"
+        env         = true
+        change_mode = "restart"
+        data        = "WAYPOINT_SERVER_TOKEN={{ keyOrDefault \"system-services/waypoint_server_token\" \"\" }}"
       }
 
-      # Runner talks to the server via Consul service name (host-registered ports)
       env {
         TZ                   = "America/Los_Angeles"
         WAYPOINT_SERVER_ADDR = "waypoint-grpc.service.consul:9701"
-        # Optional if your server uses TLS with a private CA:
+        # If you later enable TLS on the server with a private CA, you can set:
         # WAYPOINT_SERVER_TLS             = "1"
         # WAYPOINT_SERVER_TLS_SKIP_VERIFY = "1"
       }
@@ -163,3 +165,4 @@ job "waypoint" {
     }
   }
 }
+
