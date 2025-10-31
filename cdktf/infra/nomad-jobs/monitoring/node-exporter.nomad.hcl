@@ -106,8 +106,8 @@ job "node-exporter" {
 
       # Resource allocation - lightweight for system service
       resources {
-        cpu    = 50 # Minimal CPU - just reading /proc and /sys
-        memory = 64 # Small memory footprint
+        cpu    = 150
+        memory = 64
       }
 
       # Consul service registration for Prometheus discovery
