@@ -140,10 +140,7 @@ job "grafana" {
         destination = "secrets/grafana.env"
         env         = true
         data        = <<EOH
-{{ with secret "secret/data/grafana" }}
-GF_SECURITY_ADMIN_USER={{ .Data.data.admin_user }}
-GF_SECURITY_ADMIN_PASSWORD={{ .Data.data.admin_password }}
-{{ end }}
+<<INJECT:files/grafana.env>>
 EOH
       }
 
@@ -164,50 +161,7 @@ EOH
         destination = "local/grafana-provisioning/datasources/ds.yml"
         perms       = "0644"
         data        = <<YAML
-# ------------------------------------------------------------------------------
-# Grafana Datasources — Provisioned (authoritative)
-# ------------------------------------------------------------------------------
-
-apiVersion: 1
-
-datasources:
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    url: http://prometheus.service.consul:9090
-    isDefault: true
-    editable: false
-    jsonData:
-      httpMethod: POST
-      timeInterval: 15s
-
-  - name: Loki
-    type: loki
-    access: proxy
-    url: http://loki.service.consul:3100
-    isDefault: false
-    editable: false
-    jsonData:
-      maxLines: 1000
-    version: 1
-
-  # --------------------------------------------------------------------------
-  # Extra scrape configs for observability (optional)
-  # - Promtail metrics (from localhost:9080)
-  # - Loki metrics (from loki.service.consul:3100)
-  # These will appear under the Prometheus datasource.
-  # --------------------------------------------------------------------------
-
-  - name: Prometheus-Self
-    type: prometheus
-    access: proxy
-    url: http://prometheus.service.consul:9090
-    jsonData:
-      scrapeInterval: 15s
-      exemplarTraceIdDestinations:
-        - name: trace_id
-          datasourceUid: tempo
-
+<<INJECT:files/ds.yml>>
 YAML
       }
 

@@ -75,30 +75,7 @@ EOF
         change_mode   = "restart"
         change_signal = "SIGTERM"
         data          = <<EOF
-tunnel: {{ key "secrets/cloudflared/tunnel_uuid" }}
-credentials-file: /etc/cloudflared/credentials.json
-
-ingress:
-  - hostname: "alexfreidah.com"
-    service: http://traefik.munchbox:80
-    originRequest: { httpHostHeader: alexfreidah.com }
-
-  - hostname: "www.alexfreidah.com"
-    service: http://traefik.munchbox:80
-    originRequest: { httpHostHeader: www.alexfreidah.com }
-
-  - hostname: "resume.alexfreidah.com"
-    service: http://traefik.munchbox:80
-    originRequest: { httpHostHeader: resume.alexfreidah.com }
-
-  - hostname: "k3s-status.alexfreidah.com"
-    service: http://traefik.munchbox:80
-    originRequest: { httpHostHeader: k3s-status.alexfreidah.com }
-
-  - service: http_status:404
-
-warp-routing:
-  enabled: false
+<<INJECT:files/config.yml>>
 EOF
       }
 

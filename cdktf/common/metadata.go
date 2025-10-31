@@ -91,7 +91,7 @@ func GetGitMetadata() (branch string) {
 		return branch
 	}
 
-	return
+	return branch
 }
 
 // ============================================================================
@@ -200,42 +200,32 @@ func DefaultMetadata() StandardMetadata {
 // Category Inference
 // ============================================================================
 
-// InferCategoryFromPath extracts the service category from the job file's
-// directory structure.
-//
-// Directory structure pattern:
-//
-//	nomad-jobs/
-//	  monitoring/          <- Category = "monitoring"
-//	    prometheus.nomad.hcl
-//	  infrastructure/      <- Category = "infrastructure"
-//	    traefik.nomad.hcl
-//	  media/               <- Category = "media"
-//	    emby.nomad.hcl
-//
-// Parameters:
-//   - jobPath: Full path to the job file (e.g., "nomad-jobs/monitoring/prometheus.nomad.hcl")
-//
-// Returns:
-//   - category: The directory name containing the job file
-//   - If job is directly in nomad-jobs/, returns "infrastructure" as default
-//
-// Example:
-//
-//	category := InferCategoryFromPath("nomad-jobs/monitoring/prometheus.nomad.hcl")
-//	// Returns: "monitoring"
 func InferCategoryFromPath(jobPath string) string {
-	// Get the immediate parent directory
-	dir := filepath.Dir(jobPath)
-	dirName := filepath.Base(dir)
+	clean := filepath.Clean(jobPath)
 
-	// If it's directly in nomad-jobs/, return default
-	if dirName == "infra/nomad-jobs" {
-		return "infrastructure"
+	known := map[string]struct{}{
+		"infrastructure": {},
+		"monitoring":     {},
+		"logging":        {},
+		"media":          {},
+		"development":    {},
+		"backup":         {},
+		"utility":        {},
 	}
 
-	// Otherwise, directory name IS the category
-	return dirName
+	dir := filepath.Dir(clean)
+	for {
+		base := filepath.Base(dir)
+		if _, ok := known[base]; ok {
+			return base
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break // reached filesystem root
+		}
+		dir = parent
+	}
+	return "infrastructure"
 }
 
 // ============================================================================

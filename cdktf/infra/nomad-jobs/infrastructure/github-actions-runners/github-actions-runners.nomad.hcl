@@ -161,21 +161,7 @@ job "github-runner" {
         destination = "secrets/github.env"
         env         = true
         data        = <<-EOT
-          {{ with secret "kv/data/github/runner" }}
-          ACCESS_TOKEN="{{ .Data.data.token }}"
-          {{ if .Data.data.org_url }}ORG_URL="{{ .Data.data.org_url }}"{{ end }}
-          {{ if .Data.data.repo_url }}REPO_URL="{{ .Data.data.repo_url }}"{{ end }}
-          {{ if .Data.data.runner_group }}RUNNER_GROUP="{{ .Data.data.runner_group }}"{{ end }}
-          {{ end }}
-
-          RUNNER_NAME={{ env "NOMAD_ALLOC_NAME" }}-{{ env "NOMAD_ALLOC_ID" }}
-          RUNNER_WORKDIR=/tmp/runner-work
-          EPHEMERAL=true
-
-          LABELS=nomad,self-hosted,linux,${attr.cpu.arch},docker
-
-          RUNNER_VERSION=latest
-          DISABLE_AUTO_UPDATE=true
+          <<INJECT:files/github.env>>
         EOT
       }
 

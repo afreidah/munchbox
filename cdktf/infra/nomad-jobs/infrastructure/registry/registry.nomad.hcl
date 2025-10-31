@@ -71,18 +71,7 @@ job "registry" {
         change_mode = "restart"
         perms       = "0644"
         data        = <<EOT
-version: 0.1
-log:
-  level: info
-storage:
-  filesystem:
-    rootdirectory: /var/lib/registry
-http:
-  addr: :5000
-  headers:
-    Access-Control-Allow-Origin: ["http://192.168.68.60:5001", "http://registry.munchbox"]
-    Access-Control-Allow-Methods: ["GET", "HEAD", "OPTIONS"]
-    Access-Control-Allow-Headers: ["Authorization", "Accept", "Cache-Control", "Content-Type", "Origin"]
+<<INJECT:files/config.yml>>
 EOT
       }
 
@@ -121,9 +110,7 @@ EOT
 
       template {
         data        = <<EOH
-{{ with secret "kv/data/docker-registry" }}
-REGISTRY_PASSWORD="{{ .Data.data.password }}"
-{{ end }}
+<<INJECT:files/registry.env>>
 EOH
         destination = "secrets/registry.env"
         env         = true
