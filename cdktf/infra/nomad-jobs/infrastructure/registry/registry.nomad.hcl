@@ -11,6 +11,7 @@ job "registry" {
   datacenters = ["pi-dc"]
   type        = "service"
   node_pool   = "core"
+
   group "mirror" {
     network {
       port "registry" {
@@ -21,24 +22,28 @@ job "registry" {
         to     = 80
       }
     }
+
     # --- Placement: run only on the specified node (goren) ---------------------
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "goren"
     }
+
     # Update host volume to match client config
     volume "registry-data" {
       type      = "host"
       source    = "registry-data"
       read_only = false
     }
+
     # Volume for registry authentication
     volume "registry-auth" {
       type      = "host"
       source    = "registry-auth"
       read_only = true
     }
+
     task "registry" {
       driver = "docker"
       config {
