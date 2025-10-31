@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Promtail — Nomad System Job for log collection (FIXED)
+# Promtail — Nomad System Job for log collection (v3.3.1 FINAL)
 # -------------------------------------------------------------------------------
 
 job "promtail" {
@@ -10,7 +10,7 @@ job "promtail" {
 
   meta {
     version     = "3.3.1"
-    updated     = "2025-10-24"
+    updated     = "2025-10-31"
     description = "Promtail log collection agent - file-based for containers"
   }
 
@@ -41,10 +41,10 @@ job "promtail" {
       driver = "docker"
 
       config {
-        image        = "grafana/promtail:3.2.0"
+        image        = "grafana/promtail:3.3.1"
         network_mode = "host"
         ports        = ["http"]
-        
+
         dns_servers        = ["192.168.68.62", "192.168.68.64"]
         dns_search_domains = ["service.consul"]
         dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
@@ -61,11 +61,6 @@ job "promtail" {
           "/opt/nomad/alloc:/opt/nomad/alloc:ro",
           "/opt/nomad/data/alloc:/opt/nomad/data/alloc:ro",
         ]
-
-        logging {
-          type = "journald"
-          config { tag = "promtail" }
-        }
       }
 
       template {
@@ -170,7 +165,7 @@ job "promtail" {
                       level: level
 
             # -----------------------------------------------------------------
-            # Nomad stdout logs - FIXED glob pattern
+            # Nomad stdout logs - FIFO-safe pattern
             # -----------------------------------------------------------------
             - job_name: nomad-stdout
               static_configs:
@@ -179,14 +174,14 @@ job "promtail" {
                     job: nomad-alloc
                     node: [[ env "HOSTNAME" ]]
                     stream: stdout
-                    __path__: /opt/nomad/alloc/*/alloc/logs/*.stdout.*
+                    __path__: /opt/nomad/alloc/*/alloc/logs/*.stdout.[0-9]*
 
                 - targets: [localhost]
                   labels:
                     job: nomad-alloc
                     node: [[ env "HOSTNAME" ]]
                     stream: stdout
-                    __path__: /opt/nomad/data/alloc/*/alloc/logs/*.stdout.*
+                    __path__: /opt/nomad/data/alloc/*/alloc/logs/*.stdout.[0-9]*
 
               pipeline_stages:
                 - regex:
@@ -207,7 +202,7 @@ job "promtail" {
                           expression: '^\s*$'
 
             # -----------------------------------------------------------------
-            # Nomad stderr logs - FIXED glob pattern
+            # Nomad stderr logs - FIFO-safe pattern
             # -----------------------------------------------------------------
             - job_name: nomad-stderr
               static_configs:
@@ -216,14 +211,14 @@ job "promtail" {
                     job: nomad-alloc
                     node: [[ env "HOSTNAME" ]]
                     stream: stderr
-                    __path__: /opt/nomad/alloc/*/alloc/logs/*.stderr.*
+                    __path__: /opt/nomad/alloc/*/alloc/logs/*.stderr.[0-9]*
 
                 - targets: [localhost]
                   labels:
                     job: nomad-alloc
                     node: [[ env "HOSTNAME" ]]
                     stream: stderr
-                    __path__: /opt/nomad/data/alloc/*/alloc/logs/*.stderr.*
+                    __path__: /opt/nomad/data/alloc/*/alloc/logs/*.stderr.[0-9]*
 
               pipeline_stages:
                 - regex:
@@ -244,7 +239,7 @@ job "promtail" {
                           expression: '^\s*$'
 
           positions:
-            filename: /tmp/positions.yaml
+            filename: /alloc/data/positions.yaml
 
           limits_config:
             readline_rate_enabled: true

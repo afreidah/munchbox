@@ -86,8 +86,10 @@ job "prometheus" {
         ]
 
         # >>> DNS so *.service.consul resolves inside the container <<<
-        dns_servers        = ["127.0.0.1", "192.168.68.59"]
+        # Use LAN resolvers that forward .consul to Consul (green/logan)
+        dns_servers        = ["192.168.68.62", "192.168.68.64"]
         dns_search_domains = ["service.consul"]
+        dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
 
         # Prometheus command line arguments
         args = [
@@ -344,7 +346,7 @@ scrape_configs:
   - job_name: "traefik"
     scheme: "http"
     consul_sd_configs:
-      - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.01:8500[[ end ]]'
+      - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.0.1:8500[[ end ]]'
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["traefik"]
         datacenter: "dc1"

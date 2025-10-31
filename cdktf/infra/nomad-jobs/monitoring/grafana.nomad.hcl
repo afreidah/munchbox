@@ -10,16 +10,13 @@
 # ------------------------------------------------------------------------------
 
 job "grafana" {
-  # --------------------------------------------------------------------------
-  # Job metadata
-  # --------------------------------------------------------------------------
   meta {
-    version     = "1.0.0"
+    version     = "1.0.1"
     owner       = "alex.freidah"
     category    = "monitoring"
     tier        = "tier-1"
     environment = "production"
-    description = "grafana service"
+    description = "grafana service with Promtail/Loki observability additions"
   }
 
   region      = "global"
@@ -30,27 +27,18 @@ job "grafana" {
   group "grafana" {
     count = 1
 
-    # ------------------------------------------------------------------------
-    # Placement: utility-class nodes
-    # ------------------------------------------------------------------------
     constraint {
       attribute = "${node.class}"
       operator  = "="
       value     = "utility"
     }
 
-    # ------------------------------------------------------------------------
-    # Persistent data volume for Grafana state
-    # ------------------------------------------------------------------------
     volume "grafana-data" {
       type      = "host"
       source    = "grafana-data"
       read_only = false
     }
 
-    # ------------------------------------------------------------------------
-    # Networking: host mode with static web port for routing and checks
-    # ------------------------------------------------------------------------
     network {
       mode = "host"
       port "web" {
@@ -59,9 +47,6 @@ job "grafana" {
       }
     }
 
-    # ------------------------------------------------------------------------
-    # Init task: ensure data dir and ownership (uid/gid 472)
-    # ------------------------------------------------------------------------
     task "fix-perms" {
       driver = "docker"
       lifecycle { hook = "prestart" }
@@ -87,25 +72,17 @@ job "grafana" {
       }
     }
 
-    # ------------------------------------------------------------------------
-    # Main Grafana task
-    # ------------------------------------------------------------------------
     task "grafana" {
       driver = "docker"
 
-      # Vault Workload Identity
       vault { role = "nomad-grafana" }
 
-      # Identity JWT (aud must match role.bound_audiences)
       identity {
         env  = true
         file = true
         aud  = ["vault.io"]
       }
 
-      # ----------------------------------------------------------------------
-      # Service registration and Traefik routing
-      # ----------------------------------------------------------------------
       service {
         name     = "grafana"
         port     = "web"
@@ -132,49 +109,33 @@ job "grafana" {
         }
       }
 
-      # ----------------------------------------------------------------------
-      # Docker configuration
-      # - dns_servers prefer LAN resolvers that forward .consul to Consul
-      # - dns_options avoid rotate; low ndots ensures short names first
-      # - provisioning volume delivers datasources on startup
-      # ----------------------------------------------------------------------
       config {
         image              = "grafana/grafana:12.2.0"
         ports              = ["web"]
         image_pull_timeout = "10m"
-
-        # Explicit host networking at Docker layer is optional when using Consul DNS.
-        # Keeping host net simplifies Traefik/port binding; remove if you prefer bridge.
-        network_mode = "host"
+        network_mode       = "host"
 
         dns_servers        = ["192.168.68.62", "192.168.68.64"]
         dns_search_domains = ["service.consul"]
-        dns_options        = ["timeout:2", "attempts:3", "ndots:1"] # no 'rotate'
+        dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
 
         volumes = [
           "local/grafana-provisioning:/etc/grafana/provisioning"
         ]
       }
 
-      # Persist Grafana state
       volume_mount {
         volume      = "grafana-data"
         destination = "/var/lib/grafana"
         read_only   = false
       }
 
-      # ----------------------------------------------------------------------
-      # Debug: effective Vault policies on the WI token
-      # ----------------------------------------------------------------------
       template {
         destination = "secrets/_debug_policies.txt"
         perms       = "0600"
         data        = "{{ with secret \"auth/token/lookup-self\" }}{{ .Data.policies }}{{ end }}"
       }
 
-      # ----------------------------------------------------------------------
-      # Secrets: admin credentials from KV v2
-      # ----------------------------------------------------------------------
       template {
         destination = "secrets/grafana.env"
         env         = true
@@ -186,9 +147,6 @@ GF_SECURITY_ADMIN_PASSWORD={{ .Data.data.admin_password }}
 EOH
       }
 
-      # ----------------------------------------------------------------------
-      # Environment configuration
-      # ----------------------------------------------------------------------
       env = {
         GF_SERVER_SERVE_FROM_SUB_PATH = "false"
         GF_SERVER_ROOT_URL            = "https://grafana.munchbox/"
@@ -199,7 +157,9 @@ EOH
       # Provisioned datasources (authoritative)
       # - Prometheus via Consul DNS (dynamic, node-agnostic)
       # - Loki via Consul DNS
+      # - Includes Promtail/Loki metrics jobs for observability
       # ----------------------------------------------------------------------
+
       template {
         destination = "local/grafana-provisioning/datasources/ds.yml"
         perms       = "0644"
@@ -207,6 +167,7 @@ EOH
 # ------------------------------------------------------------------------------
 # Grafana Datasources — Provisioned (authoritative)
 # ------------------------------------------------------------------------------
+
 apiVersion: 1
 
 datasources:
@@ -229,12 +190,27 @@ datasources:
     jsonData:
       maxLines: 1000
     version: 1
+
+  # --------------------------------------------------------------------------
+  # Extra scrape configs for observability (optional)
+  # - Promtail metrics (from localhost:9080)
+  # - Loki metrics (from loki.service.consul:3100)
+  # These will appear under the Prometheus datasource.
+  # --------------------------------------------------------------------------
+
+  - name: Prometheus-Self
+    type: prometheus
+    access: proxy
+    url: http://prometheus.service.consul:9090
+    jsonData:
+      scrapeInterval: 15s
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
 YAML
       }
 
-      # ----------------------------------------------------------------------
-      # Resources and restart policy
-      # ----------------------------------------------------------------------
       resources {
         cpu    = 250
         memory = 512

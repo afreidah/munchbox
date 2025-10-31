@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Loki — Nomad Job for centralized log aggregation
+# Loki — Nomad Job for centralized log aggregation (v3.3.1 FINAL)
 #
 # - Receives logs from Promtail agents on all nodes
 # - 5-day log retention (TSDB, filesystem backend)
@@ -14,10 +14,9 @@ job "loki" {
   type        = "service"
   node_pool   = "edge"
 
-  # Metadata (informational)
   meta {
-    version     = "3.2.0"
-    updated     = "2025-10-22"
+    version     = "3.3.1"
+    updated     = "2025-10-31"
     description = "Loki log aggregation server"
     owner       = "alex.freidah"
     category    = "logging"
@@ -115,7 +114,7 @@ job "loki" {
       driver = "docker"
 
       config {
-        image        = "grafana/loki:3.2.0"
+        image        = "grafana/loki:3.3.1"
         network_mode = "host"
         ports        = ["http", "grpc"]
 
@@ -183,6 +182,11 @@ job "loki" {
                   prefix: index_
                   period: 24h
 
+          # Ingestion tuning
+          ingester:
+            chunk_idle_period: 3m
+            max_chunk_age: 1h
+
           # Storage configuration
           storage_config:
             tsdb_shipper:
@@ -211,6 +215,7 @@ job "loki" {
             ingestion_burst_size_mb: 20
             per_stream_rate_limit: 5MB
             per_stream_rate_limit_burst: 15MB
+            max_streams_per_user: 10000
 
           # Cleanup (legacy table manager for some scans)
           table_manager:
