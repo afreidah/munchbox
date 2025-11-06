@@ -1,12 +1,13 @@
 # -------------------------------------------------------------------------------
-# Deluge BitTorrent Client — Nomad service job
+#  Deluge — BitTorrent Client with VPN Integration and Web UI
 #
-# * Runs the Deluge BitTorrent client using the linuxserver/deluge image.
-# * Persists configuration and downloads on the host.
-# * Exposes web UI on port 8112.
-# * Registers service with Consul and configures Traefik for HTTP routing.
-# * Routes all Deluge traffic through the WireGuard VPN by running as 'vpnmark'.
-#   (Requires host policy routing to mark 'vpnmark' traffic for VPN.)
+#  Project: Munchbox
+#  Author: Alex Freidah
+#
+#  BitTorrent client running on mccoy node with all traffic routed through
+#  WireGuard VPN via policy-based marking. Persists configuration and downloads
+#  on host volumes. Exposes web UI on :8112 for torrent management. Pulls
+#  credentials from Vault for daemon auth and web password.
 # -------------------------------------------------------------------------------
 
 job "deluge" {
@@ -15,29 +16,83 @@ job "deluge" {
   type        = "service"
   node_pool   = "core"
 
+  # --- Job metadata ---
+  meta {
+    version     = "2.1.1"
+    owner       = "alex.freidah"
+    category    = "utility"
+    tier        = "tier-2"
+    environment = "production"
+    description = "Deluge BitTorrent client with VPN policy routing"
+  }
+
+  # --- Job update strategy ---
+  update {
+    max_parallel      = 1
+    min_healthy_time  = "30s"
+    healthy_deadline  = "3m"
+    progress_deadline = "5m"
+    auto_revert       = true
+  }
+
+  # ---------------------------------------------------------------------------
+  #  Deluge Group
+  # ---------------------------------------------------------------------------
+
   group "deluge" {
     count = 1
 
+    # --- Placement constraints ---
     constraint {
-      # HCL2-safe attribute reference (no interpolation syntax)
-      attribute = node.unique.name
+      attribute = "${node.unique.name}"
       operator  = "="
       value     = "mccoy"
     }
 
+    # --- Deluge configuration storage volume ---
     volume "deluge-data" {
       type      = "host"
       source    = "deluge-data"
       read_only = false
     }
 
+    # --- Network configuration ---
     network {
       mode = "host"
-      port "web" { static = 8112 }
+      port "web" {
+        static = 8112
+      }
     }
+
+    # --- Task restart behavior ---
+    restart {
+      attempts = 3
+      interval = "5m"
+      delay    = "15s"
+      mode     = "fail"
+    }
+
+    # --- Reschedule policy ---
+    reschedule {
+      attempts       = 3
+      interval       = "30m"
+      delay          = "5s"
+      delay_function = "exponential"
+      max_delay      = "1m"
+      unlimited      = false
+    }
+
+    # -----------------------------------------------------------------------
+    #  Deluge BitTorrent Client Task
+    # -----------------------------------------------------------------------
 
     task "deluge" {
       driver = "docker"
+
+      # --- Workload identity and Vault integration ---
+      vault {
+        role = "nomad-workloads"
+      }
 
       identity {
         env  = true
@@ -45,32 +100,17 @@ job "deluge" {
         aud  = ["vault.io"]
       }
 
-      vault {
-        role = "nomad-workloads"
-      }
-
+      # --- Docker image configuration ---
       config {
         image              = "goren:5000/deluge-with-vpnmark:latest"
         image_pull_timeout = "10m"
         ports              = ["web"]
         readonly_rootfs    = false
         cap_add            = ["CHOWN", "FOWNER"]
-
-        # -----------------------------------------------------------------------------
-        # VOLUMES
-        # -----------------------------------------------------------------------------
         volumes = [
           "/opt/nomad/data/deluge-data/downloads:/downloads",
           "/mnt/gdrive/nomad_deluge_downloads:/completed"
         ]
-
-        # -----------------------------------------------------------------------------
-        # PRE-START INIT
-        # * Copy the Vault-templated daemon auth from /local/auth into the real
-        #   persisted /config/auth with correct ownership/permissions before Deluge starts.
-        # * First-run only: Clear stale Web UI state (web.conf/hostlist.conf*), then mark.
-        # * Then hand off to linuxserver's s6 init (/init) as usual.
-        # -----------------------------------------------------------------------------
         entrypoint = ["/bin/sh", "-c"]
         args = [
           <<-EOS
@@ -106,54 +146,45 @@ job "deluge" {
         ]
       }
 
-      env = {
-        PUID = "1001"
-        PGID = "1001"
-        TZ   = "UTC"
-
-        # Move completed
-        DELUGE_MOVE_COMPLETED_PATH = "/completed"
-        DELUGE_MOVE_COMPLETED      = "true"
-        # DELUGE_WEB_PASSWORD is provided from Vault via template env below.
-      }
-
+      # --- Configuration storage volume mount ---
       volume_mount {
         volume      = "deluge-data"
         destination = "/config"
         read_only   = false
       }
 
-      # -----------------------------------------------------------------------------
-      # VAULT-TEMPLATED DAEMON AUTH
-      # * Renders to the allocation as /local/auth (NOT directly under /config).
-      # * Pre-start script above copies it into /config/auth atomically (each start).
-      # * Format: "localclient:<password>:10" (Deluge 2.x)
-      # -----------------------------------------------------------------------------
+      # --- Runtime environment ---
+      env {
+        PUID                       = "1001"
+        PGID                       = "1001"
+        TZ                         = "UTC"
+        DELUGE_MOVE_COMPLETED_PATH = "/completed"
+        DELUGE_MOVE_COMPLETED      = "true"
+      }
+
+      # --- Daemon authentication from Vault ---
       template {
-        data        = <<EOH
+        destination = "local/auth"
+        perms       = "0600"
+        data        = <<-EOH
 {{ with secret "kv/data/deluge" }}
 localclient:{{ .Data.data.password }}:10
 {{ end }}
 EOH
-        destination = "local/auth"
-        perms       = "0600"
       }
 
-      # -----------------------------------------------------------------------------
-      # VAULT-TEMPLATED WEB UI PASSWORD (ENV)
-      # * Sets DELUGE_WEB_PASSWORD from Vault so Web UI login is deterministic.
-      # * Expected key: kv/data/deluge -> data.web_password
-      # -----------------------------------------------------------------------------
+      # --- Web UI password from Vault ---
       template {
-        env         = true
         destination = "secrets/deluge.env"
-        data        = <<EOENV
+        env         = true
+        data        = <<-EOENV
 {{ with secret "kv/data/deluge" -}}
 DELUGE_WEB_PASSWORD={{ .Data.data.web_password }}
 {{- end }}
 EOENV
       }
 
+      # --- Service registration ---
       service {
         name = "deluge"
         port = "web"
@@ -166,14 +197,23 @@ EOENV
           "traefik.http.services.deluge.loadbalancer.server.port=8112",
           "torrent",
           "deluge",
-          "downloads",
+          "downloads"
         ]
+
+        # --- Web UI health check ---
         check {
+          name     = "deluge-web"
           type     = "http"
           path     = "/"
           interval = "10s"
           timeout  = "2s"
         }
+      }
+
+      # --- Resource allocation ---
+      resources {
+        cpu    = 300
+        memory = 256
       }
     }
   }

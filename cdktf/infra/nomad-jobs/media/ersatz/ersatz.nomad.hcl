@@ -1,5 +1,13 @@
 # -------------------------------------------------------------------------------
-# ErsatzTV — Nomad service job (TV + Movies only)
+#  ErsatzTV — Virtual TV Channel Engine with Emby Integration
+#
+#  Project: Munchbox
+#  Author: Alex Freidah
+#
+#  Creates virtual TV channels from Emby library (TV + Movies). Generates
+#  scheduled broadcasts with guide data and streaming interface. Runs on mccoy
+#  node with access to media libraries. Exposes web UI/API on :8409 for channel
+#  management and stream playback configuration.
 # -------------------------------------------------------------------------------
 
 job "ersatztv" {
@@ -8,84 +16,97 @@ job "ersatztv" {
   type        = "service"
   node_pool   = "core"
 
+  # --- Job metadata ---
+  meta {
+    version     = "0.8.0"
+    owner       = "alex.freidah"
+    category    = "media"
+    tier        = "tier-2"
+    environment = "production"
+    description = "ErsatzTV virtual TV channel engine with Emby backend"
+  }
+
+  # --- Job update strategy ---
+  update {
+    max_parallel      = 1
+    min_healthy_time  = "30s"
+    healthy_deadline  = "5m"
+    progress_deadline = "10m"
+    auto_revert       = true
+  }
+
+  # ---------------------------------------------------------------------------
+  #  ErsatzTV Group
+  # ---------------------------------------------------------------------------
+
   group "ersatztv" {
     count = 1
 
+    # --- Placement constraints ---
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "mccoy"
     }
 
+    # --- Network configuration ---
     network {
       mode = "host"
-
-      # ErsatzTV UI/API
       port "ui" {
         static = 8409
         to     = 8409
       }
     }
 
+    # --- Task restart behavior ---
+    restart {
+      attempts = 3
+      interval = "5m"
+      delay    = "15s"
+      mode     = "delay"
+    }
+
+    # --- Reschedule policy ---
+    reschedule {
+      attempts       = 3
+      interval       = "30m"
+      delay          = "5s"
+      delay_function = "exponential"
+      max_delay      = "1m"
+      unlimited      = false
+    }
+
+    # -----------------------------------------------------------------------
+    #  ErsatzTV Virtual Channel Task
+    # -----------------------------------------------------------------------
+
     task "ersatztv" {
       driver = "docker"
 
-      resources {
-        cpu    = 500
-        memory = 1024
-      }
-
-      restart {
-        attempts = 3
-        interval = "5m"
-        delay    = "15s"
-        mode     = "delay"
-      }
-
-      logs {
-        max_files     = 5
-        max_file_size = 20
-      }
-
+      # --- Docker image configuration ---
       config {
         image              = "jasongdove/ersatztv:latest"
         image_pull_timeout = "10m"
-        ports              = ["ui"]
         network_mode       = "host"
+        ports              = ["ui"]
         readonly_rootfs    = false
-
-        # Direct host binds (no Nomad volume blocks)
         volumes = [
-          # Config/database (writable)
           "/opt/nomad/data/ersatztv/config:/config",
-
-          # Optional: transcode scratch (host-backed; replace with tmpfs if desired)
           "/opt/nomad/data/ersatztv/transcode:/transcode",
-
-          # Media (read-only) — TV + Movies only, matching Emby’s container paths
           "/mnt/gdrive/media/Movies:/media/Movies:ro",
           "/mnt/gdrive/media/TV:/media/TV:ro"
-
-          # Alternative: bind the entire tree once (not needed here)
-          # "/mnt/gdrive/media:/media:ro"
         ]
-
-        # HW transcoding (optional):
-        # - Swap image to :latest-vaapi and expose /dev/dri, or use :latest-nvidia on NVIDIA hosts.
-        # devices = [
-        #   { host_path = "/dev/dri", container_path = "/dev/dri", cgroup_permissions = "rwm" }
-        # ]
       }
 
-      env = {
+      # --- Runtime environment ---
+      env {
         TZ = "UTC"
-        # Configure Emby in the UI after first run (Server URL + API key).
       }
 
+      # --- Service registration ---
       service {
         name = "ersatztv"
         port = "ui"
-
         tags = [
           "traefik.enable=true",
           "traefik.http.routers.ersatztv.rule=Host(`ersatz.munchbox`)",
@@ -95,10 +116,12 @@ job "ersatztv" {
           "traefik.http.services.ersatztv.loadbalancer.server.port=8409",
           "media",
           "ersatztv",
-          "streaming",
+          "streaming"
         ]
 
+        # --- Web UI health check ---
         check {
+          name     = "ersatztv-ui"
           type     = "http"
           path     = "/"
           interval = "15s"
@@ -106,7 +129,21 @@ job "ersatztv" {
         }
       }
 
+      # --- Resource allocation ---
+      resources {
+        cpu    = 500
+        memory = 1024
+      }
+
+      # --- Log rotation configuration ---
+      logs {
+        max_files     = 5
+        max_file_size = 20
+      }
+
+      # --- Termination configuration ---
       kill_timeout = "30s"
+      kill_signal  = "SIGTERM"
     }
   }
 }

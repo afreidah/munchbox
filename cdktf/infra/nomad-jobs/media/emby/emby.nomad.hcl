@@ -1,20 +1,13 @@
 # -------------------------------------------------------------------------------
-# Emby Media Server — Nomad service job (Option B: direct binds, no Nomad volumes)
+#  Emby Media Server — Streaming Platform with Hardware Transcoding Support
 #
-# * Runs Emby via linuxserver/emby.
-# * Persists config/cache using direct host binds (no Nomad volume blocks).
-# * Binds media from /mnt/gdrive/media (read-only per directory).
-# * Exposes web UI on port 8096 (optional HTTPS on 8920).
-# * Registers service with Consul and tags for Traefik HTTP routing.
-# * Constrained to node "mccoy" where the media path exists locally.
+#  Project: Munchbox
+#  Author: Alex Freidah
 #
-# Sizing:
-# - resources.cpu=2000 (~2 cores), memory=4096, memory_max=6144 — good starting point.
-# - Increase if software-transcoding 1080p/4K or if scans/transcodes spike usage.
-#
-# Notes:
-# - No Nomad tmpfs support used here; /transcode is disk-backed. If you want
-#   tmpfs, create a host tmpfs/ramdisk and bind-mount it in volumes instead.
+#  Media streaming server running on mccoy node with direct host volume binds
+#  for config, cache, and media libraries. Supports hardware transcoding via
+#  Intel/AMD iGPU. Exposes web UI on :8096 (HTTP) and :8920 (HTTPS). Media
+#  sourced from mounted /mnt/gdrive with read-only access per library type.
 # -------------------------------------------------------------------------------
 
 job "emby" {
@@ -23,64 +16,86 @@ job "emby" {
   type        = "service"
   node_pool   = "core"
 
+  # --- Job metadata ---
+  meta {
+    version     = "4.8.0"
+    owner       = "alex.freidah"
+    category    = "media"
+    tier        = "tier-1"
+    environment = "production"
+    description = "Emby media server with GPU transcoding and library management"
+  }
+
+  # --- Job update strategy ---
+  update {
+    max_parallel      = 1
+    min_healthy_time  = "30s"
+    healthy_deadline  = "5m"
+    progress_deadline = "10m"
+    auto_revert       = true
+  }
+
+  # ---------------------------------------------------------------------------
+  #  Emby Group
+  # ---------------------------------------------------------------------------
+
   group "emby" {
     count = 1
 
-    # Ensure this job runs where the media is locally mounted
+    # --- Placement constraints ---
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "mccoy"
     }
 
+    # --- Network configuration ---
     network {
       mode = "host"
-      port "web" { static = 8096 }   # Emby HTTP
-      port "https" { static = 8920 } # Emby HTTPS (optional)
+      port "web" {
+        static = 8096
+      }
+      port "https" {
+        static = 8920
+      }
     }
+
+    # --- Task restart behavior ---
+    restart {
+      attempts = 3
+      interval = "5m"
+      delay    = "15s"
+      mode     = "delay"
+    }
+
+    # --- Reschedule policy ---
+    reschedule {
+      attempts       = 3
+      interval       = "30m"
+      delay          = "5s"
+      delay_function = "exponential"
+      max_delay      = "1m"
+      unlimited      = false
+    }
+
+    # -----------------------------------------------------------------------
+    #  Emby Media Server Task
+    # -----------------------------------------------------------------------
 
     task "emby" {
       driver = "docker"
 
-      # -----------------------------
-      # Resource profile (moderate)
-      # -----------------------------
-      resources {
-        cpu    = 2000 # ~2 CPU shares
-        memory = 4096 # soft memory (MB)
-      }
-
-      # Robust restart behavior for spikes/updates
-      restart {
-        attempts = 3
-        interval = "5m"
-        delay    = "15s"
-        mode     = "delay"
-      }
-
-      # Keep container logs under control
-      logs {
-        max_files     = 5
-        max_file_size = 20
-      }
-
+      # --- Docker image configuration ---
       config {
         image              = "linuxserver/emby:latest"
         image_pull_timeout = "10m"
-        ports              = ["web", "https"]
         network_mode       = "host"
+        ports              = ["web", "https"]
         readonly_rootfs    = false
-
-        # Direct host binds (no Nomad volume blocks)
         volumes = [
-          # Config & cache (writable)
           "/opt/nomad/data/emby/config:/config",
           "/opt/nomad/data/emby/cache:/cache",
-
-          # Disk-backed transcode scratch (set Emby Transcoding path to /transcode)
           "/opt/nomad/data/emby/transcode:/transcode",
-
-          # Media (read-only) — bind each top-level directory explicitly
           "/mnt/gdrive/media/Movies:/media/Movies:ro",
           "/mnt/gdrive/media/TV:/media/TV:ro",
           "/mnt/gdrive/media/Music:/media/Music:ro",
@@ -90,12 +105,7 @@ job "emby" {
           "/mnt/gdrive/media/hacker-magazines:/media/hacker-magazines:ro",
           "/mnt/gdrive/media/random:/media/random:ro",
           "/mnt/gdrive/media/taxes:/media/taxes:ro"
-
-          # Alternative: bind the entire tree once (adjust libraries in Emby)
-          # "/mnt/gdrive/media:/media:ro"
         ]
-
-        # Hardware transcoding (Intel/AMD iGPU) — object form required by Nomad
         devices = [
           {
             host_path          = "/dev/dri"
@@ -103,42 +113,34 @@ job "emby" {
             cgroup_permissions = "rwm"
           }
         ]
-
-        # Optional: route via VPN policy like Deluge (requires host policy rules)
-        # user = "vpnmark"
       }
 
-      env = {
-        PUID = "1001" # Match ownership of your media/config paths
+      # --- Runtime environment ---
+      env {
+        PUID = "1001"
         PGID = "1001"
         TZ   = "UTC"
       }
 
+      # --- Service registration ---
       service {
         name = "emby"
         port = "web"
-
         tags = [
           "traefik.enable=true",
-
-          # Router configuration
           "traefik.http.routers.emby.rule=Host(`emby.munchbox`)",
           "traefik.http.routers.emby.entrypoints=websecure",
           "traefik.http.routers.emby.tls=true",
-
-          # Restrict to LAN (middleware defined in Traefik file provider)
           "traefik.http.routers.emby.middlewares=dashboard-allowlan@file",
-
-          # Explicit backend port
           "traefik.http.services.emby.loadbalancer.server.port=8096",
-
-          # Metadata tags
           "media",
           "emby",
-          "streaming",
+          "streaming"
         ]
 
+        # --- Web UI health check ---
         check {
+          name     = "emby-web"
           type     = "http"
           path     = "/"
           interval = "10s"
@@ -146,8 +148,22 @@ job "emby" {
         }
       }
 
-      # Graceful stop to allow Emby to flush state
+      # --- Resource allocation ---
+      resources {
+        cpu        = 2000
+        memory     = 4096
+        memory_max = 6144
+      }
+
+      # --- Log rotation configuration ---
+      logs {
+        max_files     = 5
+        max_file_size = 20
+      }
+
+      # --- Termination configuration ---
       kill_timeout = "30s"
+      kill_signal  = "SIGTERM"
     }
   }
 }

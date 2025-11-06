@@ -1,30 +1,13 @@
-# -----------------------------------------------------------------------------
-# Alertmanager — Nomad Job with Telegram Integration (v0.28.1)
+# -------------------------------------------------------------------------------
+#  Alertmanager — Alert Routing and Notification Service with Telegram
 #
-# Purpose:
-#   - Receives alerts from Prometheus and handles notification routing
-#   - Groups, silences, and inhibits alerts to reduce noise
-#   - Sends notifications via Telegram bot integration
-#   - Provides web UI for managing alerts and silences
+#  Project: Munchbox
+#  Author: Alex Freidah
 #
-# Architecture:
-#   - Stateless service (silences/history reset on restart)
-#   - Secrets stored in Nomad variables (secure, encrypted)
-#   - Telegram notifications with HTML formatting
-#   - Traefik routing with LAN-only access for web UI
-#
-# Setup Required:
-#   nomad var put -namespace=default nomad/jobs/alertmanager \
-#     telegram_bot_token="YOUR_BOT_TOKEN" \
-#     telegram_chat_id="YOUR_CHAT_ID"
-#
-# Alert Flow:
-#   1. Prometheus evaluates rules and fires alerts
-#   2. Alertmanager receives alerts from Prometheus
-#   3. Groups and routes alerts according to configuration
-#   4. Sends formatted Telegram messages
-#   5. Manages silences and inhibition rules
-# -----------------------------------------------------------------------------
+#  Receives alerts from Prometheus, groups and routes them according to rules,
+#  manages silences and inhibition, and sends formatted notifications via Telegram
+#  bot integration. Provides web UI with LAN-only access via Traefik routing.
+# -------------------------------------------------------------------------------
 
 job "alertmanager" {
   region      = "global"
@@ -33,26 +16,31 @@ job "alertmanager" {
   type        = "service"
   node_pool   = "core"
 
-  # Job metadata
-  meta {
-    version     = "0.28.1"
-    updated     = "2025-10-03"
-    description = "Alertmanager with Telegram notifications"
+  # --- Job update strategy ---
+  update {
+    max_parallel      = 1
+    min_healthy_time  = "30s"
+    healthy_deadline  = "3m"
+    progress_deadline = "10m"
+    auto_revert       = true
   }
+
+  # ---------------------------------------------------------------------------
+  #  Alertmanager Group
+  # ---------------------------------------------------------------------------
 
   group "am" {
     count = 1
 
-    # Network configuration
+    # --- Network configuration ---
     network {
       mode = "host"
-
       port "web" {
-        static = 9093 # Standard Alertmanager port
+        static = 9093
       }
     }
 
-    # Restart policy - resilient for critical alerting
+    # --- Task restart behavior ---
     restart {
       attempts = 5
       interval = "10m"
@@ -60,72 +48,63 @@ job "alertmanager" {
       mode     = "delay"
     }
 
-    # Update strategy
-    update {
-      max_parallel      = 1
-      min_healthy_time  = "30s"
-      healthy_deadline  = "3m"
-      progress_deadline = "10m"
-      auto_revert       = true
+    # --- Reschedule policy ---
+    reschedule {
+      attempts       = 3
+      interval       = "30m"
+      delay          = "5s"
+      delay_function = "exponential"
+      max_delay      = "1m"
+      unlimited      = false
     }
+
+    # -----------------------------------------------------------------------
+    #  Alertmanager Task
+    # -----------------------------------------------------------------------
 
     task "alertmanager" {
       driver = "docker"
 
+      # --- Docker image configuration ---
       config {
         image        = "quay.io/prometheus/alertmanager:v0.28.1"
         network_mode = "host"
         ports        = ["web"]
-
-        # Command line arguments
         args = [
           "--config.file=/etc/alertmanager/alertmanager.yml",
           "--web.listen-address=0.0.0.0:9093",
           "--web.external-url=https://alertmanager.munchbox/",
-          "--cluster.listen-address=" # Disable clustering for single instance
+          "--cluster.listen-address="
         ]
-
-        # Volume mounts
         volumes = [
           "local/config:/etc/alertmanager:ro"
         ]
       }
 
-      # Consul service registration with Traefik v3 tags
+      # --- Service registration ---
       service {
         name         = "alertmanager"
         provider     = "consul"
         port         = "web"
         address_mode = "host"
-
         tags = [
           "traefik.enable=true",
-
-          # Router configuration
           "traefik.http.routers.alertmanager.rule=Host(`alertmanager.munchbox`)",
           "traefik.http.routers.alertmanager.entrypoints=websecure",
           "traefik.http.routers.alertmanager.tls=true",
-
-          # Security middleware - LAN only (defined in file provider)
           "traefik.http.routers.alertmanager.middlewares=dashboard-allowlan@file",
-
-          # Service configuration
           "traefik.http.services.alertmanager.loadbalancer.server.port=9093",
           "traefik.http.services.alertmanager.loadbalancer.server.scheme=http",
-
-          # Health check configuration
           "traefik.http.services.alertmanager.loadbalancer.healthcheck.path=/-/ready",
           "traefik.http.services.alertmanager.loadbalancer.healthcheck.interval=30s",
           "traefik.http.services.alertmanager.loadbalancer.healthcheck.timeout=5s",
-
-          # Metadata tags
           "monitoring",
           "alertmanager",
           "notifications",
           "telegram"
         ]
 
-        # Health checks
+        # --- Primary health check ---
         check {
           name     = "am-ready"
           type     = "http"
@@ -134,6 +113,7 @@ job "alertmanager" {
           timeout  = "3s"
         }
 
+        # --- Secondary health check ---
         check {
           name     = "am-healthy"
           type     = "http"
@@ -143,8 +123,10 @@ job "alertmanager" {
         }
       }
 
-      # Alertmanager configuration with Telegram integration
-      # Uses [[...]] delimiters to avoid conflicts with Alertmanager's {{...}} templates
+      # --- Alertmanager configuration template ---
+      # Delimiter configuration: uses [[ ]] to avoid conflicts with Alertmanager's {{ }} templates
+      # Renders alertmanager.yml from injected configuration file with Telegram integration
+      # Signal mode allows Alertmanager to reload config on file changes via SIGHUP
       template {
         destination     = "local/config/alertmanager.yml"
         change_mode     = "signal"
@@ -157,26 +139,24 @@ job "alertmanager" {
 YAML
       }
 
-      # Environment variables
+      # --- Runtime environment ---
       env {
-        TZ = "America/Los_Angeles"
-
-        # Alertmanager specific settings
+        TZ                                  = "America/Los_Angeles"
         ALERTMANAGER_WEB_EXTERNAL_URL       = "https://alertmanager.munchbox/"
-        ALERTMANAGER_CLUSTER_LISTEN_ADDRESS = "" # Disable clustering
+        ALERTMANAGER_CLUSTER_LISTEN_ADDRESS = ""
       }
 
-      # Resource allocation - lightweight for alerting service
+      # --- Resource allocation ---
+      # Lightweight allocation suitable for alerting service
       resources {
         cpu    = 150
         memory = 128
       }
 
-      # Lifecycle management
-      kill_timeout = "30s"
-      kill_signal  = "SIGTERM"
-
-      # Allow time for pending notifications to be sent
+      # --- Termination configuration ---
+      # Allow pending notifications to be sent before shutdown
+      kill_timeout   = "30s"
+      kill_signal    = "SIGTERM"
       shutdown_delay = "15s"
     }
   }

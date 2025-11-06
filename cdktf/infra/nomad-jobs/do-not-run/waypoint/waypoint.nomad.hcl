@@ -33,7 +33,7 @@ job "waypoint" {
     network {
       mode = "bridge"
       port "grpc" { static = 9701 }
-      port "ui"   { static = 9702 }
+      port "ui" { static = 9702 }
     }
 
     # Consul service: gRPC

@@ -94,14 +94,13 @@ func RegisterVaultKvMount(stack cdktf.TerraformStack, id string, path string) va
 // Vault JWT Auth Configuration
 // ============================================================================
 
-// RegisterVaultJwtAuth configures JWT authentication for Nomad workload identity.
-func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCert string) {
+func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadURL string, nomadCaCert string) {
 	backend := vaultjwtauthbackend.NewJwtAuthBackend(stack,
 		jsii.String("jwt-auth-backend"),
 		&vaultjwtauthbackend.JwtAuthBackendConfig{
 			Path:               jsii.String("jwt-nomad"),
 			Description:        jsii.String("JWT auth for Nomad workload identity"),
-			OidcDiscoveryUrl:   jsii.String(nomadUrl),
+			OidcDiscoveryUrl:   jsii.String(nomadURL),
 			OidcDiscoveryCaPem: jsii.String(nomadCaCert),
 			DefaultRole:        jsii.String("nomad-workloads"),
 		},
@@ -114,14 +113,20 @@ func RegisterVaultJwtAuth(stack cdktf.TerraformStack, nomadUrl string, nomadCaCe
 	}
 
 	// Create the roles with the correct names
-	createJwtAuthBackendRole(stack, *backend.Path(), "nomad-workloads", nil, policies) // Correct role name for workloads
+	createJwtAuthBackendRole(stack, *backend.Path(), "nomad-workloads", nil, policies)
 	createJwtAuthBackendRole(stack, *backend.Path(), "nomad-grafana", &map[string]*string{
 		"nomad_namespace": jsii.String("default"),
 		"nomad_job_id":    jsii.String("grafana"),
 	}, []*string{
 		jsii.String("cdktf-grafana-read"),
 		jsii.String("default"),
-	}) // Correct role name for Grafana
+	})
+	createJwtAuthBackendRole(stack, *backend.Path(), "nomad-cluster", nil, []*string{
+		jsii.String("cdktf-admin"),
+		jsii.String("cdktf-hashi-ui"),
+		jsii.String("cdktf-prometheus-read"),
+		jsii.String("cdktf-grafana-read"),
+	})
 }
 
 // LoadVaultPolicies dynamically loads policies from the specified directory.

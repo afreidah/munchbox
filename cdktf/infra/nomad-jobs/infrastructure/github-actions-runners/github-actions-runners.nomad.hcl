@@ -1,12 +1,13 @@
 # -------------------------------------------------------------------------------
-#  GitHub Actions Runner — Nomad Service Job (Debian Trixie + Node20 preseed)
+#  GitHub Actions Runner — Ephemeral CI Execution Environment
 #
-#  - Uses myoung34/github-runner:debian-trixie
-#  - EPHEMERAL runners (auto-cleanup per job)
-#  - Host Docker socket for builds (privileged)
-#  - Vault (OpenBao) for PAT + repo/org settings
-#  - Prestart task seeds Node 20 into /actions-runner/externals/node20
-#    to fix: "/__e/node20/bin/node: no such file or directory"
+#  Project: Munchbox
+#  Author: Alex Freidah
+#
+#  Provides scalable, isolated CI runners using myoung34/github-runner with
+#  Debian Trixie and Node.js 20, backed by Vault workload identity for secure
+#  PAT and repository access, with Docker socket passthrough for containerized
+#  build execution and dynamic service discovery via Consul.
 # -------------------------------------------------------------------------------
 
 job "github-runner" {
@@ -15,6 +16,7 @@ job "github-runner" {
   type        = "service"
   node_pool   = "all"
 
+  # --- Job update strategy ---
   update {
     max_parallel      = 1
     min_healthy_time  = "30s"
@@ -25,9 +27,19 @@ job "github-runner" {
     canary            = 1
   }
 
+  # ---------------------------------------------------------------------------
+  #  Runner Group
+  # ---------------------------------------------------------------------------
+
   group "runner" {
     count = 2
 
+    # --- Network configuration ---
+    network {
+      mode = "host"
+    }
+
+    # --- Placement constraints ---
     constraint {
       operator = "distinct_hosts"
       value    = "true"
@@ -39,16 +51,14 @@ job "github-runner" {
       value     = "mccoy"
     }
 
+    # --- Ephemeral storage ---
     ephemeral_disk {
       size    = 5000
       migrate = false
       sticky  = false
     }
 
-    network {
-      mode = "host"
-    }
-
+    # --- Task restart behavior ---
     restart {
       attempts = 10
       interval = "10m"
@@ -56,74 +66,24 @@ job "github-runner" {
       mode     = "delay"
     }
 
-    # ---------------------------------------------------------------------------
-    # Prestart: seed Node 20 so /actions-runner/externals/node20 always exists
-    # ---------------------------------------------------------------------------
-    #task "seed-node20" {
-    #  driver = "docker"
+    # --- Reschedule policy ---
+    reschedule {
+      attempts       = 5
+      interval       = "30m"
+      delay          = "5s"
+      delay_function = "exponential"
+      max_delay      = "2m"
+      unlimited      = false
+    }
 
-    #  lifecycle {
-    #    hook    = "prestart"
-    #    sidecar = false
-    #  }
+    # -----------------------------------------------------------------------
+    #  Runner Task
+    # -----------------------------------------------------------------------
 
-    #  config {
-    #    image        = "debian:trixie-slim"
-    #    network_mode = "host"
-    #    command      = "bash"
-    #    args = [
-    #      "-lc",
-    #      <<-EOT
-    #        set -euo pipefail
-    #        apt-get update -y
-    #        apt-get install -y --no-install-recommends ca-certificates curl xz-utils
-    #        rm -rf /var/lib/apt/lists/*
-
-    #        mkdir -p "${NOMAD_ALLOC_DIR}/node20"
-    #        cd "${NOMAD_ALLOC_DIR}/node20"
-
-    #        ARCH=$(uname -m)
-    #        case "$ARCH" in
-    #          aarch64) NODE_ARCH="arm64" ;;
-    #          arm64)   NODE_ARCH="arm64" ;;
-    #          x86_64)  NODE_ARCH="x64" ;;
-    #          amd64)   NODE_ARCH="x64" ;;
-    #          *) echo "Unknown arch: $ARCH"; exit 1 ;;
-    #        esac
-
-    #        NODE_VER="v20.18.0"
-    #        TARBALL="node-${NODE_VER}-linux-${NODE_ARCH}.tar.xz"
-    #        URL="https://nodejs.org/dist/${NODE_VER}/${TARBALL}"
-
-    #        echo "Fetching ${URL}"
-    #        curl -fsSLO "${URL}"
-    #        tar -xJf "${TARBALL}"
-    #        rm -f "${TARBALL}"
-
-    #        mkdir -p externals/node20
-    #        mv "node-${NODE_VER}-linux-${NODE_ARCH}" externals/node20/node20
-
-    #        mkdir -p externals/node20/bin
-    #        ln -sf ../node20/bin/node externals/node20/bin/node
-
-    #        ./externals/node20/bin/node --version
-    #        echo "Node20 preseed complete."
-    #      EOT
-    #    ]
-    #  }
-
-    #  resources {
-    #    cpu    = 100
-    #    memory = 128
-    #  }
-    #}
-
-    # ---------------------------------------------------------------------------
-    # Main runner
-    # ---------------------------------------------------------------------------
     task "runner" {
       driver = "docker"
 
+      # --- Workload identity and secrets ---
       identity {
         env  = true
         file = true
@@ -134,18 +94,18 @@ job "github-runner" {
         role = "nomad-workloads"
       }
 
+      # --- Docker image configuration ---
       config {
         image              = "myoung34/github-runner:debian-trixie"
         image_pull_timeout = "10m"
         network_mode       = "host"
         privileged         = true
-
         volumes = [
           "/var/run/docker.sock:/var/run/docker.sock"
-          # "${NOMAD_ALLOC_DIR}/node20/externals/node20:/actions-runner/externals/node20"
         ]
       }
 
+      # --- Service registration ---
       service {
         name     = "github-runner"
         provider = "consul"
@@ -157,6 +117,7 @@ job "github-runner" {
         ]
       }
 
+      # --- Runtime environment ---
       template {
         destination = "secrets/github.env"
         env         = true
@@ -170,11 +131,13 @@ job "github-runner" {
         START_DOCKER_SERVICE = "false"
       }
 
+      # --- Resource allocation ---
       resources {
         cpu    = 2000
         memory = 2048
       }
 
+      # --- Termination configuration ---
       kill_timeout   = "120s"
       kill_signal    = "SIGTERM"
       shutdown_delay = "10s"

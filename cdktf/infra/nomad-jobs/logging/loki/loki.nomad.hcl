@@ -1,11 +1,12 @@
 # -------------------------------------------------------------------------------
-# Loki — Nomad Job for centralized log aggregation (v3.3.1 FINAL)
+#  Loki — Centralized Log Aggregation for Promtail Collectors
 #
-# - Receives logs from Promtail agents on all nodes
-# - 5-day log retention (TSDB, filesystem backend)
-# - Persistent storage on cabot (host volume `loki-data`)
-# - Exposes HTTP API for Grafana queries
-# - Registers in Consul (address_mode=host) so loki.service.consul works
+#  Project: Munchbox
+#  Author: Alex Freidah
+#
+#  Receives logs from Promtail agents on all nodes via push API. Maintains
+#  5-day log retention with TSDB filesystem backend for persistence. Exposes
+#  HTTP API for Grafana log queries and runs on cabot node with host volume.
 # -------------------------------------------------------------------------------
 
 job "loki" {
@@ -14,6 +15,7 @@ job "loki" {
   type        = "service"
   node_pool   = "edge"
 
+  # --- Job metadata ---
   meta {
     version     = "3.3.1"
     updated     = "2025-10-31"
@@ -24,27 +26,39 @@ job "loki" {
     environment = "production"
   }
 
+  # --- Job update strategy ---
+  update {
+    max_parallel      = 1
+    min_healthy_time  = "30s"
+    healthy_deadline  = "5m"
+    progress_deadline = "10m"
+    auto_revert       = true
+  }
+
+  # ---------------------------------------------------------------------------
+  #  Loki Group
+  # ---------------------------------------------------------------------------
+
   group "loki" {
     count = 1
 
-    # Pin to cabot for persistent storage locality
+    # --- Placement constraints ---
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
       value     = "cabot"
     }
 
-    # Host volume for persistent TSDB data (define 'loki-data' in client.hcl)
+    # --- Persistent TSDB storage volume ---
     volume "loki-data" {
       type      = "host"
       source    = "loki-data"
       read_only = false
     }
 
-    # Networking: host mode + static ports (open 3100/tcp & 9096/tcp on host)
+    # --- Network configuration ---
     network {
       mode = "host"
-
       port "http" {
         static = 3100
         to     = 3100
@@ -55,7 +69,7 @@ job "loki" {
       }
     }
 
-    # Restart/update policies
+    # --- Task restart behavior ---
     restart {
       attempts = 3
       interval = "5m"
@@ -63,23 +77,29 @@ job "loki" {
       mode     = "fail"
     }
 
-    update {
-      max_parallel      = 1
-      min_healthy_time  = "30s"
-      healthy_deadline  = "5m"
-      progress_deadline = "10m"
-      auto_revert       = true
+    # --- Reschedule policy ---
+    reschedule {
+      attempts       = 3
+      interval       = "30m"
+      delay          = "5s"
+      delay_function = "exponential"
+      max_delay      = "1m"
+      unlimited      = false
     }
 
-    # -------------------------------------------------------------------------
-    # Prestart: ensure storage dirs exist & owned by Loki UID 10001
-    # -------------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    #  Storage Preparation Prestart Task
+    # -----------------------------------------------------------------------
+
     task "prepare-storage" {
       driver = "docker"
       user   = "root"
 
-      lifecycle { hook = "prestart" }
+      lifecycle {
+        hook = "prestart"
+      }
 
+      # --- Docker image configuration ---
       config {
         image   = "alpine:3.20"
         command = "sh"
@@ -95,51 +115,53 @@ job "loki" {
         ]
       }
 
+      # --- Volume mount ---
       volume_mount {
         volume      = "loki-data"
         destination = "/loki"
         read_only   = false
       }
 
+      # --- Resource allocation ---
       resources {
         cpu    = 100
         memory = 64
       }
     }
 
-    # -------------------------------------------------------------------------
-    # Main Loki task
-    # -------------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    #  Loki Task
+    # -----------------------------------------------------------------------
+
     task "loki" {
       driver = "docker"
 
+      # --- Docker image configuration ---
       config {
         image        = "grafana/loki:3.3.1"
         network_mode = "host"
         ports        = ["http", "grpc"]
-
         args = [
           "-config.file=/etc/loki/config.yaml",
         ]
-
         volumes = [
           "local/config:/etc/loki:ro",
         ]
-
         logging {
           type = "journald"
           config { tag = "loki" }
         }
       }
 
-      # Mount persistent storage
+      # --- Persistent storage volume mount ---
       volume_mount {
         volume      = "loki-data"
         destination = "/loki"
         read_only   = false
       }
 
-      # ---- Loki config (filesystem TSDB, 5-day retention) -------------------
+      # --- Loki configuration template ---
+      # TSDB filesystem backend with 5-day retention
       template {
         destination = "local/config/config.yaml"
         change_mode = "restart"
@@ -149,29 +171,25 @@ job "loki" {
 YAML
       }
 
-      # Consul service registration (address_mode=host ensures host IP is used)
+      # --- Service registration ---
       service {
         name         = "loki"
         port         = "http"
         provider     = "consul"
         address_mode = "host"
-
         tags = [
-          # Traefik routing (optional but kept from your setup)
           "traefik.enable=true",
           "traefik.http.routers.loki.rule=Host(`loki.munchbox`)",
           "traefik.http.routers.loki.entrypoints=websecure",
           "traefik.http.routers.loki.tls=true",
           "traefik.http.routers.loki.middlewares=dashboard-allowlan@file",
           "traefik.http.services.loki.loadbalancer.server.port=3100",
-
-          # Metadata
           "logging",
           "loki",
-          "observability",
+          "observability"
         ]
 
-        # Health check: only PASSING instances appear in loki.service.consul DNS
+        # --- Loki health check ---
         check {
           name     = "loki-ready"
           type     = "http"
@@ -182,15 +200,18 @@ YAML
         }
       }
 
+      # --- Runtime environment ---
       env {
         TZ = "America/Los_Angeles"
       }
 
+      # --- Resource allocation ---
       resources {
         cpu    = 500
         memory = 512
       }
 
+      # --- Termination configuration ---
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
     }
