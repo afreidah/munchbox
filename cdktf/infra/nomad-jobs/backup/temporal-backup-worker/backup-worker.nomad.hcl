@@ -1,22 +1,14 @@
-# ───────────────────────────────────────────────────────────────────────────────
-# Temporal Backup Worker — Nomad Service Job
-# ───────────────────────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
+#  Temporal Backup Worker — Long-Running Workflow Execution Service
 #
-# Long-running worker service that executes Temporal backup workflows. Listens
-# on the backup-task-queue for workflow executions triggered by the periodic
-# backup-trigger job. Performs snapshot operations for Nomad, Consul, and
-# OpenBao clusters, storing backups on /mnt/gdrive with 7-day retention.
+#  Project: Munchbox
+#  Author: Alex Freidah
 #
-# Execution: Runs continuously on mccoy (has /mnt/gdrive access)
-# Authentication: Uses Nomad workload identity to retrieve credentials from Vault
-# Dependencies: temporal (server), Vault KV secrets at kv/data/backup-worker
-#
-# Vault secrets required:
-#   - nomad_token: Nomad management token for snapshot operations
-#   - consul_token: Consul token with snapshot permissions
-#
-# Monitor: Temporal UI at http://192.168.68.61:8080
-# ───────────────────────────────────────────────────────────────────────────────
+#  Executes Temporal backup workflows triggered by the backup-trigger job via
+#  the backup-task-queue. Performs snapshot operations for Nomad, Consul, and
+#  OpenBao, storing backups on /mnt/gdrive with 7-day retention. Requires Vault
+#  credentials for cluster access and dedicated node placement on mccoy.
+# -------------------------------------------------------------------------------
 
 job "temporal-backup-worker" {
   region      = "global"
@@ -24,20 +16,25 @@ job "temporal-backup-worker" {
   type        = "service"
   node_pool   = "all"
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Node Placement
-  # ─────────────────────────────────────────────────────────────────────────────
-  constraint {
-    attribute = "${node.unique.name}"
-    value     = "mccoy"
-  }
+  # ---------------------------------------------------------------------------
+  #  Worker Group
+  # ---------------------------------------------------------------------------
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Worker Group
-  # ─────────────────────────────────────────────────────────────────────────────
   group "worker" {
     count = 1
 
+    # --- Network configuration ---
+    network {
+      mode = "host"
+    }
+
+    # --- Placement constraints ---
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "mccoy"
+    }
+
+    # --- Task restart behavior ---
     restart {
       attempts = 10
       interval = "5m"
@@ -45,31 +42,14 @@ job "temporal-backup-worker" {
       mode     = "delay"
     }
 
-    network {
-      mode = "host"
-    }
+    # -----------------------------------------------------------------------
+    #  Backup Worker Task
+    # -----------------------------------------------------------------------
 
-    # ───────────────────────────────────────────────────────────────────────────
-    # Service Registration
-    # ───────────────────────────────────────────────────────────────────────────
-    service {
-      name     = "temporal-backup-worker"
-      provider = "consul"
-
-      tags = [
-        "temporal",
-        "backup",
-        "worker",
-      ]
-    }
-
-    # ───────────────────────────────────────────────────────────────────────────
-    # Worker Task
-    # ───────────────────────────────────────────────────────────────────────────
     task "worker" {
       driver = "raw_exec"
 
-      # Nomad workload identity for Vault authentication
+      # --- Workload identity and secrets ---
       identity {
         env  = true
         file = true
@@ -80,11 +60,23 @@ job "temporal-backup-worker" {
         role = "nomad-workloads"
       }
 
+      # --- Task configuration ---
       config {
         command = "/usr/local/bin/temporal-backup-worker"
       }
 
-      # Service connection configuration
+      # --- Service registration ---
+      service {
+        name     = "temporal-backup-worker"
+        provider = "consul"
+        tags = [
+          "temporal",
+          "backup",
+          "worker"
+        ]
+      }
+
+      # --- Runtime environment ---
       env {
         TEMPORAL_ADDRESS  = "192.168.68.61:7233"
         NOMAD_ADDR        = "https://${attr.unique.network.ip-address}:4646"
@@ -94,11 +86,10 @@ job "temporal-backup-worker" {
         BAO_SKIP_VERIFY   = "true"
       }
 
-      # Vault-templated credentials
       template {
-        env         = true
         destination = "secrets/tokens.env"
-        data        = <<EOH
+        env         = true
+        data        = <<-EOH
 {{ with secret "kv/data/backup-worker" -}}
 NOMAD_TOKEN={{ .Data.data.nomad_token }}
 CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
@@ -106,6 +97,7 @@ CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
 EOH
       }
 
+      # --- Resource allocation ---
       resources {
         cpu        = 200
         memory     = 256

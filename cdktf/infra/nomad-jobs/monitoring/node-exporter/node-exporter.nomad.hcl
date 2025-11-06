@@ -1,175 +1,155 @@
 # -------------------------------------------------------------------------------
-# Prometheus Node Exporter — Nomad System Job
+#  Prometheus Node Exporter — System Metrics Collection Service
 #
-# Purpose:
-#   - Run node_exporter on every node via Nomad "system" job
-#   - Expose system metrics on port 9100 for Prometheus scraping
-#   - Host networking for direct node access
-#   - Consul service registration for dynamic discovery
+#  Project: Munchbox
+#  Author: Alex Freidah
 #
-# Architecture:
-#   - System job = runs on ALL nodes automatically
-#   - Host networking = binds directly to node's port 9100
-#   - Root filesystem mounted read-only for metric collection
-#   - No web UI needed = no Traefik routing required
-#
-# Metrics Exposed:
-#   - CPU usage, load averages
-#   - Memory and swap usage
-#   - Disk space and I/O statistics
-#   - Network interface statistics
-#   - System uptime and boot time
-#
-# Integration:
-#   - Discovered by Prometheus via Consul service discovery
-#   - No manual configuration needed when adding/removing nodes
-#   - Automatically starts on new nodes added to cluster
+#  Runs node_exporter on every cluster node via system job, exposing CPU,
+#  memory, disk, network, and system metrics on port 9100. Uses host networking
+#  for direct port binding and Consul service discovery for dynamic Prometheus
+#  scrape target registration.
 # -------------------------------------------------------------------------------
 
 job "node-exporter" {
   region      = "global"
   datacenters = ["pi-dc"]
-  node_pool   = "all"    # Deploy to all node pools
-  type        = "system" # Runs on every eligible node
+  type        = "system"
+  node_pool   = "all"
 
-  # Job metadata for tracking and management
+  # --- Job metadata ---
   meta {
     version     = "1.8.2"
     updated     = "2025-10-11"
     description = "Prometheus Node Exporter - System metrics collection"
   }
 
+  # ---------------------------------------------------------------------------
+  #  Node Exporter Group
+  # ---------------------------------------------------------------------------
+
   group "prometheus_node_exporter" {
-    # System jobs don't specify count - automatically runs everywhere
 
-    # Network configuration - host mode for direct port binding
+    # --- Network configuration ---
     network {
-      mode = "host" # Direct access to host networking stack
-
+      mode = "host"
       port "http" {
-        static = 9100 # Standard node_exporter port across industry
+        static = 9100
       }
     }
 
-    # Restart policy - resilient for critical system monitoring
+    # --- Task restart behavior ---
     restart {
-      attempts = 10      # More attempts since this is system-critical
-      interval = "5m"    # Reset attempt counter every 5 minutes
-      delay    = "5s"    # Brief delay between restart attempts
-      mode     = "delay" # Use delay mode for gradual backoff
+      attempts = 10
+      interval = "5m"
+      delay    = "5s"
+      mode     = "delay"
     }
 
-    # Update strategy for system job - careful rolling updates
+    # --- Rolling update strategy ---
     update {
-      max_parallel     = 2 # Update only 2 nodes at a time
+      max_parallel     = 2
       min_healthy_time = "10s"
       healthy_deadline = "2m"
-      auto_revert      = true # Rollback on failure
+      auto_revert      = true
     }
+
+    # -----------------------------------------------------------------------
+    #  Node Exporter Task
+    # -----------------------------------------------------------------------
 
     task "prometheus_node_exporter" {
       driver = "docker"
 
+      # --- Docker image configuration ---
+      # Container shares host network namespace for direct port binding
+      # Host PID namespace access provides better metrics collection
       config {
-        image = "quay.io/prometheus/node-exporter:v1.8.2"
+        image        = "quay.io/prometheus/node-exporter:v1.8.2"
+        network_mode = "host"
+        pid_mode     = "host"
 
-        # Networking configuration for host access
-        network_mode = "host" # Container shares host network namespace
-        pid_mode     = "host" # Access to host PID namespace for better metrics
-
-        # Command arguments - configure node_exporter behavior
+        # --- Node exporter command configuration ---
+        # Enable useful collectors: processes for system process monitoring
+        # Disable noisy collectors: wifi (not applicable to servers), hwmon (noisy on headless systems)
+        # Filesystem exclusions: virtual/temporary filesystems with proper regex escaping
+        # Mount point exclusions: /dev, /proc, /sys, Docker runtime, ephemeral mounts, /mnt/gdrive
         args = [
           "--path.rootfs=/host",
           "--web.listen-address=0.0.0.0:9100",
           "--web.telemetry-path=/metrics",
-
-          # Enable useful collectors
           "--collector.processes",
-
-          # Disable noisy/unnecessary collectors for server environment
           "--no-collector.wifi",
           "--no-collector.hwmon",
-
-          # Filesystem collector configuration - use proper regex escaping
-          # Exclude virtual/temporary filesystems
           "--collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs|fuse\\.sshfs|tmpfs)$",
-
-          # Exclude specific mount points
-          "--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|run/.+|mnt/gdrive)($|/)",
+          "--collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|run/.+|mnt/gdrive)($|/)"
         ]
 
-        # Volume mounts - mount host filesystem for metric collection
+        # --- Volume mounts ---
+        # Mount entire host filesystem read-only with recursive slave mode for metric collection
         volumes = [
-          "/:/host:ro,rslave" # Read-only recursive mount of entire host FS
+          "/:/host:ro,rslave"
         ]
       }
 
-      # Resource allocation - lightweight for system service
-      resources {
-        cpu    = 150
-        memory = 64
-      }
-
-      # Consul service registration for Prometheus discovery
+      # --- Service registration ---
       service {
         name         = "prometheus-node-exporter"
         port         = "http"
         provider     = "consul"
-        address_mode = "host" # Register the actual node IP, not container IP
-
-        # Service tags - metadata for service discovery
+        address_mode = "host"
         tags = [
-          "monitoring",    # General monitoring service
-          "node-exporter", # Specific exporter type
-          "metrics",       # Provides metrics endpoint
-          "system"         # System-level monitoring
+          "monitoring",
+          "node-exporter",
+          "metrics",
+          "system"
         ]
 
-        # Primary health check - ensure metrics endpoint responds
+        # --- Primary health check ---
         check {
           name     = "node-exporter-alive"
           type     = "http"
           method   = "GET"
           path     = "/metrics"
           port     = "http"
-          interval = "15s" # Check every 15 seconds
-          timeout  = "3s"  # 3 second timeout
-
-          # Restart task if health checks fail consistently
+          interval = "15s"
+          timeout  = "3s"
           check_restart {
-            limit = 3     # Restart after 3 consecutive failures
-            grace = "10s" # 10 second grace period before restart
+            limit = 3
+            grace = "10s"
           }
         }
 
-        # Secondary check - validate metrics content is being produced
+        # --- Secondary health check ---
         check {
           name     = "node-exporter-metrics"
           type     = "http"
           method   = "GET"
           path     = "/metrics"
           port     = "http"
-          interval = "60s" # Less frequent detailed check
+          interval = "60s"
           timeout  = "5s"
-
-          # Validate response headers
           header {
-            Accept = ["text/plain"] # Prometheus text format
+            Accept = ["text/plain"]
           }
         }
       }
 
-      # Environment variables
+      # --- Runtime environment ---
       env {
-        TZ = "America/Los_Angeles" # Consistent timezone across cluster
-
-        # Node exporter specific environment
+        TZ                               = "America/Los_Angeles"
         NODE_EXPORTER_WEB_TELEMETRY_PATH = "/metrics"
       }
 
-      # Lifecycle management
-      kill_timeout = "30s"     # Allow graceful shutdown
-      kill_signal  = "SIGTERM" # Use standard termination signal
+      # --- Resource allocation ---
+      # Lightweight allocation suitable for system service running on all nodes
+      resources {
+        cpu    = 150
+        memory = 64
+      }
+
+      # --- Termination configuration ---
+      kill_timeout = "30s"
+      kill_signal  = "SIGTERM"
     }
   }
 }

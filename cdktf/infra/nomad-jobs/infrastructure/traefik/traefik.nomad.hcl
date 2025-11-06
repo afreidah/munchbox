@@ -1,44 +1,33 @@
-# -----------------------------------------------------------------------------
-# Traefik Nomad Job — HTTPS-first (with HTTP redirect & /ping on HTTPS)
-# -----------------------------------------------------------------------------
-# Purpose:
-#   - Run Traefik as a system service on ingress nodes.
-#   - Expose HTTP (:80) and HTTPS (:443). HTTP is used for redirect-to-HTTPS
-#     and to accept Cloudflare Tunnel traffic locally (cloudflared -> http:80).
-#   - Expose the Traefik dashboard on :8081 (LAN-restricted).
+# -------------------------------------------------------------------------------
+#  Traefik — Reverse Proxy and Load Balancer with Dynamic Service Discovery
 #
-# Host-based routing summary:
-#   - https://traefik.munchbox         -> Traefik dashboard (LAN only; auth)
-#   - https://consul.munchbox          -> Consul UI (on this node)
-#   - https://nomad.munchbox           -> Nomad UI (Hashi-UI on this node)
-#   - https://grafana.munchbox         -> Grafana UI (remote node)
-#   - https://registry.munchbox        -> Docker Registry UI (remote node)
-#   - https://resume.munchbox          -> Local resume site (on mccoy:8080), via HTTPS
-#   - https://resume.alexfreidah.com   -> Public resume site via Cloudflare
-#                                         Tunnel -> Traefik (HTTP :80 locally) -> nginx-resume
-#   - http(s)://k3s-status.alexfreidah.com -> Cloudflare Tunnel -> Traefik (HTTP :80 locally)
-#                                            -> health-checker via Consul DNS
+#  Project: Munchbox
+#  Author: Alex Freidah
 #
-# Notes:
-#   - HTTP (:80) remains enabled. All *.munchbox requests on HTTP redirect to HTTPS,
-#     except the Cloudflare public host router which intentionally stays on HTTP.
-#   - A no-auth /ping is exposed on HTTPS for monitoring (blackbox probe).
-#   - Self-signed certificates for *.munchbox are generated automatically on first start.
-#   - Services auto-discovered via Consul Catalog with traefik.enable=true tags
-# -----------------------------------------------------------------------------
+#  HTTPS-first ingress controller running as system job on designated ingress
+#  nodes. Accepts HTTP for Cloudflare Tunnel and redirects *.munchbox to HTTPS.
+#  Auto-discovers services via Consul Catalog and dynamic config. Generates
+#  self-signed certificates for internal *.munchbox domains on first start.
+#  Exposes dashboard on :8081 (LAN-only) for traffic analysis.
+# -------------------------------------------------------------------------------
 
 job "traefik" {
   region      = "global"
   datacenters = ["pi-dc"]
-  node_pool   = "core"
   type        = "system"
+  node_pool   = "core"
 
-  constraint {
-    attribute = "$${meta.role}"
-    operator  = "="
-    value     = "ingress"
+  # --- Job metadata ---
+  meta {
+    version     = "3.5.3"
+    owner       = "alex.freidah"
+    category    = "infrastructure"
+    tier        = "tier-0"
+    environment = "production"
+    description = "Traefik reverse proxy with Consul service discovery"
   }
 
+  # --- Job update strategy ---
   update {
     max_parallel      = 1
     min_healthy_time  = "30s"
@@ -49,25 +38,46 @@ job "traefik" {
     canary            = 1
   }
 
+  # --- Job-level placement constraints ---
+  constraint {
+    attribute = "${meta.role}"
+    operator  = "="
+    value     = "ingress"
+  }
+
+  # ---------------------------------------------------------------------------
+  #  Traefik Group
+  # ---------------------------------------------------------------------------
+
   group "traefik" {
+    # --- Network configuration ---
     network {
       mode = "host"
-
       port "dashboard" {
         static = 8081
         to     = 8081
       }
-
       port "http" {
         static = 80
         to     = 80
       }
-
       port "https" {
         static = 443
         to     = 443
       }
     }
+
+    # --- Task restart behavior ---
+    restart {
+      attempts = 3
+      interval = "5m"
+      delay    = "15s"
+      mode     = "fail"
+    }
+
+    # -----------------------------------------------------------------------
+    #  Certificate Generation Prestart Task
+    # -----------------------------------------------------------------------
 
     task "certgen" {
       driver = "docker"
@@ -77,28 +87,40 @@ job "traefik" {
         sidecar = false
       }
 
+      # --- Docker image configuration ---
       config {
         image   = "alpine:latest"
         command = "sh"
         args    = ["-c", "apk add --no-cache openssl && /local/generate-certs.sh"]
       }
 
+      # --- Certificate generation script template ---
       template {
         destination = "local/generate-certs.sh"
         perms       = "0755"
-        data        = <<EOT
+        data        = <<-EOT
 <<INJECT:files/generate-certs.sh>>
 EOT
       }
 
+      # --- Resource allocation ---
       resources {
-        cpu    = 100
+        cpu    = 300
         memory = 128
       }
     }
 
+    # -----------------------------------------------------------------------
+    #  Traefik Reverse Proxy Task
+    # -----------------------------------------------------------------------
+
     task "traefik" {
       driver = "docker"
+
+      # --- Workload identity and Vault integration ---
+      vault {
+        role = "nomad-workloads"
+      }
 
       identity {
         env  = true
@@ -106,13 +128,10 @@ EOT
         aud  = ["vault.io"]
       }
 
-      vault {
-        role = "nomad-workloads"
-      }
-
+      # --- Docker image configuration ---
       config {
-        network_mode = "host"
         image        = "traefik:v3.5.3"
+        network_mode = "host"
         ports        = ["http", "https", "dashboard"]
         volumes = [
           "local/traefik.toml:/etc/traefik/traefik.toml",
@@ -120,58 +139,68 @@ EOT
         ]
       }
 
+      # --- Consul configuration template ---
       template {
         destination = "secrets/consul.env"
         env         = true
-        data        = <<EOT
+        data        = <<-EOT
 <<INJECT:files/consul.env.ctmpl>>
 EOT
       }
 
+      # --- Traefik static configuration template ---
       template {
         destination = "local/traefik.toml"
         perms       = "0644"
-        data        = <<EOT
+        data        = <<-EOT
 <<INJECT:files/traefik.toml.ctmpl>>
 EOT
       }
 
+      # --- Traefik dynamic configuration template ---
       template {
         destination = "local/traefik_dynamic.toml"
         change_mode = "restart"
         perms       = "0644"
-        data        = <<EOT
+        data        = <<-EOT
 <<INJECT:files/traefik_dynamic.toml.ctmpl>>
 EOT
       }
 
-      resources {
-        cpu    = 200
-        memory = 256
-      }
-
+      # --- Service registration (HTTPS endpoint) ---
       service {
         name = "traefik"
         port = "https"
         tags = ["metrics_port=8081"]
+
+        # --- HTTPS health check ---
         check {
-          name     = "tcp-https"
+          name     = "traefik-https"
           type     = "tcp"
           interval = "10s"
           timeout  = "2s"
         }
       }
 
+      # --- Service registration (dashboard endpoint) ---
       service {
         name = "traefik-dashboard"
         port = "dashboard"
+
+        # --- Dashboard health check ---
         check {
-          name     = "http-ping"
+          name     = "traefik-ping"
           type     = "http"
           path     = "/ping"
           interval = "10s"
           timeout  = "2s"
         }
+      }
+
+      # --- Resource allocation ---
+      resources {
+        cpu    = 200
+        memory = 256
       }
     }
   }

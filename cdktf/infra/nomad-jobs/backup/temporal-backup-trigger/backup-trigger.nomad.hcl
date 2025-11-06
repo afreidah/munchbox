@@ -1,19 +1,13 @@
-# ───────────────────────────────────────────────────────────────────────────────
-# Temporal Backup Trigger — Nomad Periodic Batch Job
-# ───────────────────────────────────────────────────────────────────────────────
+# -------------------------------------------------------------------------------
+#  Temporal Backup Trigger — Daily Scheduled Backup Orchestration
 #
-# Initiates scheduled backups of HashiCorp infrastructure via Temporal workflows.
-# Runs daily at 2:00 AM Pacific, triggering snapshots of Nomad, Consul, and
-# OpenBao clusters. The actual backup execution is performed by the
-# temporal-backup-worker service running on mccoy.
+#  Project: Munchbox
+#  Author: Alex Freidah
 #
-# Schedule: Daily at 2:00 AM PT (cron: "0 2 * * *")
-# Binary: /usr/local/bin/temporal-backup-trigger (multi-arch: amd64 + arm64)
-# Dependencies: temporal (server), temporal-backup-worker (executor)
-#
-# Manual execution: nomad job dispatch temporal-backup-trigger
-# Monitor: Temporal UI at http://192.168.68.61:8080
-# ───────────────────────────────────────────────────────────────────────────────
+#  Initiates daily backups of HashiCorp infrastructure via Temporal workflows.
+#  Runs daily at 2:00 AM Pacific, triggering snapshots of Nomad, Consul, and
+#  OpenBao clusters executed by the temporal-backup-worker service on mccoy.
+# -------------------------------------------------------------------------------
 
 job "temporal-backup-trigger" {
   region      = "global"
@@ -21,21 +15,26 @@ job "temporal-backup-trigger" {
   type        = "batch"
   node_pool   = "all"
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Schedule Configuration
-  # ─────────────────────────────────────────────────────────────────────────────
+  # --- Periodic schedule configuration ---
   periodic {
     cron             = "0 2 * * *"
     prohibit_overlap = true
     time_zone        = "America/Los_Angeles"
   }
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Task Group
-  # ─────────────────────────────────────────────────────────────────────────────
+  # ---------------------------------------------------------------------------
+  #  Trigger Group
+  # ---------------------------------------------------------------------------
+
   group "trigger" {
     count = 1
 
+    # --- Network configuration ---
+    network {
+      mode = "host"
+    }
+
+    # --- Task restart behavior ---
     restart {
       attempts = 3
       interval = "5m"
@@ -43,24 +42,24 @@ job "temporal-backup-trigger" {
       mode     = "delay"
     }
 
-    network {
-      mode = "host"
-    }
+    # -----------------------------------------------------------------------
+    #  Backup Trigger Task
+    # -----------------------------------------------------------------------
 
-    # ───────────────────────────────────────────────────────────────────────────
-    # Trigger Task
-    # ───────────────────────────────────────────────────────────────────────────
     task "trigger" {
       driver = "raw_exec"
 
+      # --- Task configuration ---
       config {
         command = "/usr/local/bin/temporal-backup-trigger"
       }
 
+      # --- Runtime environment ---
       env {
         TEMPORAL_ADDRESS = "192.168.68.61:7233"
       }
 
+      # --- Resource allocation ---
       resources {
         cpu    = 100
         memory = 128

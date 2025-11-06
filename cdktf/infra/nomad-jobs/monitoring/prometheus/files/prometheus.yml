@@ -59,7 +59,7 @@ scrape_configs:
     params:
       format: ["prometheus"]
     scheme: "https"
-    bearer_token_file: "/etc/prometheus/local-secrets/vault_token"
+    bearer_token_file: "/etc/prometheus/secrets/vault_token"
     tls_config:
       insecure_skip_verify: true
     static_configs:
@@ -75,7 +75,7 @@ scrape_configs:
     scrape_interval: 15s
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.0.1:8500[[ end ]]'
+      - server: "127.0.0.1:8500"
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["prometheus-node-exporter"]
         datacenter: "dc1"
@@ -96,7 +96,7 @@ scrape_configs:
       format: ["prometheus"]
     scheme: "http"
     authorization:
-      credentials_file: "/etc/prometheus/local-secrets/consul_token"
+      credentials_file: "/etc/prometheus/secrets/consul_token"
     static_configs:
       - targets:
           - "mccoy:8500"
@@ -132,7 +132,7 @@ scrape_configs:
   - job_name: "traefik"
     scheme: "http"
     consul_sd_configs:
-      - server: '[[ with env "CONSUL_HTTP_ADDR" ]][[ . ]][[ else ]]127.0.0.1:8500[[ end ]]'
+      - server: "127.0.0.1:8500"
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["traefik"]
         datacenter: "dc1"
