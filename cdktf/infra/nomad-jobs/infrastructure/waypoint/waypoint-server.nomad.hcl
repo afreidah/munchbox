@@ -121,7 +121,7 @@ job "waypoint-server" {
 
     task "server" {
       driver = "docker"
-    
+
       config {
         image       = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
         userns_mode = "host"
@@ -131,77 +131,23 @@ job "waypoint-server" {
         ]
         ports = ["grpc", "ui"]
       }
-    
+
       volume_mount {
         volume      = "waypoint-data"
         destination = "/var/lib/waypoint"
         read_only   = false
       }
-    
+
       resources {
         cpu    = 300
         memory = 256
       }
-    
+
       restart {
         attempts = 3
         interval = "30s"
         delay    = "5s"
         mode     = "delay"
-      }
-    }
-
-    # -----------------------------------------------------------------------
-    #  Token Bootstrap Task (poststart: waits for gRPC, writes token to Vault)
-    # -----------------------------------------------------------------------
-
-    task "bootstrap-token" {
-      driver = "docker"
-    
-      lifecycle {
-        hook = "poststart"
-      }
-    
-      vault {
-        role = "nomad-workloads"
-      }
-    
-      identity {
-        env  = true
-        file = true
-        aud  = ["vault.io"]
-      }
-    
-      template {
-        destination = "local/bootstrap.sh"
-        perms       = "0755"
-        change_mode = "noop"
-        data        = <<EOH
-      <<INJECT:files/bootstrap.sh>>
-      EOH
-      }
-    
-      config {
-        image      = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
-        entrypoint = ["/bin/bash", "-lc"]
-        args       = ["/local/bootstrap.sh"]
-      }
-    
-      env {
-        VAULT_ADDR        = "https://192.168.68.63:8200"
-        VAULT_SKIP_VERIFY = "true"
-      }
-    
-      resources {
-        cpu    = 50
-        memory = 64
-      }
-    
-      restart {
-        attempts = 1
-        interval = "1m"
-        delay    = "10s"
-        mode     = "fail"
       }
     }
 
@@ -234,4 +180,3 @@ job "waypoint-server" {
     }
   }
 }
-

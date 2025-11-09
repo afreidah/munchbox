@@ -95,7 +95,7 @@ job "hashi-ui" {
       identity {
         env  = true
         file = true
-        aud  = ["vault.io"]                # must match Vault role bound_audiences
+        aud  = ["vault.io"] # must match Vault role bound_audiences
       }
 
       # --- Docker image configuration ---
