@@ -104,7 +104,7 @@ EOH
 
       env {
         TZ                   = "UTC"
-        WAYPOINT_SERVER_ADDR = "waypoint-grpc.service.consul:9701"
+        WAYPOINT_SERVER_ADDR = "192.168.68.63:9701"
       }
 
       resources {
