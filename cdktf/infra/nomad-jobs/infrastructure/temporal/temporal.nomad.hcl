@@ -210,6 +210,63 @@ job "temporal" {
         memory_max = 2048
       }
     }
+
+    # -----------------------------------------------------------------------
+    #  Namespace Configuration Task
+    # -----------------------------------------------------------------------
+
+    task "namespace-config" {
+      driver = "raw_exec"
+
+      lifecycle {
+        sidecar = false
+      }
+
+      # --- Configure namespace retention for workflow history ---
+      config {
+        command = "/bin/bash"
+        args = ["-c", <<-EOT
+          set -e
+
+          echo "Waiting for Temporal server to accept connections..."
+          MAX_ATTEMPTS=600
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            if (echo > /dev/tcp/127.0.0.1/7233) 2>/dev/null; then
+              echo "Temporal server is ready"
+              break
+            fi
+            if [ $((i % 60)) -eq 0 ]; then
+              echo "Still waiting... attempt $i/$MAX_ATTEMPTS ($(($i / 60)) minutes)"
+            fi
+            if [ $i -eq $MAX_ATTEMPTS ]; then
+              echo "Timeout waiting for Temporal server"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          if ! command -v temporal &> /dev/null; then
+            echo "Installing Temporal CLI..."
+            mkdir -p /tmp/temporal-cli
+            cd /tmp/temporal-cli
+            curl -sSL https://temporal.download/cli/archive/latest/temporal_linux_amd64.tar.gz | tar -xz
+            mv temporal /usr/local/bin/
+            chmod +x /usr/local/bin/temporal
+          fi
+
+          echo "Configuring default namespace retention..."
+          temporal operator namespace update --retention 720h --namespace default --address 127.0.0.1:7233
+          echo "Done"
+        EOT
+        ]
+      }
+
+      # --- Resource allocation ---
+      resources {
+        cpu    = 100
+        memory = 64
+      }
+    }
   }
 
   # ---------------------------------------------------------------------------
@@ -223,7 +280,7 @@ job "temporal" {
     network {
       mode = "host"
       port "http" {
-        static = 8088
+        static = 8080
       }
     }
 
@@ -278,9 +335,9 @@ job "temporal" {
           "traefik.http.routers.temporal-ui.rule=Host(`temporal.munchbox`)",
           "traefik.http.routers.temporal-ui.entrypoints=websecure",
           "traefik.http.routers.temporal-ui.tls=true",
-          "traefik.http.services.temporal-ui.loadbalancer.server.port=8088",
+          "traefik.http.services.temporal-ui.loadbalancer.server.port=8080",
           "prometheus.scrape=true",
-          "prometheus.port=8088",
+          "prometheus.port=8080",
           "temporal",
           "ui",
           "monitoring"

@@ -1,6 +1,6 @@
-# ============================================================================
+# -----------------------------------------------------------------------------------
 # Docker Build & Security Workflow (Two-Stage, multi-arch-safe)
-# ============================================================================
+# -----------------------------------------------------------------------------------
 # PR / non-main pushes:
 #   checkov -> trivy -> build -> trivy-image
 # Main (merge/push to main):
@@ -8,7 +8,7 @@
 #
 # Uses multi-arch image: docker-mirror.service.consul:5000/ops-build-image:latest
 # The host runner’s Docker will pull the correct platform image automatically.
-# ============================================================================
+# -----------------------------------------------------------------------------------
 
 name: Docker Security
 
@@ -30,9 +30,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+
   # --------------------------------------------------------------------------
   # Stage A: PR / Non-main push
   # --------------------------------------------------------------------------
+
   pr-and-branch-checks:
     name: PR/Branch — Checkov • Trivy • Build • Trivy-Image
     runs-on: self-hosted
@@ -41,10 +43,6 @@ jobs:
 
     container:
       image: docker-mirror.service.consul:5000/ops-build-image:latest
-      # credentials (uncomment when you add creds):
-      # credentials:
-      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
-      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
       options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
 
     defaults:
@@ -57,6 +55,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed Docker images
+        id: changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+          CHANGED_DIRS="$(git diff --name-only "$base" "$head" \
+            | grep -E '^docker/[^/]+/Dockerfile$' || true \
+            | xargs -r -n1 dirname \
+            | sed 's#^docker/##' \
+            | sort -u)"
+          if [[ -z "$CHANGED_DIRS" ]]; then
+            echo "images=" >> "$GITHUB_OUTPUT"
+            echo "No changed Dockerfiles."
+          else
+            SPACE_LIST="$(echo "$CHANGED_DIRS" | paste -sd' ' -)"
+            echo "images=$SPACE_LIST" >> "$GITHUB_OUTPUT"
+            echo "Changed images: $SPACE_LIST"
+          fi
 
       - name: Tool versions
         run: |
@@ -66,39 +92,31 @@ jobs:
           make --version || true
 
       - name: Checkov (Dockerfiles)
-        run: make checkov
+        if: steps.changed.outputs.images != ''
+        run: make checkov IMAGES="${{ steps.changed.outputs.images }}"
         continue-on-error: true
 
       - name: Trivy config (Dockerfiles)
-        run: make trivy
+        if: steps.changed.outputs.images != ''
+        run: make trivy IMAGES="${{ steps.changed.outputs.images }}"
         continue-on-error: true
 
       - name: Build images
-        run: make build
+        if: steps.changed.outputs.images != ''
+        run: make build IMAGES="${{ steps.changed.outputs.images }}"
 
       - name: Trivy image scan (fail on CRITICAL)
-        run: make trivy-image
+        if: steps.changed.outputs.images != ''
+        run: make trivy-image IMAGES="${{ steps.changed.outputs.images }}"
 
-      #- name: Upload scan results
-      #  if: always()
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: docker-scan-results-${{ github.run_id }}-stageA
-      #    path: |
-      #      docker/**/*checkov*.txt
-      #      docker/**/*checkov*.json
-      #      docker/**/*trivy*.txt
-      #      docker/**/*trivy*.json
-      #    retention-days: 30
-      #    if-no-files-found: ignore
+      - name: Skip (no changed Dockerfiles)
+        if: steps.changed.outputs.images == ''
+        run: echo "No docker/*/Dockerfile changed. Skipping."
 
       - name: Cleanup
         if: always()
         run: docker system prune -f --volumes || true
 
-  # --------------------------------------------------------------------------
-  # Stage B: Main branch
-  # --------------------------------------------------------------------------
   release-main:
     name: Main — Checkov • Trivy • Build • Trivy-Image • Tag • Push
     runs-on: self-hosted
@@ -107,9 +125,6 @@ jobs:
 
     container:
       image: docker-mirror.service.consul:5000/ops-build-image:latest
-      # credentials:
-      #   username: ${{ secrets.DOCKER_MIRROR_USERNAME }}
-      #   password: ${{ secrets.DOCKER_MIRROR_PASSWORD }}
       options: --privileged -v /var/run/docker.sock:/var/run/docker.sock
 
     defaults:
@@ -123,6 +138,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed Docker images
+        id: changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.before }}"
+          head="${{ github.sha }}"
+          CHANGED_DIRS="$(git diff --name-only "$base" "$head" \
+            | grep -E '^docker/[^/]+/Dockerfile$' || true \
+            | xargs -r -n1 dirname \
+            | sed 's#^docker/##' \
+            | sort -u)"
+          if [[ -z "$CHANGED_DIRS" ]]; then
+            echo "images=" >> "$GITHUB_OUTPUT"
+            echo "No changed Dockerfiles."
+          else
+            SPACE_LIST="$(echo "$CHANGED_DIRS" | paste -sd' ' -)"
+            echo "images=$SPACE_LIST" >> "$GITHUB_OUTPUT"
+            echo "Changed images: $SPACE_LIST"
+          fi
 
       - name: Tool versions
         run: |
@@ -132,23 +170,27 @@ jobs:
           make --version || true
 
       - name: Checkov (Dockerfiles)
-        run: make checkov
+        if: steps.changed.outputs.images != ''
+        run: make checkov IMAGES="${{ steps.changed.outputs.images }}"
         continue-on-error: true
 
       - name: Trivy config (Dockerfiles)
-        run: make trivy
+        if: steps.changed.outputs.images != ''
+        run: make trivy IMAGES="${{ steps.changed.outputs.images }}"
         continue-on-error: true
 
       - name: Build images
-        run: make build
+        if: steps.changed.outputs.images != ''
+        run: make build IMAGES="${{ steps.changed.outputs.images }}"
 
       - name: Trivy image scan (fail on CRITICAL)
-        run: make trivy-image
+        if: steps.changed.outputs.images != ''
+        run: make trivy-image IMAGES="${{ steps.changed.outputs.images }}"
 
       - name: Tag images
-        run: make tag TAG=${{ env.IMAGE_TAG }}
+        if: steps.changed.outputs.images != ''
+        run: make tag TAG=${{ env.IMAGE_TAG }} IMAGES="${{ steps.changed.outputs.images }}"
 
-      # Optional: login to publish registry
       # - name: Docker login (publish)
       #   run: |
       #     echo "${{ secrets.PUBLISH_REGISTRY_PASSWORD }}" | \
@@ -157,22 +199,13 @@ jobs:
       #         --password-stdin
 
       - name: Push images
-        run: make push TAG=${{ env.IMAGE_TAG }}
+        if: steps.changed.outputs.images != ''
+        run: make push TAG=${{ env.IMAGE_TAG }} IMAGES="${{ steps.changed.outputs.images }}"
 
-      #- name: Upload scan results
-      #  if: always()
-      #  uses: actions/upload-artifact@v4
-      #  with:
-      #    name: docker-scan-results-${{ github.run_id }}-stageB
-      #    path: |
-      #      docker/**/*checkov*.txt
-      #      docker/**/*checkov*.json
-      #      docker/**/*trivy*.txt
-      #      docker/**/*trivy*.json
-      #    retention-days: 30
-      #    if-no-files-found: ignore
+      - name: Skip (no changed Dockerfiles)
+        if: steps.changed.outputs.images == ''
+        run: echo "No docker/*/Dockerfile changed. Skipping."
 
       - name: Cleanup
         if: always()
         run: docker system prune -f --volumes || true
-

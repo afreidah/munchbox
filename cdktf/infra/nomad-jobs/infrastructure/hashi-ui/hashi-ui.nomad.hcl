@@ -7,7 +7,7 @@
 #  Unified dashboard for Nomad and Consul cluster management. Pulls Nomad ACL
 #  token from Vault for secure API access. Connects to Nomad (https) and Consul
 #  (http) agents using environment variables. Runs on goren node and exposes
-#  web UI on :3000 with Traefik routing to nomad.munchbox (LAN-only).
+#  web UI on :3100 with Traefik routing to nomad.munchbox (LAN-only).
 # -------------------------------------------------------------------------------
 
 job "hashi-ui" {
@@ -46,14 +46,14 @@ job "hashi-ui" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "="
-      value     = "goren"
+      value     = "mccoy"
     }
 
     # --- Network configuration ---
     network {
       mode = "host"
       port "http" {
-        static = 3000
+        static = 3100
       }
     }
 
@@ -82,6 +82,22 @@ job "hashi-ui" {
     task "hashi-ui" {
       driver = "docker"
 
+      # --- Workload identity and Vault integration (task-level) ---
+      # Uses Nomad Workload Identity to obtain a JWT and exchange it with Vault
+      # via the role `cdktf-hashi-ui` (bound to policy `cdktf-hashi-ui`).
+      vault {
+        role          = "nomad-workloads"
+        change_mode   = "restart"
+        change_signal = "SIGTERM"
+        # namespace   = "..."              # uncomment if using Bao namespaces
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]                # must match Vault role bound_audiences
+      }
+
       # --- Docker image configuration ---
       config {
         image        = "jippi/hashi-ui"
@@ -101,10 +117,11 @@ job "hashi-ui" {
         left_delimiter  = "[["
         right_delimiter = "]]"
         data            = <<-EOH
-[[ with secret "secret/data/hashiuisecret" ]]
-NOMAD_TOKEN=[[ .Data.data.token ]]
-[[ end ]]
-EOH
+      [[ with secret "secret/data/hashiuisecret" ]]
+      NOMAD_ACL_TOKEN=[[ .Data.data.token ]]   # <— was NOMAD_TOKEN
+      [[ end ]]
+      NOMAD_REGION=global
+      EOH
       }
 
       # --- Runtime environment ---
@@ -128,7 +145,7 @@ EOH
           "traefik.http.routers.nomad.entrypoints=websecure",
           "traefik.http.routers.nomad.tls=true",
           "traefik.http.routers.nomad.middlewares=dashboard-allowlan@file",
-          "traefik.http.services.nomad.loadbalancer.server.port=3000",
+          "traefik.http.services.nomad.loadbalancer.server.port=3100",
           "infrastructure",
           "nomad",
           "consul",
