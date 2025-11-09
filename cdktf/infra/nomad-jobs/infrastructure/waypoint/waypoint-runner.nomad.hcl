@@ -4,8 +4,8 @@
 #  Project: Munchbox
 #  Author: Alex Freidah
 #
-#  Runs a Waypoint runner connected to the server via Consul DNS. The runner
-#  fetches WAYPOINT_SERVER_TOKEN from Vault at secret/system-services/waypoint_server_token.
+#  Runs a Waypoint runner connected to the server. The runner fetches
+#  WAYPOINT_SERVER_TOKEN from Vault at secret/system-services/waypoint_server_token.
 # -------------------------------------------------------------------------------
 
 job "waypoint-runner" {
@@ -49,9 +49,9 @@ job "waypoint-runner" {
   group "runner" {
     count = 1
 
-    # --- Network configuration ---
+    # --- Network configuration (host mode for direct connectivity) ---
     network {
-      mode = "bridge"
+      mode = "host"
     }
 
     # --- Reschedule policy ---
@@ -82,8 +82,9 @@ job "waypoint-runner" {
       }
 
       config {
-        image      = "hashicorp/waypoint:0.11.4"
-        entrypoint = ["/bin/sh", "-lc"]
+        image        = "hashicorp/waypoint:0.11.4"
+        network_mode = "host"
+        entrypoint   = ["/bin/sh", "-lc"]
         args = [
           "test -n \"$WAYPOINT_SERVER_TOKEN\" || { echo WAYPOINT_SERVER_TOKEN missing; exit 1; }; exec waypoint runner agent"
         ]
@@ -104,7 +105,7 @@ EOH
 
       env {
         TZ                   = "UTC"
-        WAYPOINT_SERVER_ADDR = "192.168.68.63:9701"
+        WAYPOINT_SERVER_ADDR = "127.0.0.1:9701"
       }
 
       resources {
