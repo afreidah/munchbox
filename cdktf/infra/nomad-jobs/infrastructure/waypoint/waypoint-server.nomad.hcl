@@ -1,14 +1,8 @@
 # -------------------------------------------------------------------------------
-#  Waypoint Server — Nomad Job (gRPC + UI, persistent DB; auto-bootstrap token)
+#  Waypoint Server — Nomad Job (no auth, local dev)
 #
 #  Project: Munchbox
 #  Author: Alex Freidah
-#
-#  Runs the Waypoint server with a local SQLite DB on a host volume. Exposes
-#  gRPC on :9701 and Web UI on :9702. Registers Consul services (TCP/HTTP checks)
-#  and uses bridge networking with static host ports + host address advertising.
-#  Poststart task auto-generates a server token and writes it to Vault.
-#  NOTE: Ensure the client declares `host_volume "waypoint-data"` on the target node.
 # -------------------------------------------------------------------------------
 
 job "waypoint-server" {
@@ -17,17 +11,15 @@ job "waypoint-server" {
   type        = "service"
   node_pool   = "core"
 
-  # --- Job metadata ---
   meta {
     version     = "0.11.4"
     owner       = "alex.freidah"
     category    = "development"
     tier        = "tier-2"
     environment = "production"
-    description = "Waypoint server (gRPC + UI) with persistent DB; auto-bootstrap token"
+    description = "Waypoint server (local dev, no auth)"
   }
 
-  # --- Job update strategy ---
   update {
     max_parallel      = 1
     min_healthy_time  = "30s"
@@ -38,30 +30,23 @@ job "waypoint-server" {
     canary            = 1
   }
 
-  # --- Placement constraints ---
   constraint {
     attribute = "${node.unique.name}"
     operator  = "="
     value     = "mccoy"
   }
 
-  # ---------------------------------------------------------------------------
-  #  Server Group
-  # ---------------------------------------------------------------------------
-
   group "server" {
     count = 1
 
-    # --- Persistent volume ---
     volume "waypoint-data" {
       type      = "host"
       source    = "waypoint-data"
       read_only = false
     }
 
-    # --- Network configuration ---
     network {
-      mode = "bridge"
+      mode = "host"
 
       port "grpc" {
         static = 9701
@@ -74,7 +59,6 @@ job "waypoint-server" {
       }
     }
 
-    # --- Reschedule policy ---
     reschedule {
       attempts       = 3
       interval       = "30m"
@@ -84,48 +68,42 @@ job "waypoint-server" {
       unlimited      = false
     }
 
-    # --- Service registration: gRPC ---
     service {
       name         = "waypoint-grpc"
       provider     = "consul"
       port         = "grpc"
       address_mode = "host"
       tags         = ["waypoint", "grpc"]
-      check {
-        name     = "grpc-tcp"
-        type     = "tcp"
-        interval = "10s"
-        timeout  = "2s"
-      }
+      #check {
+      #  name     = "grpc-tcp"
+      #  type     = "tcp"
+      #  interval = "10s"
+      #  timeout  = "2s"
+      #}
     }
 
-    # --- Service registration: UI ---
     service {
       name         = "waypoint-ui"
       provider     = "consul"
       port         = "ui"
       address_mode = "host"
       tags         = ["waypoint", "ui"]
-      check {
-        name     = "ui-http"
-        type     = "http"
-        path     = "/"
-        interval = "10s"
-        timeout  = "2s"
-      }
+      #check {
+      #  name     = "ui-http"
+      #  type     = "http"
+      #  path     = "/"
+      #  interval = "10s"
+      #  timeout  = "2s"
+      #}
     }
-
-    # -----------------------------------------------------------------------
-    #  Waypoint Server Task
-    # -----------------------------------------------------------------------
 
     task "server" {
       driver = "docker"
 
       config {
-        image       = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
-        userns_mode = "host"
-        entrypoint  = ["/bin/sh", "-lc"]
+        image        = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
+        network_mode = "host"
+        entrypoint   = ["/bin/sh", "-lc"]
         args = [
           "mkdir -p /var/lib/waypoint && exec waypoint server run -accept-tos -db=/var/lib/waypoint/waypoint.db -listen-grpc=0.0.0.0:9701 -listen-http=0.0.0.0:9702"
         ]
@@ -150,10 +128,6 @@ job "waypoint-server" {
         mode     = "delay"
       }
     }
-
-    # -----------------------------------------------------------------------
-    #  Pre-Start task to set permissions
-    # -----------------------------------------------------------------------
 
     task "fix-perms" {
       driver = "docker"

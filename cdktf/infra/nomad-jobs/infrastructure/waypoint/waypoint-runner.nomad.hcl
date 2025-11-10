@@ -1,11 +1,12 @@
 # -------------------------------------------------------------------------------
-#  Waypoint Runner — Nomad Job (reads server token from Vault)
+#  Waypoint Runner — Nomad Job (token from waypoint-data volume)
 #
 #  Project: Munchbox
 #  Author: Alex Freidah
 #
-#  Runs a Waypoint runner connected to the server. The runner fetches
-#  WAYPOINT_SERVER_TOKEN from Vault at secret/system-services/waypoint_server_token.
+#  Connects to Waypoint server via TLS with token authentication.
+#  Reads bootstrap token from waypoint-data volume (shared with server).
+#  Mounts Docker socket for build operations.
 # -------------------------------------------------------------------------------
 
 job "waypoint-runner" {
@@ -14,17 +15,15 @@ job "waypoint-runner" {
   type        = "service"
   node_pool   = "core"
 
-  # --- Job metadata ---
   meta {
     version     = "0.11.4"
     owner       = "alex.freidah"
     category    = "development"
     tier        = "tier-2"
     environment = "production"
-    description = "Waypoint runner that pulls server token from Vault"
+    description = "Waypoint runner (token from waypoint-data volume, Docker socket mounted)"
   }
 
-  # --- Job update strategy ---
   update {
     max_parallel      = 1
     min_healthy_time  = "30s"
@@ -35,26 +34,31 @@ job "waypoint-runner" {
     canary            = 1
   }
 
-  # --- Placement constraints ---
   constraint {
     attribute = "${node.unique.name}"
     operator  = "="
     value     = "mccoy"
   }
 
-  # ---------------------------------------------------------------------------
-  #  Runner Group
-  # ---------------------------------------------------------------------------
-
   group "runner" {
     count = 1
 
-    # --- Network configuration (host mode for direct connectivity) ---
+    volume "waypoint-data" {
+      type      = "host"
+      source    = "waypoint-data"
+      read_only = true
+    }
+
+    volume "docker-socket" {
+      type      = "host"
+      source    = "docker-socket"
+      read_only = false
+    }
+
     network {
       mode = "host"
     }
 
-    # --- Reschedule policy ---
     reschedule {
       attempts       = 3
       interval       = "30m"
@@ -71,41 +75,34 @@ job "waypoint-runner" {
     task "runner" {
       driver = "docker"
 
-      vault {
-        role = "nomad-workloads"
-      }
-
-      identity {
-        env  = true
-        file = true
-        aud  = ["vault.io"]
-      }
-
       config {
-        image        = "hashicorp/waypoint:0.11.4"
+        image        = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
         network_mode = "host"
-        entrypoint   = ["/bin/sh", "-lc"]
+        entrypoint   = []
         args = [
-          "test -n \"$WAYPOINT_SERVER_TOKEN\" || { echo WAYPOINT_SERVER_TOKEN missing; exit 1; }; exec waypoint runner agent"
+          "sh",
+          "-c",
+          "export WAYPOINT_SERVER_TOKEN=$(cat /data/waypoint-token) && exec waypoint runner agent",
         ]
       }
 
-      template {
-        destination     = "local/env/waypoint.env"
-        env             = true
-        change_mode     = "restart"
-        left_delimiter  = "[["
-        right_delimiter = "]]"
-        data            = <<-EOH
-[[ with secret "secret/data/system-services/waypoint_server_token" ]]
-WAYPOINT_SERVER_TOKEN=[[ .Data.data.token ]]
-[[ end ]]
-EOH
+      volume_mount {
+        volume      = "waypoint-data"
+        destination = "/data"
+        read_only   = true
+      }
+
+      volume_mount {
+        volume      = "docker-socket"
+        destination = "/var/run/docker.sock"
+        read_only   = false
       }
 
       env {
-        TZ                   = "UTC"
-        WAYPOINT_SERVER_ADDR = "127.0.0.1:9701"
+        TZ                              = "UTC"
+        WAYPOINT_SERVER_ADDR            = "mccoy:9701"
+        WAYPOINT_SERVER_TLS             = "1"
+        WAYPOINT_SERVER_TLS_SKIP_VERIFY = "1"
       }
 
       resources {
