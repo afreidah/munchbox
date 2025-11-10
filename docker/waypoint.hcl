@@ -1,3 +1,4 @@
+# Waypoint build
 project = "munchbox-docker"
 
 variable "registry_host" {
