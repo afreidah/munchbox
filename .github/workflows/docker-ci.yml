@@ -374,23 +374,19 @@ jobs:
           # GitHub token is automatically provided by Actions
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const buildUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
-            const comment = `## ✅ Waypoint Docker Build Successful
-
-**Build Details:**
-- Run: [#${{ github.run_id }}](${buildUrl})
-- Commit: \`${{ github.sha }}\`
-- Branch: \`${{ github.ref_name }}\`
-
-**Images pushed to:**
-\`docker-mirror.service.consul:5000\`
-
-**Built apps:**
-- \`ops-build-image\`
-- \`deluge-vpn\`
-- \`ops-waypoint-image\`
-
-All images are ready for deployment.`;
+            const buildUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const comment = '## ✅ Waypoint Docker Build Successful\n\n' +
+              '**Build Details:**\n' +
+              '- Run: [#${{ github.run_id }}](' + buildUrl + ')\n' +
+              '- Commit: `${{ github.sha }}`\n' +
+              '- Branch: `${{ github.ref_name }}`\n\n' +
+              '**Images pushed to:**\n' +
+              '`docker-mirror.service.consul:5000`\n\n' +
+              '**Built apps:**\n' +
+              '- `ops-build-image`\n' +
+              '- `deluge-vpn`\n' +
+              '- `ops-waypoint-image`\n\n' +
+              'All images are ready for deployment.';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
