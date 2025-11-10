@@ -79,6 +79,17 @@ RUN set -eux; \
   install -m0755 /tmp/tofu /tmp/bin/tofu; \
   rm -f /tmp/tofu /tmp/tofu.tgz
 
+# ------------------------------------------------------------------------------
+# Waypoint (pinned version) - arch-specific zip
+# ------------------------------------------------------------------------------
+RUN set -eux; \
+  WAYPOINT_VERSION="0.11.4"; \
+  curl -fsSL "https://releases.hashicorp.com/waypoint/${WAYPOINT_VERSION}/waypoint_${WAYPOINT_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/waypoint.zip; \
+  unzip -d /tmp /tmp/waypoint.zip; \
+  install -m0755 /tmp/waypoint /tmp/bin/waypoint; \
+  rm -f /tmp/waypoint /tmp/waypoint.zip; \
+  test -x /tmp/bin/waypoint
+
 
 # ------------------------------------------------------------------------------
 # final: toolchain image (multi-arch aware)
@@ -147,6 +158,7 @@ COPY --from=builder /tmp/bin/tofu        /usr/local/bin/tofu
 COPY --from=builder /tmp/bin/tflint      /usr/local/bin/tflint
 COPY --from=builder /tmp/bin/terragrunt  /usr/local/bin/terragrunt
 COPY --from=builder /tmp/bin/hclfmt      /usr/local/bin/hclfmt
+COPY --from=builder /tmp/bin/waypoint    /usr/local/bin/waypoint
 
 # ------------------------------------------------------------------------------
 # Cinc (client + auditor)
@@ -200,6 +212,7 @@ RUN set -eux; \
   echo "TFLint: $(tflint --version)" && \
   echo "Terragrunt: $(terragrunt --version)" && \
   echo "hclfmt: $(hclfmt -version 2>&1 || echo 'hclfmt installed')" && \
+  echo "Waypoint: $(waypoint version | head -n1)" && \
   echo "Trivy: $(trivy --version | head -n1)" && \
   echo "Checkov: $(checkov --version)" && \
   echo "Infracost: $(infracost --version)" && \
@@ -232,6 +245,6 @@ HEALTHCHECK --interval=30m --timeout=30s --start-period=5m --retries=3 \
     && tofu version >/dev/null 2>&1 \
     && terragrunt --version >/dev/null 2>&1 \
     && hclfmt -help >/dev/null 2>&1 \
+    && waypoint version >/dev/null 2>&1 \
     && cdktf --version >/dev/null 2>&1 \
     || exit 1'
-

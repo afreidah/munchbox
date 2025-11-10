@@ -96,13 +96,14 @@ job "github-runner" {
 
       # --- Docker image configuration ---
       config {
-        image              = "myoung34/github-runner:debian-trixie"
+        image              = "docker-mirror.service.consul:5000/github-runner-waypoint:latest"
         image_pull_timeout = "10m"
         network_mode       = "host"
         privileged         = true
         volumes = [
           "/var/run/docker.sock:/var/run/docker.sock"
         ]
+        # Remove entrypoint - let the image's default entrypoint handle it
       }
 
       # --- Service registration ---
