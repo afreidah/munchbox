@@ -1,34 +1,35 @@
 # -------------------------------------------------------------------------------
-# Grafana — Monitoring Dashboards and Visualization Service
+# Deluge — BitTorrent Client with VPN Integration and Web UI
 #
 # Project: Munchbox
 # Author: Alex Freidah
 #
-# Provides Grafana dashboards with Prometheus and Loki datasource integration
-# via Consul DNS. Uses Vault workload identity for JWT auth, provisioned
-# datasources authoritative to prevent drift, and Traefik HTTPS routing.
+# BitTorrent client running on mccoy node with all traffic routed through
+# WireGuard VPN via policy-based marking. Persists configuration and downloads
+# on host volumes. Exposes web UI on :8112 for torrent management. Pulls
+# credentials from Vault for daemon auth and web password.
 # -------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------
 # Job Configuration
 # -----------------------------------------------------------------------
 
-job_name        = "grafana"
+job_name        = "deluge"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
-node_pool       = "edge"
+node_pool       = "core"
 namespace       = "default"
 priority        = 50
-job_description = "Grafana dashboards with Prometheus and Loki integration"
+job_description = "Deluge BitTorrent client with VPN policy routing"
 
 # -----------------------------------------------------------------------
 # Deployment Profile
 # -----------------------------------------------------------------------
 
-deployment_profile = "canary"
-meta_profile       = "tier1"
-category           = "monitoring"
+deployment_profile = "standard"
+meta_profile       = "tier2"
+category           = "utility"
 
 # -----------------------------------------------------------------------
 # Resource Tier
@@ -45,14 +46,10 @@ network_preset = "host"
 ports = [
   {
     name   = "web"
-    static = 3000
-    port   = 3000
+    static = 8112
+    port   = 8112
   }
 ]
-
-dns_servers        = ["192.168.68.62", "192.168.68.64"]
-dns_searches       = ["service.consul"]
-dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
 
 # -----------------------------------------------------------------------
 # Placement Constraints
@@ -60,9 +57,9 @@ dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
 
 constraints = [
   {
-    attribute = "$${node.class}"
+    attribute = "$${node.unique.name}"
     operator  = "="
-    value     = "utility"
+    value     = "mccoy"
   }
 ]
 
@@ -71,10 +68,10 @@ constraints = [
 # -----------------------------------------------------------------------
 
 volume = {
-  name       = "grafana-data"
+  name       = "deluge-data"
   type       = "host"
-  source     = "grafana-data"
-  mount_path = "/var/lib/grafana"
+  source     = "deluge-data"
+  mount_path = "/config"
   read_only  = false
 }
 
@@ -82,9 +79,9 @@ volume = {
 # Restart & Reschedule
 # -----------------------------------------------------------------------
 
-restart_attempts = 5
-restart_interval = "10m"
-restart_delay    = "30s"
+restart_attempts = 3
+restart_interval = "5m"
+restart_delay    = "15s"
 restart_mode     = "fail"
 
 reschedule_preset = "standard"
@@ -95,7 +92,7 @@ reschedule_preset = "standard"
 
 vault = {
   enabled = true
-  role    = "nomad-grafana"
+  role    = "nomad-workloads"
   aud     = ["vault.io"]
 }
 
@@ -105,29 +102,19 @@ vault = {
 
 external_files = {
   enabled   = true
-  base_path = "jobs/monitoring/grafana/files"
+  base_path = "jobs/media/deluge/files"
 }
 
 external_templates = [
   {
-    destination     = "secrets/grafana.env"
-    source_file     = "grafana.env.tpl"
-    env             = true
-    perms           = "0600"
-    change_mode     = "restart"
-    change_signal   = ""
-    left_delimiter  = ""      # REMOVE THIS - let it be empty
-    right_delimiter = ""      # REMOVE THIS - let it be empty
-  },
-  {
-    destination     = "local/grafana-provisioning/datasources/ds.yml"
-    source_file     = "datasources.yml"
+    destination     = "local/entrypoint.sh"
+    source_file     = "entrypoint.sh"
     env             = false
-    perms           = "0644"
+    perms           = "0755"
     change_mode     = "restart"
     change_signal   = ""
-    left_delimiter  = ""
-    right_delimiter = ""
+    left_delimiter  = "{{{"  # Add this
+    right_delimiter = "}}}"  # Add this
   }
 ]
 
@@ -136,9 +123,8 @@ external_templates = [
 # -----------------------------------------------------------------------
 
 task = {
-  name   = "grafana"
+  name   = "deluge"
   driver = "docker"
-  user   = "root"
 
   identity = {
     env  = true
@@ -147,55 +133,71 @@ task = {
   }
 
   config = {
-    image              = "grafana/grafana:12.2.0"
-    ports              = ["web"]
+    image              = "docker-mirror.service.consul:5000/deluge-with-vpnmark:latest"
     image_pull_timeout = "10m"
-    network_mode       = "host"
-    dns_servers        = ["192.168.68.62", "192.168.68.64"]
-    dns_search_domains = ["service.consul"]
-    dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
+    ports              = ["web"]
+    cap_add            = ["CHOWN", "FOWNER"]
     volumes = [
-      "local/grafana-provisioning:/etc/grafana/provisioning"
+      "/opt/nomad/data/deluge-data/downloads:/downloads",
+      "/mnt/gdrive/nomad_deluge_downloads:/completed"
     ]
+    entrypoint = ["/local/entrypoint.sh"]
   }
 
   env = {
-    GF_SERVER_SERVE_FROM_SUB_PATH = "false"
-    GF_SERVER_ROOT_URL            = "https://grafana.munchbox/"
-    NO_PROXY                      = "localhost,127.0.0.1,*.service.consul,service.consul,192.168.68.0/24"
+    PUID                       = "1001"
+    PGID                       = "1001"
+    TZ                         = "UTC"
+    DELUGE_MOVE_COMPLETED_PATH = "/completed"
+    DELUGE_MOVE_COMPLETED      = "true"
   }
 
   templates = [
     {
-      destination = "secrets/_debug_policies.txt"
+      destination = "local/auth"
       perms       = "0600"
       env         = false
       change_mode = "restart"
-      data        = "{{ with secret \"auth/token/lookup-self\" }}{{ .Data.policies }}{{ end }}"
+      data        = <<-EOH
+{{ with secret "kv/data/deluge" }}
+localclient:{{ .Data.data.password }}:10
+{{ end }}
+EOH
+    },
+    {
+      destination = "secrets/deluge.env"
+      perms       = "0600"
+      env         = true
+      change_mode = "restart"
+      data        = <<-EOENV
+{{ with secret "kv/data/deluge" -}}
+DELUGE_WEB_PASSWORD={{ .Data.data.web_password }}
+{{- end }}
+EOENV
     }
   ]
 
   services = [
     {
-      name     = "grafana"
+      name     = "deluge"
       port     = "web"
       provider = "consul"
       tags = [
         "traefik.enable=true",
-        "traefik.http.routers.grafana.rule=Host(`grafana.munchbox`)",
-        "traefik.http.routers.grafana.entrypoints=websecure",
-        "traefik.http.routers.grafana.tls=true",
-        "traefik.http.routers.grafana.middlewares=dashboard-allowlan@file",
-        "traefik.http.services.grafana.loadbalancer.server.port=3000",
-        "monitoring",
-        "grafana"
+        "traefik.http.routers.deluge.rule=Host(`deluge.munchbox`)",
+        "traefik.http.routers.deluge.entrypoints=websecure",
+        "traefik.http.routers.deluge.tls=true",
+        "traefik.http.routers.deluge.middlewares=dashboard-allowlan@file",
+        "traefik.http.services.deluge.loadbalancer.server.port=8112",
+        "torrent",
+        "deluge",
+        "downloads"
       ]
       checks = [
         {
-          name     = "grafana-alive"
+          name     = "deluge-web"
           type     = "http"
-          path     = "/api/health"
-          port     = "web"
+          path     = "/"
           interval = "10s"
           timeout  = "2s"
         }
@@ -204,14 +206,8 @@ task = {
   ]
 
   resources = {
-    tier = "small"
-  }
-
-  restart = {
-    attempts = 5
-    interval = "10m"
-    delay    = "30s"
-    mode     = "fail"
+    cpu    = 300
+    memory = 256
   }
 }
 
@@ -220,19 +216,14 @@ task = {
 # -----------------------------------------------------------------------
 
 resource_tiers = {
-  nano = {
-    cpu            = 50
-    memory         = 128
-    ephemeral_disk = 100
-  }
   tiny = {
-    cpu            = 100
-    memory         = 256
+    cpu            = 150
+    memory         = 128
     ephemeral_disk = 200
   }
   small = {
-    cpu            = 250
-    memory         = 512
+    cpu            = 300
+    memory         = 256
     ephemeral_disk = 500
   }
   medium = {
@@ -263,21 +254,12 @@ deployment_profiles = {
   standard = {
     max_parallel      = 1
     health_check      = "checks"
-    min_healthy_time  = "10s"
-    healthy_deadline  = "3m"
-    progress_deadline = "10m"
-    auto_revert       = true
-    auto_promote      = true
-  }
-  canary = {
-    max_parallel      = 1
-    health_check      = "checks"
     min_healthy_time  = "30s"
-    healthy_deadline  = "5m"
-    progress_deadline = "15m"
+    healthy_deadline  = "3m"
+    progress_deadline = "5m"
     auto_revert       = true
     auto_promote      = false
-    canary            = 1
+    canary            = 0
   }
 }
 
@@ -286,14 +268,8 @@ deployment_profiles = {
 # -----------------------------------------------------------------------
 
 meta_profiles = {
-  tier1 = {
-    tier = "critical"
-  }
   tier2 = {
     tier = "important"
-  }
-  tier3 = {
-    tier = "standard"
   }
 }
 
@@ -303,7 +279,7 @@ meta_profiles = {
 
 reschedule_presets = {
   standard = {
-    delay           = "15s"
+    delay           = "5s"
     delay_function  = "exponential"
     max_reschedules = 3
     unlimited       = false
