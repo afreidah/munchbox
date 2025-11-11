@@ -1,0 +1,12 @@
+job_name              = "prometheus"
+region                = "global"
+datacenters           = ["pi-dc"]
+node_pool             = "all"
+prometheus_version    = "2.54.1"
+constraint_node       = "cabot"
+web_port              = 9090
+retention_days        = 30
+cpu                   = 500
+memory                = 1024
+prometheus_config_path = "jobs/monitoring/prometheus/prometheus.yml"
+alert_rules_path      = "jobs/monitoring/prometheus/alert_rules.yml"

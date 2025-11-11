@@ -1,0 +1,3 @@
+[submodule "nomad/packs/registry"]
+	path = nomad/packs/registry
+	url = https://github.com/afreidah/nomad-pack-registry.git
