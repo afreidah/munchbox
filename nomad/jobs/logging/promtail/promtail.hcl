@@ -1,21 +1,55 @@
 # -------------------------------------------------------------------------------
-# Promtail — System Log Collection Agent — Nomad Pack Example
+# Promtail job
 #
-# Project: Munchbox
-# Author: Alex Freidah
-#
-# System job that runs on all nodes collecting container logs from journald
-# and Nomad alloc directories. Sends structured logs to Loki via push API
-# for centralized log aggregation and querying.
+# Uses the nomad-service pack; inherits monitoring defaults (http port, small tier)
+# and a generated HTTP check. Only image/args/volumes and config template remain.
 # -------------------------------------------------------------------------------
 
-job_name            = "promtail"
-region              = "global"
-datacenters         = ["pi-dc"]
-node_pool           = "all"
-promtail_version    = "3.3.1"
-loki_address        = "http://loki.service.consul:3100"
-http_port           = 9080
-dns_servers         = ["192.168.68.62", "192.168.68.64"]
-cpu                 = 150
-memory              = 128
+pack {
+  name = "nomad-service"
+}
+
+variables = {
+  job_name = "promtail"
+  category = "monitoring"
+
+  # Generated service + /ready check
+  standard_http_check_enabled = true
+  standard_http_check_path    = "/ready"
+
+  # Inject static config from local file
+  external_files = {
+    enabled   = true
+    base_path = "jobs/logging/promtail/files"
+  }
+  external_templates = [
+    {
+      destination   = "/etc/promtail/config.yml"
+      source_file   = "config.yaml"
+      env           = false
+      perms         = "0644"
+      change_mode   = "restart"
+      change_signal = "SIGTERM"
+    }
+  ]
+
+  task = {
+    name   = "promtail"
+    driver = "docker"
+    config = {
+      image = "grafana/promtail:2.9.4"
+      args  = ["-config.file=/etc/promtail/config.yml"]
+
+      # Host mounts required by your config.yaml scrape paths
+      volumes = [
+        "/var/log:/var/log:ro",
+        "/run/log/journal:/run/log/journal:ro",
+        "/var/log/journal:/var/log/journal:ro",
+        "/var/lib/docker/containers:/var/lib/docker/containers:ro",
+        "/opt/nomad/alloc:/opt/nomad/alloc:ro",
+        "/opt/nomad/data/alloc:/opt/nomad/data/alloc:ro"
+      ]
+    }
+  }
+}
+
