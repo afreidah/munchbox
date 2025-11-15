@@ -1,19 +1,14 @@
 # -------------------------------------------------------------------------------
 # Temporal Backup Worker — Long-Running Workflow Execution Service
 #
-# Project: Munchbox
-# Author: Alex Freidah
+# Project: Munchbox / Author: Alex Freidah
 #
 # Executes Temporal backup workflows triggered by the backup-trigger job via
 # the backup-task-queue. Performs snapshot operations for Nomad, Consul, and
-# OpenBao, storing backups on /mnt/gdrive with 7-day retention. Requires Vault
-# credentials for cluster access and dedicated node placement on mccoy.
+# OpenBao, storing backups on /mnt/gdrive with 7-day retention.
 # -------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Job Configuration
-# -----------------------------------------------------------------------
-
+# --- Core job configuration ---
 job_name        = "temporal-backup-worker"
 job_type        = "service"
 region          = "global"
@@ -23,30 +18,18 @@ namespace       = "default"
 priority        = 50
 job_description = "Temporal backup worker for Nomad, Consul, and OpenBao snapshots"
 
-# -----------------------------------------------------------------------
-# Deployment Profile
-# -----------------------------------------------------------------------
-
+# --- Deployment and metadata ---
 deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "automation"
 
-# -----------------------------------------------------------------------
-# Resource Tier
-# -----------------------------------------------------------------------
-
+# --- Resource allocation ---
 resource_tier = "small"
 
-# -----------------------------------------------------------------------
-# Network Configuration
-# -----------------------------------------------------------------------
-
+# --- Network configuration ---
 network_preset = "host"
 
-# -----------------------------------------------------------------------
-# Placement Constraints
-# -----------------------------------------------------------------------
-
+# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -55,31 +38,31 @@ constraints = [
   }
 ]
 
-# -----------------------------------------------------------------------
-# Restart & Reschedule
-# -----------------------------------------------------------------------
-
+# --- Restart policy ---
 restart_attempts = 10
 restart_interval = "5m"
 restart_delay    = "15s"
 restart_mode     = "delay"
 
+# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# -----------------------------------------------------------------------
-# Vault Integration
-# -----------------------------------------------------------------------
-
-vault = {
-  enabled = true
-  role    = "nomad-workloads"
-  aud     = ["vault.io"]
+# --- External configuration files ---
+external_files = {
+  enabled   = true
+  base_path = "jobs/backup/files"
 }
 
-# -----------------------------------------------------------------------
-# Task Configuration
-# -----------------------------------------------------------------------
+external_templates = [
+  {
+    destination = "secrets/tokens.env"
+    source_file = "tokens.env.tpl"
+    env         = true
+    change_mode = "restart"
+  }
+]
 
+# --- Task definition ---
 task = {
   name   = "worker"
   driver = "raw_exec"
@@ -88,6 +71,10 @@ task = {
     env  = true
     file = true
     aud  = ["vault.io"]
+  }
+
+  vault = {
+    role = "nomad-workloads"
   }
 
   config = {
@@ -102,21 +89,6 @@ task = {
     BAO_ADDR          = "https://mccoy:8200"
     BAO_SKIP_VERIFY   = "true"
   }
-
-  templates = [
-    {
-      destination = "secrets/tokens.env"
-      perms       = "0600"
-      env         = true
-      change_mode = "restart"
-      data        = <<-EOH
-{{ with secret "kv/data/backup-worker" -}}
-NOMAD_TOKEN={{ .Data.data.nomad_token }}
-CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
-{{- end }}
-EOH
-    }
-  ]
 
   services = [
     {
@@ -137,50 +109,14 @@ EOH
   }
 }
 
-# -----------------------------------------------------------------------
-# Resource Tier Definitions
-# -----------------------------------------------------------------------
+# --- Standard service configuration ---
+standard_service_enabled = false
 
-resource_tiers = {
-  tiny = {
-    cpu            = 150
-    memory         = 128
-    ephemeral_disk = 200
-  }
-  small = {
-    cpu            = 200
-    memory         = 256
-    ephemeral_disk = 500
-  }
-  medium = {
-    cpu            = 500
-    memory         = 1024
-    ephemeral_disk = 1000
-  }
-  large = {
-    cpu            = 2000
-    memory         = 4096
-    ephemeral_disk = 2000
-  }
-}
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"
 
-# -----------------------------------------------------------------------
-# Network Presets
-# -----------------------------------------------------------------------
-
-network_presets = {
-  bridge = {
-    mode = "bridge"
-  }
-  host = {
-    mode = "host"
-  }
-}
-
-# -----------------------------------------------------------------------
-# Deployment Profiles
-# -----------------------------------------------------------------------
-
+# --- Deployment profiles ---
 deployment_profiles = {
   standard = {
     max_parallel      = 1
@@ -194,20 +130,14 @@ deployment_profiles = {
   }
 }
 
-# -----------------------------------------------------------------------
-# Meta Profiles
-# -----------------------------------------------------------------------
-
+# --- Meta profiles ---
 meta_profiles = {
   tier2 = {
     tier = "important"
   }
 }
 
-# -----------------------------------------------------------------------
-# Reschedule Presets
-# -----------------------------------------------------------------------
-
+# --- Reschedule presets ---
 reschedule_presets = {
   standard = {
     delay           = "5s"

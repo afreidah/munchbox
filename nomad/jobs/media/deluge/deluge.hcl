@@ -5,8 +5,7 @@
 #
 # BitTorrent client running on mccoy node with all traffic routed through
 # WireGuard VPN via policy-based marking. Persists configuration and downloads
-# on host volumes. Exposes web UI on :8112 for torrent management. Pulls
-# credentials from Vault for daemon auth and web password.
+# on host volumes. Exposes web UI on :8112 for torrent management.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
@@ -64,6 +63,9 @@ restart_mode     = "fail"
 # --- Reschedule policy ---
 reschedule_preset = "standard"
 
+# --- Vault integration ---
+vault_role = "nomad-workloads"
+
 # --- External configuration files ---
 external_files = {
   enabled   = true
@@ -100,12 +102,6 @@ external_templates = [
 task = {
   name   = "deluge"
   driver = "docker"
-
-  identity = {
-    env  = true
-    file = true
-    aud  = ["vault.io"]
-  }
 
   config = {
     image              = "docker-mirror.service.consul:5000/deluge-with-vpnmark:latest"
@@ -144,48 +140,3 @@ additional_tags              = ["torrent", "deluge", "downloads"]
 # --- Termination ---
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
-
-# --- Resource tier definitions ---
-resource_tiers = {
-  small = {
-    cpu            = 300
-    memory         = 256
-    ephemeral_disk = 500
-  }
-}
-
-# --- Network presets ---
-network_presets = {
-  host = {
-    mode = "host"
-  }
-}
-
-# --- Deployment profiles ---
-deployment_profiles = {
-  standard = {
-    max_parallel      = 1
-    health_check      = "checks"
-    min_healthy_time  = "30s"
-    healthy_deadline  = "3m"
-    progress_deadline = "5m"
-    auto_revert       = true
-  }
-}
-
-# --- Meta profiles ---
-meta_profiles = {
-  tier2 = {
-    tier = "important"
-  }
-}
-
-# --- Reschedule presets ---
-reschedule_presets = {
-  standard = {
-    delay           = "5s"
-    delay_function  = "exponential"
-    max_reschedules = 3
-    unlimited       = false
-  }
-}
