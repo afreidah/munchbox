@@ -1,167 +1,114 @@
 # -------------------------------------------------------------------------------
-# Temporal Backup Trigger — Daily Scheduled Backup Orchestration
+# Temporal Backup Worker — Long-Running Workflow Execution Service
 #
-# Project: Munchbox
-# Author: Alex Freidah
+# Project: Munchbox / Author: Alex Freidah
 #
-# Initiates daily backups of HashiCorp infrastructure via Temporal workflows.
-# Runs daily at 2:00 AM Pacific, triggering snapshots of Nomad, Consul, and
-# OpenBao clusters executed by the temporal-backup-worker service on mccoy.
+# Executes Temporal backup workflows triggered by the backup-trigger job via
+# the backup-task-queue. Performs snapshot operations for Nomad, Consul, and
+# OpenBao, storing backups on /mnt/gdrive with 7-day retention.
 # -------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Job Configuration
-# -----------------------------------------------------------------------
-
-job_name        = "temporal-backup-trigger"
-job_type        = "batch"
+# --- Core job configuration ---
+job_name        = "temporal-backup-worker"
+job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
 node_pool       = "all"
 namespace       = "default"
 priority        = 50
-job_description = "Daily backup trigger for Temporal workflows"
+job_description = "Temporal backup worker for Nomad, Consul, and OpenBao snapshots"
 
-# -----------------------------------------------------------------------
-# Periodic Schedule
-# -----------------------------------------------------------------------
-
-periodic = {
-  enabled          = true
-  cron             = "0 2 * * *"
-  prohibit_overlap = true
-  time_zone        = "America/Los_Angeles"
-}
-
-# -----------------------------------------------------------------------
-# Deployment Profile
-# -----------------------------------------------------------------------
-
+# --- Deployment and metadata ---
 deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "automation"
 
-# -----------------------------------------------------------------------
-# Resource Tier
-# -----------------------------------------------------------------------
+# --- Resource allocation ---
+resource_tier = "small"
 
-resource_tier = "tiny"
-
-# -----------------------------------------------------------------------
-# Network Configuration
-# -----------------------------------------------------------------------
-
+# --- Network configuration ---
 network_preset = "host"
 
-# -----------------------------------------------------------------------
-# Restart & Reschedule
-# -----------------------------------------------------------------------
+# --- Placement constraints ---
+constraints = [
+  {
+    attribute = "$${node.unique.name}"
+    operator  = "="
+    value     = "mccoy"
+  }
+]
 
-restart_attempts = 3
+# --- Restart policy ---
+restart_attempts = 10
 restart_interval = "5m"
 restart_delay    = "15s"
 restart_mode     = "delay"
 
-# Don't set reschedule_preset for batch jobs - causes validation errors
+# --- Reschedule policy ---
+reschedule_preset = "standard"
 
-# -----------------------------------------------------------------------
-# Task Configuration
-# -----------------------------------------------------------------------
+# --- External configuration files ---
+external_files = {
+  enabled   = true
+  base_path = "jobs/automation/temporal-backup-worker/files"
+}
 
+external_templates = [
+  {
+    destination = "secrets/tokens.env"
+    source_file = "tokens.env.tpl"
+    env         = true
+    perms       = "0600"
+    change_mode = "restart"
+  }
+]
+
+# --- Task definition ---
 task = {
-  name   = "trigger"
+  name   = "worker"
   driver = "raw_exec"
 
+  identity = {
+    env  = true
+    file = true
+    aud  = ["vault.io"]
+  }
+
   config = {
-    command = "/usr/local/bin/temporal-backup-trigger"
+    command = "/usr/local/bin/temporal-backup-worker"
   }
 
   env = {
-    TEMPORAL_ADDRESS = "192.168.68.61:7233"
+    TEMPORAL_ADDRESS  = "192.168.68.61:7233"
+    NOMAD_ADDR        = "https://$${attr.unique.network.ip-address}:4646"
+    NOMAD_SKIP_VERIFY = "true"
+    CONSUL_HTTP_ADDR  = "$${attr.unique.network.ip-address}:8500"
+    BAO_ADDR          = "https://mccoy:8200"
+    BAO_SKIP_VERIFY   = "true"
   }
+
+  services = [
+    {
+      name     = "temporal-backup-worker"
+      provider = "consul"
+      tags = [
+        "temporal",
+        "backup",
+        "worker"
+      ]
+    }
+  ]
 
   resources = {
-    cpu    = 100
-    memory = 128
+    cpu        = 200
+    memory     = 256
+    memory_max = 512
   }
 }
 
-# -----------------------------------------------------------------------
-# Resource Tier Definitions
-# -----------------------------------------------------------------------
+# --- Standard service configuration ---
+standard_service_enabled = false
 
-resource_tiers = {
-  tiny = {
-    cpu            = 100
-    memory         = 128
-    ephemeral_disk = 200
-  }
-  small = {
-    cpu            = 200
-    memory         = 256
-    ephemeral_disk = 500
-  }
-  medium = {
-    cpu            = 500
-    memory         = 1024
-    ephemeral_disk = 1000
-  }
-  large = {
-    cpu            = 2000
-    memory         = 4096
-    ephemeral_disk = 2000
-  }
-}
-
-# -----------------------------------------------------------------------
-# Network Presets
-# -----------------------------------------------------------------------
-
-network_presets = {
-  bridge = {
-    mode = "bridge"
-  }
-  host = {
-    mode = "host"
-  }
-}
-
-# -----------------------------------------------------------------------
-# Deployment Profiles
-# -----------------------------------------------------------------------
-
-deployment_profiles = {
-  standard = {
-    max_parallel      = 1
-    health_check      = "checks"
-    min_healthy_time  = "30s"
-    healthy_deadline  = "5m"
-    progress_deadline = "10m"
-    auto_revert       = true
-    auto_promote      = false
-    canary            = 0
-  }
-}
-
-# -----------------------------------------------------------------------
-# Meta Profiles
-# -----------------------------------------------------------------------
-
-meta_profiles = {
-  tier2 = {
-    tier = "important"
-  }
-}
-
-# -----------------------------------------------------------------------
-# Reschedule Presets (Not used for batch jobs)
-# -----------------------------------------------------------------------
-
-reschedule_presets = {
-  standard = {
-    delay           = "30s"
-    delay_function  = "constant"
-    max_reschedules = 3
-    unlimited       = false
-  }
-}
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"

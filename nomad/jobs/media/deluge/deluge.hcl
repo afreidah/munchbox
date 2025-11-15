@@ -1,8 +1,7 @@
 # -------------------------------------------------------------------------------
 # Deluge — BitTorrent Client with VPN Integration and Web UI
 #
-# Project: Munchbox
-# Author: Alex Freidah
+# Project: Munchbox / Author: Alex Freidah
 #
 # BitTorrent client running on mccoy node with all traffic routed through
 # WireGuard VPN via policy-based marking. Persists configuration and downloads
@@ -10,10 +9,7 @@
 # credentials from Vault for daemon auth and web password.
 # -------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Job Configuration
-# -----------------------------------------------------------------------
-
+# --- Core job configuration ---
 job_name        = "deluge"
 job_type        = "service"
 region          = "global"
@@ -23,38 +19,25 @@ namespace       = "default"
 priority        = 50
 job_description = "Deluge BitTorrent client with VPN policy routing"
 
-# -----------------------------------------------------------------------
-# Deployment Profile
-# -----------------------------------------------------------------------
-
+# --- Deployment and metadata ---
 deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "utility"
 
-# -----------------------------------------------------------------------
-# Resource Tier
-# -----------------------------------------------------------------------
-
+# --- Resource allocation ---
 resource_tier = "small"
 
-# -----------------------------------------------------------------------
-# Network Configuration
-# -----------------------------------------------------------------------
-
+# --- Network configuration ---
 network_preset = "host"
 
 ports = [
   {
     name   = "web"
     static = 8112
-    port   = 8112
   }
 ]
 
-# -----------------------------------------------------------------------
-# Placement Constraints
-# -----------------------------------------------------------------------
-
+# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -63,10 +46,7 @@ constraints = [
   }
 ]
 
-# -----------------------------------------------------------------------
-# Storage Configuration
-# -----------------------------------------------------------------------
-
+# --- Persistent storage volume ---
 volume = {
   name       = "deluge-data"
   type       = "host"
@@ -75,31 +55,16 @@ volume = {
   read_only  = false
 }
 
-# -----------------------------------------------------------------------
-# Restart & Reschedule
-# -----------------------------------------------------------------------
-
+# --- Restart policy ---
 restart_attempts = 3
 restart_interval = "5m"
 restart_delay    = "15s"
 restart_mode     = "fail"
 
+# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# -----------------------------------------------------------------------
-# Vault Integration
-# -----------------------------------------------------------------------
-
-vault = {
-  enabled = true
-  role    = "nomad-workloads"
-  aud     = ["vault.io"]
-}
-
-# -----------------------------------------------------------------------
-# External File Configuration
-# -----------------------------------------------------------------------
-
+# --- External configuration files ---
 external_files = {
   enabled   = true
   base_path = "jobs/media/deluge/files"
@@ -112,16 +77,26 @@ external_templates = [
     env             = false
     perms           = "0755"
     change_mode     = "restart"
-    change_signal   = ""
-    left_delimiter  = "{{{"  # Add this
-    right_delimiter = "}}}"  # Add this
+    left_delimiter  = "{{{"
+    right_delimiter = "}}}"
+  },
+  {
+    destination     = "local/auth"
+    source_file     = "auth.tpl"
+    env             = false
+    perms           = "0600"
+    change_mode     = "restart"
+  },
+  {
+    destination     = "secrets/deluge.env"
+    source_file     = "deluge.env.tpl"
+    env             = true
+    perms           = "0600"
+    change_mode     = "restart"
   }
 ]
 
-# -----------------------------------------------------------------------
-# Task Configuration
-# -----------------------------------------------------------------------
-
+# --- Task definition ---
 task = {
   name   = "deluge"
   driver = "docker"
@@ -152,104 +127,41 @@ task = {
     DELUGE_MOVE_COMPLETED      = "true"
   }
 
-  templates = [
-    {
-      destination = "local/auth"
-      perms       = "0600"
-      env         = false
-      change_mode = "restart"
-      data        = <<-EOH
-{{ with secret "kv/data/deluge" }}
-localclient:{{ .Data.data.password }}:10
-{{ end }}
-EOH
-    },
-    {
-      destination = "secrets/deluge.env"
-      perms       = "0600"
-      env         = true
-      change_mode = "restart"
-      data        = <<-EOENV
-{{ with secret "kv/data/deluge" -}}
-DELUGE_WEB_PASSWORD={{ .Data.data.web_password }}
-{{- end }}
-EOENV
-    }
-  ]
-
-  services = [
-    {
-      name     = "deluge"
-      port     = "web"
-      provider = "consul"
-      tags = [
-        "traefik.enable=true",
-        "traefik.http.routers.deluge.rule=Host(`deluge.munchbox`)",
-        "traefik.http.routers.deluge.entrypoints=websecure",
-        "traefik.http.routers.deluge.tls=true",
-        "traefik.http.routers.deluge.middlewares=dashboard-allowlan@file",
-        "traefik.http.services.deluge.loadbalancer.server.port=8112",
-        "torrent",
-        "deluge",
-        "downloads"
-      ]
-      checks = [
-        {
-          name     = "deluge-web"
-          type     = "http"
-          path     = "/"
-          interval = "10s"
-          timeout  = "2s"
-        }
-      ]
-    }
-  ]
-
   resources = {
     cpu    = 300
     memory = 256
   }
 }
 
-# -----------------------------------------------------------------------
-# Resource Tier Definitions
-# -----------------------------------------------------------------------
+# --- Standard service configuration ---
+standard_service_enabled     = true
+standard_service_port        = "web"
+standard_service_port_number = 8112
+standard_http_check_enabled  = true
+standard_http_check_path     = "/"
+additional_tags              = ["torrent", "deluge", "downloads"]
 
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"
+
+# --- Resource tier definitions ---
 resource_tiers = {
-  tiny = {
-    cpu            = 150
-    memory         = 128
-    ephemeral_disk = 200
-  }
   small = {
     cpu            = 300
     memory         = 256
     ephemeral_disk = 500
   }
-  medium = {
-    cpu            = 500
-    memory         = 1024
-    ephemeral_disk = 1000
-  }
 }
 
-# -----------------------------------------------------------------------
-# Network Presets
-# -----------------------------------------------------------------------
-
+# --- Network presets ---
 network_presets = {
-  bridge = {
-    mode = "bridge"
-  }
   host = {
     mode = "host"
   }
 }
 
-# -----------------------------------------------------------------------
-# Deployment Profiles
-# -----------------------------------------------------------------------
-
+# --- Deployment profiles ---
 deployment_profiles = {
   standard = {
     max_parallel      = 1
@@ -258,25 +170,17 @@ deployment_profiles = {
     healthy_deadline  = "3m"
     progress_deadline = "5m"
     auto_revert       = true
-    auto_promote      = false
-    canary            = 0
   }
 }
 
-# -----------------------------------------------------------------------
-# Meta Profiles
-# -----------------------------------------------------------------------
-
+# --- Meta profiles ---
 meta_profiles = {
   tier2 = {
     tier = "important"
   }
 }
 
-# -----------------------------------------------------------------------
-# Reschedule Presets
-# -----------------------------------------------------------------------
-
+# --- Reschedule presets ---
 reschedule_presets = {
   standard = {
     delay           = "5s"
