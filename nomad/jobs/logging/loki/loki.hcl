@@ -1,31 +1,47 @@
+# jobs/logging/loki/loki.hcl
 # -------------------------------------------------------------------------------
-# Loki — Centralized Log Aggregation — Nomad Pack Example
+# Loki — Centralized Log Aggregation
 #
-# Project: Munchbox
-# Author: Alex Freidah
+# Project: Munchbox / Author: Alex Freidah
 #
-# Receives logs from Promtail agents on all nodes via push API.
-# Maintains 5-day log retention with TSDB filesystem backend for persistence.
-# Exposes HTTP API for Grafana log queries.
+# Receives logs from Promtail agents on all nodes via push API. Maintains
+# 5-day log retention with TSDB filesystem backend for persistence. Exposes
+# HTTP API for Grafana log queries.
 # -------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Job Configuration
-# -----------------------------------------------------------------------
-
+# --- Core job configuration ---
 job_name        = "loki"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
+namespace       = "default"
 node_pool       = "edge"
 priority        = 50
-
 job_description = "Loki centralized log aggregation with 5-day retention"
 
-# -----------------------------------------------------------------------
-# Placement Constraints
-# -----------------------------------------------------------------------
+# --- Deployment and metadata ---
+deployment_profile = "standard"
+meta_profile       = "tier1"
+category           = "logging"
 
+# --- Resource allocation ---
+resource_tier = "medium"
+
+# --- Network configuration ---
+network_preset = "host"
+
+ports = [
+  {
+    name   = "http"
+    static = 3100
+  },
+  {
+    name   = "grpc"
+    static = 9096
+  }
+]
+
+# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -34,42 +50,7 @@ constraints = [
   }
 ]
 
-# -----------------------------------------------------------------------
-# Deployment Profile
-# -----------------------------------------------------------------------
-
-deployment_profile = "standard"
-meta_profile       = "tier-1"
-
-# -----------------------------------------------------------------------
-# Resource Tier
-# -----------------------------------------------------------------------
-
-resource_tier = "medium"
-
-# -----------------------------------------------------------------------
-# Network Configuration
-# -----------------------------------------------------------------------
-
-network_preset = "host"
-
-ports = [
-  {
-    name   = "http"
-    static = 3100
-    port   = 3100
-  },
-  {
-    name   = "grpc"
-    static = 9096
-    port   = 9096
-  }
-]
-
-# -----------------------------------------------------------------------
-# Storage & Volumes
-# -----------------------------------------------------------------------
-
+# --- Persistent storage volume ---
 volume = {
   name       = "loki-data"
   type       = "host"
@@ -78,29 +59,42 @@ volume = {
   mount_path = "/loki"
 }
 
-# -----------------------------------------------------------------------
-# Restart & Reschedule
-# -----------------------------------------------------------------------
-
+# --- Restart policy ---
 restart_attempts = 3
 restart_interval = "5m"
 restart_delay    = "30s"
 restart_mode     = "fail"
 
+# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# -----------------------------------------------------------------------
-# Task Configuration
-# -----------------------------------------------------------------------
+# --- External configuration file ---
+external_files = {
+  enabled   = true
+  base_path = "jobs/logging/loki/files"
+}
 
+external_templates = [
+  {
+    destination     = "local/config/config.yaml"
+    source_file     = "config.yaml"
+    env             = false
+    perms           = "0644"
+    change_mode     = "restart"
+    change_signal   = ""
+    left_delimiter  = ""
+    right_delimiter = ""
+  }
+]
+
+# --- Task definition ---
 task = {
   name   = "loki"
   driver = "docker"
 
   config = {
-    image        = "grafana/loki:3.3.1"
-    network_mode = "host"
-    ports        = ["http", "grpc"]
+    image = "grafana/loki:3.3.1"
+    ports = ["http", "grpc"]
     args = [
       "-config.file=/etc/loki/config.yaml"
     ]
@@ -109,152 +103,45 @@ task = {
     ]
   }
 
-  templates = [
-    {
-      destination = "local/config/config.yaml"
-      change_mode = "restart"
-      perms       = "0644"
-      data        = <<-EOF
-# Loki Configuration
-auth_enabled: false
-
-server:
-  http_listen_port: 3100
-  grpc_listen_port: 9096
-  log_level: info
-
-common:
-  path_prefix: /loki
-  storage:
-    filesystem:
-      chunks_directory: /loki/chunks
-      rules_directory: /loki/rules
-  replication_factor: 1
-  ring:
-    kvstore:
-      store: inmemory
-
-# Query limits
-query_scheduler:
-  max_outstanding_requests_per_tenant: 2048
-
-querier:
-  max_concurrent: 4
-
-# Schema configuration (TSDB)
-schema_config:
-  configs:
-    - from: 2024-01-01
-      store: tsdb
-      object_store: filesystem
-      schema: v13
-      index:
-        prefix: index_
-        period: 24h
-
-# Ingestion tuning
-ingester:
-  chunk_idle_period: 3m
-  max_chunk_age: 1h
-
-# Storage configuration
-storage_config:
-  tsdb_shipper:
-    active_index_directory: /loki/tsdb-index
-    cache_location: /loki/tsdb-cache
-  filesystem:
-    directory: /loki/chunks
-
-# Compactor (for retention)
-compactor:
-  working_directory: /loki/compactor
-  compaction_interval: 10m
-  retention_enabled: true
-  retention_delete_delay: 2h
-  retention_delete_worker_count: 150
-  delete_request_store: filesystem
-
-# Limits - 5 day retention
-limits_config:
-  volume_enabled: true
-  retention_period: 120h
-  max_query_lookback: 120h
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h
-  ingestion_rate_mb: 10
-  ingestion_burst_size_mb: 20
-  per_stream_rate_limit: 5MB
-  per_stream_rate_limit_burst: 15MB
-  max_streams_per_user: 10000
-
-# Cleanup (legacy table manager for some scans)
-table_manager:
-  retention_deletes_enabled: true
-  retention_period: 120h
-
-# Telemetry
-analytics:
-  reporting_enabled: false
-EOF
-    }
-  ]
-
   env = {
     TZ = "America/Los_Angeles"
-  }
-
-  service = {
-    name     = "loki"
-    port     = "http"
-    provider = "consul"
-    tags = [
-      "logging",
-      "loki",
-      "observability"
-    ]
-    checks = [
-      {
-        name     = "loki-ready"
-        type     = "http"
-        path     = "/ready"
-        interval = "10s"
-        timeout  = "3s"
-      }
-    ]
   }
 
   resources = {
     cpu    = 500
     memory = 512
   }
-
-  kill_timeout = "30s"
-  kill_signal  = "SIGTERM"
-
-  restart = {
-    attempts = 3
-    interval = "5m"
-    delay    = "30s"
-    mode     = "fail"
-  }
 }
 
-# -----------------------------------------------------------------------
-# Resource Tier Definitions
-# -----------------------------------------------------------------------
+# --- Standard service configuration ---
+standard_service_enabled     = true
+standard_service_port        = "http"
+standard_service_port_number = 3100
+standard_http_check_enabled  = true
+standard_http_check_path     = "/ready"
+additional_tags              = ["logging", "loki", "observability"]
 
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"
+
+# --- Resource tier definitions ---
 resource_tiers = {
   medium = {
-    cpu             = 500
-    memory          = 512
-    ephemeral_disk  = 1000
+    cpu            = 500
+    memory         = 512
+    ephemeral_disk = 1000
   }
 }
 
-# -----------------------------------------------------------------------
-# Deployment Profiles
-# -----------------------------------------------------------------------
+# --- Network presets ---
+network_presets = {
+  host = {
+    mode = "host"
+  }
+}
 
+# --- Deployment profiles ---
 deployment_profiles = {
   standard = {
     max_parallel      = 1
@@ -263,39 +150,22 @@ deployment_profiles = {
     healthy_deadline  = "5m"
     progress_deadline = "10m"
     auto_revert       = true
-    auto_promote      = true
   }
 }
 
-# -----------------------------------------------------------------------
-# Meta Profiles
-# -----------------------------------------------------------------------
-
+# --- Meta profiles ---
 meta_profiles = {
-  tier-1 = {
-    tier = "tier-1"
+  tier1 = {
+    tier = "critical"
   }
 }
 
-# -----------------------------------------------------------------------
-# Reschedule Presets
-# -----------------------------------------------------------------------
-
+# --- Reschedule presets ---
 reschedule_presets = {
   standard = {
-    max_reschedules = 3
     delay           = "5s"
     delay_function  = "exponential"
+    max_reschedules = 3
     unlimited       = false
-  }
-}
-
-# -----------------------------------------------------------------------
-# Network Presets
-# -----------------------------------------------------------------------
-
-network_presets = {
-  host = {
-    mode = "host"
   }
 }

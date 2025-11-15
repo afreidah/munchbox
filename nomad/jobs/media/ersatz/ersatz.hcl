@@ -1,8 +1,7 @@
 # -------------------------------------------------------------------------------
 # ErsatzTV — Virtual TV Channel Engine with Emby Integration
 #
-# Project: Munchbox
-# Author: Alex Freidah
+# Project: Munchbox / Author: Alex Freidah
 #
 # Creates virtual TV channels from Emby library (TV + Movies). Generates
 # scheduled broadcasts with guide data and streaming interface. Runs on mccoy
@@ -10,10 +9,7 @@
 # management and stream playback configuration.
 # -------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Job Configuration
-# -----------------------------------------------------------------------
-
+# --- Core job configuration ---
 job_name        = "ersatztv"
 job_type        = "service"
 region          = "global"
@@ -23,38 +19,25 @@ namespace       = "default"
 priority        = 50
 job_description = "ErsatzTV virtual TV channel engine with Emby backend"
 
-# -----------------------------------------------------------------------
-# Deployment Profile
-# -----------------------------------------------------------------------
-
+# --- Deployment and metadata ---
 deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "media"
 
-# -----------------------------------------------------------------------
-# Resource Tier
-# -----------------------------------------------------------------------
-
+# --- Resource allocation ---
 resource_tier = "medium"
 
-# -----------------------------------------------------------------------
-# Network Configuration
-# -----------------------------------------------------------------------
-
+# --- Network configuration ---
 network_preset = "host"
 
 ports = [
   {
     name   = "ui"
     static = 8409
-    port   = 8409
   }
 ]
 
-# -----------------------------------------------------------------------
-# Placement Constraints
-# -----------------------------------------------------------------------
-
+# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -63,21 +46,16 @@ constraints = [
   }
 ]
 
-# -----------------------------------------------------------------------
-# Restart & Reschedule
-# -----------------------------------------------------------------------
-
+# --- Restart policy ---
 restart_attempts = 3
 restart_interval = "5m"
 restart_delay    = "15s"
 restart_mode     = "delay"
 
+# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# -----------------------------------------------------------------------
-# Task Configuration
-# -----------------------------------------------------------------------
-
+# --- Task definition ---
 task = {
   name   = "ersatztv"
   driver = "docker"
@@ -85,7 +63,6 @@ task = {
   config = {
     image              = "jasongdove/ersatztv:latest"
     image_pull_timeout = "10m"
-    network_mode       = "host"
     ports              = ["ui"]
     volumes = [
       "/opt/nomad/data/ersatztv/config:/config",
@@ -99,94 +76,41 @@ task = {
     TZ = "UTC"
   }
 
-  services = [
-    {
-      name     = "ersatztv"
-      port     = "ui"
-      provider = "consul"
-      tags = [
-        "traefik.enable=true",
-        "traefik.http.routers.ersatztv.rule=Host(`ersatz.munchbox`)",
-        "traefik.http.routers.ersatztv.entrypoints=websecure",
-        "traefik.http.routers.ersatztv.tls=true",
-        "traefik.http.routers.ersatztv.middlewares=dashboard-allowlan@file",
-        "traefik.http.services.ersatztv.loadbalancer.server.port=8409",
-        "media",
-        "ersatztv",
-        "streaming"
-      ]
-      checks = [
-        {
-          name     = "ersatztv-ui"
-          type     = "http"
-          path     = "/"
-          interval = "15s"
-          timeout  = "3s"
-        }
-      ]
-    }
-  ]
-
   resources = {
     cpu    = 500
     memory = 1024
   }
-
-  kill_timeout = "30s"
-  kill_signal  = "SIGTERM"
 }
 
-# -----------------------------------------------------------------------
-# Log Configuration
-# -----------------------------------------------------------------------
+# --- Standard service configuration ---
+standard_service_enabled     = true
+standard_service_port        = "ui"
+standard_service_port_number = 8409
+standard_http_check_enabled  = true
+standard_http_check_path     = "/"
+additional_tags              = ["media", "ersatztv", "streaming"]
 
-log_max_files     = 5
-log_max_file_size = 20
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"
 
-# -----------------------------------------------------------------------
-# Resource Tier Definitions
-# -----------------------------------------------------------------------
-
+# --- Resource tier definitions ---
 resource_tiers = {
-  tiny = {
-    cpu            = 150
-    memory         = 128
-    ephemeral_disk = 200
-  }
-  small = {
-    cpu            = 300
-    memory         = 256
-    ephemeral_disk = 500
-  }
   medium = {
     cpu            = 500
     memory         = 1024
     ephemeral_disk = 1000
   }
-  large = {
-    cpu            = 2000
-    memory         = 4096
-    ephemeral_disk = 2000
-  }
 }
 
-# -----------------------------------------------------------------------
-# Network Presets
-# -----------------------------------------------------------------------
-
+# --- Network presets ---
 network_presets = {
-  bridge = {
-    mode = "bridge"
-  }
   host = {
     mode = "host"
   }
 }
 
-# -----------------------------------------------------------------------
-# Deployment Profiles
-# -----------------------------------------------------------------------
-
+# --- Deployment profiles ---
 deployment_profiles = {
   standard = {
     max_parallel      = 1
@@ -195,25 +119,17 @@ deployment_profiles = {
     healthy_deadline  = "5m"
     progress_deadline = "10m"
     auto_revert       = true
-    auto_promote      = false
-    canary            = 0
   }
 }
 
-# -----------------------------------------------------------------------
-# Meta Profiles
-# -----------------------------------------------------------------------
-
+# --- Meta profiles ---
 meta_profiles = {
   tier2 = {
     tier = "important"
   }
 }
 
-# -----------------------------------------------------------------------
-# Reschedule Presets
-# -----------------------------------------------------------------------
-
+# --- Reschedule presets ---
 reschedule_presets = {
   standard = {
     delay           = "5s"
