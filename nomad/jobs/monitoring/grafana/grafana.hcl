@@ -5,7 +5,7 @@
 #
 # Provides Grafana dashboards with Prometheus and Loki datasource integration
 # via Consul DNS. Provisioned datasources authoritative to prevent drift, and
-# Traefik HTTPS routing. Admin credentials hardcoded temporarily.
+# Traefik HTTPS routing.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
@@ -80,6 +80,13 @@ external_templates = [
     env         = false
     perms       = "0644"
     change_mode = "restart"
+  },
+  {
+    destination = "secrets/grafana.env"
+    source_file = "grafana.env.tpl"
+    env         = true
+    perms       = "0600"
+    change_mode = "restart"
   }
 ]
 
@@ -88,6 +95,16 @@ task = {
   name   = "grafana"
   driver = "docker"
   user   = "root"
+
+  identity = {
+    env  = true
+    file = true
+    aud  = ["vault.io"]
+  }
+
+  vault = {
+    role = "nomad-workloads"
+  }
 
   config = {
     image              = "grafana/grafana:12.2.0"
@@ -104,8 +121,6 @@ task = {
     GF_SERVER_SERVE_FROM_SUB_PATH = "false"
     GF_SERVER_ROOT_URL            = "https://grafana.munchbox/"
     NO_PROXY                      = "localhost,127.0.0.1,*.service.consul,service.consul,192.168.68.0/24"
-    GF_SECURITY_ADMIN_USER        = "admin"
-    GF_SECURITY_ADMIN_PASSWORD    = "S50b32e36m3"
   }
 
   resources = {
@@ -124,50 +139,3 @@ additional_tags              = ["monitoring", "grafana"]
 # --- Termination ---
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
-
-# --- Resource tier definitions ---
-resource_tiers = {
-  small = {
-    cpu            = 250
-    memory         = 512
-    ephemeral_disk = 500
-  }
-}
-
-# --- Network presets ---
-network_presets = {
-  host = {
-    mode = "host"
-  }
-}
-
-# --- Deployment profiles ---
-deployment_profiles = {
-  canary = {
-    max_parallel      = 1
-    canary            = 1
-    health_check      = "checks"
-    min_healthy_time  = "30s"
-    healthy_deadline  = "5m"
-    progress_deadline = "15m"
-    auto_revert       = true
-    auto_promote      = false
-  }
-}
-
-# --- Meta profiles ---
-meta_profiles = {
-  tier1 = {
-    tier = "critical"
-  }
-}
-
-# --- Reschedule presets ---
-reschedule_presets = {
-  standard = {
-    delay           = "15s"
-    delay_function  = "exponential"
-    max_reschedules = 3
-    unlimited       = false
-  }
-}
