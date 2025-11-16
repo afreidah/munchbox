@@ -1,94 +1,165 @@
-# -------------------------------------------------------------------------------
-# Nomad Service Pack - Makefile
-# Author: Alex Freidah
-# -------------------------------------------------------------------------------
-# Build, test, and deploy automation for the nomad-service pack template
+# Munchbox Nomad Job Management
 # -------------------------------------------------------------------------------
 
-.DEFAULT_GOAL := help
-.PHONY: help render test test-verbose test-all test-job test-category deploy \
-        deploy-all deploy-category validate lint clean list format check \
-        docs install uninstall
+.PHONY: help list render plan run stop purge render-all plan-all run-all
 
-# -------------------------------------------------------------------------------
-# Configuration
-# -------------------------------------------------------------------------------
+PACK_REGISTRY := packs/registry
+DEFAULT_PACK := nomad-service
 
-PACK_NAME := nomad-service
-PACK_PATH := packs/registry/nomad-service
-ROOT_PATH := .
-JOBS_PATH := jobs
-DEFAULTS := defaults.hcl
-TEST_SCRIPT := ./test-pack.sh
-
-# Colors for output
-BOLD := \033[1m
-GREEN := \033[0;32m
-YELLOW := \033[1;33m
-BLUE := \033[0;34m
-NC := \033[0m
-
-# -------------------------------------------------------------------------------
-# Help Target
-# -------------------------------------------------------------------------------
-
-help: ## Show this help message
-	@echo "$(BOLD)Nomad Service Pack - Available Commands$(NC)"
+# Help target
+help:
+	@echo "Nomad Job Management Commands:"
+	@echo "  make list                    - List all available jobs"
+	@echo "  make render JOB=<name>       - Render a specific job"
+	@echo "  make plan JOB=<name>         - Plan a specific job"
+	@echo "  make run JOB=<name>          - Run a specific job"
+	@echo "  make stop JOB=<name>         - Stop a specific job"
+	@echo "  make purge JOB=<name>        - Purge a specific job"
 	@echo ""
-	@echo "$(BOLD)Testing:$(NC)"
-	@grep -E '^test.*:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}'
+	@echo "  make render-all              - Render all jobs"
+	@echo "  make plan-all                - Plan all jobs"
+	@echo "  make run-all                 - Run all jobs"
 	@echo ""
-	@echo "$(BOLD)Deployment:$(NC)"
-	@grep -E '^deploy.*:.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}'
-	@echo ""
-	@echo "$(BOLD)Development:$(NC)"
-	@grep -E '^(render|validate|lint|format|clean|list|docs):.*##' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*##"}; {printf "  $(YELLOW)%-20s$(NC) %s\n", $$1, $$2}'
-	@echo ""
-	@echo "$(BOLD)Examples:$(NC)"
-	@echo "  make test                              # Test all jobs"
-	@echo "  make test-job JOB=grafana              # Test specific job"
-	@echo "  make test-category CAT=monitoring      # Test monitoring category"
-	@echo "  make deploy-job JOB=grafana            # Deploy Grafana"
-	@echo "  make render JOB=deluge                 # Render Deluge job"
-	@echo ""
+	@echo "Examples:"
+	@echo "  make render JOB=grafana"
+	@echo "  make run JOB=temporal-backup-worker"
 
-# -------------------------------------------------------------------------------
-# Testing Targets
-# -------------------------------------------------------------------------------
+# Auto-discover all job files
+JOBS := $(shell find jobs -name '*.hcl' -type f)
 
-test: ## Run tests on all jobs (render only)
-	@echo "$(BOLD)Testing all jobs...$(NC)"
-	@$(TEST_SCRIPT)
+# List all jobs
+list:
+	@echo "Available jobs:"
+	@for job in $(JOBS); do \
+		echo "  - $$(basename $$job .hcl) ($$job)"; \
+	done
 
-test-verbose: ## Run tests with verbose output
-	@echo "$(BOLD)Testing all jobs (verbose)...$(NC)"
-	@$(TEST_SCRIPT) -v
+# Helper function to find job file
+define find-job
+$(shell find jobs -name "$(1).hcl" -type f | head -1)
+endef
 
-test-all: test ## Alias for 'test'
+# Helper function to get pack for job
+define get-pack
+$(shell if [ -f "$(1)" ]; then \
+	grep -q "^# PACK:" "$(1)" && grep "^# PACK:" "$(1)" | awk '{print $$3}' || echo "$(DEFAULT_PACK)"; \
+else \
+	echo "$(DEFAULT_PACK)"; \
+fi)
+endef
 
-test-job: ## Test a specific job (usage: make test-job JOB=grafana)
+# Helper function to get command type
+define get-command-type
+$(shell if [ -f "$(1)" ]; then \
+	grep -q "^# TYPE: nomad" "$(1)" && echo "nomad" || echo "nomad-pack"; \
+else \
+	echo "nomad-pack"; \
+fi)
+endef
+
+# Render a specific job
+render:
 ifndef JOB
-	@echo "$(YELLOW)Error: JOB parameter required$(NC)"
-	@echo "Usage: make test-job JOB=grafana"
+	@echo "Error: JOB not specified. Usage: make render JOB=<job-name>"
 	@exit 1
 endif
-	@echo "$(BOLD)Testing job: $(JOB)$(NC)"
-	@JOB_FILE=$$(find $(JOBS_PATH) -name "$(JOB).hcl" -type f | head -1); \
-	if [ -z "$$JOB_FILE" ]; then \
-		echo "$(YELLOW)Error: Job '$(JOB)' not found$(NC)"; \
+	$(eval JOB_FILE := $(call find-job,$(JOB)))
+	$(eval PACK := $(call get-pack,$(JOB_FILE)))
+	$(eval CMD_TYPE := $(call get-command-type,$(JOB_FILE)))
+	@if [ -z "$(JOB_FILE)" ]; then \
+		echo "Error: Job '$(JOB)' not found"; \
 		exit 1; \
-	fi; \
-	$(TEST_SCRIPT) $$JOB_FILE
+	fi
+	@echo "Rendering $(JOB) from $(JOB_FILE) using $(CMD_TYPE)..."
+	@if [ "$(CMD_TYPE)" = "nomad" ]; then \
+		nomad job run -check-index 0 -detach -verbose $(JOB_FILE); \
+	else \
+		nomad-pack render --var-file=$(JOB_FILE) $(PACK_REGISTRY)/$(PACK); \
+	fi
 
-test-category: ## Test all jobs in a category (usage: make test-category CAT=monitoring)
-ifndef CAT
-	@echo "$(YELLOW)Error: CAT parameter required$(NC)"
-	@echo "Usage: make test-category CAT=monitoring"
+# Plan a specific job
+plan:
+ifndef JOB
+	@echo "Error: JOB not specified. Usage: make plan JOB=<job-name>"
 	@exit 1
 endif
-	@echo "$(BOLD)Testing category: $(CAT)$(NC)"
-	@if [ ! -d "$(JOBS_PATH)/$(CAT)" ]; then \
-		echo "$(YELLOW)Error: Category '$(CAT)' not found$(NC)"; \
+	$(eval JOB_FILE := $(call find-job,$(JOB)))
+	$(eval PACK := $(call get-pack,$(JOB_FILE)))
+	$(eval CMD_TYPE := $(call get-command-type,$(JOB_FILE)))
+	@if [ -z "$(JOB_FILE)" ]; then \
+		echo "Error: Job '$(JOB)' not found"; \
 		exit 1; \
-	fi; \
-	$(TEST_SCRIPT) $(
+	fi
+	@echo "Planning $(JOB) from $(JOB_FILE) using $(CMD_TYPE)..."
+	@if [ "$(CMD_TYPE)" = "nomad" ]; then \
+		nomad job plan $(JOB_FILE); \
+	else \
+		nomad-pack plan --diff --var-file=$(JOB_FILE) $(PACK_REGISTRY)/$(PACK); \
+	fi
+
+# Run a specific job
+run:
+ifndef JOB
+	@echo "Error: JOB not specified. Usage: make run JOB=<job-name>"
+	@exit 1
+endif
+	$(eval JOB_FILE := $(call find-job,$(JOB)))
+	$(eval PACK := $(call get-pack,$(JOB_FILE)))
+	$(eval CMD_TYPE := $(call get-command-type,$(JOB_FILE)))
+	@if [ -z "$(JOB_FILE)" ]; then \
+		echo "Error: Job '$(JOB)' not found"; \
+		exit 1; \
+	fi
+	@echo "Running $(JOB) from $(JOB_FILE) using $(CMD_TYPE)..."
+	@if [ "$(CMD_TYPE)" = "nomad" ]; then \
+		nomad job run $(JOB_FILE); \
+	else \
+		nomad-pack run --var-file=$(JOB_FILE) $(PACK_REGISTRY)/$(PACK); \
+	fi
+
+# Stop a specific job
+stop:
+ifndef JOB
+	@echo "Error: JOB not specified. Usage: make stop JOB=<job-name>"
+	@exit 1
+endif
+	@echo "Stopping $(JOB)..."
+	@nomad job stop $(JOB)
+
+# Purge a specific job
+purge:
+ifndef JOB
+	@echo "Error: JOB not specified. Usage: make purge JOB=<job-name>"
+	@exit 1
+endif
+	@echo "Purging $(JOB)..."
+	@nomad job stop -purge $(JOB)
+
+# Render all jobs
+render-all:
+	@for job in $(JOBS); do \
+		job_name=$$(basename $$job .hcl); \
+		echo "=== Rendering $$job_name ==="; \
+		make render JOB=$$job_name || true; \
+		echo ""; \
+	done
+
+# Plan all jobs
+plan-all:
+	@for job in $(JOBS); do \
+		job_name=$$(basename $$job .hcl); \
+		echo "=== Planning $$job_name ==="; \
+		make plan JOB=$$job_name || true; \
+		echo ""; \
+	done
+
+# Run all jobs (use with caution!)
+run-all:
+	@echo "WARNING: This will deploy ALL jobs. Press Ctrl+C to cancel or Enter to continue..."
+	@read confirm
+	@for job in $(JOBS); do \
+		job_name=$$(basename $$job .hcl); \
+		echo "=== Running $$job_name ==="; \
+		make run JOB=$$job_name || true; \
+		echo ""; \
+	done

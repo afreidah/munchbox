@@ -1,3 +1,4 @@
+# TYPE: nomad
 # -------------------------------------------------------------------------------
 #  Temporal Backup Trigger — Daily Scheduled Backup Orchestration
 #

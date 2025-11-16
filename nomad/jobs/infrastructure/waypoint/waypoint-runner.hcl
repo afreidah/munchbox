@@ -1,31 +1,35 @@
 # -------------------------------------------------------------------------------
-# Waypoint Runner — Nomad Pack Example
+# Waypoint Runner — Build and Deployment Agent
 #
-# Project: Munchbox
-# Author: Alex Freidah
+# Project: Munchbox / Author: Alex Freidah
 #
 # Waypoint runner deployment that connects to server via TLS with token auth.
 # Reads bootstrap token from waypoint-data volume (shared with server).
 # Mounts Docker socket for build operations.
 # -------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Job Configuration
-# -----------------------------------------------------------------------
-
+# --- Core job configuration ---
 job_name        = "waypoint-runner"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
 node_pool       = "core"
+namespace       = "default"
 priority        = 50
-
 job_description = "Waypoint runner — connects to server with TLS token auth, Docker socket mounted"
 
-# -----------------------------------------------------------------------
-# Placement Constraints
-# -----------------------------------------------------------------------
+# --- Deployment and metadata ---
+deployment_profile = "canary"
+meta_profile       = "tier2"
+category           = "automation"
 
+# --- Resource allocation ---
+resource_tier = "small"
+
+# --- Network configuration ---
+network_preset = "host"
+
+# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -34,74 +38,37 @@ constraints = [
   }
 ]
 
-# -----------------------------------------------------------------------
-# Deployment Profile
-# -----------------------------------------------------------------------
-
-deployment_profile = "canary"
-meta_profile       = "tier-2"
-
-# -----------------------------------------------------------------------
-# Resource Tier
-# -----------------------------------------------------------------------
-
-resource_tier = "standard"
-
-# -----------------------------------------------------------------------
-# Network Configuration
-# -----------------------------------------------------------------------
-
-network_preset = "host"
-
-# -----------------------------------------------------------------------
-# Storage & Volumes
-# -----------------------------------------------------------------------
-
+# --- Persistent storage volume ---
 volume = {
   name       = "waypoint-data"
   type       = "host"
   source     = "waypoint-data"
-  read_only  = true
   mount_path = "/data"
+  read_only  = true
 }
 
-# -----------------------------------------------------------------------
-# Additional Volumes
-# -----------------------------------------------------------------------
-
-volume_mounts = [
-  {
-    volume      = "docker-socket"
-    destination = "/var/run/docker.sock"
-    read_only   = false
-  }
-]
-
-# -----------------------------------------------------------------------
-# Restart & Reschedule
-# -----------------------------------------------------------------------
-
+# --- Restart policy ---
 restart_attempts = 3
 restart_interval = "30s"
 restart_delay    = "5s"
 restart_mode     = "delay"
 
-reschedule_preset = "aggressive"
+# --- Reschedule policy ---
+reschedule_preset = "standard"
 
-# -----------------------------------------------------------------------
-# Task Configuration
-# -----------------------------------------------------------------------
-
+# --- Task definition ---
 task = {
   name   = "runner"
   driver = "docker"
 
   config = {
-    image        = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
-    network_mode = "host"
-    entrypoint   = ["/bin/sh", "-c"]
+    image      = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
+    entrypoint = ["/bin/sh", "-c"]
     args = [
       "export WAYPOINT_SERVER_TOKEN=$(cat /data/waypoint-token) && exec waypoint runner agent"
+    ]
+    volumes = [
+      "/var/run/docker.sock:/var/run/docker.sock"
     ]
   }
 
@@ -116,72 +83,11 @@ task = {
     cpu    = 300
     memory = 256
   }
-
-  restart = {
-    attempts = 3
-    interval = "30s"
-    delay    = "5s"
-    mode     = "delay"
-  }
 }
 
-# -----------------------------------------------------------------------
-# Resource Tier Definitions
-# -----------------------------------------------------------------------
+# --- Standard service configuration ---
+standard_service_enabled = false
 
-resource_tiers = {
-  standard = {
-    cpu             = 300
-    memory          = 256
-    ephemeral_disk  = 500
-  }
-}
-
-# -----------------------------------------------------------------------
-# Deployment Profiles
-# -----------------------------------------------------------------------
-
-deployment_profiles = {
-  canary = {
-    max_parallel      = 1
-    health_check      = "checks"
-    min_healthy_time  = "30s"
-    healthy_deadline  = "3m"
-    progress_deadline = "5m"
-    auto_revert       = true
-    auto_promote      = true
-  }
-}
-
-# -----------------------------------------------------------------------
-# Meta Profiles
-# -----------------------------------------------------------------------
-
-meta_profiles = {
-  tier-2 = {
-    tier = "tier-2"
-  }
-}
-
-# -----------------------------------------------------------------------
-# Reschedule Presets
-# -----------------------------------------------------------------------
-
-reschedule_presets = {
-  aggressive = {
-    max_reschedules = 3
-    delay           = "5s"
-    delay_function  = "exponential"
-    unlimited       = false
-  }
-}
-
-# -----------------------------------------------------------------------
-# Network Presets
-# -----------------------------------------------------------------------
-
-network_presets = {
-  host = {
-    mode = "host"
-  }
-}
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"
