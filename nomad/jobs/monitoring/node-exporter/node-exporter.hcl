@@ -11,20 +11,11 @@
 # --- Core job configuration ---
 job_name        = "node-exporter"
 job_type        = "system"
-region          = "global"
-datacenters     = ["pi-dc"]
-node_pool       = "all"
-namespace       = "default"
-priority        = 50
 job_description = "Prometheus Node Exporter - System metrics collection"
+node_pool       = "all"
 
-# --- Deployment and metadata ---
-deployment_profile = "rolling"
-meta_profile       = "standard"
-category           = "monitoring"
-
-# --- Resource allocation ---
-resource_tier = "tiny"
+# --- Metadata ---
+category = "monitoring"
 
 # --- Network configuration ---
 network_preset = "host"
@@ -100,51 +91,5 @@ task = {
   }
 }
 
-# --- Turn off standard service since we're using services array ---
+# --- Turn off standard service since we're using custom services array ---
 standard_service_enabled = false
-
-# --- Restart policy ---
-restart_attempts = 10
-restart_interval = "5m"
-restart_delay    = "5s"
-restart_mode     = "delay"
-
-# --- Termination ---
-kill_timeout = "30s"
-kill_signal  = "SIGTERM"
-
-# --- Resource tier definitions ---
-resource_tiers = {
-  tiny = {
-    cpu            = 150
-    memory         = 64
-    ephemeral_disk = 300
-  }
-}
-
-# --- Network presets ---
-network_presets = {
-  host = {
-    mode = "host"
-  }
-}
-
-# --- Deployment profiles ---
-deployment_profiles = {
-  rolling = {
-    max_parallel      = 2
-    health_check      = "checks"
-    min_healthy_time  = "10s"
-    healthy_deadline  = "2m"
-    progress_deadline = "5m"
-    auto_revert       = true
-  }
-}
-
-# --- Meta profiles ---
-meta_profiles = {
-  standard = {
-    version = "1.8.2"
-    updated = "2025-10-11"
-  }
-}
