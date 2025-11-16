@@ -11,11 +11,6 @@
 # --- Core job configuration ---
 job_name        = "temporal-backup-worker"
 job_type        = "service"
-region          = "global"
-datacenters     = ["pi-dc"]
-node_pool       = "all"
-namespace       = "default"
-priority        = 50
 job_description = "Temporal backup worker for Nomad, Consul, and OpenBao snapshots"
 
 # --- Deployment and metadata ---
@@ -112,37 +107,9 @@ task = {
 # --- Standard service configuration ---
 standard_service_enabled = false
 
+# --- Vault integration ---
+vault_role = "nomad-workloads"
+
 # --- Termination ---
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
-
-# --- Deployment profiles ---
-deployment_profiles = {
-  standard = {
-    max_parallel      = 1
-    health_check      = "checks"
-    min_healthy_time  = "30s"
-    healthy_deadline  = "5m"
-    progress_deadline = "10m"
-    auto_revert       = true
-    auto_promote      = false
-    canary            = 0
-  }
-}
-
-# --- Meta profiles ---
-meta_profiles = {
-  tier2 = {
-    tier = "important"
-  }
-}
-
-# --- Reschedule presets ---
-reschedule_presets = {
-  standard = {
-    delay           = "5s"
-    delay_function  = "exponential"
-    max_reschedules = 3
-    unlimited       = false
-  }
-}

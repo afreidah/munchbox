@@ -12,8 +12,8 @@ job_name        = "registry"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
-node_pool       = "core"
 namespace       = "default"
+node_pool       = "core"
 priority        = 50
 job_description = "Private Docker registry with CORS support"
 

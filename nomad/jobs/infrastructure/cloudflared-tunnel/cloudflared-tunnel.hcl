@@ -5,12 +5,8 @@
 # -------------------------------------------------------------------------------
 
 job_name        = "cloudflared-tunnel"
-job_type        = "system"
-region          = "global"
-datacenters     = ["pi-dc"]
+job_type        = "service"
 node_pool       = "core"
-namespace       = "default"
-priority        = 50
 job_description = "Cloudflare Tunnel ingress gateway with Consul KV templating"
 
 deployment_profile = "standard"
@@ -31,7 +27,7 @@ constraints = [
 
 external_files = {
   enabled   = true
-  base_path = "jobs/networking/cloudflared-tunnel/files"
+  base_path = "jobs/infrastructure/cloudflared-tunnel/files"
 }
 
 external_templates = [
