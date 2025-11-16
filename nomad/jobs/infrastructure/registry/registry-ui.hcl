@@ -1,57 +1,41 @@
 # -------------------------------------------------------------------------------
-# Project: Munchbox
-# Author: Alex Freidah
-# -------------------------------------------------------------------------------
 # Docker Registry UI — Web Interface for Registry Mirror
+#
+# Project: Munchbox / Author: Alex Freidah
 #
 # Provides a user-friendly web UI for browsing and managing Docker images
 # in the private registry. Authenticates via basic auth and proxies to registry.
 # -------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------
-# Job Configuration
-# -----------------------------------------------------------------------
-
+# --- Core job configuration ---
 job_name        = "registry-ui"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
 node_pool       = "core"
+namespace       = "default"
 priority        = 50
-
 job_description = "Docker registry web UI — browse and manage images in private registry"
 
-# -----------------------------------------------------------------------
-# Deployment Profile
-# -----------------------------------------------------------------------
-
+# --- Deployment and metadata ---
 deployment_profile = "standard"
-meta_profile       = "standard"
+meta_profile       = "tier2"
+category           = "infrastructure"
 
-# -----------------------------------------------------------------------
-# Resource Tier
-# -----------------------------------------------------------------------
-
+# --- Resource allocation ---
 resource_tier = "small"
 
-# -----------------------------------------------------------------------
-# Network Configuration
-# -----------------------------------------------------------------------
-
+# --- Network configuration ---
 network_preset = "bridge"
 
 ports = [
   {
-    name   = "http"
-    static = 5001
-    port   = 5001
+    name = "http"
+    to   = 5001
   }
 ]
 
-# -----------------------------------------------------------------------
-# Placement Constraints
-# -----------------------------------------------------------------------
-
+# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -60,21 +44,16 @@ constraints = [
   }
 ]
 
-# -----------------------------------------------------------------------
-# Restart & Reschedule
-# -----------------------------------------------------------------------
-
+# --- Restart policy ---
 restart_attempts = 3
 restart_interval = "5m"
 restart_delay    = "15s"
 restart_mode     = "fail"
 
+# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# -----------------------------------------------------------------------
-# Task Configuration
-# -----------------------------------------------------------------------
-
+# --- Task definition ---
 task = {
   name   = "registry-ui"
   driver = "docker"
@@ -109,67 +88,11 @@ task = {
     cpu    = 150
     memory = 128
   }
-
-  kill_timeout = "30s"
 }
 
-# -----------------------------------------------------------------------
-# Resource Tier Definitions
-# -----------------------------------------------------------------------
+# --- Standard service configuration ---
+standard_service_enabled = false
 
-resource_tiers = {
-  small = {
-    cpu             = 150
-    memory          = 128
-    ephemeral_disk  = 300
-  }
-}
-
-# -----------------------------------------------------------------------
-# Deployment Profiles
-# -----------------------------------------------------------------------
-
-deployment_profiles = {
-  standard = {
-    max_parallel      = 1
-    health_check      = "task_states"
-    min_healthy_time  = "30s"
-    healthy_deadline  = "5m"
-    progress_deadline = "10m"
-    auto_revert       = true
-    auto_promote      = true
-  }
-}
-
-# -----------------------------------------------------------------------
-# Meta Profiles
-# -----------------------------------------------------------------------
-
-meta_profiles = {
-  standard = {
-    tier = "infrastructure"
-  }
-}
-
-# -----------------------------------------------------------------------
-# Reschedule Presets
-# -----------------------------------------------------------------------
-
-reschedule_presets = {
-  standard = {
-    max_reschedules = 3
-    delay           = "15s"
-    delay_function  = "exponential"
-    unlimited       = false
-  }
-}
-
-# -----------------------------------------------------------------------
-# Network Presets
-# -----------------------------------------------------------------------
-
-network_presets = {
-  bridge = {
-    mode = "bridge"
-  }
-}
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"

@@ -70,8 +70,8 @@ task = {
   driver = "docker"
 
   config = {
-    image = "quay.io/prometheus/alertmanager:v0.28.1"
-    ports = ["web"]
+    image  = "quay.io/prometheus/alertmanager:v0.29.0"
+    ports  = ["web"]
     args = [
       "--config.file=/etc/alertmanager/alertmanager.yml",
       "--web.listen-address=0.0.0.0:9093",
@@ -106,47 +106,3 @@ additional_tags              = ["monitoring", "alertmanager", "notifications", "
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
 
-# --- Resource tier definitions ---
-resource_tiers = {
-  tiny = {
-    cpu            = 150
-    memory         = 128
-    ephemeral_disk = 200
-  }
-}
-
-# --- Network presets ---
-network_presets = {
-  host = {
-    mode = "host"
-  }
-}
-
-# --- Deployment profiles ---
-deployment_profiles = {
-  standard = {
-    max_parallel      = 1
-    health_check      = "checks"
-    min_healthy_time  = "30s"
-    healthy_deadline  = "3m"
-    progress_deadline = "10m"
-    auto_revert       = true
-  }
-}
-
-# --- Meta profiles ---
-meta_profiles = {
-  tier1 = {
-    tier = "critical"
-  }
-}
-
-# --- Reschedule presets ---
-reschedule_presets = {
-  standard = {
-    delay           = "5s"
-    delay_function  = "exponential"
-    max_reschedules = 3
-    unlimited       = false
-  }
-}

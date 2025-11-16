@@ -1,8 +1,7 @@
 # -------------------------------------------------------------------------------
-# Project: Munchbox
-# Author: Alex Freidah
-# -------------------------------------------------------------------------------
-# Health Checker internal service health monitoring and alerting
+# Health Checker — Internal Service Health Monitoring
+#
+# Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
 
 job_name        = "health-checker"
@@ -13,16 +12,20 @@ node_pool       = "core"
 namespace       = "default"
 priority        = 50
 job_description = "Health checker service for cluster monitoring"
+
 deployment_profile = "standard"
-meta_profile       = "standard"
-category           = "utility"
-restart_attempts = 2
-restart_interval = "30s"
-restart_delay    = "5s"
-restart_mode     = "fail"
-reschedule_preset = "standard"
+meta_profile       = "tier2"
+category           = "monitoring"
+
 resource_tier  = "small"
-network_preset = "bridge"
+network_preset = "host"
+
+ports = [
+  {
+    name   = "http"
+    static = 18080
+  }
+]
 
 constraints = [
   {
@@ -32,17 +35,9 @@ constraints = [
   }
 ]
 
-ports = [
-  {
-    name   = "http"
-    static = 18080
-  }
-]
-
 task = {
   name   = "health-checker"
   driver = "docker"
-
   config = {
     image = "docker-mirror.service.consul:5000/health-checker"
     ports = ["http"]
@@ -51,39 +46,18 @@ task = {
     ]
     args = ["--service", "k3s", "--port", "18080", "--interval", "10"]
   }
-
-  service = {
-    name = "health-checker"
-    port = "http"
-    tags = [
-      "traefik.enable=true",
-      "traefik.http.routers.health.rule=Host(`health.munchbox`)",
-      "traefik.http.routers.health.entrypoints=websecure",
-      "traefik.http.routers.health.tls=true",
-      "traefik.http.routers.health.middlewares=dashboard-allowlan@file",
-      "traefik.http.services.health.loadbalancer.server.port=18080",
-      "traefik.http.services.health.loadbalancer.server.scheme=http",
-      "traefik.http.services.health.loadbalancer.healthcheck.path=/health",
-      "traefik.http.services.health.loadbalancer.healthcheck.interval=30s",
-      "traefik.http.services.health.loadbalancer.healthcheck.timeout=5s",
-      "go",
-      "health",
-      "monitoring"
-    ]
-
-    checks = [
-      {
-        name     = "health-checker"
-        type     = "http"
-        path     = "/health"
-        interval = "15s"
-        timeout  = "3s"
-      }
-    ]
-  }
-
   resources = {
     cpu    = 200
     memory = 128
   }
 }
+
+standard_service_enabled     = true
+standard_service_port        = "http"
+standard_service_port_number = 18080
+standard_http_check_enabled  = true
+standard_http_check_path     = "/health"
+additional_tags = ["go", "health", "monitoring"]
+
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"

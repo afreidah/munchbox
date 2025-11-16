@@ -1,0 +1,169 @@
+# Prometheus Alert Rules
+# These rules are evaluated by Prometheus and fire alerts to Alertmanager
+
+groups:
+  # ---------------------------------------------------------------------------
+  # Infrastructure Health Alerts
+  # ---------------------------------------------------------------------------
+  - name: infrastructure-health
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.instance }} is down"
+          description: "{{ $labels.job }} service on {{ $labels.instance }} has been down for more than 2 minutes."
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}."
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Disk usage is above 90% on {{ $labels.instance }} ({{ $labels.mountpoint }})."
+
+  # ---------------------------------------------------------------------------
+  # Nomad Cluster Health
+  # ---------------------------------------------------------------------------
+  - name: nomad-health
+    interval: 30s
+    rules:
+      - alert: NomadScrapeDown
+        expr: min by () (up{job="nomad"}) == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus cannot scrape any Nomad server"
+          description: "All Nomad scrape targets are down or unauthorized."
+
+      - alert: NomadJobRunningShrank
+        expr: |
+          sum by (job_id) (nomad_nomad_job_status_running)
+            <
+          sum by (job_id) (max_over_time(nomad_nomad_job_status_running[5m]))
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nomad job running count decreased: {{ $labels.job_id }}"
+          description: "Running allocation count is below recent maximum for {{ $labels.job_id }}."
+
+      - alert: NomadJobFailed
+        expr: |
+          (
+            max without(instance, __address__) (
+              nomad_nomad_job_summary_failed{namespace!="__internal"}
+              +
+              nomad_nomad_job_summary_lost{namespace!="__internal"}
+            )
+          ) > 0
+          and on (job_id, namespace)
+          max by (job_id, namespace) (
+            nomad_nomad_job_status_running
+            +
+            nomad_nomad_job_status_pending
+          ) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Nomad job has failed allocations: {{ $labels.job_id }}"
+          description: "Job {{ $labels.job_id }} in namespace {{ $labels.namespace }} has failed or lost allocations."
+
+      - alert: NomadLeaderElection
+        expr: increase(nomad_nomad_leader_leadership_lost_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nomad leader election occurred"
+          description: "Nomad cluster experienced a leader election in the last 5 minutes."
+
+  # ---------------------------------------------------------------------------
+  # Site Availability (HTTPS-only)
+  # ---------------------------------------------------------------------------
+  - name: site-uptime
+    interval: 30s
+    rules:
+      - alert: SiteDown
+        expr: |
+          probe_success{job="site_https"} == 0
+          and on (instance)
+          (
+            probe_http_status_code{job="site_https"} != 401
+            and probe_http_status_code{job="site_https"} != 403
+          )
+        for: 2m
+        labels:
+          severity: critical
+          team: web
+        annotations:
+          summary: "Site is down: {{ $labels.instance }}"
+          description: "Site {{ $labels.instance }} has been unreachable for more than 2 minutes (non-auth failure)."
+
+      - alert: SiteTLSCertExpiring
+        expr: (probe_ssl_earliest_cert_expiry{job="site_https"} - time()) < 21*24*60*60
+        for: 5m
+        labels:
+          severity: warning
+          team: web
+        annotations:
+          summary: "TLS certificate expiring soon: {{ $labels.instance }}"
+          description: "TLS certificate for {{ $labels.instance }} expires within 21 days."
+
+      - alert: SiteSlowResponse
+        expr: probe_duration_seconds{job="site_https"} > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow response time: {{ $labels.instance }}"
+          description: "Site {{ $labels.instance }} response time is above 5 seconds."
+
+  # ---------------------------------------------------------------------------
+  # Consul Health
+  # ---------------------------------------------------------------------------
+  - name: consul-health
+    interval: 30s
+    rules:
+      - alert: ConsulPeersFailed
+        expr: consul_raft_peers < 3
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Consul cluster has lost peers"
+          description: "Consul cluster has fewer than 3 peers. Current: {{ $value }}"
+
+      - alert: ConsulLeaderElection
+        expr: increase(consul_raft_leader_leadership_lost_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consul leader election occurred"
+          description: "Consul cluster experienced a leader election."
+

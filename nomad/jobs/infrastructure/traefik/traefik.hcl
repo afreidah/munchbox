@@ -1,3 +1,4 @@
+# PACK: traefik-ingress
 # -------------------------------------------------------------------------------
 # Traefik Ingress Controller — Nomad Pack Example
 #
@@ -14,6 +15,7 @@ region          = "global"
 datacenters     = ["pi-dc"]
 node_pool       = "core"
 priority        = 50
+traefik_version = "v3.6.1"
 
 traefik_version      = "v3.5.3"
 ingress_node_constraint = "ingress"

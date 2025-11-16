@@ -1,0 +1,151 @@
+# Prometheus Configuration
+# This configuration defines scrape targets and alert routing
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'munchbox'
+    datacenter: 'pi-dc'
+
+# Alert rules file
+rule_files:
+  - /etc/prometheus/config/alert_rules.yml
+
+# Alerting configuration - send alerts to Alertmanager
+alerting:
+  alertmanagers:
+    - scheme: http
+      static_configs:
+        - targets: ["alertmanager.service.consul:9093"]
+
+# Scrape configuration - what to monitor
+scrape_configs:
+  # -----------------------------------------------------------------------
+  # Self-monitoring - Prometheus scrapes its own metrics
+  # -----------------------------------------------------------------------
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["127.0.0.1:9090"]
+        labels:
+          service: "prometheus"
+
+  # -----------------------------------------------------------------------
+  # Nomad cluster metrics - HTTPS endpoints with custom certs
+  # (Multiple servers are scraped; rules dedupe across servers)
+  # -----------------------------------------------------------------------
+  - job_name: "nomad"
+    metrics_path: "/v1/metrics"
+    params:
+      format: ["prometheus"]
+    scheme: "https"
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets:
+          - "mccoy:4646"
+          - "stabler:4646"
+          - "cabot:4646"
+          - "goren:4646"
+        labels:
+          cluster: "nomad"
+          role: "server"
+
+  # -----------------------------------------------------------------------
+  # Vault/OpenBao metrics - requires bearer token
+  # -----------------------------------------------------------------------
+  - job_name: "vault"
+    metrics_path: "/v1/sys/metrics"
+    params:
+      format: ["prometheus"]
+    scheme: "https"
+    bearer_token_file: "/etc/prometheus/secrets/vault_token"
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ["mccoy:8200"]
+        labels:
+          cluster: "vault-cluster-b193d95f"
+          service: "vault"
+
+  # -----------------------------------------------------------------------
+  # Node Exporter - Dynamic discovery via Consul
+  # -----------------------------------------------------------------------
+  - job_name: "node-exporter"
+    scrape_interval: 15s
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "127.0.0.1:8500"
+        token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
+        services: ["prometheus-node-exporter"]
+        datacenter: "dc1"
+    relabel_configs:
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - source_labels: ["__meta_consul_dc"]
+        target_label: "consul_dc"
+      - source_labels: ["__meta_consul_node_metadata_role"]
+        target_label: "node_role"
+
+  # -----------------------------------------------------------------------
+  # Consul cluster metrics - leader and followers
+  # -----------------------------------------------------------------------
+  - job_name: "consul"
+    metrics_path: "/v1/agent/metrics"
+    params:
+      format: ["prometheus"]
+    scheme: "http"
+    authorization:
+      credentials_file: "/etc/prometheus/secrets/consul_token"
+    static_configs:
+      - targets:
+          - "mccoy:8500"
+          - "stabler:8500"
+          - "cabot:8500"
+          - "goren:8500"
+        labels:
+          cluster: "consul"
+
+  # -----------------------------------------------------------------------
+  # Site monitoring via Blackbox Exporter (HTTPS-only targets)
+  # -----------------------------------------------------------------------
+  - job_name: "site_https"
+    metrics_path: "/probe"
+    params:
+      module: ["https_2xx"]
+    static_configs:
+      - targets:
+          - "https://resume.alexfreidah.com/"   # Public site via Cloudflare
+        labels:
+          vantage: "internal"
+    relabel_configs:
+      - source_labels: ["__address__"]
+        target_label: "__param_target"
+      - source_labels: ["__param_target"]
+        target_label: "instance"
+      - target_label: "__address__"
+        replacement: "127.0.0.1:9115"           # Blackbox exporter endpoint
+
+  # -----------------------------------------------------------------------
+  # Traefik metrics - load balancer stats (Consul SD)
+  # -----------------------------------------------------------------------
+  - job_name: "traefik"
+    scheme: "http"
+    consul_sd_configs:
+      - server: "127.0.0.1:8500"
+        token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
+        services: ["traefik"]
+        datacenter: "dc1"
+    relabel_configs:
+      # Force scrape to the Traefik metrics port regardless of service port
+      - source_labels: ["__meta_consul_service_address"]
+        regex: "(.+)"
+        target_label: "__address__"
+        replacement: "$1:8081"
+      - source_labels: ["__meta_consul_service"]
+        target_label: "service"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - source_labels: ["__meta_consul_tags"]
+        target_label: "consul_tags"
+

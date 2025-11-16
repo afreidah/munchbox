@@ -18,6 +18,9 @@ namespace       = "default"
 priority        = 50
 job_description = "Grafana dashboards with Prometheus and Loki integration"
 
+# --- Vault integration ---
+vault_role = "nomad-workloads"
+
 # --- Deployment and metadata ---
 deployment_profile = "canary"
 meta_profile       = "tier1"
@@ -95,16 +98,6 @@ task = {
   name   = "grafana"
   driver = "docker"
   user   = "root"
-
-  identity = {
-    env  = true
-    file = true
-    aud  = ["vault.io"]
-  }
-
-  vault = {
-    role = "nomad-workloads"
-  }
 
   config = {
     image              = "grafana/grafana:12.2.0"

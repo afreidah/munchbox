@@ -1,10 +1,13 @@
 # -------------------------------------------------------------------------------
-# Project: Munchbox
-# Author: Alex Freidah
-# -------------------------------------------------------------------------------
-# Hashi-UI Nomad and Consul cluster management dashboard
+# Hashi-UI — Nomad and Consul Cluster Management Dashboard
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Web-based dashboard for monitoring and managing Nomad and Consul clusters.
+# Provides unified view of cluster state, job management, and service discovery.
 # -------------------------------------------------------------------------------
 
+# --- Core job configuration ---
 job_name        = "hashi-ui"
 job_type        = "service"
 region          = "global"
@@ -13,25 +16,18 @@ node_pool       = "core"
 namespace       = "default"
 priority        = 50
 job_description = "Hashi-UI dashboard for Nomad and Consul management"
+
+# --- Deployment and metadata ---
 deployment_profile = "standard"
-meta_profile       = "standard"
+meta_profile       = "tier2"
 category           = "infrastructure"
-restart_attempts = 3
-restart_interval = "5m"
-restart_delay    = "15s"
-restart_mode     = "fail"
-reschedule_preset = "standard"
-resource_tier  = "medium"
+
+# --- Resource allocation ---
+resource_tier = "medium"
+
+# --- Network configuration ---
 network_preset = "host"
 dns_servers    = ["192.168.68.62", "192.168.68.64"]
-
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "mccoy"
-  }
-]
 
 ports = [
   {
@@ -40,93 +36,85 @@ ports = [
   }
 ]
 
-vault = {
-  enabled       = true
-  role          = "nomad-workloads"
-  policy        = ""
-  change_mode   = "restart"
-  change_signal = "SIGTERM"
-  env           = true
-  namespace     = ""
-  secrets       = {}
-  aud           = ["vault.io"]
+# --- Placement constraints ---
+constraints = [
+  {
+    attribute = "$${node.unique.name}"
+    operator  = "="
+    value     = "mccoy"
+  }
+]
+
+# --- Restart policy ---
+restart_attempts = 3
+restart_interval = "5m"
+restart_delay    = "15s"
+restart_mode     = "fail"
+
+# --- Reschedule policy ---
+reschedule_preset = "standard"
+
+# --- Vault integration ---
+vault_role = "nomad-workloads"
+
+# --- External configuration files ---
+external_files = {
+  enabled   = true
+  base_path = "jobs/infrastructure/hashi-ui/files"
 }
 
+external_templates = [
+  {
+    destination = "secrets/nomad.env"
+    source_file = "nomad.env.tpl"
+    env         = true
+    perms       = "0600"
+    change_mode = "restart"
+  }
+]
+
+# --- Task definition ---
 task = {
   name   = "hashi-ui"
   driver = "docker"
 
-  identity = {
-    env = true
-    file = true
-    aud = ["vault.io"]
-  }
-
   config = {
-    image        = "jippi/hashi-ui"
-    network_mode = "host"
-    ports        = ["http"]
+    image = "jippi/hashi-ui"
+    ports = ["http"]
     volumes = [
       "/opt/nomad/tls/nomad-agent-ca.pem:/etc/ssl/certs/nomad-agent-ca.pem"
     ]
   }
 
-  templates = [
-    {
-      destination = "secrets/nomad.env"
-      env         = true
-      perms       = "0644"
-      change_mode = "restart"
-      data = <<-EOF
-{{ with secret "secret/data/hashiuisecret" }}
-NOMAD_ACL_TOKEN={{ .Data.data.token }}
-{{ end }}
-NOMAD_REGION=global
-EOF
-    }
-  ]
-
   env = {
     NOMAD_ENABLE  = "1"
     NOMAD_ADDR    = "https://mccoy:4646"
     NOMAD_CACERT  = "/etc/ssl/certs/nomad-agent-ca.pem"
+    NOMAD_REGION  = "global"
     CONSUL_ENABLE = "1"
     CONSUL_ADDR   = "http://mccoy:8500"
     CONSUL_CACERT = "/etc/ssl/certs/nomad-agent-ca.pem"
-  }
-
-  service = {
-    name = "hashi-ui"
-    port = "http"
-    tags = [
-      "traefik.enable=true",
-      "traefik.http.routers.nomad.rule=Host(`nomad.munchbox`)",
-      "traefik.http.routers.nomad.entrypoints=websecure",
-      "traefik.http.routers.nomad.tls=true",
-      "traefik.http.routers.nomad.middlewares=dashboard-allowlan@file",
-      "traefik.http.services.nomad.loadbalancer.server.port=3100",
-      "infrastructure",
-      "nomad",
-      "consul",
-      "monitoring"
-    ]
-
-    checks = [
-      {
-        name     = "hashi-ui"
-        type     = "http"
-        path     = "/"
-        interval = "10s"
-        timeout  = "2s"
-      }
-    ]
   }
 
   resources = {
     cpu    = 500
     memory = 512
   }
-
-  kill_timeout = "30s"
-  kill_signal  = "SIGTERM"
 }
+
+# --- Standard service configuration ---
+standard_service_enabled     = true
+standard_service_port        = "http"
+standard_service_port_number = 3100
+standard_http_check_enabled  = true
+standard_http_check_path     = "/"
+additional_tags = [
+  "infrastructure",
+  "nomad",
+  "consul",
+  "monitoring"
+]
+
+# --- Termination ---
+kill_timeout = "30s"
+kill_signal  = "SIGTERM"
