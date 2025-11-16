@@ -15,6 +15,7 @@ datacenters     = ["pi-dc"]
 node_pool       = "core"
 namespace       = "default"
 priority        = 50
+count           = 1
 job_description = "Static resume site with Nginx and rate limiting"
 
 # --- Deployment and metadata ---
