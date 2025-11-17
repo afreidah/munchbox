@@ -1,13 +1,7 @@
 # -------------------------------------------------------------------------------
 # Docker Registry UI — Web Interface for Registry Mirror
-#
-# Project: Munchbox / Author: Alex Freidah
-#
-# Provides a user-friendly web UI for browsing and managing Docker images
-# in the private registry. Authenticates via basic auth and proxies to registry.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
 job_name        = "registry-ui"
 job_type        = "service"
 region          = "global"
@@ -15,45 +9,33 @@ datacenters     = ["pi-dc"]
 node_pool       = "core"
 namespace       = "default"
 priority        = 50
-job_description = "Docker registry web UI — browse and manage images in private registry"
+job_description = "Docker registry web UI via Connect mesh"
 
-# --- Deployment and metadata ---
 deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "infrastructure"
 
-# --- Resource allocation ---
-resource_tier = "small"
-
-# --- Network configuration ---
+resource_tier  = "small"
 network_preset = "bridge"
 
 ports = [
   {
     name = "http"
-    to   = 5001
+    to   = 80
   }
 ]
 
-# --- Placement constraints ---
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "goren"
-  }
-]
+restart_attempts = 5
+restart_interval = "10m"
+restart_delay    = "30s"
+restart_mode     = "delay"
 
-# --- Restart policy ---
-restart_attempts = 3
-restart_interval = "5m"
-restart_delay    = "15s"
-restart_mode     = "fail"
-
-# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# --- Task definition ---
+# -----------------------------------------------------------------------
+# Task Configuration
+# -----------------------------------------------------------------------
+
 task = {
   name   = "registry-ui"
   driver = "docker"
@@ -64,23 +46,39 @@ task = {
   }
 
   env = {
-    REGISTRY_URL        = "http://goren:5000"
-    REGISTRY_TITLE      = "Docker Registry Mirror"
-    DELETE_IMAGES       = "false"
-    REGISTRY_BASIC_AUTH = "true"
-    REGISTRY_USERNAME   = "alex.freidah"
-    REGISTRY_PASSWORD   = "changeme"
-    TZ                  = "UTC"
+    REGISTRY_URL         = "https://registry-ui.munchbox"
+    NGINX_PROXY_PASS_URL = "http://localhost:5000"
+    SINGLE_REGISTRY      = "true"
+    REGISTRY_TITLE       = "Docker Registry Mirror"
+    DELETE_IMAGES        = "false"
+    TZ                   = "UTC"
   }
 
   service = {
-    name     = "docker-registry-ui"
+    name     = "registry-ui"
     port     = "http"
     provider = "consul"
     tags = [
+      "traefik.enable=true",
+      "traefik.http.routers.registry-ui.rule=Host(`registry-ui.munchbox`)",
+      "traefik.http.routers.registry-ui.entrypoints=websecure",
+      "traefik.http.routers.registry-ui.tls=true",
+      "traefik.http.routers.registry-ui.middlewares=dashboard-allowlan@file",
+      "traefik.http.services.registry-ui.loadbalancer.server.port=80",
       "registry-ui",
       "docker",
       "ui"
+    ]
+    checks = [
+      {
+        name         = "registry-ui-http"
+        type         = "http"
+        port         = "http"
+        path         = "/"
+        interval     = "30s"
+        timeout      = "5s"
+        address_mode = "alloc"
+      }
     ]
   }
 
@@ -90,9 +88,29 @@ task = {
   }
 }
 
-# --- Standard service configuration ---
+# -----------------------------------------------------------------------
+# Consul Connect Configuration
+# -----------------------------------------------------------------------
+
+consul_connect_enabled = true
+
+connect_upstreams = [
+  {
+    destination_name = "docker-mirror"
+    local_bind_port  = 5000
+  }
+]
+
+connect_sidecar_resources = {
+  cpu    = 100
+  memory = 64
+}
+
+# -----------------------------------------------------------------------
+# Disable Standard Service (using custom instead)
+# -----------------------------------------------------------------------
+
 standard_service_enabled = false
 
-# --- Termination ---
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"

@@ -41,9 +41,10 @@ network_preset = "bridge"
 
 ports = [
   {
-    name   = "registry"
-    to     = 5000
-    static = 5000
+    name         = "registry"
+    to           = 5000
+    static       = 5000
+    host_network = "default"
   }
 ]
 

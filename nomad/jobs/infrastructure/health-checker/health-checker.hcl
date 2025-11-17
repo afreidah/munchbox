@@ -27,13 +27,13 @@ ports = [
   }
 ]
 
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "goren"
-  }
-]
+#constraints = [
+#  {
+#    attribute = "$${node.unique.name}"
+#    operator  = "="
+#    value     = "goren"
+#  }
+#]
 
 task = {
   name   = "health-checker"
