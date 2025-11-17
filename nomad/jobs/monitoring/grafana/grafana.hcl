@@ -4,73 +4,70 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Provides Grafana dashboards with Prometheus and Loki datasource integration
-# via Consul DNS. Provisioned datasources authoritative to prevent drift, and
-# Traefik HTTPS routing.
+# via Consul Connect service mesh. Upstreams configured for secure mTLS
+# communication with data sources.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
+# -----------------------------------------------------------------------
+# Core Configuration
+# -----------------------------------------------------------------------
+
 job_name        = "grafana"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
-node_pool       = "edge"
 namespace       = "default"
 priority        = 50
 job_description = "Grafana dashboards with Prometheus and Loki integration"
 
-# --- Vault integration ---
+# -----------------------------------------------------------------------
+# Vault Integration
+# -----------------------------------------------------------------------
+
 vault_role = "nomad-workloads"
 
-# --- Deployment and metadata ---
+# -----------------------------------------------------------------------
+# Deployment Strategy
+# -----------------------------------------------------------------------
+
 deployment_profile = "canary"
 meta_profile       = "tier1"
 category           = "monitoring"
 
-# --- Resource allocation ---
+# -----------------------------------------------------------------------
+# Resources
+# -----------------------------------------------------------------------
+
 resource_tier = "small"
 
-# --- Network configuration ---
-network_preset = "host"
+# -----------------------------------------------------------------------
+# Networking
+# -----------------------------------------------------------------------
+
+network_preset = "bridge"
 
 ports = [
   {
-    name   = "web"
-    static = 3000
+    name = "web"
+    to   = 3000
   }
 ]
 
-dns_servers  = ["192.168.68.62", "192.168.68.64"]
-dns_searches = ["service.consul"]
-dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
+# -----------------------------------------------------------------------
+# Restart & Reschedule Policies
+# -----------------------------------------------------------------------
 
-# --- Placement constraints ---
-constraints = [
-  {
-    attribute = "$${node.class}"
-    operator  = "="
-    value     = "utility"
-  }
-]
-
-# --- Persistent storage volume ---
-volume = {
-  name       = "grafana-data"
-  type       = "host"
-  source     = "grafana-data"
-  mount_path = "/var/lib/grafana"
-  read_only  = false
-}
-
-# --- Restart policy ---
 restart_attempts = 5
 restart_interval = "10m"
 restart_delay    = "30s"
 restart_mode     = "fail"
 
-# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# --- External configuration files ---
+# -----------------------------------------------------------------------
+# External Configuration Files
+# -----------------------------------------------------------------------
+
 external_files = {
   enabled   = true
   base_path = "jobs/monitoring/grafana/files"
@@ -93,7 +90,10 @@ external_templates = [
   }
 ]
 
-# --- Task definition ---
+# -----------------------------------------------------------------------
+# Task Definition
+# -----------------------------------------------------------------------
+
 task = {
   name   = "grafana"
   driver = "docker"
@@ -103,32 +103,58 @@ task = {
     image              = "grafana/grafana:12.2.0"
     ports              = ["web"]
     image_pull_timeout = "10m"
-    dns_search_domains = ["service.consul"]
-    dns_options        = ["timeout:2", "attempts:3", "ndots:1"]
     volumes = [
-      "local/grafana-provisioning:/etc/grafana/provisioning"
+      "local/grafana-provisioning:/etc/grafana/provisioning",
+      "/mnt/gdrive/munchbox-data/grafana:/var/lib/grafana"
     ]
   }
 
   env = {
     GF_SERVER_SERVE_FROM_SUB_PATH = "false"
     GF_SERVER_ROOT_URL            = "https://grafana.munchbox/"
-    NO_PROXY                      = "localhost,127.0.0.1,*.service.consul,service.consul,192.168.68.0/24"
-  }
-
-  resources = {
-    tier = "small"
   }
 }
 
-# --- Standard service configuration ---
+# -----------------------------------------------------------------------
+# Consul Connect
+# -----------------------------------------------------------------------
+
+consul_connect_enabled = true
+
+connect_upstreams = [
+  {
+    destination_name = "prometheus"
+    local_bind_port  = 9090
+  },
+  {
+    destination_name = "loki"
+    local_bind_port  = 3100
+  }
+]
+
+# -----------------------------------------------------------------------
+# Service Registration
+# -----------------------------------------------------------------------
+
 standard_service_enabled     = true
 standard_service_port        = "web"
 standard_service_port_number = 3000
 standard_http_check_enabled  = true
 standard_http_check_path     = "/api/health"
-additional_tags              = ["monitoring", "grafana"]
 
-# --- Termination ---
+additional_tags = [
+  "traefik.enable=true",
+  "traefik.http.routers.grafana.rule=Host(`grafana.munchbox`)",
+  "traefik.http.routers.grafana.entrypoints=websecure",
+  "traefik.http.routers.grafana.tls=true",
+  "traefik.http.routers.grafana.middlewares=dashboard-allowlan@file",
+  "monitoring",
+  "grafana"
+]
+
+# -----------------------------------------------------------------------
+# Termination
+# -----------------------------------------------------------------------
+
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"

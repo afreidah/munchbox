@@ -109,7 +109,7 @@ task = {
     ports              = ["web"]
     cap_add            = ["CHOWN", "FOWNER"]
     volumes = [
-      "/opt/nomad/data/deluge-data/downloads:/downloads",
+      "/mnt/gdrive/nomad_deluge_downloads:/downloads",
       "/mnt/gdrive/nomad_deluge_downloads:/completed"
     ]
     entrypoint = ["/local/entrypoint.sh"]

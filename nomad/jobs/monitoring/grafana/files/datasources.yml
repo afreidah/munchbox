@@ -8,29 +8,12 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus.service.consul:9090
+    url: http://localhost:9090  # ← Connect upstream
     isDefault: true
     editable: false
-    jsonData:
-      httpMethod: POST
-      timeInterval: 15s
 
   - name: Loki
     type: loki
     access: proxy
-    url: http://loki.service.consul:3100
-    isDefault: false
+    url: http://localhost:3100  # ← Connect upstream
     editable: false
-    jsonData:
-      maxLines: 1000
-    version: 1
-
-  - name: Prometheus-Self
-    type: prometheus
-    access: proxy
-    url: http://prometheus.service.consul:9090
-    jsonData:
-      scrapeInterval: 15s
-      exemplarTraceIdDestinations:
-        - name: trace_id
-          datasourceUid: tempo

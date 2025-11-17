@@ -3,9 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Collects metrics from all cluster services via Consul DNS discovery with
-# dynamic target registration. Runs HTTPS-only site availability probes,
-# maintains 30-day TSDB retention with WAL compression, and evaluates alert
+# Collects metrics from all cluster services via Consul Connect mesh.
+# Maintains 30-day TSDB retention with WAL compression, and evaluates alert
 # rules for system events. Persistent storage on cabot node.
 # -------------------------------------------------------------------------------
 
@@ -28,12 +27,12 @@ category           = "monitoring"
 resource_tier = "medium"
 
 # --- Network configuration ---
-network_preset = "host"
+network_preset = "bridge"
 
 ports = [
   {
-    name   = "web"
-    static = 9090
+    name = "web"
+    to   = 9090
   }
 ]
 
@@ -134,16 +133,6 @@ task = {
     image              = "prom/prometheus:v2.54.1"
     ports              = ["web"]
     image_pull_timeout = "10m"
-    network_mode       = "host"
-
-    extra_hosts = [
-      "goren:192.168.68.60",
-      "green:192.168.68.62",
-      "logan:192.168.68.64",
-      "stabler:192.168.68.61",
-      "mccoy:192.168.68.63",
-      "cabot:192.168.68.59",
-    ]
 
     args = [
       "--config.file=/etc/prometheus/config/prometheus.yml",
@@ -172,21 +161,28 @@ task = {
   resources = {
     tier = "medium"
   }
-
-  # Termination settings
-  kill_timeout   = "60s"
-  kill_signal    = "SIGTERM"
-  shutdown_delay = "30s"
 }
 
-# --- Standard service configuration ---
-standard_service_enabled     = true
-standard_service_port        = "web"
-standard_service_port_number = 9090
-standard_http_check_enabled  = true
-standard_http_check_path     = "/-/ready"
-additional_tags              = ["monitoring", "prometheus", "metrics"]
+# --- Consul Connect ---
+consul_connect_enabled = true
 
-# --- Termination (job-level) ---
+# --- Standard service configuration ---
+standard_service_enabled    = true
+standard_service_port       = "web"
+standard_http_check_enabled = true
+standard_http_check_path    = "/-/ready"
+
+additional_tags = [
+  "traefik.enable=true",
+  "traefik.http.routers.prometheus.rule=Host(`prometheus.munchbox`)",
+  "traefik.http.routers.prometheus.entrypoints=websecure",
+  "traefik.http.routers.prometheus.tls=true",
+  "traefik.http.routers.prometheus.middlewares=dashboard-allowlan@file",
+  "monitoring",
+  "prometheus",
+  "metrics"
+]
+
+# --- Termination ---
 kill_timeout = "60s"
 kill_signal  = "SIGTERM"
