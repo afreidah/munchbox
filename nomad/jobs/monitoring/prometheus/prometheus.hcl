@@ -2,13 +2,8 @@
 # Prometheus — Metrics Collection with Alert Rules and Dynamic Discovery
 #
 # Project: Munchbox / Author: Alex Freidah
-#
-# Collects metrics from all cluster services via Consul service discovery.
-# Maintains 30-day TSDB retention with WAL compression, and evaluates alert
-# rules for system events. Persistent storage on cabot node.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
 job_name        = "prometheus"
 job_type        = "service"
 region          = "global"
@@ -18,21 +13,17 @@ namespace       = "default"
 priority        = 50
 job_description = "Prometheus metrics collection with alerting"
 
-# --- Deployment and metadata ---
 deployment_profile = "standard"
 meta_profile       = "tier1"
 category           = "monitoring"
 
-# --- Resource allocation ---
-resource_tier = "medium"
-
-# --- Network configuration ---
-network_preset = "bridge"
+resource_tier  = "medium"
+network_preset = "host"  # Changed to host
 
 ports = [
   {
-    name = "web"
-    to   = 9090
+    name   = "web"
+    static = 9090  # Changed to static for host networking
   }
 ]
 
@@ -40,7 +31,6 @@ dns_servers  = ["192.168.68.62", "192.168.68.64"]
 dns_searches = ["service.consul"]
 dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
 
-# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -49,7 +39,6 @@ constraints = [
   }
 ]
 
-# --- Persistent TSDB storage volume ---
 volume = {
   name       = "prometheus-data"
   type       = "host"
@@ -58,26 +47,14 @@ volume = {
   read_only  = false
 }
 
-# --- Restart policy ---
-restart_attempts = 5
-restart_interval = "10m"
-restart_delay    = "30s"
-restart_mode     = "fail"
-
-# --- Reschedule policy ---
-reschedule_preset = "standard"
-
-# --- Vault integration ---
 vault_role = "nomad-workloads"
 
-# --- External configuration files ---
 external_files = {
   enabled   = true
   base_path = "jobs/monitoring/prometheus/files"
 }
 
 external_templates = [
-  # Main Prometheus config
   {
     destination     = "local/config/prometheus.yml"
     source_file     = "prometheus.yml"
@@ -87,8 +64,6 @@ external_templates = [
     left_delimiter  = "[["
     right_delimiter = "]]"
   },
-
-  # Alerting rules
   {
     destination     = "local/config/alert_rules.yml"
     source_file     = "alert_rules.yml"
@@ -99,8 +74,6 @@ external_templates = [
     left_delimiter  = "[["
     right_delimiter = "]]"
   },
-
-  # Consul token (from KV)
   {
     destination     = "local/secrets/consul_token"
     source_file     = "consul_token.tpl"
@@ -110,8 +83,6 @@ external_templates = [
     left_delimiter  = "[["
     right_delimiter = "]]"
   },
-
-  # Vault token (from KV)
   {
     destination     = "local/secrets/vault_token"
     source_file     = "vault_token.tpl"
@@ -123,7 +94,6 @@ external_templates = [
   }
 ]
 
-# --- Task definition ---
 task = {
   name   = "prometheus"
   driver = "docker"
@@ -158,45 +128,24 @@ task = {
     PROMETHEUS_WEB_ENABLE_ADMIN_API = "true"
   }
 
-  service = {
-    name     = "prometheus"
-    port     = "web"
-    provider = "consul"
-    tags = [
-      "traefik.enable=true",
-      "traefik.http.routers.prometheus.rule=Host(`prometheus.munchbox`)",
-      "traefik.http.routers.prometheus.entrypoints=websecure",
-      "traefik.http.routers.prometheus.tls=true",
-      "traefik.http.routers.prometheus.middlewares=dashboard-allowlan@file",
-      "monitoring",
-      "prometheus",
-      "metrics"
-    ]
-    checks = [
-      {
-        name     = "prometheus-ready"
-        type     = "http"
-        path     = "/-/ready"
-        interval = "10s"
-        timeout  = "3s"
-      }
-    ]
-  }
-
   resources = {
     tier = "medium"
   }
 }
 
-# --- Consul Connect: DISABLED ---
-# Prometheus needs to scrape services that aren't on Connect yet
-# and needs to be reachable by Traefik for dashboard access
-consul_connect_enabled = false
+consul_connect_enabled = false  # Disabled for Prometheus - needs direct network access
 
-# --- Standard service configuration: DISABLED ---
-# Using custom service registration instead to avoid loadbalancer.server.port tag
-standard_service_enabled = false
+standard_service_enabled     = true
+standard_service_port        = "web"
+standard_service_port_number = 9090
+standard_http_check_enabled  = true
+standard_http_check_path     = "/-/ready"
 
-# --- Termination ---
+additional_tags = [
+  "monitoring",
+  "prometheus",
+  "metrics"
+]
+
 kill_timeout = "60s"
 kill_signal  = "SIGTERM"

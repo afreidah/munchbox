@@ -43,9 +43,9 @@ scrape_configs:
       insecure_skip_verify: true
     static_configs:
       - targets:
+          - "192.168.68.59:4646"  # cabot
           - "192.168.68.63:4646"  # mccoy
           - "192.168.68.61:4646"  # stabler
-          - "172.26.64.1:4646"    # cabot (via gateway from bridge mode)
           - "192.168.68.60:4646"  # goren
         labels:
           cluster: "nomad"
@@ -63,7 +63,7 @@ scrape_configs:
     tls_config:
       insecure_skip_verify: true
     static_configs:
-      - targets: ["172.26.64.1:8200"]
+      - targets: ["mccoy:8200"]  # hostname instead of IP
         labels:
           cluster: "vault-cluster-b193d95f"
           service: "vault"
@@ -75,7 +75,7 @@ scrape_configs:
     scrape_interval: 15s
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "172.26.64.1:8500"
+      - server: "192.168.68.59:8500"
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["prometheus-node-exporter"]
         datacenter: "dc1"
@@ -99,9 +99,9 @@ scrape_configs:
       credentials_file: "/etc/prometheus/secrets/consul_token"
     static_configs:
       - targets:
+          - "192.168.68.59:8500"  # cabot - FIXED from :4646
           - "192.168.68.63:8500"  # mccoy
           - "192.168.68.61:8500"  # stabler
-          - "172.26.64.1:8500"    # cabot (via gateway from bridge mode)
           - "192.168.68.60:8500"  # goren
         labels:
           cluster: "consul"
@@ -115,7 +115,7 @@ scrape_configs:
       module: ["https_2xx"]
     static_configs:
       - targets:
-          - "https://resume.alexfreidah.com/"   # Public site via Cloudflare
+          - "https://resume.alexfreidah.com/"
         labels:
           vantage: "internal"
     relabel_configs:
@@ -124,7 +124,7 @@ scrape_configs:
       - source_labels: ["__param_target"]
         target_label: "instance"
       - target_label: "__address__"
-        replacement: "172.26.64.1:9115"
+        replacement: "192.168.68.59:9115"
 
   # -----------------------------------------------------------------------
   # Traefik metrics - load balancer stats (Consul SD)
@@ -132,12 +132,11 @@ scrape_configs:
   - job_name: "traefik"
     scheme: "http"
     consul_sd_configs:
-      - server: "172.26.64.1:8500"
+      - server: "192.168.68.59:8500"
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["traefik"]
         datacenter: "dc1"
     relabel_configs:
-      # Force scrape to the Traefik metrics port regardless of service port
       - source_labels: ["__meta_consul_service_address"]
         regex: "(.+)"
         target_label: "__address__"
