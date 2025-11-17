@@ -3,66 +3,65 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Private Docker registry for Munchbox cluster. Stores images locally with
-# proper CORS headers for multi-host access.
+# Private Docker registry for Munchbox cluster. Stores images on shared storage
+# for portability across nodes with proper CORS headers for multi-host access.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
+# -----------------------------------------------------------------------
+# Core Configuration
+# -----------------------------------------------------------------------
+
 job_name        = "registry"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
 namespace       = "default"
-node_pool       = "core"
 priority        = 50
-job_description = "Private Docker registry with CORS support"
+job_description = "Private Docker registry with CORS support - portable storage"
 
-# --- Deployment and metadata ---
+# -----------------------------------------------------------------------
+# Deployment Strategy
+# -----------------------------------------------------------------------
+
 deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "infrastructure"
 
-# --- Resource allocation ---
+# -----------------------------------------------------------------------
+# Resources
+# -----------------------------------------------------------------------
+
 resource_tier = "small"
 
-# --- Network configuration ---
-network_preset = "host"
+# -----------------------------------------------------------------------
+# Networking
+# -----------------------------------------------------------------------
+
+network_preset = "bridge"
 
 ports = [
   {
     name   = "registry"
+    to     = 5000
     static = 5000
   }
 ]
 
-# --- Placement constraints ---
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "goren"
-  }
-]
+# -----------------------------------------------------------------------
+# Restart & Reschedule Policies
+# -----------------------------------------------------------------------
 
-# --- Persistent storage volume ---
-volume = {
-  name       = "registry-data"
-  type       = "host"
-  source     = "registry-data"
-  mount_path = "/var/lib/registry"
-  read_only  = false
-}
-
-# --- Restart policy ---
 restart_attempts = 3
 restart_interval = "5m"
 restart_delay    = "15s"
 restart_mode     = "fail"
 
-# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# --- External configuration files ---
+# -----------------------------------------------------------------------
+# External Configuration Files
+# -----------------------------------------------------------------------
+
 external_files = {
   enabled   = true
   base_path = "jobs/infrastructure/registry/files"
@@ -78,7 +77,10 @@ external_templates = [
   }
 ]
 
-# --- Task definition ---
+# -----------------------------------------------------------------------
+# Task Definition
+# -----------------------------------------------------------------------
+
 task = {
   name   = "registry"
   driver = "docker"
@@ -87,7 +89,8 @@ task = {
     image = "registry:2"
     ports = ["registry"]
     volumes = [
-      "local/config:/etc/docker/registry"
+      "local/config:/etc/docker/registry",
+      "/mnt/gdrive/munchbox-data/registry:/var/lib/registry"
     ]
   }
 
@@ -114,16 +117,23 @@ task = {
       }
     ]
   }
-
-  resources = {
-    cpu    = 250
-    memory = 256
-  }
 }
 
-# --- Standard service configuration ---
+# -----------------------------------------------------------------------
+# Consul Connect
+# -----------------------------------------------------------------------
+
+consul_connect_enabled = true
+
+# -----------------------------------------------------------------------
+# Service Registration
+# -----------------------------------------------------------------------
+
 standard_service_enabled = false
 
-# --- Termination ---
+# -----------------------------------------------------------------------
+# Termination
+# -----------------------------------------------------------------------
+
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"

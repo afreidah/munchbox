@@ -8,44 +8,60 @@
 # bot integration. Provides web UI with LAN-only access via Traefik routing.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
+# -----------------------------------------------------------------------
+# Core Configuration
+# -----------------------------------------------------------------------
+
 job_name        = "alertmanager"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
-node_pool       = "core"
 namespace       = "default"
 priority        = 50
 job_description = "Alertmanager with Telegram notification routing"
 
-# --- Deployment and metadata ---
+# -----------------------------------------------------------------------
+# Deployment Strategy
+# -----------------------------------------------------------------------
+
 deployment_profile = "standard"
 meta_profile       = "tier1"
 category           = "monitoring"
 
-# --- Resource allocation ---
+# -----------------------------------------------------------------------
+# Resources
+# -----------------------------------------------------------------------
+
 resource_tier = "tiny"
 
-# --- Network configuration ---
-network_preset = "host"
+# -----------------------------------------------------------------------
+# Networking
+# -----------------------------------------------------------------------
+
+network_preset = "bridge"
 
 ports = [
   {
-    name   = "web"
-    static = 9093
+    name = "web"
+    to   = 9093
   }
 ]
 
-# --- Restart policy ---
+# -----------------------------------------------------------------------
+# Restart & Reschedule Policies
+# -----------------------------------------------------------------------
+
 restart_attempts = 5
 restart_interval = "10m"
 restart_delay    = "15s"
 restart_mode     = "delay"
 
-# --- Reschedule policy ---
 reschedule_preset = "standard"
 
-# --- External configuration files ---
+# -----------------------------------------------------------------------
+# External Configuration Files
+# -----------------------------------------------------------------------
+
 external_files = {
   enabled   = true
   base_path = "jobs/monitoring/alertmanager/files"
@@ -64,14 +80,17 @@ external_templates = [
   }
 ]
 
-# --- Task definition ---
+# -----------------------------------------------------------------------
+# Task Definition
+# -----------------------------------------------------------------------
+
 task = {
   name   = "alertmanager"
   driver = "docker"
 
   config = {
-    image  = "quay.io/prometheus/alertmanager:v0.29.0"
-    ports  = ["web"]
+    image = "quay.io/prometheus/alertmanager:v0.29.0"
+    ports = ["web"]
     args = [
       "--config.file=/etc/alertmanager/alertmanager.yml",
       "--web.listen-address=0.0.0.0:9093",
@@ -79,7 +98,8 @@ task = {
       "--cluster.listen-address="
     ]
     volumes = [
-      "local/config:/etc/alertmanager:ro"
+      "local/config:/etc/alertmanager:ro",
+      "/mnt/gdrive/munchbox-data/alertmanager:/alertmanager"
     ]
   }
 
@@ -88,13 +108,18 @@ task = {
     ALERTMANAGER_WEB_EXTERNAL_URL       = "https://alertmanager.munchbox/"
     ALERTMANAGER_CLUSTER_LISTEN_ADDRESS = ""
   }
-
-  resources = {
-    tier = "tiny"
-  }
 }
 
-# --- Standard service configuration ---
+# -----------------------------------------------------------------------
+# Consul Connect
+# -----------------------------------------------------------------------
+
+consul_connect_enabled = true
+
+# -----------------------------------------------------------------------
+# Service Registration
+# -----------------------------------------------------------------------
+
 standard_service_enabled     = true
 standard_service_port        = "web"
 standard_service_port_number = 9093
@@ -102,7 +127,9 @@ standard_http_check_enabled  = true
 standard_http_check_path     = "/-/ready"
 additional_tags              = ["monitoring", "alertmanager", "notifications", "telegram"]
 
-# --- Termination ---
+# -----------------------------------------------------------------------
+# Termination
+# -----------------------------------------------------------------------
+
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
-

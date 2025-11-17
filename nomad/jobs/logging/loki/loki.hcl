@@ -9,7 +9,7 @@ job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
 namespace       = "default"
-node_pool       = "edge"
+node_pool       = "utility"
 priority        = 50
 job_description = "Loki centralized log aggregation with 5-day retention"
 
@@ -18,16 +18,16 @@ meta_profile       = "tier1"
 category           = "logging"
 
 resource_tier  = "medium"
-network_preset = "host"
+network_preset = "bridge"
 
 ports = [
   {
-    name   = "http"
-    static = 3100
+    name = "http"
+    to   = 3100
   },
   {
-    name   = "grpc"
-    static = 9096
+    name = "grpc"
+    to   = 9096
   }
 ]
 
@@ -64,6 +64,8 @@ external_templates = [
 task = {
   name   = "loki"
   driver = "docker"
+  user   = "root"
+  
   config = {
     image = "grafana/loki:3.5.8"
     ports = ["http", "grpc"]
@@ -74,21 +76,36 @@ task = {
       "local/config:/etc/loki:ro"
     ]
   }
+  
   env = {
     TZ = "America/Los_Angeles"
   }
+  
   resources = {
     cpu    = 500
     memory = 512
   }
 }
 
-standard_service_enabled     = true
-standard_service_port        = "http"
-standard_service_port_number = 3100
-standard_http_check_enabled  = true
-standard_http_check_path     = "/ready"
-additional_tags              = ["logging", "loki", "observability"]
+# --- Consul Connect ---
+consul_connect_enabled = true
+
+# --- Standard service configuration ---
+standard_service_enabled    = true
+standard_service_port       = "http"
+standard_http_check_enabled = true
+standard_http_check_path    = "/ready"
+
+additional_tags = [
+  "traefik.enable=true",
+  "traefik.http.routers.loki.rule=Host(`loki.munchbox`)",
+  "traefik.http.routers.loki.entrypoints=websecure",
+  "traefik.http.routers.loki.tls=true",
+  "traefik.http.routers.loki.middlewares=dashboard-allowlan@file",
+  "logging",
+  "loki",
+  "observability"
+]
 
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
