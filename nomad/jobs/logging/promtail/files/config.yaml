@@ -1,9 +1,10 @@
+# jobs/logging/promtail/files/config.yaml
 server:
   http_listen_port: 9080
   log_level: info
 
 clients:
-  - url: http://loki.service.consul:3100/loki/api/v1/push
+  - url: http://localhost:3100/loki/api/v1/push  # ← Changed from loki.service.consul
 
 scrape_configs:
   # -----------------------------------------------------------------

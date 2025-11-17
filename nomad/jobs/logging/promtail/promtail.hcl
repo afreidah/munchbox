@@ -2,6 +2,10 @@
 # Promtail — Log Collection Agent
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Collects logs from systemd journal and Nomad allocations, forwarding to Loki
+# via Consul Connect service mesh. Uses bridge networking with host volume mounts
+# for filesystem access while maintaining zero-trust connectivity.
 # -------------------------------------------------------------------------------
 
 job_name        = "promtail"
@@ -18,12 +22,12 @@ meta_profile       = "tier2"
 category           = "monitoring"
 
 resource_tier  = "tiny"
-network_preset = "host"
+network_preset = "bridge"  # Changed from "host" - required for Connect
 
 ports = [
   {
-    name   = "http"
-    static = 9080
+    name = "http"
+    to   = 9080  # Changed from static - bridge mode uses dynamic ports
   }
 ]
 
@@ -75,14 +79,24 @@ task = {
   }
 }
 
+# --- Consul Connect configuration ---
+consul_connect_enabled = true
+
+connect_upstreams = [
+  {
+    destination_name = "loki"
+    local_bind_port  = 3100
+  }
+]
+
 use_node_hostname = true
 
-standard_service_enabled    = true
-standard_service_port       = "http"
+standard_service_enabled     = true
+standard_service_port        = "http"
 standard_service_port_number = 9080
-standard_http_check_enabled = true
-standard_http_check_path    = "/ready"
-additional_tags             = ["logging", "promtail", "metrics"]
+standard_http_check_enabled  = true
+standard_http_check_path     = "/ready"
+additional_tags              = ["logging", "promtail", "metrics"]
 
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"

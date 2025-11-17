@@ -3,7 +3,7 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Collects metrics from all cluster services via Consul Connect mesh.
+# Collects metrics from all cluster services via Consul service discovery.
 # Maintains 30-day TSDB retention with WAL compression, and evaluates alert
 # rules for system events. Persistent storage on cabot node.
 # -------------------------------------------------------------------------------
@@ -158,30 +158,44 @@ task = {
     PROMETHEUS_WEB_ENABLE_ADMIN_API = "true"
   }
 
+  service = {
+    name     = "prometheus"
+    port     = "web"
+    provider = "consul"
+    tags = [
+      "traefik.enable=true",
+      "traefik.http.routers.prometheus.rule=Host(`prometheus.munchbox`)",
+      "traefik.http.routers.prometheus.entrypoints=websecure",
+      "traefik.http.routers.prometheus.tls=true",
+      "traefik.http.routers.prometheus.middlewares=dashboard-allowlan@file",
+      "monitoring",
+      "prometheus",
+      "metrics"
+    ]
+    checks = [
+      {
+        name     = "prometheus-ready"
+        type     = "http"
+        path     = "/-/ready"
+        interval = "10s"
+        timeout  = "3s"
+      }
+    ]
+  }
+
   resources = {
     tier = "medium"
   }
 }
 
-# --- Consul Connect ---
-consul_connect_enabled = true
+# --- Consul Connect: DISABLED ---
+# Prometheus needs to scrape services that aren't on Connect yet
+# and needs to be reachable by Traefik for dashboard access
+consul_connect_enabled = false
 
-# --- Standard service configuration ---
-standard_service_enabled    = true
-standard_service_port       = "web"
-standard_http_check_enabled = false
-standard_http_check_path    = "/-/ready"
-
-additional_tags = [
-  "traefik.enable=true",
-  "traefik.http.routers.prometheus.rule=Host(`prometheus.munchbox`)",
-  "traefik.http.routers.prometheus.entrypoints=websecure",
-  "traefik.http.routers.prometheus.tls=true",
-  "traefik.http.routers.prometheus.middlewares=dashboard-allowlan@file",
-  "monitoring",
-  "prometheus",
-  "metrics"
-]
+# --- Standard service configuration: DISABLED ---
+# Using custom service registration instead to avoid loadbalancer.server.port tag
+standard_service_enabled = false
 
 # --- Termination ---
 kill_timeout = "60s"

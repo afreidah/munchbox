@@ -43,10 +43,10 @@ scrape_configs:
       insecure_skip_verify: true
     static_configs:
       - targets:
-          - "mccoy:4646"
-          - "stabler:4646"
-          - "cabot:4646"
-          - "goren:4646"
+          - "192.168.68.63:4646"  # mccoy
+          - "192.168.68.61:4646"  # stabler
+          - "172.26.64.1:4646"    # cabot (via gateway from bridge mode)
+          - "192.168.68.60:4646"  # goren
         labels:
           cluster: "nomad"
           role: "server"
@@ -63,7 +63,7 @@ scrape_configs:
     tls_config:
       insecure_skip_verify: true
     static_configs:
-      - targets: ["mccoy:8200"]
+      - targets: ["172.26.64.1:8200"]
         labels:
           cluster: "vault-cluster-b193d95f"
           service: "vault"
@@ -75,7 +75,7 @@ scrape_configs:
     scrape_interval: 15s
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "127.0.0.1:8500"
+      - server: "172.26.64.1:8500"
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["prometheus-node-exporter"]
         datacenter: "dc1"
@@ -99,10 +99,10 @@ scrape_configs:
       credentials_file: "/etc/prometheus/secrets/consul_token"
     static_configs:
       - targets:
-          - "mccoy:8500"
-          - "stabler:8500"
-          - "cabot:8500"
-          - "goren:8500"
+          - "192.168.68.63:8500"  # mccoy
+          - "192.168.68.61:8500"  # stabler
+          - "172.26.64.1:8500"    # cabot (via gateway from bridge mode)
+          - "192.168.68.60:8500"  # goren
         labels:
           cluster: "consul"
 
@@ -124,7 +124,7 @@ scrape_configs:
       - source_labels: ["__param_target"]
         target_label: "instance"
       - target_label: "__address__"
-        replacement: "127.0.0.1:9115"           # Blackbox exporter endpoint
+        replacement: "172.26.64.1:9115"
 
   # -----------------------------------------------------------------------
   # Traefik metrics - load balancer stats (Consul SD)
@@ -132,7 +132,7 @@ scrape_configs:
   - job_name: "traefik"
     scheme: "http"
     consul_sd_configs:
-      - server: "127.0.0.1:8500"
+      - server: "172.26.64.1:8500"
         token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
         services: ["traefik"]
         datacenter: "dc1"
@@ -148,4 +148,3 @@ scrape_configs:
         target_label: "instance"
       - source_labels: ["__meta_consul_tags"]
         target_label: "consul_tags"
-
