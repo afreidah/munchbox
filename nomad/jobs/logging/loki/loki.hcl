@@ -93,7 +93,7 @@ consul_connect_enabled = true
 # --- Standard service configuration ---
 standard_service_enabled    = true
 standard_service_port       = "http"
-standard_http_check_enabled = true
+standard_http_check_enabled = false
 standard_http_check_path    = "/ready"
 
 additional_tags = [
