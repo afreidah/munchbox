@@ -9,7 +9,7 @@ datacenters     = ["pi-dc"]
 node_pool       = "core"
 namespace       = "default"
 priority        = 50
-job_description = "Docker registry web UI via Connect mesh"
+job_description = "Docker registry web UI"
 
 deployment_profile = "standard"
 meta_profile       = "tier2"
@@ -46,8 +46,8 @@ task = {
   }
 
   env = {
-    REGISTRY_URL         = "https://registry-ui.munchbox"
-    NGINX_PROXY_PASS_URL = "http://localhost:5000"
+    REGISTRY_URL         = "https://registry.munchbox"
+    NGINX_PROXY_PASS_URL = ""
     SINGLE_REGISTRY      = "true"
     REGISTRY_TITLE       = "Docker Registry Mirror"
     DELETE_IMAGES        = "false"
@@ -71,13 +71,12 @@ task = {
     ]
     checks = [
       {
-        name         = "registry-ui-http"
-        type         = "http"
-        port         = "http"
-        path         = "/"
-        interval     = "30s"
-        timeout      = "5s"
-        address_mode = "alloc"
+        name     = "registry-ui-http"
+        type     = "http"
+        port     = "http"
+        path     = "/"
+        interval = "30s"
+        timeout  = "5s"
       }
     ]
   }
@@ -89,22 +88,10 @@ task = {
 }
 
 # -----------------------------------------------------------------------
-# Consul Connect Configuration
+# Consul Connect
 # -----------------------------------------------------------------------
 
-consul_connect_enabled = true
-
-connect_upstreams = [
-  {
-    destination_name = "docker-mirror"
-    local_bind_port  = 5000
-  }
-]
-
-connect_sidecar_resources = {
-  cpu    = 100
-  memory = 64
-}
+consul_connect_enabled = false
 
 # -----------------------------------------------------------------------
 # Disable Standard Service (using custom instead)

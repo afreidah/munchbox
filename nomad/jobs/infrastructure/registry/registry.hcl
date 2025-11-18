@@ -3,10 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Private Docker registry for Munchbox cluster with dual access patterns:
-# external via Traefik TCP router (registry.munchbox:5000) and internal via
-# Consul Connect mesh (docker-mirror.service.consul:5000). Stores images on
-# shared storage for portability across nodes.
+# Private Docker registry for Munchbox cluster accessible via HTTPS. Uses
+# Traefik HTTP routing with Consul catalog auto-discovery for dynamic service
+# location. Stores images on local SSD for stability and performance.
 # -------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------
@@ -19,7 +18,7 @@ region          = "global"
 datacenters     = ["pi-dc"]
 namespace       = "default"
 priority        = 50
-job_description = "Docker registry with Traefik TCP routing and Connect mesh"
+job_description = "Docker registry with HTTPS routing via Traefik"
 
 # -----------------------------------------------------------------------
 # Deployment Strategy
@@ -45,6 +44,18 @@ ports = [
   {
     name = "registry"
     to   = 5000
+  }
+]
+
+# -----------------------------------------------------------------------
+# Placement Constraints
+# -----------------------------------------------------------------------
+
+constraints = [
+  {
+    attribute = "$${node.unique.name}"
+    operator  = "="
+    value     = "cabot"
   }
 ]
 
@@ -91,7 +102,7 @@ task = {
     ports = ["registry"]
     volumes = [
       "local/config:/etc/docker/registry",
-      "/mnt/gdrive/munchbox-data/registry:/var/lib/registry"
+      "/opt/nomad/data/registry-data:/var/lib/registry"
     ]
   }
 
@@ -106,7 +117,8 @@ task = {
     tags = [
       "traefik.enable=true",
       "traefik.http.routers.docker-registry.rule=Host(`registry.munchbox`)",
-      "traefik.http.routers.docker-registry.entrypoints=registry-tcp",
+      "traefik.http.routers.docker-registry.entrypoints=websecure",
+      "traefik.http.routers.docker-registry.tls=true",
       "traefik.http.services.docker-registry.loadbalancer.server.port=5000",
       "registry",
       "docker"
@@ -131,7 +143,7 @@ task = {
 # Consul Connect
 # -----------------------------------------------------------------------
 
-consul_connect_enabled = true
+consul_connect_enabled = false
 
 # -----------------------------------------------------------------------
 # Service Registration
