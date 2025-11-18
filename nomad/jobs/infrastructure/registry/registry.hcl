@@ -3,8 +3,10 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Private Docker registry for Munchbox cluster. Stores images on shared storage
-# for portability across nodes with proper CORS headers for multi-host access.
+# Private Docker registry for Munchbox cluster with dual access patterns:
+# external via Traefik TCP router (registry.munchbox:5000) and internal via
+# Consul Connect mesh (docker-mirror.service.consul:5000). Stores images on
+# shared storage for portability across nodes.
 # -------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------
@@ -17,7 +19,7 @@ region          = "global"
 datacenters     = ["pi-dc"]
 namespace       = "default"
 priority        = 50
-job_description = "Private Docker registry with CORS support - portable storage"
+job_description = "Docker registry with Traefik TCP routing and Connect mesh"
 
 # -----------------------------------------------------------------------
 # Deployment Strategy
@@ -41,10 +43,8 @@ network_preset = "bridge"
 
 ports = [
   {
-    name         = "registry"
-    to           = 5000
-    static       = 5000
-    host_network = "default"
+    name = "registry"
+    to   = 5000
   }
 ]
 
@@ -103,7 +103,14 @@ task = {
     name     = "docker-mirror"
     port     = "registry"
     provider = "consul"
-    tags     = ["registry", "docker"]
+    tags = [
+      "traefik.enable=true",
+      "traefik.http.routers.docker-registry.rule=Host(`registry.munchbox`)",
+      "traefik.http.routers.docker-registry.entrypoints=registry-tcp",
+      "traefik.http.services.docker-registry.loadbalancer.server.port=5000",
+      "registry",
+      "docker"
+    ]
     checks = [
       {
         name     = "registry-http"
