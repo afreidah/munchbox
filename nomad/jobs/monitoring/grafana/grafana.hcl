@@ -42,14 +42,18 @@ resource_tier = "small"
 
 # -----------------------------------------------------------------------
 # Networking
+#
+# Consul Connect requires bridge or CNI networking. We run Grafana on
+# bridge, and the sidecar handles mesh exposure. Port 3000 is still used
+# inside the container and exposed via the "web" label.
 # -----------------------------------------------------------------------
 
-network_preset = "host"
+network_preset = "bridge"
 
 ports = [
   {
-    name     = "web"
-    static   = 3000
+    name   = "web"
+    static = 3000
   }
 ]
 
@@ -117,6 +121,10 @@ task = {
 
 # -----------------------------------------------------------------------
 # Consul Connect
+#
+# Grafana participates in the mesh. The Connect sidecar exposes local
+# upstreams for Prometheus and Loki, which you should reference from your
+# datasources.yml (e.g. http://127.0.0.1:9090, http://127.0.0.1:3100).
 # -----------------------------------------------------------------------
 
 consul_connect_enabled = true
@@ -142,15 +150,27 @@ standard_service_port_number = 3000
 standard_http_check_enabled  = true
 standard_http_check_path     = "/api/health"
 
+# Classification tags only; Traefik routing is handled via dedicated
+# Traefik variables so the pack can place tags on the Connect sidecar.
 additional_tags = [
-  "traefik.enable=true",
-  "traefik.http.routers.grafana.rule=Host(`grafana.munchbox`)",
-  "traefik.http.routers.grafana.entrypoints=websecure",
-  "traefik.http.routers.grafana.tls=true",
-  "traefik.http.routers.grafana.middlewares=dashboard-allowlan@file",
   "monitoring",
   "grafana"
 ]
+
+# -----------------------------------------------------------------------
+# Traefik Routing
+#
+# These feed into the nomad-service template:
+# - With Consul Connect enabled + standard service:
+#     Traefik tags are attached to the sidecar service, which Traefik
+#     will discover via Consul Catalog (connectAware + connectByDefault).
+# -----------------------------------------------------------------------
+
+traefik_enabled      = true
+traefik_host         = "grafana.munchbox"
+traefik_entrypoints  = "websecure"
+traefik_tls_enabled  = true
+traefik_middlewares  = "dashboard-allowlan@file"
 
 # -----------------------------------------------------------------------
 # Termination

@@ -1,19 +1,37 @@
-# ------------------------------------------------------------------------------
-# Grafana Datasources — Provisioned (authoritative)
-# ------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Grafana Datasources — Prometheus + Loki via Consul Connect Upstreams
+#
+# NOTE:
+#   - Prometheus upstream is exposed on local_bind_port 9090
+#   - Loki upstream is exposed on local_bind_port 3100
+#   - Both are reached via http://127.0.0.1:<port> from the Grafana task
+# ---------------------------------------------------------------------------
 
 apiVersion: 1
 
 datasources:
+  # -------------------------------------------------------------------------
+  # Prometheus (Metrics)
+  # -------------------------------------------------------------------------
   - name: Prometheus
+    uid: prometheus
     type: prometheus
     access: proxy
-    url: http://localhost:9090  # ← Connect upstream
+    url: http://127.0.0.1:9090
     isDefault: true
     editable: false
+    jsonData:
+      timeInterval: 30s
 
+  # -------------------------------------------------------------------------
+  # Loki (Logs)
+  # -------------------------------------------------------------------------
   - name: Loki
+    uid: loki
     type: loki
     access: proxy
-    url: http://localhost:3100  # ← Connect upstream
+    url: http://127.0.0.1:3100
     editable: false
+    jsonData:
+      maxLines: 1000
+
