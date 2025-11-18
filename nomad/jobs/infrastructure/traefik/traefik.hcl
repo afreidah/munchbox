@@ -4,9 +4,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# System job for HTTPS-first reverse proxy with Consul service discovery plus
-# TCP routing for Docker registry. Auto-generates self-signed certificates for
-# *.munchbox domains. Dashboard on :8081 (LAN-only) for traffic analysis.
+# System job for HTTPS-first reverse proxy with Consul service discovery.
+# Auto-generates self-signed certificates for *.munchbox domains. Dashboard on
+# :8081 (LAN-only) for traffic analysis.
 # -------------------------------------------------------------------------------
 
 job_name        = "traefik"
@@ -20,10 +20,9 @@ ingress_node_constraint = "ingress"
 certificate_cn          = "*.munchbox"
 certificate_days        = 3650
 
-dashboard_port    = 8081
-http_port         = 80
-https_port        = 443
-registry_tcp_port = 5000
+dashboard_port = 8081
+http_port      = 80
+https_port     = 443
 
 consul_address    = "127.0.0.1:8500"
 consul_token_path = "kv/data/traefik"
