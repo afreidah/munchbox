@@ -44,12 +44,12 @@ resource_tier = "small"
 # Networking
 # -----------------------------------------------------------------------
 
-network_preset = "bridge"
+network_preset = "host"
 
 ports = [
   {
-    name = "web"
-    to   = 3000
+    name     = "web"
+    static   = 3000
   }
 ]
 
