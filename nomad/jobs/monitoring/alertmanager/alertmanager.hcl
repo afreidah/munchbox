@@ -1,66 +1,53 @@
 # -------------------------------------------------------------------------------
-# Alertmanager — Alert Routing and Notification Service with Telegram
+# Alertmanager — Alert Routing and Notification System
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Receives alerts from Prometheus, groups and routes them according to rules,
-# manages silences and inhibition, and sends formatted notifications via Telegram
-# bot integration. Provides web UI with LAN-only access via Traefik routing.
+# Handles alerts from Prometheus with deduplication, grouping, and routing to
+# notification channels. Integrated with Consul Connect mesh for secure alert
+# ingestion from Prometheus.
 # -------------------------------------------------------------------------------
-
-# -----------------------------------------------------------------------
-# Core Configuration
-# -----------------------------------------------------------------------
 
 job_name        = "alertmanager"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
+node_pool       = "utility"
 namespace       = "default"
 priority        = 50
-job_description = "Alertmanager with Telegram notification routing"
-
-# -----------------------------------------------------------------------
-# Deployment Strategy
-# -----------------------------------------------------------------------
+job_description = "Alertmanager for Prometheus alerts with Connect mesh"
 
 deployment_profile = "standard"
 meta_profile       = "tier1"
 category           = "monitoring"
 
-# -----------------------------------------------------------------------
-# Resources
-# -----------------------------------------------------------------------
-
-resource_tier = "tiny"
-
-# -----------------------------------------------------------------------
-# Networking
-# -----------------------------------------------------------------------
-
+resource_tier  = "small"
 network_preset = "bridge"
 
 ports = [
   {
-    name = "web"
+    name = "http"
     to   = 9093
+  },
+  {
+    name = "cluster"
+    to   = 9094
   }
 ]
 
-# -----------------------------------------------------------------------
-# Restart & Reschedule Policies
-# -----------------------------------------------------------------------
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
 
-restart_attempts = 5
-restart_interval = "10m"
-restart_delay    = "15s"
-restart_mode     = "delay"
+constraints = [
+  {
+    attribute = "$${node.unique.name}"
+    operator  = "="
+    value     = "cabot"
+  }
+]
 
-reschedule_preset = "standard"
-
-# -----------------------------------------------------------------------
-# External Configuration Files
-# -----------------------------------------------------------------------
+vault_role = "nomad-workloads"
 
 external_files = {
   enabled   = true
@@ -73,63 +60,78 @@ external_templates = [
     source_file     = "alertmanager.yml"
     env             = false
     perms           = "0644"
-    change_mode     = "signal"
-    change_signal   = "SIGHUP"
+    change_mode     = "restart"
     left_delimiter  = "[["
     right_delimiter = "]]"
   }
 ]
-
-# -----------------------------------------------------------------------
-# Task Definition
-# -----------------------------------------------------------------------
 
 task = {
   name   = "alertmanager"
   driver = "docker"
 
   config = {
-    image = "quay.io/prometheus/alertmanager:v0.29.0"
-    ports = ["web"]
+    image              = "prom/alertmanager:v0.27.0"
+    ports              = ["http", "cluster"]
+    image_pull_timeout = "10m"
+
     args = [
-      "--config.file=/etc/alertmanager/alertmanager.yml",
+      "--config.file=/etc/alertmanager/config/alertmanager.yml",
+      "--storage.path=/alertmanager",
       "--web.listen-address=0.0.0.0:9093",
-      "--web.external-url=https://alertmanager.munchbox/",
-      "--cluster.listen-address="
+      "--cluster.listen-address=0.0.0.0:9094",
+      "--web.external-url=https://alertmanager.munchbox"
     ]
+
     volumes = [
-      "local/config:/etc/alertmanager:ro",
-      "/mnt/gdrive/munchbox-data/alertmanager:/alertmanager"
+      "local/config:/etc/alertmanager/config:ro"
     ]
   }
 
   env = {
-    TZ                                  = "America/Los_Angeles"
-    ALERTMANAGER_WEB_EXTERNAL_URL       = "https://alertmanager.munchbox/"
-    ALERTMANAGER_CLUSTER_LISTEN_ADDRESS = ""
+    TZ = "America/Los_Angeles"
+  }
+
+  resources = {
+    tier = "small"
   }
 }
 
-# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Consul Connect
-# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 consul_connect_enabled = true
 
-# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Service Registration
-# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 standard_service_enabled     = true
-standard_service_port        = "web"
+standard_service_port        = "http"
 standard_service_port_number = 9093
 standard_http_check_enabled  = true
 standard_http_check_path     = "/-/ready"
-additional_tags              = ["monitoring", "alertmanager", "notifications", "telegram"]
 
-# -----------------------------------------------------------------------
+additional_tags = [
+  "monitoring",
+  "alertmanager",
+  "alerts"
+]
+
+# -----------------------------------------------------------------------------
+# Traefik Routing
+# -----------------------------------------------------------------------------
+
+traefik_enabled     = true
+traefik_host        = "alertmanager.munchbox"
+traefik_entrypoints = "websecure"
+traefik_tls_enabled = true
+traefik_middlewares = "dashboard-allowlan@file"
+
+# -----------------------------------------------------------------------------
 # Termination
-# -----------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"

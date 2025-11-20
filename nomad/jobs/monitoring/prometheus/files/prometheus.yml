@@ -17,7 +17,7 @@ alerting:
   alertmanagers:
     - scheme: http
       static_configs:
-        - targets: ["alertmanager.service.consul:9093"]
+        - targets: ["localhost:9093"]  # ← Changed from alertmanager.service.consul:9093
 
 # Scrape configuration - what to monitor
 scrape_configs:

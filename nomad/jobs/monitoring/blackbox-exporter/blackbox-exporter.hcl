@@ -1,27 +1,27 @@
 # -------------------------------------------------------------------------------
-# Blackbox Exporter — Internal Endpoint Monitoring and Metrics Collection
+# Blackbox Exporter — Network Probe and Endpoint Monitoring
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Runs blackbox exporter on static host port 9115 with host networking for
-# Prometheus probe execution. Uses Consul service registration with LAN IP
-# binding. Probes internal services and endpoints.
+# Probes HTTP, HTTPS, DNS, TCP, and ICMP endpoints to verify availability and
+# response times. Uses host networking for direct network access. Scraped by
+# Prometheus via Consul service discovery.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
 job_name        = "blackbox-exporter"
 job_type        = "service"
-job_description = "Blackbox exporter — internal endpoint monitoring and metrics collection"
+region          = "global"
+datacenters     = ["pi-dc"]
+node_pool       = "utility"
+namespace       = "default"
+priority        = 50
+job_description = "Blackbox Exporter - network probing and endpoint monitoring"
 
-# --- Deployment and metadata ---
-deployment_profile = "canary"
+deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "monitoring"
 
-# --- Resource allocation ---
-resource_tier = "tiny"
-
-# --- Network configuration ---
+resource_tier  = "tiny"
 network_preset = "host"
 
 ports = [
@@ -31,7 +31,6 @@ ports = [
   }
 ]
 
-# --- Placement constraints ---
 constraints = [
   {
     attribute = "$${node.unique.name}"
@@ -40,16 +39,8 @@ constraints = [
   }
 ]
 
-# --- Restart policy ---
-restart_attempts = 5
-restart_interval = "10m"
-restart_delay    = "5s"
-restart_mode     = "delay"
+vault_role = "nomad-workloads"
 
-# --- Reschedule policy ---
-reschedule_preset = "extended"
-
-# --- External configuration files ---
 external_files = {
   enabled   = true
   base_path = "jobs/monitoring/blackbox-exporter/files"
@@ -57,42 +48,75 @@ external_files = {
 
 external_templates = [
   {
-    destination   = "local/blackbox.yml"
-    source_file   = "blackbox.yml"
-    env           = false
-    perms         = "0644"
-    change_mode   = "signal"
-    change_signal = "SIGHUP"
+    destination     = "local/config/blackbox.yml"
+    source_file     = "blackbox.yml"
+    env             = false
+    perms           = "0644"
+    change_mode     = "restart"
+    left_delimiter  = "[["
+    right_delimiter = "]]"
   }
 ]
 
-# --- Task definition ---
 task = {
-  name   = "exporter"
+  name   = "blackbox-exporter"
   driver = "docker"
 
   config = {
-    image = "prom/blackbox-exporter:v0.25.0"
-    ports = ["http"]
+    image        = "prom/blackbox-exporter:v0.25.0"
+    network_mode = "host"
+    ports        = ["http"]
     args = [
-      "--config.file=/local/blackbox.yml"
+      "--config.file=/etc/blackbox/config/blackbox.yml",
+      "--web.listen-address=0.0.0.0:9115"
+    ]
+    volumes = [
+      "local/config:/etc/blackbox/config:ro"
     ]
   }
 
+  env = {
+    TZ = "America/Los_Angeles"
+  }
+
   resources = {
-    cpu    = 50
+    cpu    = 100
     memory = 64
   }
 }
 
-# --- Standard service configuration ---
+# -----------------------------------------------------------------------------
+# Consul Connect
+# -----------------------------------------------------------------------------
+
+consul_connect_enabled = false
+
+# -----------------------------------------------------------------------------
+# Service Registration
+# -----------------------------------------------------------------------------
+
 standard_service_enabled     = true
 standard_service_port        = "http"
 standard_service_port_number = 9115
 standard_http_check_enabled  = true
-standard_http_check_path     = "/metrics"
-additional_tags              = ["metrics", "prometheus"]
+standard_http_check_path     = "/health"
 
-# --- Termination ---
+additional_tags = [
+  "monitoring",
+  "blackbox-exporter",
+  "probes",
+  "network-monitoring"
+]
+
+# -----------------------------------------------------------------------------
+# Traefik Routing
+# -----------------------------------------------------------------------------
+
+traefik_enabled = false
+
+# -----------------------------------------------------------------------------
+# Termination
+# -----------------------------------------------------------------------------
+
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
