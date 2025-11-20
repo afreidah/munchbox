@@ -166,11 +166,11 @@ additional_tags = [
 #     will discover via Consul Catalog (connectAware + connectByDefault).
 # -----------------------------------------------------------------------
 
-traefik_enabled      = true
-traefik_host         = "grafana.munchbox"
-traefik_entrypoints  = "websecure"
-traefik_tls_enabled  = true
-traefik_middlewares  = "dashboard-allowlan@file"
+traefik_enabled         = true
+traefik_host            = "grafana.munchbox"
+traefik_entrypoints     = "websecure"
+traefik_tls_enabled     = true
+traefik_middlewares     = "dashboard-allowlan@file"
 
 # -----------------------------------------------------------------------
 # Termination

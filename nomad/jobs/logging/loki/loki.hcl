@@ -89,6 +89,11 @@ task = {
 
 # --- Consul Connect ---
 consul_connect_enabled = true
+traefik_enabled         = true
+traefik_host            = "loki.munchbox"
+traefik_entrypoints     = "websecure"
+traefik_tls_enabled     = true
+traefik_middlewares     = "dashboard-allowlan@file"
 
 # --- Standard service configuration ---
 standard_service_enabled    = true
@@ -97,11 +102,6 @@ standard_http_check_enabled = false
 standard_http_check_path    = "/ready"
 
 additional_tags = [
-  "traefik.enable=true",
-  "traefik.http.routers.loki.rule=Host(`loki.munchbox`)",
-  "traefik.http.routers.loki.entrypoints=websecure",
-  "traefik.http.routers.loki.tls=true",
-  "traefik.http.routers.loki.middlewares=dashboard-allowlan@file",
   "logging",
   "loki",
   "observability"
