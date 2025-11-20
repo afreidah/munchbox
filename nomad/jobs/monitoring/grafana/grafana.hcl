@@ -52,8 +52,8 @@ network_preset = "bridge"
 
 ports = [
   {
-    name   = "web"
-    static = 3000
+    name = "web"
+    to   = 3000
   }
 ]
 
@@ -78,13 +78,13 @@ external_files = {
 }
 
 external_templates = [
-  {
-    destination = "local/grafana-provisioning/datasources/ds.yml"
-    source_file = "datasources.yml"
-    env         = false
-    perms       = "0644"
-    change_mode = "restart"
-  },
+  #{
+  #  destination = "local/grafana-provisioning/datasources/ds.yml"
+  #  source_file = "datasources.yml"
+  #  env         = false
+  #  perms       = "0644"
+  #  change_mode = "restart"
+  #},
   {
     destination = "secrets/grafana.env"
     source_file = "grafana.env.tpl"

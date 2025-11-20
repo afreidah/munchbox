@@ -2,6 +2,9 @@
 # Prometheus — Metrics Collection with Alert Rules and Dynamic Discovery
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Time-series metrics database with dynamic service discovery, alert evaluation,
+# and Consul Connect integration for secure Alertmanager communication.
 # -------------------------------------------------------------------------------
 
 job_name        = "prometheus"
@@ -11,19 +14,19 @@ datacenters     = ["pi-dc"]
 node_pool       = "all"
 namespace       = "default"
 priority        = 50
-job_description = "Prometheus metrics collection with alerting"
+job_description = "Prometheus metrics collection with alerting via Connect mesh"
 
 deployment_profile = "standard"
 meta_profile       = "tier1"
 category           = "monitoring"
 
 resource_tier  = "medium"
-network_preset = "host"  # Changed to host
+network_preset = "bridge"
 
 ports = [
   {
-    name   = "web"
-    static = 9090  # Changed to static for host networking
+    name = "web"
+    to   = 9090
   }
 ]
 
@@ -133,7 +136,22 @@ task = {
   }
 }
 
-consul_connect_enabled = false  # Disabled for Prometheus - needs direct network access
+# -----------------------------------------------------------------------------
+# Consul Connect
+# -----------------------------------------------------------------------------
+
+consul_connect_enabled = true
+
+connect_upstreams = [
+  {
+    destination_name = "alertmanager"
+    local_bind_port  = 9093
+  }
+]
+
+# -----------------------------------------------------------------------------
+# Service Registration
+# -----------------------------------------------------------------------------
 
 standard_service_enabled     = true
 standard_service_port        = "web"
@@ -146,6 +164,20 @@ additional_tags = [
   "prometheus",
   "metrics"
 ]
+
+# -----------------------------------------------------------------------------
+# Traefik Routing
+# -----------------------------------------------------------------------------
+
+traefik_enabled     = true
+traefik_host        = "prometheus.munchbox"
+traefik_entrypoints = "websecure"
+traefik_tls_enabled = true
+traefik_middlewares = "dashboard-allowlan@file"
+
+# -----------------------------------------------------------------------------
+# Termination
+# -----------------------------------------------------------------------------
 
 kill_timeout = "60s"
 kill_signal  = "SIGTERM"
