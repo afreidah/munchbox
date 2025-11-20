@@ -49,8 +49,8 @@ consul_token_path = "kv/data/traefik"
 # Consul Connect Service Mesh
 # -----------------------------------------------------------------------------
 
-connect_aware      = true  # ← CHANGED from false
-connect_by_default = true  # ← CHANGED from false
+connect_aware      = true
+connect_by_default = true
 exposed_by_default = false
 
 # -----------------------------------------------------------------------------

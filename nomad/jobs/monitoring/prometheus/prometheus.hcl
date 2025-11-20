@@ -169,11 +169,11 @@ additional_tags = [
 # Traefik Routing
 # -----------------------------------------------------------------------------
 
-traefik_enabled     = true
-traefik_host        = "prometheus.munchbox"
-traefik_entrypoints = "websecure"
-traefik_tls_enabled = true
-traefik_middlewares = "dashboard-allowlan@file"
+traefik_enabled         = true
+traefik_host            = "prometheus.munchbox"
+traefik_entrypoints     = "websecure"
+traefik_tls_enabled     = true
+traefik_middlewares     = "dashboard-allowlan@file"
 
 # -----------------------------------------------------------------------------
 # Termination
