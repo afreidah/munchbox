@@ -1,10 +1,11 @@
 # -------------------------------------------------------------------------------
-# Temporal — Web UI
+# Temporal Web UI — Workflow Monitoring and Management Console
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Temporal web UI for workflow monitoring and management. Connects to
-# Temporal server gRPC API on port 7233. Service discovery via Consul.
+# Web-based interface for Temporal workflow monitoring and management. Connects
+# to Temporal server gRPC API via Consul Connect mesh. Exposed via Traefik for
+# browser access with bridge networking.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
@@ -15,7 +16,7 @@ datacenters     = ["pi-dc"]
 node_pool       = "all"
 namespace       = "default"
 priority        = 50
-job_description = "Temporal UI — workflow monitoring and management console"
+job_description = "Temporal UI with Connect mesh access to temporal-server gRPC"
 
 # --- Deployment and metadata ---
 deployment_profile = "standard"
@@ -26,15 +27,18 @@ category           = "orchestration"
 resource_tier = "small"
 
 # --- Network configuration ---
-network_preset = "host"
+network_preset = "bridge"
 
 ports = [
   {
-    name   = "http"
-    static = 8080
-    to     = 8080
+    name = "http"
+    to   = 8080
   }
 ]
+
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
 
 # --- Placement constraints ---
 constraints = [
@@ -66,34 +70,15 @@ task = {
   }
 
   env = {
-    TZ                            = "UTC"
-    TEMPORAL_ADDRESS              = "192.168.68.61:7233"
-    TEMPORAL_CORS_ORIGINS         = "http://192.168.68.61:8080"
-    TEMPORAL_CSRF_COOKIE_INSECURE = "true"
-  }
-
-  service = {
-    name     = "temporal-ui"
-    port     = "http"
-    provider = "consul"
-    tags = [
-      "temporal",
-      "ui",
-      "monitoring"
-    ]
-    checks = [
-      {
-        name     = "temporal-ui-http"
-        type     = "http"
-        path     = "/"
-        interval = "30s"
-        timeout  = "10s"
-        check_restart = {
-          limit = 3
-          grace = "30s"
-        }
-      }
-    ]
+    TZ                                    = "UTC"
+    TEMPORAL_ADDRESS                      = "temporal-server.service.consul:7233"
+    TEMPORAL_CORS_ORIGINS                 = "http://localhost:8080"
+    TEMPORAL_CSRF_COOKIE_INSECURE         = "true"
+    TEMPORAL_TLS_CA_PATH                  = ""
+    TEMPORAL_TLS_CERT_PATH                = ""
+    TEMPORAL_TLS_KEY_PATH                 = ""
+    TEMPORAL_TLS_ENABLE_HOST_VERIFICATION = "false"
+    TEMPORAL_TLS_SERVER_NAME              = ""
   }
 
   resources = {
@@ -102,8 +87,28 @@ task = {
   }
 }
 
+# --- Consul Connect service mesh ---
+consul_connect_enabled = false
+
 # --- Standard service configuration ---
-standard_service_enabled = false
+standard_service_enabled     = true
+standard_service_port        = "http"
+standard_service_port_number = 8080
+standard_http_check_enabled  = true
+standard_http_check_path     = "/"
+
+additional_tags = [
+  "temporal",
+  "ui",
+  "monitoring"
+]
+
+# --- Traefik routing ---
+traefik_enabled     = true
+traefik_host        = "temporal.munchbox"
+traefik_entrypoints = "websecure"
+traefik_tls_enabled = true
+traefik_middlewares = "dashboard-allowlan@file"
 
 # --- Termination ---
 kill_timeout = "30s"

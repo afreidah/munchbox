@@ -44,12 +44,12 @@ resource_tier = "small"
 # Networking
 # -----------------------------------------------------------------------
 
-network_preset = "bridge"
+network_preset = "host"
 
 ports = [
   {
     name = "web"
-    to   = 3000
+    static   = 3000
   }
 ]
 
@@ -140,7 +140,8 @@ standard_http_check_path     = "/api/health"
 
 additional_tags = [
   "monitoring",
-  "grafana"
+  "grafana",
+  "traefik.connect=true"
 ]
 
 # -----------------------------------------------------------------------

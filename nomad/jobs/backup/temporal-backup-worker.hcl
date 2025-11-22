@@ -77,7 +77,7 @@ task = {
   }
 
   env = {
-    TEMPORAL_ADDRESS  = "192.168.68.61:7233"
+    TEMPORAL_ADDRESS  = "temporal-server.service.consul:7233"
     NOMAD_ADDR        = "https://$${attr.unique.network.ip-address}:4646"
     NOMAD_SKIP_VERIFY = "true"
     CONSUL_HTTP_ADDR  = "$${attr.unique.network.ip-address}:8500"
