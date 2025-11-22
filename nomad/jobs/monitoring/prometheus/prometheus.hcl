@@ -140,7 +140,7 @@ task = {
 # Consul Connect
 # -----------------------------------------------------------------------------
 
-consul_connect_enabled = true
+consul_connect_enabled = false
 
 connect_upstreams = [
   {
