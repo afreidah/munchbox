@@ -25,9 +25,8 @@ help: ## Show this help message
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────
 
-REGISTRY_HOST ?= docker-mirror.service.consul
-REGISTRY_PORT ?= 5000
-REGISTRY      ?= $(REGISTRY_HOST):$(REGISTRY_PORT)
+REGISTRY_HOST ?= registry.munchbox
+REGISTRY      ?= $(REGISTRY_HOST)
 TAG           ?= latest
 APP           ?=
 
