@@ -57,7 +57,7 @@ job "temporal-backup-trigger" {
 
       # --- Runtime environment ---
       env {
-        TEMPORAL_ADDRESS = "192.168.68.61:7233"
+        TEMPORAL_ADDRESS = "temporal-server.service.consul:7233"
       }
 
       # --- Resource allocation ---

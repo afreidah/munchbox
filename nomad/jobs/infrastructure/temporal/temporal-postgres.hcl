@@ -1,10 +1,11 @@
 # -------------------------------------------------------------------------------
-# Temporal — PostgreSQL Database
+# Temporal PostgreSQL Database — Persistent Backend for Workflow Engine
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# PostgreSQL 15 backend for Temporal workflow engine. Persistent storage
-# on stabler node with host networking for simplified connectivity.
+# PostgreSQL 15 backend for Temporal workflow orchestration. Runs in Consul
+# Connect service mesh for zero-trust database access. Persistent storage on
+# stabler node with host volume mount.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
@@ -15,26 +16,29 @@ datacenters     = ["pi-dc"]
 node_pool       = "all"
 namespace       = "default"
 priority        = 50
-job_description = "Temporal PostgreSQL database backend — persistent storage"
+job_description = "Temporal PostgreSQL database backend with Connect mesh isolation"
 
 # --- Deployment and metadata ---
 deployment_profile = "standard"
-meta_profile       = "tier2"
+meta_profile       = "tier1"
 category           = "database"
 
 # --- Resource allocation ---
 resource_tier = "medium"
 
 # --- Network configuration ---
-network_preset = "host"
+network_preset = "bridge"
 
 ports = [
   {
-    name   = "db"
-    static = 5432
-    to     = 5432
+    name = "db"
+    to   = 5432
   }
 ]
+
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
 
 # --- Placement constraints ---
 constraints = [
@@ -81,25 +85,29 @@ task = {
     POSTGRES_DB       = "temporal"
   }
 
-  service = {
-    name     = "temporal-postgres"
-    port     = "db"
-    provider = "consul"
-    tags = [
-      "temporal",
-      "postgres",
-      "database"
-    ]
-  }
-
   resources = {
     cpu    = 500
     memory = 512
   }
 }
 
+# --- Consul Connect service mesh ---
+consul_connect_enabled = true
+
 # --- Standard service configuration ---
-standard_service_enabled = false
+standard_service_enabled     = true
+standard_service_port        = "db"
+standard_service_port_number = 5432
+standard_http_check_enabled  = false
+
+additional_tags = [
+  "temporal",
+  "postgres",
+  "database"
+]
+
+# --- Traefik routing ---
+traefik_enabled = false
 
 # --- Termination ---
 kill_timeout = "30s"

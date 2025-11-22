@@ -100,6 +100,7 @@ standard_service_enabled    = true
 standard_service_port       = "http"
 standard_http_check_enabled = false
 standard_http_check_path    = "/ready"
+standard_service_address_mode     = "host"
 
 additional_tags = [
   "logging",
