@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Provides Grafana dashboards with Prometheus and Loki datasource integration
-# via Consul Connect service mesh. Upstreams configured for secure mTLS
-# communication with data sources.
+# via Consul DNS. Runs outside Connect mesh for Traefik accessibility while
+# backend services (Prometheus, Loki, Alertmanager) remain in mesh.
 # -------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------
@@ -18,7 +18,7 @@ region          = "global"
 datacenters     = ["pi-dc"]
 namespace       = "default"
 priority        = 50
-job_description = "Grafana dashboards with Prometheus and Loki integration"
+job_description = "Grafana dashboards with Prometheus and Loki via Consul DNS"
 
 # -----------------------------------------------------------------------
 # Vault Integration
@@ -42,10 +42,6 @@ resource_tier = "small"
 
 # -----------------------------------------------------------------------
 # Networking
-#
-# Consul Connect requires bridge or CNI networking. We run Grafana on
-# bridge, and the sidecar handles mesh exposure. Port 3000 is still used
-# inside the container and exposed via the "web" label.
 # -----------------------------------------------------------------------
 
 network_preset = "bridge"
@@ -56,6 +52,10 @@ ports = [
     to   = 3000
   }
 ]
+
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
 
 # -----------------------------------------------------------------------
 # Restart & Reschedule Policies
@@ -122,23 +122,11 @@ task = {
 # -----------------------------------------------------------------------
 # Consul Connect
 #
-# Grafana participates in the mesh. The Connect sidecar exposes local
-# upstreams for Prometheus and Loki, which you should reference from your
-# datasources.yml (e.g. http://127.0.0.1:9090, http://127.0.0.1:3100).
+# Grafana runs OUTSIDE the mesh to allow Traefik access via bridge
+# networking. It connects to Prometheus and Loki via Consul DNS.
 # -----------------------------------------------------------------------
 
-consul_connect_enabled = true
-
-connect_upstreams = [
-  {
-    destination_name = "prometheus"
-    local_bind_port  = 9090
-  },
-  {
-    destination_name = "loki"
-    local_bind_port  = 3100
-  }
-]
+consul_connect_enabled = false
 
 # -----------------------------------------------------------------------
 # Service Registration
@@ -150,8 +138,6 @@ standard_service_port_number = 3000
 standard_http_check_enabled  = true
 standard_http_check_path     = "/api/health"
 
-# Classification tags only; Traefik routing is handled via dedicated
-# Traefik variables so the pack can place tags on the Connect sidecar.
 additional_tags = [
   "monitoring",
   "grafana"
@@ -159,18 +145,13 @@ additional_tags = [
 
 # -----------------------------------------------------------------------
 # Traefik Routing
-#
-# These feed into the nomad-service template:
-# - With Consul Connect enabled + standard service:
-#     Traefik tags are attached to the sidecar service, which Traefik
-#     will discover via Consul Catalog (connectAware + connectByDefault).
 # -----------------------------------------------------------------------
 
-traefik_enabled         = true
-traefik_host            = "grafana.munchbox"
-traefik_entrypoints     = "websecure"
-traefik_tls_enabled     = true
-traefik_middlewares     = "dashboard-allowlan@file"
+traefik_enabled     = true
+traefik_host        = "grafana.munchbox"
+traefik_entrypoints = "websecure"
+traefik_tls_enabled = true
+traefik_middlewares = "dashboard-allowlan@file"
 
 # -----------------------------------------------------------------------
 # Termination
