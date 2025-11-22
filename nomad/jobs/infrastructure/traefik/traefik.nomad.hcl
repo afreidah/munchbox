@@ -209,7 +209,7 @@ CONSUL_TOKEN={{ .Data.data.consul_token }}
   refreshInterval = "15s"
   prefix          = "traefik"
   watch           = true
-  connectAware     = false
+  connectAware     = true
   connectByDefault = false
   exposedByDefault = false
 
