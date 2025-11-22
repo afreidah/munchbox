@@ -91,54 +91,6 @@ job "traefik" {
       }
     }
 
-    task "certgen" {
-      driver = "docker"
-
-      lifecycle {
-        hook    = "prestart"
-        sidecar = false
-      }
-
-      config {
-        image   = "alpine:latest"
-        command = "sh"
-        args    = ["-c", "apk add --no-cache openssl && /local/generate-certs.sh"]
-      }
-
-      template {
-        destination = "local/generate-certs.sh"
-        perms       = "0755"
-        data        = <<-EOT
-#!/bin/sh
-set -e
-CERT_DIR=/alloc/data
-if [ -f $CERT_DIR/munchbox.crt ] && [ -f $CERT_DIR/munchbox.key ]; then
-  if openssl x509 -in $CERT_DIR/munchbox.crt -noout 2>/dev/null; then
-    echo "Valid certificates already exist, skipping generation"
-    exit 0
-  else
-    echo "Invalid certificates found, regenerating..."
-    rm -f $CERT_DIR/munchbox.crt $CERT_DIR/munchbox.key
-  fi
-fi
-echo "Generating self-signed certificate for *.munchbox..."
-openssl req -x509 -newkey rsa:4096 -nodes \
-  -keyout $CERT_DIR/munchbox.key \
-  -out $CERT_DIR/munchbox.crt \
-  -days 3650 \
-  -subj "/CN=*.munchbox" \
-  -addext "subjectAltName=DNS:*.munchbox,DNS:munchbox"
-echo "Certificate generated successfully"
-openssl x509 -in $CERT_DIR/munchbox.crt -text -noout | head -5
-        EOT
-      }
-
-      resources {
-        cpu    = 300
-        memory = 128
-      }
-    }
-
     task "traefik" {
       driver = "docker"
 
@@ -168,6 +120,30 @@ openssl x509 -in $CERT_DIR/munchbox.crt -text -noout | head -5
         data        = <<-EOT
 {{- with secret "kv/data/traefik" }}
 CONSUL_TOKEN={{ .Data.data.consul_token }}
+{{- end }}
+        EOT
+      }
+
+      # Generate TLS certificate from Vault PKI
+      template {
+        destination = "local/munchbox.crt"
+        perms       = "0644"
+        change_mode = "restart"
+        data        = <<-EOT
+{{- with secret "pki/issue/munchbox" "common_name=*.munchbox" "alt_names=munchbox" "ttl=720h" }}
+{{ .Data.certificate }}
+{{ .Data.issuing_ca }}
+{{- end }}
+        EOT
+      }
+
+      template {
+        destination = "local/munchbox.key"
+        perms       = "0600"
+        change_mode = "restart"
+        data        = <<-EOT
+{{- with secret "pki/issue/munchbox" "common_name=*.munchbox" "alt_names=munchbox" "ttl=720h" }}
+{{ .Data.private_key }}
 {{- end }}
         EOT
       }
@@ -238,12 +214,12 @@ CONSUL_TOKEN={{ .Data.data.consul_token }}
 # =========================================================================
 
 [tls.certificates.0]
-  certFile = "/alloc/data/munchbox.crt"
-  keyFile  = "/alloc/data/munchbox.key"
+  certFile = "/local/munchbox.crt"
+  keyFile  = "/local/munchbox.key"
 
 [tls.stores.default.defaultCertificate]
-  certFile = "/alloc/data/munchbox.crt"
-  keyFile  = "/alloc/data/munchbox.key"
+  certFile = "/local/munchbox.crt"
+  keyFile  = "/local/munchbox.key"
 
 [tls.options.default]
   minVersion = "VersionTLS12"
@@ -274,14 +250,14 @@ CONSUL_TOKEN={{ .Data.data.consul_token }}
 [http.routers.resume-public]
   rule        = "Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)"
   entryPoints = ["web"]
-  service     = "nginx-resume"
+  service     = "nginx-resume@consulcatalog"
   middlewares = ["redirect-resume-www", "resume-sec", "resume-ratelimit", "resume-inflight"]
   priority    = 100
 
 [http.routers.resume-apex-public]
   rule        = "Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)"
   entryPoints = ["web"]
-  service     = "nginx-resume"
+  service     = "nginx-resume@consulcatalog"
   middlewares = ["redirect-apex-www", "resume-sec", "resume-ratelimit", "resume-inflight"]
   priority    = 101
 
@@ -295,7 +271,7 @@ CONSUL_TOKEN={{ .Data.data.consul_token }}
 [http.routers.k3s-status-public]
   rule        = "Host(`k3s-status.alexfreidah.com`)"
   entryPoints = ["web"]
-  service     = "health-checker-svc"
+  service     = "health-checker@consulcatalog"
   middlewares = ["k3s-status-sec"]
   priority    = 102
 
@@ -415,14 +391,8 @@ CONSUL_TOKEN={{ .Data.data.consul_token }}
 [http.services.consul-ui.loadBalancer.servers.0]
   url = "http://127.0.0.1:8500/ui/"
 
-[http.services.nginx-resume.loadBalancer.servers.0]
-  url = "http://192.168.68.63:8080"
-
 [http.services.ping-svc.loadBalancer.servers.0]
   url = "http://127.0.0.1:8081/ping"
-
-[http.services.health-checker-svc.loadBalancer.servers.0]
-  url = "http://health-checker.service.consul:18080"
         EOT
       }
 

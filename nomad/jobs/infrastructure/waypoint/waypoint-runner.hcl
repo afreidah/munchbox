@@ -62,7 +62,7 @@ task = {
   driver = "docker"
 
   config = {
-    image      = "docker-mirror.service.consul:5000/ops-waypoint-image:latest"
+    image      = "registry.munchbox/ops-waypoint-image:latest"
     entrypoint = ["/bin/sh", "-c"]
     args = [
       "export WAYPOINT_SERVER_TOKEN=$(cat /data/waypoint-token) && exec waypoint runner agent"

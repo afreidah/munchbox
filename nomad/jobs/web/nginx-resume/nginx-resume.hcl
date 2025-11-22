@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-job_name        = "nginx-resume-hostfile"
+job_name        = "nginx-resume"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
@@ -28,7 +28,8 @@ resource_tier = "small"
 
 # --- Network configuration ---
 network_preset = "bridge"
-dns_servers    = ["192.168.68.62", "192.168.68.64"]
+
+dns_servers = ["192.168.68.62", "192.168.68.64"]
 
 ports = [
   {
@@ -93,44 +94,24 @@ task = {
       "local/default.conf:/etc/nginx/conf.d/default.conf:ro"
     ]
   }
-
-  service = {
-    name = "nginx-resume"
-    port = "http"
-    provider = "consul"
-    tags = [
-      "traefik.enable=true",
-      "traefik.http.routers.resume-public.rule=Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)",
-      "traefik.http.routers.resume-public.entrypoints=web",
-      "traefik.http.routers.resume-public.service=nginx-resume",
-      "traefik.http.services.nginx-resume.loadbalancer.server.port=8080",
-      "traefik.http.routers.resume-internal.rule=Host(`resume.munchbox`)",
-      "traefik.http.routers.resume-internal.entrypoints=websecure",
-      "traefik.http.routers.resume-internal.tls=true",
-      "traefik.http.routers.resume-internal.middlewares=dashboard-allowlan@file",
-      "web",
-      "resume",
-      "nginx"
-    ]
-    checks = [
-      {
-        name     = "nginx-resume"
-        type     = "http"
-        path     = "/"
-        interval = "10s"
-        timeout  = "2s"
-      }
-    ]
-  }
-
-  resources = {
-    cpu    = 200
-    memory = 128
-  }
 }
 
-# --- Standard service configuration ---
-standard_service_enabled = false
+# --- Consul Connect ---
+consul_connect_enabled = false
+
+# --- Service Registration ---
+standard_service_enabled     = true
+standard_service_port        = "http"
+standard_service_port_number = 80
+standard_http_check_enabled  = true
+standard_http_check_path     = "/"
+
+additional_tags = [
+  "traefik.enable=true",  # ← ADD THIS - Critical for Consul discovery!
+  "web",
+  "resume",
+  "nginx"
+]
 
 # --- Termination ---
 kill_timeout = "30s"

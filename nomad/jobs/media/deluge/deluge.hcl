@@ -104,7 +104,7 @@ task = {
   driver = "docker"
 
   config = {
-    image              = "docker-mirror.service.consul:5000/deluge-with-vpnmark:latest"
+    image              = "registry.munchbox/deluge-with-vpnmark:latest"
     image_pull_timeout = "10m"
     ports              = ["web"]
     cap_add            = ["CHOWN", "FOWNER"]

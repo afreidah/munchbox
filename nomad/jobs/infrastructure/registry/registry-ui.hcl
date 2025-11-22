@@ -1,21 +1,43 @@
 # -------------------------------------------------------------------------------
 # Docker Registry UI — Web Interface for Registry Mirror
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Web-based interface for browsing Docker registry contents. Provides visual
+# access to stored images and tags with read-only access.
 # -------------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------
+# Core Configuration
+# -----------------------------------------------------------------------
 
 job_name        = "registry-ui"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
-node_pool       = "core"
+node_pool       = "utility"
 namespace       = "default"
 priority        = 50
 job_description = "Docker registry web UI"
+
+# -----------------------------------------------------------------------
+# Deployment Strategy
+# -----------------------------------------------------------------------
 
 deployment_profile = "standard"
 meta_profile       = "tier2"
 category           = "infrastructure"
 
-resource_tier  = "small"
+# -----------------------------------------------------------------------
+# Resources
+# -----------------------------------------------------------------------
+
+resource_tier = "small"
+
+# -----------------------------------------------------------------------
+# Networking
+# -----------------------------------------------------------------------
+
 network_preset = "bridge"
 
 ports = [
@@ -24,6 +46,14 @@ ports = [
     to   = 80
   }
 ]
+
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
+
+# -----------------------------------------------------------------------
+# Restart & Reschedule Policies
+# -----------------------------------------------------------------------
 
 restart_attempts = 5
 restart_interval = "10m"
@@ -53,38 +83,6 @@ task = {
     DELETE_IMAGES        = "false"
     TZ                   = "UTC"
   }
-
-  service = {
-    name     = "registry-ui"
-    port     = "http"
-    provider = "consul"
-    tags = [
-      "traefik.enable=true",
-      "traefik.http.routers.registry-ui.rule=Host(`registry-ui.munchbox`)",
-      "traefik.http.routers.registry-ui.entrypoints=websecure",
-      "traefik.http.routers.registry-ui.tls=true",
-      "traefik.http.routers.registry-ui.middlewares=dashboard-allowlan@file",
-      "traefik.http.services.registry-ui.loadbalancer.server.port=80",
-      "registry-ui",
-      "docker",
-      "ui"
-    ]
-    checks = [
-      {
-        name     = "registry-ui-http"
-        type     = "http"
-        port     = "http"
-        path     = "/"
-        interval = "30s"
-        timeout  = "5s"
-      }
-    ]
-  }
-
-  resources = {
-    cpu    = 150
-    memory = 128
-  }
 }
 
 # -----------------------------------------------------------------------
@@ -94,10 +92,35 @@ task = {
 consul_connect_enabled = false
 
 # -----------------------------------------------------------------------
-# Disable Standard Service (using custom instead)
+# Service Registration
 # -----------------------------------------------------------------------
 
-standard_service_enabled = false
+standard_service_enabled     = true
+standard_service_port        = "http"
+standard_service_port_number = 80
+standard_http_check_enabled  = true
+standard_http_check_path     = "/"
+
+additional_tags = [
+  "registry-ui",
+  "docker",
+  "ui",
+  "infrastructure"
+]
+
+# -----------------------------------------------------------------------
+# Traefik Routing
+# -----------------------------------------------------------------------
+
+traefik_enabled     = true
+traefik_host        = "registry-ui.munchbox"
+traefik_entrypoints = "websecure"
+traefik_tls_enabled = true
+traefik_middlewares = "dashboard-allowlan@file"
+
+# -----------------------------------------------------------------------
+# Termination
+# -----------------------------------------------------------------------
 
 kill_timeout = "30s"
 kill_signal  = "SIGTERM"
