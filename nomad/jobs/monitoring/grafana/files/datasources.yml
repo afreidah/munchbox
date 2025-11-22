@@ -34,4 +34,3 @@ datasources:
     editable: false
     jsonData:
       maxLines: 1000
-
