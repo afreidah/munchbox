@@ -94,6 +94,7 @@ task = {
     CONSUL_ENABLE = "1"
     CONSUL_ADDR   = "http://mccoy:8500"
     CONSUL_CACERT = "/etc/ssl/certs/nomad-agent-ca.pem"
+    NOMAD_HIDE_ENV_DATA = "1"
   }
 
   resources = {
@@ -109,6 +110,7 @@ standard_service_port_number = 3100
 standard_http_check_enabled  = true
 standard_http_check_path     = "/"
 additional_tags = [
+  "traefik.enable=true",
   "infrastructure",
   "nomad",
   "consul",

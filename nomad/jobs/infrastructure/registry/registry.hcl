@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Private Docker registry for Munchbox cluster accessible via HTTPS. Uses
-# Traefik HTTP routing with Consul catalog auto-discovery for dynamic service
-# location. Stores images on local SSD for stability and performance.
+# Traefik HTTP routing with bridge networking for external access. Stores
+# images on local SSD for stability and performance.
 # -------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------
@@ -16,6 +16,7 @@ job_name        = "registry"
 job_type        = "service"
 region          = "global"
 datacenters     = ["pi-dc"]
+node_pool       = "utility"
 namespace       = "default"
 priority        = 50
 job_description = "Docker registry with HTTPS routing via Traefik"
@@ -42,10 +43,14 @@ network_preset = "bridge"
 
 ports = [
   {
-    name = "registry"
+    name = "http"
     to   = 5000
   }
 ]
+
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
 
 # -----------------------------------------------------------------------
 # Placement Constraints
@@ -99,7 +104,7 @@ task = {
 
   config = {
     image = "registry:2"
-    ports = ["registry"]
+    ports = ["http"]
     volumes = [
       "local/config:/etc/docker/registry",
       "/opt/nomad/data/registry-data:/var/lib/registry"
@@ -108,34 +113,6 @@ task = {
 
   env = {
     TZ = "UTC"
-  }
-
-  service = {
-    name     = "docker-mirror"
-    port     = "registry"
-    provider = "consul"
-    tags = [
-      "traefik.enable=true",
-      "traefik.http.routers.docker-registry.rule=Host(`registry.munchbox`)",
-      "traefik.http.routers.docker-registry.entrypoints=websecure",
-      "traefik.http.routers.docker-registry.tls=true",
-      "traefik.http.services.docker-registry.loadbalancer.server.port=5000",
-      "registry",
-      "docker"
-    ]
-    checks = [
-      {
-        name     = "registry-http"
-        type     = "http"
-        path     = "/v2/"
-        interval = "10s"
-        timeout  = "3s"
-        check_restart = {
-          limit = 3
-          grace = "10s"
-        }
-      }
-    ]
   }
 }
 
@@ -149,7 +126,27 @@ consul_connect_enabled = false
 # Service Registration
 # -----------------------------------------------------------------------
 
-standard_service_enabled = false
+standard_service_enabled     = true
+standard_service_port        = "http"
+standard_service_port_number = 5000
+standard_http_check_enabled  = true
+standard_http_check_path     = "/v2/"
+
+additional_tags = [
+  "registry",
+  "docker",
+  "infrastructure"
+]
+
+# -----------------------------------------------------------------------
+# Traefik Routing
+# -----------------------------------------------------------------------
+
+traefik_enabled     = true
+traefik_host        = "registry.munchbox"
+traefik_entrypoints = "websecure"
+traefik_tls_enabled = true
+traefik_middlewares = "dashboard-allowlan@file"
 
 # -----------------------------------------------------------------------
 # Termination
