@@ -29,6 +29,10 @@ resource_tier = "small"
 # --- Network configuration ---
 network_preset = "host"
 
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
+
 ports = [
   {
     name   = "web"
@@ -104,7 +108,7 @@ task = {
   driver = "docker"
 
   config = {
-    image              = "registry.munchbox/deluge-with-vpnmark:latest"
+    image              = "registry.service.consul:5000/deluge-with-vpnmark:latest"
     image_pull_timeout = "10m"
     ports              = ["web"]
     cap_add            = ["CHOWN", "FOWNER"]
