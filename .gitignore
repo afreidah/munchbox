@@ -43,3 +43,4 @@ cdktf/bin/*
 AGENTS.md
 berks-cookbooks
 *semgrep*
+*tfvars*

@@ -3,8 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Variable definitions for VM provisioning. Actual values should be set in
-# terraform.tfvars (gitignored).
+# Variable definitions for VM provisioning on Proxmox using a Debian base
+# template on local-lvm. Ceph and cloud-init are intentionally omitted. Root
+# SSH keys baked into the template provide access for Ansible.
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------
@@ -18,7 +19,7 @@ variable "proxmox_api_url" {
 }
 
 variable "proxmox_api_token_id" {
-  description = "Proxmox API token ID (format: user@pam!tokenname)"
+  description = "Proxmox API token ID (format: user@pve!tokenname)"
   type        = string
   sensitive   = true
 }
@@ -40,51 +41,23 @@ variable "proxmox_tls_insecure" {
 # -------------------------------------------------------------------------------
 
 variable "template_name" {
-  description = "Name of the VM template to clone (Debian cloud-init template)"
+  description = "Name of the VM template to clone (Debian base on local-lvm)"
   type        = string
-  default     = "debian-12-cloudinit"
+  default     = "debian-base"
 }
 
 # -------------------------------------------------------------------------------
-# Ansible User Configuration
+# Storage and Network
 # -------------------------------------------------------------------------------
 
-variable "ansible_user" {
-  description = "Username for Ansible SSH access"
+variable "vm_disk_storage" {
+  description = "Proxmox storage ID used for VM disks"
   type        = string
-  default     = "ansible"
+  default     = "local-lvm"
 }
 
-variable "ansible_password" {
-  description = "Password for ansible user (only for initial bootstrap)"
+variable "vm_network_bridge" {
+  description = "Proxmox bridge used for VM networking"
   type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "ssh_public_key" {
-  description = "SSH public key for ansible user"
-  type        = string
-}
-
-# -------------------------------------------------------------------------------
-# Network Configuration
-# -------------------------------------------------------------------------------
-
-variable "gateway" {
-  description = "Default gateway for VMs"
-  type        = string
-  default     = "192.168.68.1"
-}
-
-variable "nameservers" {
-  description = "DNS nameservers for VMs"
-  type        = list(string)
-  default     = ["192.168.68.62", "192.168.68.64"]
-}
-
-variable "search_domain" {
-  description = "DNS search domain"
-  type        = string
-  default     = "munchbox.cc"
+  default     = "vmbr0"
 }
