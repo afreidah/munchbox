@@ -1,73 +1,60 @@
 # -------------------------------------------------------------------------------
-# Global Variables - All Hosts
+# Vault Configuration
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Common settings applied to all hosts in the Munchbox infrastructure.
+# HA configuration with Consul storage backend. Managed by Ansible.
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------
-# Network Configuration
+# Storage Backend - Consul
 # -------------------------------------------------------------------------------
 
-domain: munchbox.cc
-dns_servers:
-  - 192.168.68.62
-  - 192.168.68.64
-gateway: 192.168.68.1
-network_prefix: 192.168.68.0/24
+storage "consul" {
+  address = "{{ vault_consul_address }}"
+  path    = "{{ vault_consul_path }}"
+  scheme  = "{{ vault_consul_scheme }}"
+}
 
 # -------------------------------------------------------------------------------
-# Timezone and Locale
+# Listener - HTTPS API
 # -------------------------------------------------------------------------------
 
-timezone: America/Los_Angeles
-locale: en_US.UTF-8
+listener "tcp" {
+  address         = "{{ vault_listener_address }}"
+  cluster_address = "{{ vault_cluster_address }}"
+  tls_disable     = {{ vault_tls_disable | lower }}
+{% if not vault_tls_disable %}
+  tls_cert_file   = "{{ vault_tls_cert_file }}"
+  tls_key_file    = "{{ vault_tls_key_file }}"
+{% endif %}
+}
 
 # -------------------------------------------------------------------------------
-# Common Packages
+# Cluster Configuration
 # -------------------------------------------------------------------------------
 
-common_packages:
-  - curl
-  - wget
-  - vim
-  - git
-  - htop
-  - iotop
-  - net-tools
-  - dnsutils
-  - tmux
-  - jq
-  - unzip
-  - rsync
-  - sysstat
+api_addr     = "{{ vault_api_addr }}"
+cluster_addr = "{{ vault_cluster_addr }}"
+cluster_name = "{{ vault_cluster_name }}"
 
 # -------------------------------------------------------------------------------
-# Hashicorp Tool Versions
+# UI
 # -------------------------------------------------------------------------------
 
-nomad_version: 1.7.3
-consul_version: 1.17.1
-vault_version: 1.15.4
+ui = {{ vault_ui_enabled | lower }}
 
 # -------------------------------------------------------------------------------
-# Vault Configuration
+# Telemetry
 # -------------------------------------------------------------------------------
 
-vault_api_addr: "https://192.168.68.70:8200"
-
-# --- AppRole credentials (set after vault-init.yml)
-
-vault_approle_role_id: ""
-vault_approle_secret_id: ""
+telemetry {
+  disable_hostname          = {{ vault_telemetry_disable_hostname | lower }}
+  prometheus_retention_time = "{{ vault_telemetry_prometheus_retention_time }}"
+}
 
 # -------------------------------------------------------------------------------
-# Munchbox Infrastructure
+# Performance and Limits
 # -------------------------------------------------------------------------------
 
-consul_datacenter: munchbox
-consul_domain: consul
-
-nomad_datacenter: munchbox
-nomad_region: global
+disable_mlock = false

@@ -3,15 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Configuration specific to Nomad server nodes running the control plane. Supports
-# mixed architecture (x86_64 VMs and ARM64 bare-metal Pi5s).
+# Configuration specific to Nomad server nodes running the control plane.
 # -------------------------------------------------------------------------------
-
-# -------------------------------------------------------------------------------
-# Architecture Detection
-# -------------------------------------------------------------------------------
-
-nomad_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 
 # -------------------------------------------------------------------------------
 # Nomad Server Configuration
@@ -61,7 +54,7 @@ vault_ui_enabled: true
 # -------------------------------------------------------------------------------
 
 nomad_reserved_cpu: 500
-nomad_reserved_memory: 512
+nomad_reserved_memory: 1024
 
 # -------------------------------------------------------------------------------
 # Storage

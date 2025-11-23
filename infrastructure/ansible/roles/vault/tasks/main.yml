@@ -1,0 +1,182 @@
+---
+# -------------------------------------------------------------------------------
+# Vault Role - Main Tasks
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs and configures Vault in HA mode with Consul storage backend. Supports
+# PKI setup for certificate management across the cluster.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# System Setup
+# -------------------------------------------------------------------------------
+
+- name: Create Vault system group
+  group:
+    name: "{{ vault_group }}"
+    system: true
+    state: present
+
+- name: Create Vault system user
+  user:
+    name: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    system: true
+    shell: /bin/false
+    home: "{{ vault_data_dir }}"
+    create_home: false
+    state: present
+
+# -------------------------------------------------------------------------------
+# Directory Structure
+# -------------------------------------------------------------------------------
+
+- name: Create Vault directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0750"
+  loop:
+    - "{{ vault_config_dir }}"
+    - "{{ vault_data_dir }}"
+    - "{{ vault_tls_dir }}"
+    - "{{ vault_log_dir }}"
+
+# -------------------------------------------------------------------------------
+# Installation
+# -------------------------------------------------------------------------------
+
+- name: Check if Vault is installed
+  stat:
+    path: "{{ vault_bin_path }}"
+  register: vault_binary
+
+- name: Get installed Vault version
+  command: "{{ vault_bin_path }} version"
+  register: vault_installed_version
+  changed_when: false
+  failed_when: false
+  when: vault_binary.stat.exists
+
+- name: Download Vault
+  get_url:
+    url: "{{ vault_download_url }}"
+    dest: "/tmp/{{ vault_archive }}"
+    mode: "0644"
+  when: not vault_binary.stat.exists or vault_version not in vault_installed_version.stdout
+
+- name: Unzip Vault binary
+  unarchive:
+    src: "/tmp/{{ vault_archive }}"
+    dest: /usr/local/bin
+    remote_src: true
+    mode: "0755"
+    owner: root
+    group: root
+  when: not vault_binary.stat.exists or vault_version not in vault_installed_version.stdout
+  notify: restart vault
+
+- name: Remove Vault archive
+  file:
+    path: "/tmp/{{ vault_archive }}"
+    state: absent
+
+- name: Set Vault binary capabilities
+  capabilities:
+    path: "{{ vault_bin_path }}"
+    capability: cap_ipc_lock=+ep
+    state: present
+
+# -------------------------------------------------------------------------------
+# TLS Certificates
+# -------------------------------------------------------------------------------
+
+- name: Check if TLS certificate exists
+  stat:
+    path: "{{ vault_tls_cert_file }}"
+  register: vault_tls_cert
+
+- name: Generate self-signed TLS certificate
+  block:
+    - name: Generate private key
+      openssl_privatekey:
+        path: "{{ vault_tls_key_file }}"
+        size: 2048
+        owner: "{{ vault_user }}"
+        group: "{{ vault_group }}"
+        mode: "0600"
+
+    - name: Generate certificate signing request
+      openssl_csr:
+        path: "{{ vault_tls_dir }}/vault-csr.pem"
+        privatekey_path: "{{ vault_tls_key_file }}"
+        common_name: "{{ ansible_fqdn }}"
+        subject_alt_name:
+          - "DNS:{{ ansible_fqdn }}"
+          - "DNS:{{ ansible_hostname }}"
+          - "DNS:localhost"
+          - "IP:{{ ansible_default_ipv4.address }}"
+          - "IP:127.0.0.1"
+        owner: "{{ vault_user }}"
+        group: "{{ vault_group }}"
+        mode: "0644"
+
+    - name: Generate self-signed certificate
+      openssl_certificate:
+        path: "{{ vault_tls_cert_file }}"
+        privatekey_path: "{{ vault_tls_key_file }}"
+        csr_path: "{{ vault_tls_dir }}/vault-csr.pem"
+        provider: selfsigned
+        selfsigned_not_after: "+3650d"
+        owner: "{{ vault_user }}"
+        group: "{{ vault_group }}"
+        mode: "0644"
+  when: not vault_tls_cert.stat.exists
+
+# -------------------------------------------------------------------------------
+# Configuration
+# -------------------------------------------------------------------------------
+
+- name: Deploy Vault configuration
+  template:
+    src: vault.hcl.j2
+    dest: "{{ vault_config_dir }}/vault.hcl"
+    owner: "{{ vault_user }}"
+    group: "{{ vault_group }}"
+    mode: "0640"
+  notify: restart vault
+
+# -------------------------------------------------------------------------------
+# Systemd Service
+# -------------------------------------------------------------------------------
+
+- name: Deploy Vault systemd service
+  template:
+    src: vault.service.j2
+    dest: /etc/systemd/system/vault.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart vault
+
+- name: Enable and start Vault service
+  systemd:
+    name: "{{ vault_service_name }}"
+    enabled: "{{ vault_service_enabled }}"
+    state: "{{ vault_service_state }}"
+    daemon_reload: true
+
+# -------------------------------------------------------------------------------
+# Environment Setup
+# -------------------------------------------------------------------------------
+
+- name: Configure Vault environment variables
+  template:
+    src: vault.sh.j2
+    dest: /etc/profile.d/vault.sh
+    mode: "0644"
