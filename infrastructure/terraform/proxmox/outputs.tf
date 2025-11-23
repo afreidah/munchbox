@@ -4,23 +4,20 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Exposes VM metadata for downstream automation. IP assignment is managed
-# externally (DHCP or static configuration) and is not derived from Terraform.
-# This avoids deprecated attributes in the Proxmox provider schema.
+# externally (DHCP or static configuration). Two additional Nomad servers
+# (stabler, goren) run bare metal on Raspberry Pi5s.
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------
-# Nomad Servers
+# Nomad Server
 # -------------------------------------------------------------------------------
 
-output "nomad_servers" {
+output "nomad_server" {
   description = "Nomad server VM metadata"
   value = {
-    for vm in proxmox_vm_qemu.nomad_servers :
-    vm.name => {
-      vmid   = vm.vmid
-      node   = vm.target_node
-      memory = vm.memory
-    }
+    vmid   = proxmox_vm_qemu.nomad_server.vmid
+    node   = proxmox_vm_qemu.nomad_server.target_node
+    memory = proxmox_vm_qemu.nomad_server.memory
   }
 }
 
@@ -46,10 +43,56 @@ output "nomad_clients" {
       node   = proxmox_vm_qemu.nomad_client_03.target_node
       memory = proxmox_vm_qemu.nomad_client_03.memory
     }
-    "nomad-client-04" = {
-      vmid   = proxmox_vm_qemu.nomad_client_04.vmid
-      node   = proxmox_vm_qemu.nomad_client_04.target_node
-      memory = proxmox_vm_qemu.nomad_client_04.memory
-    }
   }
+}
+
+# -------------------------------------------------------------------------------
+# Ansible Inventory
+# -------------------------------------------------------------------------------
+
+output "ansible_inventory" {
+  description = "Ansible inventory in INI format"
+  value       = <<-EOT
+# -------------------------------------------------------------------------------
+# Dynamic Inventory - Nomad Cluster
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Mixed infrastructure: Nomad servers on bare-metal Pi5s (stabler, goren) and
+# one VM server on fontana. Clients run as VMs distributed across Proxmox hosts.
+# IP addresses assigned via DHCP or static configuration.
+# -------------------------------------------------------------------------------
+
+[nomad_servers]
+stabler ansible_host=192.168.68.66 ansible_connection=ssh
+goren ansible_host=192.168.68.67 ansible_connection=ssh
+nomad-server-03 ansible_host=192.168.68.72
+
+[nomad_clients]
+nomad-client-01 ansible_host=192.168.68.80
+nomad-client-02 ansible_host=192.168.68.81
+nomad-client-03 ansible_host=192.168.68.82
+
+[nomad_servers_arm64]
+stabler
+goren
+
+[nomad_servers_x86_64]
+nomad-server-03
+
+[nomad_cluster:children]
+nomad_servers
+nomad_clients
+
+[nomad_cluster:vars]
+ansible_user=ansible
+ansible_ssh_private_key_file=~/.ssh/id_ed25519
+ansible_python_interpreter=/usr/bin/python3
+
+[nomad_servers_arm64:vars]
+nomad_arch=arm64
+
+[nomad_servers_x86_64:vars]
+nomad_arch=amd64
+EOT
 }

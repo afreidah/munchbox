@@ -1,0 +1,18 @@
+---
+# -------------------------------------------------------------------------------
+# Vault Role - Handlers
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Service handlers for Vault configuration changes and restarts.
+# -------------------------------------------------------------------------------
+
+- name: reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: restart vault
+  systemd:
+    name: vault
+    state: restarted
+  when: vault_service_enabled

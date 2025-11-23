@@ -1,11 +1,11 @@
 # -------------------------------------------------------------------------------
-# Proxmox VM Provisioning - Nomad/Consul/Vault Base Cluster
+# Proxmox VM Provisioning - Nomad/Consul/Vault Cluster
 #
 # Project: Munchbox / Author: Alex Freidah
 #
 # Provisions Nomad server and client VMs on Proxmox by cloning a Debian base
-# template built on local-lvm. Removes prior Ceph and cloud-init dependencies
-# and relies on root SSH keys and Ansible for configuration.
+# template. Two additional Nomad servers run bare metal on Pi5s (stabler, goren).
+# Optimized for hardware constraints: fontana/mccoy 16GB, cabot 8GB.
 # -------------------------------------------------------------------------------
 
 terraform {
@@ -35,33 +35,29 @@ provider "proxmox" {
 # -------------------------------------------------------------------------------
 
 locals {
-  # Template VM name to clone (backed by VMID 100)
   template_name = var.template_name
-
-  # Storage and network configuration
-  disk_storage = var.vm_disk_storage   # local-lvm
-  net_bridge   = var.vm_network_bridge # vmbr0
+  disk_storage  = var.vm_disk_storage
+  net_bridge    = var.vm_network_bridge
 }
 
 # -------------------------------------------------------------------------------
-# Nomad Server VMs (3x on fontana)
+# Nomad Server VM (1x on fontana)
 # -------------------------------------------------------------------------------
 
-resource "proxmox_vm_qemu" "nomad_servers" {
-  count = 3
-
-  name        = "nomad-server-${format("%02d", count.index + 1)}"
+resource "proxmox_vm_qemu" "nomad_server" {
+  name        = "nomad-server-03"
   target_node = "fontana"
-  vmid        = 170 + count.index
+  vmid        = 172
 
   clone      = local.template_name
   full_clone = true
 
-  memory = 4096
+  memory = 2048
 
   cpu {
     cores   = 2
     sockets = 1
+    type    = "host"
   }
 
   scsihw = "virtio-scsi-pci"
@@ -79,8 +75,6 @@ resource "proxmox_vm_qemu" "nomad_servers" {
     bridge = local.net_bridge
   }
 
-  # No cloud-init configuration. Networking assumed via DHCP or external config.
-
   onboot = true
   agent  = 1
 }
@@ -89,21 +83,22 @@ resource "proxmox_vm_qemu" "nomad_servers" {
 # Nomad Client VMs (x86_64)
 # -------------------------------------------------------------------------------
 
-# --- Client 01 (cabot) ---
+# --- Client 01 (fontana) ---
 
 resource "proxmox_vm_qemu" "nomad_client_01" {
   name        = "nomad-client-01"
-  target_node = "cabot"
+  target_node = "fontana"
   vmid        = 180
 
   clone      = local.template_name
   full_clone = true
 
-  memory = 6144
+  memory = 13312
 
   cpu {
     cores   = 4
     sockets = 1
+    type    = "host"
   }
 
   scsihw = "virtio-scsi-pci"
@@ -135,11 +130,12 @@ resource "proxmox_vm_qemu" "nomad_client_02" {
   clone      = local.template_name
   full_clone = true
 
-  memory = 12288
+  memory = 15360
 
   cpu {
-    cores   = 6
+    cores   = 4
     sockets = 1
+    type    = "host"
   }
 
   scsihw = "virtio-scsi-pci"
@@ -161,21 +157,22 @@ resource "proxmox_vm_qemu" "nomad_client_02" {
   agent  = 1
 }
 
-# --- Client 03 (fontana) ---
+# --- Client 03 (cabot) ---
 
 resource "proxmox_vm_qemu" "nomad_client_03" {
   name        = "nomad-client-03"
-  target_node = "fontana"
+  target_node = "cabot"
   vmid        = 182
 
   clone      = local.template_name
   full_clone = true
 
-  memory = 16384
+  memory = 7168
 
   cpu {
-    cores   = 8
+    cores   = 4
     sockets = 1
+    type    = "host"
   }
 
   scsihw = "virtio-scsi-pci"
@@ -196,40 +193,3 @@ resource "proxmox_vm_qemu" "nomad_client_03" {
   onboot = true
   agent  = 1
 }
-
-# --- Client 04 (fontana) ---
-
-resource "proxmox_vm_qemu" "nomad_client_04" {
-  name        = "nomad-client-04"
-  target_node = "fontana"
-  vmid        = 183
-
-  clone      = local.template_name
-  full_clone = true
-
-  memory = 10240
-
-  cpu {
-    cores   = 6
-    sockets = 1
-  }
-
-  scsihw = "virtio-scsi-pci"
-
-  disk {
-    slot    = "scsi0"
-    type    = "disk"
-    storage = local.disk_storage
-    size    = "40G"
-  }
-
-  network {
-    id     = 0
-    model  = "virtio"
-    bridge = local.net_bridge
-  }
-
-  onboot = true
-  agent  = 1
-}
-

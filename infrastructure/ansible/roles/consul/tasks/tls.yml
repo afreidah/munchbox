@@ -1,0 +1,38 @@
+---
+# -------------------------------------------------------------------------------
+# Consul TLS Configuration
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Generates TLS certificates from Vault PKI for Consul servers and clients.
+# -------------------------------------------------------------------------------
+
+- name: Generate Consul server certificate
+  include_role:
+    name: vault-cert
+  vars:
+    vault_cert_role: "consul-server"
+    vault_cert_common_name: "server.{{ consul_datacenter }}.consul"
+    vault_cert_alt_names: "localhost,{{ ansible_hostname }},{{ ansible_fqdn }}"
+    vault_cert_ip_sans: "{{ ansible_default_ipv4.address }},127.0.0.1"
+    vault_cert_dest: "{{ consul_tls_dir }}"
+    vault_cert_name: "consul"
+    vault_cert_owner: "{{ consul_user }}"
+    vault_cert_group: "{{ consul_group }}"
+    vault_cert_ttl: "8760h"
+  when: consul_server_enabled
+
+- name: Generate Consul client certificate
+  include_role:
+    name: vault-cert
+  vars:
+    vault_cert_role: "consul-client"
+    vault_cert_common_name: "client.{{ consul_datacenter }}.consul"
+    vault_cert_alt_names: "localhost,{{ ansible_hostname }},{{ ansible_fqdn }}"
+    vault_cert_ip_sans: "{{ ansible_default_ipv4.address }},127.0.0.1"
+    vault_cert_dest: "{{ consul_tls_dir }}"
+    vault_cert_name: "consul"
+    vault_cert_owner: "{{ consul_user }}"
+    vault_cert_group: "{{ consul_group }}"
+    vault_cert_ttl: "8760h"
+  when: consul_client_enabled
