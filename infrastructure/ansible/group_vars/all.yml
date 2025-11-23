@@ -1,0 +1,63 @@
+# -------------------------------------------------------------------------------
+# Global Variables - All Hosts
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Common settings applied to all hosts in the Munchbox infrastructure.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# Network Configuration
+# -------------------------------------------------------------------------------
+
+domain: munchbox.cc
+dns_servers:
+  - 192.168.68.62  # green
+  - 192.168.68.64  # logan
+gateway: 192.168.68.1
+network_prefix: 192.168.68.0/24
+
+# -------------------------------------------------------------------------------
+# Timezone and Locale
+# -------------------------------------------------------------------------------
+
+timezone: America/Los_Angeles
+locale: en_US.UTF-8
+
+# -------------------------------------------------------------------------------
+# Common Packages
+# -------------------------------------------------------------------------------
+
+common_packages:
+  - curl
+  - wget
+  - vim
+  - git
+  - htop
+  - iotop
+  - net-tools
+  - dnsutils
+  - tmux
+  - jq
+  - unzip
+  - rsync
+  - sysstat
+
+# -------------------------------------------------------------------------------
+# Hashicorp Tool Versions
+# -------------------------------------------------------------------------------
+
+nomad_version: 1.7.3
+consul_version: 1.17.1
+vault_version: 1.15.4
+
+# -------------------------------------------------------------------------------
+# Munchbox Infrastructure
+# -------------------------------------------------------------------------------
+
+consul_datacenter: munchbox
+consul_domain: consul
+consul_encrypt_key: "{{ vault_consul_encrypt_key | default('') }}"
+
+nomad_datacenter: munchbox
+nomad_region: global

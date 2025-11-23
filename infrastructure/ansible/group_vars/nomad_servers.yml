@@ -1,0 +1,55 @@
+# -------------------------------------------------------------------------------
+# Group Variables - Nomad Servers
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configuration specific to Nomad server nodes running the control plane.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# Nomad Server Configuration
+# -------------------------------------------------------------------------------
+
+nomad_server_enabled: true
+nomad_client_enabled: false
+
+nomad_server_bootstrap_expect: 3
+
+nomad_server_config:
+  enabled: true
+  bootstrap_expect: 3
+  raft_protocol: 3
+  encrypt: "{{ vault_nomad_encrypt_key | default('') }}"
+
+# -------------------------------------------------------------------------------
+# Consul Server Configuration
+# -------------------------------------------------------------------------------
+
+consul_server_enabled: true
+consul_client_enabled: false
+
+consul_server_bootstrap_expect: 3
+
+consul_server_config:
+  enabled: true
+  bootstrap_expect: 3
+
+# -------------------------------------------------------------------------------
+# System Resources
+# -------------------------------------------------------------------------------
+
+nomad_reserved_cpu: 500
+nomad_reserved_memory: 1024
+
+# -------------------------------------------------------------------------------
+# Storage
+# -------------------------------------------------------------------------------
+
+nomad_data_dir: /opt/nomad/data
+consul_data_dir: /opt/consul/data
+
+# -------------------------------------------------------------------------------
+# Connect / Service Mesh
+# -------------------------------------------------------------------------------
+
+consul_connect_enabled: true

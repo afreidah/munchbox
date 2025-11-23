@@ -1,0 +1,126 @@
+---
+# -------------------------------------------------------------------------------
+# Nomad Cluster Configuration Playbook
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures Nomad and Consul on VMs provisioned by Terraform. Sets up Nomad
+# servers, clients, and Consul Connect service mesh.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# Pre-Flight Checks
+# -------------------------------------------------------------------------
+
+- name: Verify connectivity to Nomad cluster nodes
+  hosts: nomad_cluster
+  gather_facts: false
+  tasks:
+    - name: Wait for VMs to be ready
+      wait_for_connection:
+        timeout: 300
+        
+    - name: Gather facts
+      setup:
+
+# -------------------------------------------------------------------------
+# Common Configuration
+# -------------------------------------------------------------------------
+
+- name: Configure common settings on all nodes
+  hosts: nomad_cluster
+  become: true
+  roles:
+    - common
+  tags: [common]
+
+# -------------------------------------------------------------------------
+# DNS Integration
+# -------------------------------------------------------------------------
+
+- name: Configure DNS for Consul integration
+  hosts: nomad_cluster
+  become: true
+  roles:
+    - dns
+  tags: [dns]
+
+# -------------------------------------------------------------------------
+# Consul Installation and Configuration
+# -------------------------------------------------------------------------
+
+- name: Install and configure Consul servers
+  hosts: nomad_servers
+  become: true
+  serial: 1
+  roles:
+    - consul
+  tags: [consul, consul-servers]
+
+- name: Install and configure Consul clients
+  hosts: nomad_clients
+  become: true
+  roles:
+    - consul
+  tags: [consul, consul-clients]
+
+# -------------------------------------------------------------------------
+# Nomad Installation and Configuration
+# -------------------------------------------------------------------------
+
+- name: Install and configure Nomad servers
+  hosts: nomad_servers
+  become: true
+  serial: 1
+  roles:
+    - nomad
+  tags: [nomad, nomad-servers]
+
+- name: Install and configure Nomad clients
+  hosts: nomad_clients
+  become: true
+  roles:
+    - nomad
+  tags: [nomad, nomad-clients]
+
+# -------------------------------------------------------------------------
+# Verification
+# -------------------------------------------------------------------------
+
+- name: Verify cluster health
+  hosts: nomad_servers[0]
+  become: true
+  tasks:
+    - name: Wait for Consul to be ready
+      command: consul members
+      register: consul_members
+      until: consul_members.rc == 0
+      retries: 30
+      delay: 10
+      changed_when: false
+      
+    - name: Display Consul members
+      debug:
+        var: consul_members.stdout_lines
+        
+    - name: Wait for Nomad to be ready
+      command: nomad server members
+      register: nomad_members
+      until: nomad_members.rc == 0
+      retries: 30
+      delay: 10
+      changed_when: false
+      
+    - name: Display Nomad servers
+      debug:
+        var: nomad_members.stdout_lines
+        
+    - name: Check Nomad node status
+      command: nomad node status
+      register: nomad_nodes
+      changed_when: false
+      
+    - name: Display Nomad nodes
+      debug:
+        var: nomad_nodes.stdout_lines
+  tags: [verify]

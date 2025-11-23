@@ -1,0 +1,22 @@
+# -------------------------------------------------------------------------------
+# Proxmox VM Provisioning - Example Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Example configuration file. Copy to terraform.tfvars and customize with your
+# actual Proxmox credentials and settings.
+# -------------------------------------------------------------------------------
+
+proxmox_api_url          = "https://192.168.68.65:8006/api2/json"
+proxmox_api_token_id     = "terraform@pam!terraform"
+proxmox_api_token_secret = "your-token-secret-here"
+proxmox_tls_insecure     = true
+
+template_name = "debian-12-cloudinit"
+
+ansible_user   = "ansible"
+ssh_public_key = "ssh-ed25519 AAAAC3... your-public-key-here"
+
+gateway       = "192.168.68.1"
+nameservers   = ["192.168.68.62", "192.168.68.64"]
+search_domain = "munchbox.cc"

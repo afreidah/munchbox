@@ -1,0 +1,54 @@
+#cloud-config
+# -------------------------------------------------------------------------------
+# Cloud-Init Configuration - Nomad Clients
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Initial bootstrap for Nomad client VMs. Installs Docker from official Debian
+# repositories and basic packages for running containerized workloads.
+# -------------------------------------------------------------------------------
+
+hostname: ${hostname}
+fqdn: ${hostname}.munchbox.cc
+manage_etc_hosts: true
+
+users:
+  - name: ansible
+    groups: sudo,docker
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    lock_passwd: false
+
+packages:
+  - qemu-guest-agent
+  - python3
+  - python3-pip
+  - curl
+  - wget
+  - vim
+  - git
+  - htop
+  - net-tools
+  - dnsutils
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+
+package_update: true
+package_upgrade: true
+
+runcmd:
+  - systemctl enable qemu-guest-agent
+  - systemctl start qemu-guest-agent
+  - timedatectl set-timezone America/Los_Angeles
+  - curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker ansible
+  - echo "Cloud-init complete" > /var/log/cloud-init-done
+
+final_message: "Cloud-init complete after $UPTIME seconds"
