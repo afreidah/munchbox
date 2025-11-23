@@ -1,0 +1,25 @@
+---
+# -------------------------------------------------------------------------------
+# Main Site Playbook
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Master playbook orchestrating complete infrastructure setup. Assumes Proxmox
+# is already installed from ISO on bare metal.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# Phase 1: Proxmox Cluster Setup
+# -------------------------------------------------------------------------
+
+- name: Configure Proxmox cluster
+  import_playbook: proxmox-cluster.yml
+  tags: [proxmox, cluster]
+
+# -------------------------------------------------------------------------
+# Phase 2: Nomad Cluster Configuration
+# -------------------------------------------------------------------------
+
+- name: Configure Nomad cluster
+  import_playbook: nomad-cluster.yml
+  tags: [nomad, cluster]

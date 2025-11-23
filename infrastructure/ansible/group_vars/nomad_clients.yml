@@ -1,0 +1,50 @@
+# -------------------------------------------------------------------------------
+# Group Variables - Nomad Clients
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configuration specific to Nomad client nodes running workloads.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# Nomad Client Configuration
+# -------------------------------------------------------------------------------
+
+nomad_server_enabled: false
+nomad_client_enabled: true
+
+nomad_client_config:
+  enabled: true
+  network_interface: "{{ ansible_default_ipv4.interface }}"
+  
+nomad_client_host_volumes:
+  - name: "nomad-data"
+    path: "/opt/nomad/data/volumes"
+    read_only: false
+
+# -------------------------------------------------------------------------------
+# Consul Client Configuration
+# -------------------------------------------------------------------------------
+
+consul_server_enabled: false
+consul_client_enabled: true
+
+# -------------------------------------------------------------------------------
+# System Resources
+# -------------------------------------------------------------------------------
+
+nomad_reserved_cpu: 1000
+nomad_reserved_memory: 2048
+
+# -------------------------------------------------------------------------------
+# Storage
+# -------------------------------------------------------------------------------
+
+nomad_data_dir: /opt/nomad/data
+consul_data_dir: /opt/consul/data
+
+# -------------------------------------------------------------------------------
+# Connect / Service Mesh
+# -------------------------------------------------------------------------------
+
+consul_connect_enabled: true
