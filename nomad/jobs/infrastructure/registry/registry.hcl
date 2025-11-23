@@ -26,12 +26,12 @@ category           = "infrastructure"
 resource_tier = "medium"
 
 # --- Network configuration ---
-network_preset = "bridge"
+network_preset = "host"
 
 ports = [
   {
-    name = "http"
-    to   = 5000
+    name   = "http"
+    static = 5000
   }
 ]
 
@@ -111,7 +111,10 @@ standard_http_check_path     = "/v2/"
 additional_tags = [
   "docker",
   "registry",
-  "infrastructure"
+  "infrastructure",
+  "traefik.http.services.registry.loadbalancer.server.scheme=http",
+  "traefik.http.services.registry.loadbalancer.responsetimeouts.readtimeout=300s",
+  "traefik.http.services.registry.loadbalancer.responsetimeouts.writetimeout=300s"
 ]
 
 # --- Traefik routing ---

@@ -1,32 +1,33 @@
 # ---------------------------------------------------------------------------
-# Grafana Datasources — Prometheus + Loki via Consul Connect Upstreams
+# Grafana Datasources — Prometheus + Loki via Consul DNS
 #
-# Both services are reached via Connect mesh upstreams on localhost:
-#   - Prometheus upstream on local_bind_port 9090
-#   - Loki upstream on local_bind_port 3100
+# Both services are reached via Consul DNS with host address mode:
+#   - prometheus.service.consul:9090
+#   - loki.service.consul:3100
 # ---------------------------------------------------------------------------
 apiVersion: 1
 datasources:
+  # -------------------------------------------------------------------------
+  # Prometheus (Metrics)
+  # -------------------------------------------------------------------------
   - name: Prometheus
     uid: prometheus
     type: prometheus
     access: proxy
-    url: http://127.0.0.1:9090
+    url: http://prometheus.service.consul:9090
     isDefault: true
     editable: false
     jsonData:
       timeInterval: 30s
-      httpMethod: POST
-    basicAuth: false
-    withCredentials: false
-    
+      
+  # -------------------------------------------------------------------------
+  # Loki (Logs)
+  # -------------------------------------------------------------------------
   - name: Loki
     uid: loki
     type: loki
     access: proxy
-    url: http://127.0.0.1:3100
+    url: http://loki.service.consul:3100
     editable: false
     jsonData:
       maxLines: 1000
-    basicAuth: false
-    withCredentials: false

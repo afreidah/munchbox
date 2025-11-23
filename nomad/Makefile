@@ -25,7 +25,7 @@ help:
 	@echo "  make run JOB=temporal-backup-worker"
 
 # Auto-discover all job files
-JOBS := $(shell find jobs -name '*.hcl' -type f)
+JOBS := $(shell find jobs -name '*.hcl' -type f | grep -v traefik)
 
 # List all jobs
 list:

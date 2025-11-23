@@ -6,6 +6,10 @@ storage:
     rootdirectory: /var/lib/registry
 http:
   addr: :5000
+  timeouts:
+    read: 300s
+    write: 300s
+    idle: 300s
   headers:
     Access-Control-Allow-Origin: ["http://192.168.68.60:5001", "http://registry.munchbox"]
     Access-Control-Allow-Methods: ["GET", "HEAD", "OPTIONS"]

@@ -25,8 +25,8 @@ help: ## Show this help message
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────
 
-REGISTRY_HOST ?= registry.munchbox
-REGISTRY      ?= $(REGISTRY_HOST)
+REGISTRY_HOST ?= registry.service.consul
+REGISTRY      ?= "$(REGISTRY_HOST):5000"
 TAG           ?= latest
 APP           ?=
 

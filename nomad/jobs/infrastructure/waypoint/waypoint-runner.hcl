@@ -29,6 +29,10 @@ resource_tier = "small"
 # --- Network configuration ---
 network_preset = "host"
 
+dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_searches = ["service.consul"]
+dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
+
 # --- Placement constraints ---
 constraints = [
   {
@@ -62,7 +66,7 @@ task = {
   driver = "docker"
 
   config = {
-    image      = "registry.munchbox/ops-waypoint-image:latest"
+    image      = "registry.service.consul:5000/ops-waypoint-image:latest"
     entrypoint = ["/bin/sh", "-c"]
     args = [
       "export WAYPOINT_SERVER_TOKEN=$(cat /data/waypoint-token) && exec waypoint runner agent"

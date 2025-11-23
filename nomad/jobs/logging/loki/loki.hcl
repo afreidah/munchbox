@@ -22,8 +22,8 @@ network_preset = "bridge"
 
 ports = [
   {
-    name = "http"
-    to   = 3100
+    name   = "http"
+    static = 3100
   },
   {
     name = "grpc"
