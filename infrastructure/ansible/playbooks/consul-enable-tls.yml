@@ -1,0 +1,154 @@
+---
+# -------------------------------------------------------------------------------
+# Enable Consul TLS
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Generates TLS certificates from Vault PKI and reconfigures Consul cluster
+# to use mTLS for all communication.
+# -------------------------------------------------------------------------------
+
+- name: Generate Consul server certificates
+  vars:
+    vault_api_addr: "http://192.168.68.61:8200"
+    vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
+    vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
+  hosts: nomad_servers
+  become: true
+  serial: 1
+  tasks:
+    - name: Generate server certificate from Vault
+      include_role:
+        name: vault-cert
+      vars:
+        vault_cert_role: "consul-server"
+        vault_cert_common_name: "server.{{ consul_datacenter }}.consul"
+        vault_cert_alt_names: "localhost,{{ inventory_hostname }},{{ ansible_hostname }},{{ ansible_fqdn }},{{ inventory_hostname }}.munchbox.cc,server.{{ consul_datacenter }}.consul"
+        vault_cert_ip_sans: "{{ ansible_default_ipv4.address }},127.0.0.1"
+        vault_cert_dest: "/etc/consul.d/tls"
+        vault_cert_name: "consul"
+        vault_cert_owner: "consul"
+        vault_cert_group: "consul"
+        vault_cert_ttl: "8760h"
+
+    - name: Update Consul config for TLS
+      blockinfile:
+        path: /etc/consul.d/consul.hcl
+        marker: "# {mark} TLS Configuration"
+        block: |
+          
+          tls {
+            defaults {
+              ca_file   = "/etc/consul.d/tls/ca.crt"
+              cert_file = "/etc/consul.d/tls/consul.crt"
+              key_file  = "/etc/consul.d/tls/consul.key"
+              
+              verify_incoming = true
+              verify_outgoing = true
+            }
+            
+            internal_rpc {
+              verify_server_hostname = true
+            }
+          }
+
+    - name: Update ports config for HTTPS
+      lineinfile:
+        path: /etc/consul.d/consul.hcl
+        regexp: '^\s*https\s*='
+        line: '  https     = 8501'
+        insertafter: 'ports {'
+
+    - name: Restart Consul with TLS
+      systemd:
+        name: consul
+        state: restarted
+
+    - name: Wait for Consul to be ready
+      wait_for:
+        port: 8501
+        timeout: 60
+
+- name: Generate Consul client certificates  
+  vars:
+    vault_api_addr: "http://192.168.68.61:8200"
+    vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
+    vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
+  hosts: nomad_clients
+  become: true
+  tasks:
+    - name: Generate client certificate from Vault
+      include_role:
+        name: vault-cert
+      vars:
+        vault_cert_role: "consul-client"
+        vault_cert_common_name: "client.{{ consul_datacenter }}.consul"
+        vault_cert_alt_names: "localhost,{{ inventory_hostname }},{{ ansible_hostname }},{{ inventory_hostname }}.munchbox.cc,client.{{ consul_datacenter }}.consul"
+        vault_cert_ip_sans: "{{ ansible_default_ipv4.address }},127.0.0.1"
+        vault_cert_dest: "/etc/consul.d/tls"
+        vault_cert_name: "consul"
+        vault_cert_owner: "consul"
+        vault_cert_group: "consul"
+        vault_cert_ttl: "8760h"
+
+    - name: Update Consul config for TLS
+      blockinfile:
+        path: /etc/consul.d/consul.hcl
+        marker: "# {mark} TLS Configuration"
+        block: |
+          
+          tls {
+            defaults {
+              ca_file   = "/etc/consul.d/tls/ca.crt"
+              cert_file = "/etc/consul.d/tls/consul.crt"
+              key_file  = "/etc/consul.d/tls/consul.key"
+              
+              verify_incoming = true
+              verify_outgoing = true
+            }
+          }
+
+    - name: Update ports config for HTTPS
+      lineinfile:
+        path: /etc/consul.d/consul.hcl
+        regexp: '^\s*https\s*='
+        line: '  https     = 8501'
+        insertafter: 'ports {'
+
+    - name: Restart Consul with TLS
+      systemd:
+        name: consul
+        state: restarted
+
+- name: Update environment for HTTPS
+  hosts: nomad_cluster
+  become: true
+  tasks:
+    - name: Update Consul environment variables
+      copy:
+        content: |
+          export CONSUL_HTTP_ADDR="https://127.0.0.1:8501"
+          export CONSUL_CACERT="/etc/consul.d/tls/ca.crt"
+          export CONSUL_CLIENT_CERT="/etc/consul.d/tls/consul.crt"
+          export CONSUL_CLIENT_KEY="/etc/consul.d/tls/consul.key"
+        dest: /etc/profile.d/consul.sh
+        mode: '0644'
+
+- name: Verify TLS is working
+  hosts: nomad_servers[0]
+  become: true
+  tasks:
+    - name: Test HTTPS connection
+      command: consul members
+      environment:
+        CONSUL_HTTP_ADDR: "https://127.0.0.1:8501"
+        CONSUL_CACERT: "/etc/consul.d/tls/ca.crt"
+        CONSUL_CLIENT_CERT: "/etc/consul.d/tls/consul.crt"
+        CONSUL_CLIENT_KEY: "/etc/consul.d/tls/consul.key"
+      register: consul_tls_test
+      
+    - name: Display result
+      debug:
+        var: consul_tls_test.stdout_lines
+
+# Add this at the top level vars if it doesn't exist

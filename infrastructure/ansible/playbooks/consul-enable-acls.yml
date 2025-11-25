@@ -1,0 +1,27 @@
+---
+- name: Enable ACLs on all Consul nodes
+  hosts: nomad_cluster
+  become: true
+  tasks:
+    - name: Add ACL configuration to Consul
+      blockinfile:
+        path: /etc/consul.d/consul.hcl
+        marker: "# {mark} ACL Configuration"
+        block: |
+          
+          acl {
+            enabled = true
+            default_policy = "deny"
+            enable_token_persistence = true
+          }
+        
+    - name: Restart Consul
+      systemd:
+        name: consul
+        state: restarted
+        
+    - name: Wait for Consul
+      wait_for:
+        port: 8501
+        delay: 2
+        timeout: 30

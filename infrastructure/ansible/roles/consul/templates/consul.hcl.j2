@@ -3,15 +3,16 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# {% if consul_server_enabled %}Server{% else %}Client{% endif %} configuration for {{ ansible_hostname }}. Managed by Ansible.
+# {% if consul_server_enabled | bool %}Server{% else %}Client{% endif %} configuration for {{ ansible_hostname }}. Managed by Ansible.
 # -------------------------------------------------------------------------------
 
 datacenter = "{{ consul_datacenter }}"
+node_name = "{{ inventory_hostname }}"
 data_dir   = "{{ consul_data_dir }}"
 bind_addr  = "{{ consul_bind_addr }}"
 client_addr = "{{ consul_client_addr }}"
 
-{% if consul_server_enabled %}
+{% if consul_server_enabled | bool %}
 # -------------------------------------------------------------------------------
 # Server Configuration
 # -------------------------------------------------------------------------------

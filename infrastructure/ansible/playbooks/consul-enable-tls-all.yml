@@ -1,0 +1,38 @@
+---
+- name: Enable TLS on all Consul nodes
+  hosts: nomad_cluster
+  become: true
+  tasks:
+    - name: Add TLS configuration to Consul
+      blockinfile:
+        path: /etc/consul.d/consul.hcl
+        marker: "# {mark} TLS Configuration"
+        block: |
+          
+          tls {
+            defaults {
+              ca_file   = "/etc/consul.d/tls/ca-chain.crt"
+              cert_file = "/etc/consul.d/tls/consul.crt"
+              key_file  = "/etc/consul.d/tls/consul.key"
+              verify_incoming = false
+              verify_outgoing = true
+              verify_server_hostname = true
+            }
+          }
+    
+    - name: Update HTTPS port
+      lineinfile:
+        path: /etc/consul.d/consul.hcl
+        regexp: '^  https\s*='
+        line: '  https     = 8501'
+        
+    - name: Restart Consul
+      systemd:
+        name: consul
+        state: restarted
+        
+    - name: Wait for Consul
+      wait_for:
+        port: 8501
+        delay: 2
+        timeout: 30

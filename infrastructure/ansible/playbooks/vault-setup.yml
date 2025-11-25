@@ -75,6 +75,6 @@
       failed_when: false
       changed_when: false
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "https://{{ ansible_default_ipv4.address }}:8200"
         VAULT_SKIP_VERIFY: "true"
   tags: [verify]

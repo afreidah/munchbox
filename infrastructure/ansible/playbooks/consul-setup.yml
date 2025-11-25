@@ -23,6 +23,9 @@
   hosts: nomad_servers
   become: true
   serial: 1
+  vars:
+    consul_server_enabled: true
+    consul_client_enabled: false
   roles:
     - consul
   tags: [consul, consul-servers]
@@ -30,6 +33,9 @@
 - name: Install and configure Consul clients
   hosts: nomad_clients
   become: true
+  vars:
+    consul_server_enabled: false
+    consul_client_enabled: true
   roles:
     - consul
   tags: [consul, consul-clients]

@@ -23,13 +23,13 @@
     validate_certs: false
     status_code: 200
   register: vault_login
-  delegate_to: localhost
-  run_once: true
+  # delegate_to: localhost
+  # run_once: true
 
 - name: Parse Vault token
   set_fact:
     vault_token: "{{ vault_login.json.auth.client_token }}"
-  run_once: true
+  # run_once: true
 
 # -------------------------------------------------------------------------------
 # Certificate Issuance
@@ -51,7 +51,7 @@
     validate_certs: false
     status_code: 200
   register: vault_cert_response
-  delegate_to: localhost
+  # delegate_to: localhost
 
 - name: Parse certificate data
   set_fact:
