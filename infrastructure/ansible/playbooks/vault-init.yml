@@ -1,131 +1,30 @@
 ---
 # -------------------------------------------------------------------------------
-# Vault Initialization and PKI Setup Playbook
+# Vault PKI and AppRole Setup (Vault already initialized)
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Initializes Vault cluster, configures PKI infrastructure, creates policies for
-# certificate issuance, and sets up AppRole authentication for Ansible automation.
-# Run once on a new Vault cluster only.
+# Configures PKI infrastructure, creates policies for certificate issuance,
+# and sets up AppRole authentication. Assumes Vault is already initialized.
 # -------------------------------------------------------------------------------
 
-- name: Initialize Vault cluster
+- name: Load root token and configure PKI
   hosts: nomad_servers[0]
   become: true
   tasks:
-    - name: Check if Vault is already initialized
-      command: vault status -format=json
-      register: vault_status
-      failed_when: false
-      changed_when: false
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_SKIP_VERIFY: "true"
+    - name: Load Vault init credentials
+      include_vars:
+        file: "{{ ansible_user_dir }}/.munchbox/vault/init-2025-11-25.json"
+        name: vault_init_data
 
-    - name: Parse Vault status
+    - name: Set vault_root_token from init file
       set_fact:
-        vault_initialized: "{{ (vault_status.stdout | from_json).initialized | default(false) }}"
-      when: vault_status.rc == 0
-
-    - name: Fail if Vault is already initialized
-      fail:
-        msg: "Vault is already initialized. This playbook should only be run on a new cluster."
-      when: vault_initialized | default(false)
-
-    - name: Initialize Vault
-      command: >
-        vault operator init
-        -key-shares={{ vault_init_key_shares }}
-        -key-threshold={{ vault_init_key_threshold }}
-        -format=json
-      register: vault_init_output
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_SKIP_VERIFY: "true"
-      when: not (vault_initialized | default(false))
-
-    - name: Save initialization output
-      copy:
-        content: "{{ vault_init_output.stdout }}"
-        dest: /tmp/vault-init.json
-        mode: "0600"
-      when: vault_init_output is changed
-
-    - name: Parse initialization output
-      set_fact:
-        vault_unseal_keys: "{{ (vault_init_output.stdout | from_json).unseal_keys_b64 }}"
-        vault_root_token: "{{ (vault_init_output.stdout | from_json).root_token }}"
-      when: vault_init_output is changed
-
-    - name: Display initialization output location
-      debug:
-        msg: "Vault initialized. Credentials saved to /tmp/vault-init.json"
-      when: vault_init_output is changed
-
-- name: Unseal Vault servers
-  hosts: nomad_servers
-  become: true
-  tasks:
-    - name: Load initialization data
-      slurp:
-        src: /tmp/vault-init.json
-      register: vault_init_data
-      delegate_to: "{{ groups['nomad_servers'][0] }}"
-      run_once: true
-
-    - name: Parse initialization data
-      set_fact:
-        vault_unseal_keys: "{{ (vault_init_data.content | b64decode | from_json).unseal_keys_b64 }}"
-        vault_root_token: "{{ (vault_init_data.content | b64decode | from_json).root_token }}"
-      run_once: true
-
-    - name: Unseal Vault (key 1)
-      command: vault operator unseal "{{ vault_unseal_keys[0] }}"
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_SKIP_VERIFY: "true"
-      changed_when: true
-
-    - name: Unseal Vault (key 2)
-      command: vault operator unseal "{{ vault_unseal_keys[1] }}"
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_SKIP_VERIFY: "true"
-      changed_when: true
-
-    - name: Unseal Vault (key 3)
-      command: vault operator unseal "{{ vault_unseal_keys[2] }}"
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_SKIP_VERIFY: "true"
-      changed_when: true
-
-    - name: Verify Vault is unsealed
-      command: vault status
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_SKIP_VERIFY: "true"
-      changed_when: false
-
-- name: Configure PKI Root CA
-  hosts: nomad_servers[0]
-  become: true
-  tasks:
-    - name: Load root token
-      slurp:
-        src: /tmp/vault-init.json
-      register: vault_init_data
-
-    - name: Parse root token
-      set_fact:
-        vault_root_token: "{{ (vault_init_data.content | b64decode | from_json).root_token }}"
-
+        vault_root_token: "{{ vault_init_data.root_token }}"
     - name: Enable PKI secrets engine for Root CA
       command: vault secrets enable -path=pki pki
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: pki_enable
       failed_when: pki_enable.rc != 0 and 'path is already in use' not in pki_enable.stderr
       changed_when: pki_enable.rc == 0
@@ -133,9 +32,8 @@
     - name: Tune PKI Root CA max lease TTL
       command: vault secrets tune -max-lease-ttl=87600h pki
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       when: pki_enable is changed
 
     - name: Generate Root CA
@@ -144,42 +42,38 @@
         common_name="Munchbox Root CA"
         ttl=87600h
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: root_ca_output
       when: pki_enable is changed
 
     - name: Configure PKI Root CA URLs
       command: >
         vault write pki/config/urls
-        issuing_certificates="https://vault.munchbox.cc:8200/v1/pki/ca"
-        crl_distribution_points="https://vault.munchbox.cc:8200/v1/pki/crl"
+        issuing_certificates="http://vault.munchbox.cc:8200/v1/pki/ca"
+        crl_distribution_points="http://vault.munchbox.cc:8200/v1/pki/crl"
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       when: pki_enable is changed
 
 - name: Configure PKI Intermediate CA
   hosts: nomad_servers[0]
   become: true
   tasks:
-    - name: Load root token
-      slurp:
-        src: /tmp/vault-init.json
-      register: vault_init_data
+    - name: Load Vault init credentials
+      include_vars:
+        file: "{{ ansible_user_dir }}/.munchbox/vault/init-2025-11-25.json"
+        name: vault_init_data
 
-    - name: Parse root token
+    - name: Set vault_root_token from init file
       set_fact:
-        vault_root_token: "{{ (vault_init_data.content | b64decode | from_json).root_token }}"
-
+        vault_root_token: "{{ vault_init_data.root_token }}"
     - name: Enable PKI secrets engine for Intermediate CA
       command: vault secrets enable -path=pki_int pki
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: pki_int_enable
       failed_when: pki_int_enable.rc != 0 and 'path is already in use' not in pki_int_enable.stderr
       changed_when: pki_int_enable.rc == 0
@@ -187,9 +81,8 @@
     - name: Tune PKI Intermediate CA max lease TTL
       command: vault secrets tune -max-lease-ttl=43800h pki_int
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       when: pki_int_enable is changed
 
     - name: Generate Intermediate CA CSR
@@ -198,9 +91,8 @@
         common_name="Munchbox Intermediate CA"
         ttl=43800h
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: int_csr_output
       when: pki_int_enable is changed
 
@@ -219,9 +111,8 @@
         ttl=43800h |
         jq -r '.data.certificate'
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: int_cert_output
       when: pki_int_enable is changed
 
@@ -237,35 +128,32 @@
         vault write pki_int/intermediate/set-signed
         certificate=@/tmp/pki_intermediate.cert.pem
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       when: pki_int_enable is changed
 
     - name: Configure PKI Intermediate CA URLs
       command: >
         vault write pki_int/config/urls
-        issuing_certificates="https://vault.munchbox.cc:8200/v1/pki_int/ca"
-        crl_distribution_points="https://vault.munchbox.cc:8200/v1/pki_int/crl"
+        issuing_certificates="http://vault.munchbox.cc:8200/v1/pki_int/ca"
+        crl_distribution_points="http://vault.munchbox.cc:8200/v1/pki_int/crl"
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       when: pki_int_enable is changed
 
 - name: Create certificate roles for Nomad and Consul
   hosts: nomad_servers[0]
   become: true
   tasks:
-    - name: Load root token
-      slurp:
-        src: /tmp/vault-init.json
-      register: vault_init_data
+    - name: Load Vault init credentials
+      include_vars:
+        file: "{{ ansible_user_dir }}/.munchbox/vault/init-2025-11-25.json"
+        name: vault_init_data
 
-    - name: Parse root token
+    - name: Set vault_root_token from init file
       set_fact:
-        vault_root_token: "{{ (vault_init_data.content | b64decode | from_json).root_token }}"
-
+        vault_root_token: "{{ vault_init_data.root_token }}"
     - name: Create Nomad server certificate role
       command: >
         vault write pki_int/roles/nomad-server
@@ -276,9 +164,8 @@
         max_ttl=8760h
         require_cn=false
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
 
     - name: Create Nomad client certificate role
       command: >
@@ -290,9 +177,8 @@
         max_ttl=8760h
         require_cn=false
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
 
     - name: Create Consul server certificate role
       command: >
@@ -304,9 +190,8 @@
         max_ttl=8760h
         require_cn=false
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
 
     - name: Create Consul client certificate role
       command: >
@@ -318,23 +203,21 @@
         max_ttl=8760h
         require_cn=false
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
 
 - name: Create Vault policies for certificate issuance
   hosts: nomad_servers[0]
   become: true
   tasks:
-    - name: Load root token
-      slurp:
-        src: /tmp/vault-init.json
-      register: vault_init_data
+    - name: Load Vault init credentials
+      include_vars:
+        file: "{{ ansible_user_dir }}/.munchbox/vault/init-2025-11-25.json"
+        name: vault_init_data
 
-    - name: Parse root token
+    - name: Set vault_root_token from init file
       set_fact:
-        vault_root_token: "{{ (vault_init_data.content | b64decode | from_json).root_token }}"
-
+        vault_root_token: "{{ vault_init_data.root_token }}"
     - name: Create PKI policy for Ansible automation
       copy:
         content: |
@@ -358,9 +241,8 @@
     - name: Write PKI policy to Vault
       command: vault policy write pki-ansible /tmp/pki-ansible-policy.hcl
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
 
     - name: Remove temporary policy file
       file:
@@ -371,21 +253,19 @@
   hosts: nomad_servers[0]
   become: true
   tasks:
-    - name: Load root token
-      slurp:
-        src: /tmp/vault-init.json
-      register: vault_init_data
+    - name: Load Vault init credentials
+      include_vars:
+        file: "{{ ansible_user_dir }}/.munchbox/vault/init-2025-11-25.json"
+        name: vault_init_data
 
-    - name: Parse root token
+    - name: Set vault_root_token from init file
       set_fact:
-        vault_root_token: "{{ (vault_init_data.content | b64decode | from_json).root_token }}"
-
+        vault_root_token: "{{ vault_init_data.root_token }}"
     - name: Enable AppRole auth method
       command: vault auth enable approle
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: approle_enable
       failed_when: approle_enable.rc != 0 and 'path is already in use' not in approle_enable.stderr
       changed_when: approle_enable.rc == 0
@@ -397,25 +277,22 @@
         token_ttl=1h
         token_max_ttl=4h
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
 
     - name: Read AppRole role_id
       command: vault read -format=json auth/approle/role/ansible-automation/role-id
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: role_id_output
       changed_when: false
 
     - name: Generate AppRole secret_id
       command: vault write -format=json -f auth/approle/role/ansible-automation/secret-id
       environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_ADDR: "http://{{ ansible_default_ipv4.address }}:8200"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_SKIP_VERIFY: "true"
       register: secret_id_output
       changed_when: true
 
@@ -463,11 +340,11 @@
           - "  - Credentials: /tmp/vault-approle.json"
           - ""
           - "CRITICAL: Backup these files securely:"
-          - "  - /tmp/vault-init.json (unseal keys + root token)"
+          - "  - ~/.munchbox/vault/init-2025-11-25.json (unseal keys + root token)"
           - "  - /tmp/vault-approle.json (AppRole credentials)"
           - ""
           - "Next steps:"
-          - "  1. Copy AppRole credentials to Ansible control host"
+          - "  1. Copy AppRole credentials to ~/.munchbox/vault/"
           - "  2. Set vault_approle_* variables in group_vars"
           - "  3. Run consul-setup.yml and nomad-setup.yml"
           - "====================================================================="

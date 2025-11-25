@@ -1,0 +1,41 @@
+---
+- name: Generate Consul server certificates (no TLS enablement)
+  hosts: nomad_servers
+  become: true
+  serial: 100%
+  vars:
+    vault_api_addr: "http://192.168.68.61:8200"
+    vault_approle_role_id: "10078d03-2a15-5611-ad7c-6e6c898b2c87"
+    vault_approle_secret_id: "1208573c-ffa3-53c3-b945-b175668abd04"
+    consul_datacenter: "munchbox"
+  tasks:
+    - name: Generate server certificate from Vault
+      include_role:
+        name: vault-cert
+      vars:
+        vault_cert_role: "consul-server"
+        vault_cert_name: "consul"
+        vault_cert_common_name: "server.{{ consul_datacenter }}.consul"
+        vault_cert_alt_names: "localhost,{{ inventory_hostname }},{{ ansible_hostname }},{{ ansible_fqdn }},{{ inventory_hostname }}.munchbox.cc,server.{{ consul_datacenter }}.consul"
+        vault_cert_ip_sans: "{{ ansible_default_ipv4.address }},127.0.0.1"
+        vault_cert_dest: "/etc/consul.d/tls"
+
+- name: Generate Consul client certificates (no TLS enablement)
+  hosts: nomad_clients
+  become: true
+  vars:
+    vault_api_addr: "http://192.168.68.61:8200"
+    vault_approle_role_id: "10078d03-2a15-5611-ad7c-6e6c898b2c87"
+    vault_approle_secret_id: "1208573c-ffa3-53c3-b945-b175668abd04"
+    consul_datacenter: "munchbox"
+  tasks:
+    - name: Generate client certificate from Vault
+      include_role:
+        name: vault-cert
+      vars:
+        vault_cert_role: "consul-client"
+        vault_cert_name: "consul"
+        vault_cert_common_name: "client.{{ consul_datacenter }}.consul"
+        vault_cert_alt_names: "localhost,{{ inventory_hostname }},{{ ansible_hostname }},{{ inventory_hostname }}.munchbox.cc,client.{{ consul_datacenter }}.consul"
+        vault_cert_ip_sans: "{{ ansible_default_ipv4.address }},127.0.0.1"
+        vault_cert_dest: "/etc/consul.d/tls"
