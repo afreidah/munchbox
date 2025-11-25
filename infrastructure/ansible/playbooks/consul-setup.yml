@@ -1,0 +1,61 @@
+---
+# -------------------------------------------------------------------------------
+# Consul Setup Playbook
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs and configures Consul on all Nomad cluster nodes. Servers run on Pi5s
+# and nomad-server-03 VM. Clients run on Nomad client VMs.
+# -------------------------------------------------------------------------------
+
+- name: Verify connectivity to cluster nodes
+  hosts: nomad_cluster
+  gather_facts: false
+  tasks:
+    - name: Wait for nodes to be ready
+      wait_for_connection:
+        timeout: 300
+
+    - name: Gather facts
+      setup:
+
+- name: Install and configure Consul servers
+  hosts: nomad_servers
+  become: true
+  serial: 1
+  roles:
+    - consul
+  tags: [consul, consul-servers]
+
+- name: Install and configure Consul clients
+  hosts: nomad_clients
+  become: true
+  roles:
+    - consul
+  tags: [consul, consul-clients]
+
+- name: Verify Consul cluster
+  hosts: nomad_servers[0]
+  become: true
+  tasks:
+    - name: Wait for Consul to be ready
+      command: consul members
+      register: consul_members
+      until: consul_members.rc == 0
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Display Consul members
+      debug:
+        var: consul_members.stdout_lines
+
+    - name: Check Consul leader
+      command: consul operator raft list-peers
+      register: consul_peers
+      changed_when: false
+
+    - name: Display Consul peers
+      debug:
+        var: consul_peers.stdout_lines
+  tags: [verify]
