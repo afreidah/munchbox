@@ -1,0 +1,29 @@
+# -------------------------------------------------------------------------------
+# Consul Systemd Service Unit
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Systemd service configuration for Consul. Managed by Ansible.
+# -------------------------------------------------------------------------------
+
+[Unit]
+Description=Consul Agent
+Documentation=https://www.consul.io/docs/
+Requires=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ consul_config_dir }}/consul.hcl
+
+[Service]
+Type=notify
+User={{ consul_user }}
+Group={{ consul_group }}
+ExecStart={{ consul_bin_path }} agent -config-dir={{ consul_config_dir }}
+ExecReload=/bin/kill --signal HUP $MAINPID
+KillMode=process
+KillSignal=SIGTERM
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

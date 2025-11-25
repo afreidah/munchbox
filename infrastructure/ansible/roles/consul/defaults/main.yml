@@ -1,0 +1,107 @@
+# -------------------------------------------------------------------------------
+# Consul Role - Default Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Default configuration for Consul installation and setup. Override in group_vars
+# or host_vars as needed for environment-specific configuration.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# Consul Version
+# -------------------------------------------------------------------------------
+
+consul_version: "1.22.0"
+consul_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+consul_archive: "consul_{{ consul_version }}_linux_{{ consul_arch }}.zip"
+consul_download_url: "https://releases.hashicorp.com/consul/{{ consul_version }}/{{ consul_archive }}"
+
+# -------------------------------------------------------------------------------
+# Installation Paths
+# -------------------------------------------------------------------------------
+
+consul_bin_path: "/usr/local/bin/consul"
+consul_config_dir: "/etc/consul.d"
+consul_data_dir: "/opt/consul/data"
+consul_tls_dir: "/etc/consul.d/tls"
+consul_log_dir: "/var/log/consul"
+
+# -------------------------------------------------------------------------------
+# System Configuration
+# -------------------------------------------------------------------------------
+
+consul_user: "consul"
+consul_group: "consul"
+
+# -------------------------------------------------------------------------------
+# Service Configuration
+# -------------------------------------------------------------------------------
+
+consul_service_name: "consul"
+consul_service_enabled: true
+consul_service_state: "started"
+
+# -------------------------------------------------------------------------------
+# Cluster Configuration
+# -------------------------------------------------------------------------------
+
+consul_datacenter: "munchbox"
+consul_domain: "consul"
+consul_bind_addr: "{{ ansible_default_ipv4.address }}"
+consul_client_addr: "0.0.0.0"
+
+# -------------------------------------------------------------------------------
+# Server Configuration
+# -------------------------------------------------------------------------------
+
+consul_server_enabled: false
+consul_bootstrap_expect: 3
+
+consul_retry_join:
+  - "192.168.68.60"
+  - "192.168.68.61"
+  - "192.168.68.72"
+
+# -------------------------------------------------------------------------------
+# Client Configuration
+# -------------------------------------------------------------------------------
+
+consul_client_enabled: true
+
+# -------------------------------------------------------------------------------
+# UI Configuration
+# -------------------------------------------------------------------------------
+
+consul_ui_enabled: true
+
+# -------------------------------------------------------------------------------
+# Connect / Service Mesh
+# -------------------------------------------------------------------------------
+
+consul_connect_enabled: true
+
+# -------------------------------------------------------------------------------
+# Performance
+# -------------------------------------------------------------------------------
+
+consul_raft_multiplier: 1
+
+# -------------------------------------------------------------------------------
+# Ports
+# -------------------------------------------------------------------------------
+
+consul_ports:
+  dns: 8600
+  http: 8500
+  https: -1
+  grpc: 8502
+  grpc_tls: 8503
+  serf_lan: 8301
+  serf_wan: 8302
+  server: 8300
+
+# -------------------------------------------------------------------------------
+# TLS Configuration
+# -------------------------------------------------------------------------------
+
+consul_tls_enabled: false

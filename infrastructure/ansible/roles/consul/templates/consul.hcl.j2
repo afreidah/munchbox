@@ -1,73 +1,71 @@
 # -------------------------------------------------------------------------------
-# Global Variables - All Hosts
+# Consul Configuration
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Common settings applied to all hosts in the Munchbox infrastructure.
+# {% if consul_server_enabled %}Server{% else %}Client{% endif %} configuration for {{ ansible_hostname }}. Managed by Ansible.
 # -------------------------------------------------------------------------------
 
-# -------------------------------------------------------------------------------
-# Network Configuration
-# -------------------------------------------------------------------------------
+datacenter = "{{ consul_datacenter }}"
+data_dir   = "{{ consul_data_dir }}"
+bind_addr  = "{{ consul_bind_addr }}"
+client_addr = "{{ consul_client_addr }}"
 
-domain: munchbox.cc
-dns_servers:
-  - 192.168.68.62
-  - 192.168.68.64
-gateway: 192.168.68.1
-network_prefix: 192.168.68.0/24
-
+{% if consul_server_enabled %}
 # -------------------------------------------------------------------------------
-# Timezone and Locale
+# Server Configuration
 # -------------------------------------------------------------------------------
 
-timezone: America/Los_Angeles
-locale: en_US.UTF-8
+server           = true
+bootstrap_expect = {{ consul_bootstrap_expect }}
 
-# -------------------------------------------------------------------------------
-# Common Packages
-# -------------------------------------------------------------------------------
+retry_join = {{ consul_retry_join | to_json }}
 
-common_packages:
-  - curl
-  - wget
-  - vim
-  - git
-  - htop
-  - iotop
-  - net-tools
-  - dnsutils
-  - tmux
-  - jq
-  - unzip
-  - rsync
-  - sysstat
-
+{% else %}
 # -------------------------------------------------------------------------------
-# Hashicorp Tool Versions
+# Client Configuration
 # -------------------------------------------------------------------------------
 
-nomad_version: 1.7.3
-consul_version: 1.22.0
-vault_version: 1.15.4
+server = false
 
+retry_join = {{ consul_retry_join | to_json }}
+
+{% endif %}
 # -------------------------------------------------------------------------------
-# Vault Configuration
-# -------------------------------------------------------------------------------
-
-vault_api_addr: "https://192.168.68.70:8200"
-
-# --- AppRole credentials (set after vault-init.yml)
-
-vault_approle_role_id: ""
-vault_approle_secret_id: ""
-
-# -------------------------------------------------------------------------------
-# Munchbox Infrastructure
+# UI
 # -------------------------------------------------------------------------------
 
-consul_datacenter: munchbox
-consul_domain: consul
+ui_config {
+  enabled = {{ consul_ui_enabled | lower }}
+}
 
-nomad_datacenter: munchbox
-nomad_region: global
+# -------------------------------------------------------------------------------
+# Performance
+# -------------------------------------------------------------------------------
+
+performance {
+  raft_multiplier = {{ consul_raft_multiplier }}
+}
+
+# -------------------------------------------------------------------------------
+# Connect / Service Mesh
+# -------------------------------------------------------------------------------
+
+connect {
+  enabled = {{ consul_connect_enabled | lower }}
+}
+
+# -------------------------------------------------------------------------------
+# Ports
+# -------------------------------------------------------------------------------
+
+ports {
+  dns       = {{ consul_ports.dns }}
+  http      = {{ consul_ports.http }}
+  https     = {{ consul_ports.https }}
+  grpc      = {{ consul_ports.grpc }}
+  grpc_tls  = {{ consul_ports.grpc_tls }}
+  serf_lan  = {{ consul_ports.serf_lan }}
+  serf_wan  = {{ consul_ports.serf_wan }}
+  server    = {{ consul_ports.server }}
+}
