@@ -124,3 +124,11 @@
       debug:
         var: nomad_nodes.stdout_lines
   tags: [verify]
+
+- name: Debug variable values
+  hosts: nomad_servers
+  become: false
+  tasks:
+    - name: Show Nomad server config
+      debug:
+        msg: "nomad_server_enabled={{ nomad_server_enabled }}, nomad_client_enabled={{ nomad_client_enabled }}"

@@ -1,0 +1,72 @@
+# -------------------------------------------------------------------------------
+# Nomad Configuration
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# {% if nomad_server_enabled | bool %}Server{% else %}Client{% endif %} configuration for {{ ansible_hostname }}. Managed by Ansible.
+# -------------------------------------------------------------------------------
+
+datacenter = "{{ nomad_datacenter }}"
+region = "{{ nomad_region }}"
+data_dir = "{{ nomad_data_dir }}"
+log_level = "INFO"
+
+bind_addr = "{{ nomad_bind_addr }}"
+
+advertise {
+  http = "{{ nomad_advertise_http }}"
+  rpc  = "{{ nomad_advertise_rpc }}"
+  serf = "{{ nomad_advertise_serf }}"
+}
+
+{% if nomad_server_enabled | bool %}
+# -------------------------------------------------------------------------------
+# Server Configuration
+# -------------------------------------------------------------------------------
+
+server {
+  enabled = true
+  bootstrap_expect = {{ nomad_bootstrap_expect }}
+{% if nomad_retry_join | length > 0 %}
+  retry_join = {{ nomad_retry_join | to_json }}
+{% endif %}
+}
+
+{% else %}
+# -------------------------------------------------------------------------------
+# Client Configuration
+# -------------------------------------------------------------------------------
+
+client {
+  enabled = true
+{% if nomad_servers | length > 0 %}
+  servers = {{ nomad_servers | to_json }}
+{% endif %}
+}
+
+{% endif %}
+# -------------------------------------------------------------------------------
+# Consul Integration
+# -------------------------------------------------------------------------------
+
+consul {
+  address = "{{ nomad_consul_address }}"
+  datacenter = "{{ nomad_consul_datacenter }}"
+}
+
+# -------------------------------------------------------------------------------
+# ACL Configuration
+# -------------------------------------------------------------------------------
+
+acl {
+  enabled = {{ nomad_acl_enabled | lower }}
+}
+
+# -------------------------------------------------------------------------------
+# TLS Configuration
+# -------------------------------------------------------------------------------
+
+tls {
+  http = {{ nomad_tls_http | lower }}
+  rpc  = {{ nomad_tls_rpc | lower }}
+}
