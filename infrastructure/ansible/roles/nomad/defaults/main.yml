@@ -1,0 +1,53 @@
+# -------------------------------------------------------------------------------
+# Nomad Role - Default Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Default configuration for Nomad installation and setup. Override in group_vars
+# or host_vars as needed for environment-specific configuration.
+# -------------------------------------------------------------------------------
+
+nomad_version: "1.11.0"
+nomad_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+nomad_archive: "nomad_{{ nomad_version }}_linux_{{ nomad_arch }}.zip"
+nomad_download_url: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/{{ nomad_archive }}"
+
+nomad_bin_path: "/usr/local/bin/nomad"
+nomad_config_dir: "/etc/nomad.d"
+nomad_data_dir: "/var/lib/nomad"
+nomad_log_dir: "/var/log/nomad"
+
+nomad_user: "nomad"
+nomad_group: "nomad"
+
+nomad_service_name: "nomad"
+nomad_service_enabled: true
+nomad_service_state: "started"
+
+nomad_datacenter: "munchbox"
+nomad_region: "global"
+nomad_bind_addr: "0.0.0.0"
+nomad_advertise_http: "{{ ansible_default_ipv4.address }}:4646"
+nomad_advertise_rpc: "{{ ansible_default_ipv4.address }}:4647"
+nomad_advertise_serf: "{{ ansible_default_ipv4.address }}:4648"
+
+nomad_server_enabled: "{{ 'nomad_servers' in group_names }}"
+nomad_bootstrap_expect: 3
+nomad_retry_join:
+  - "192.168.68.60:4647"
+  - "192.168.68.61:4647"
+  - "192.168.68.69:4647"
+
+nomad_client_enabled: "{{ 'nomad_clients' in group_names }}"
+nomad_servers:
+  - "192.168.68.60:4647"
+  - "192.168.68.61:4647"
+  - "192.168.68.69:4647"
+
+nomad_consul_address: "127.0.0.1:8500"
+nomad_consul_datacenter: "munchbox"
+
+nomad_acl_enabled: false
+
+nomad_tls_http: false
+nomad_tls_rpc: false

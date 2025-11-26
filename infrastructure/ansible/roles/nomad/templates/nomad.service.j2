@@ -1,0 +1,18 @@
+[Unit]
+Description=Nomad
+Documentation=https://www.nomadproject.io/docs/
+Requires=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ nomad_config_dir }}/nomad.hcl
+
+[Service]
+Type=notify
+User={{ nomad_user }}
+Group={{ nomad_group }}
+KillMode=process
+Restart=on-failure
+RestartSec=2
+ExecStart={{ nomad_bin_path }} agent -config={{ nomad_config_dir }}
+
+[Install]
+WantedBy=multi-user.target

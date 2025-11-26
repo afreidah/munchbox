@@ -1,0 +1,17 @@
+---
+# -------------------------------------------------------------------------------
+# Nomad Role - Handlers
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Handlers for reloading and restarting Nomad service
+# -------------------------------------------------------------------------------
+
+- name: reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: restart nomad
+  systemd:
+    name: "{{ nomad_service_name }}"
+    state: restarted
