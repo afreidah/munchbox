@@ -44,3 +44,4 @@ AGENTS.md
 berks-cookbooks
 *semgrep*
 *tfvars*
+munchbox-env.sh
