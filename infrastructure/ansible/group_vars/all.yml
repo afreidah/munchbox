@@ -47,7 +47,7 @@ common_packages:
 # Hashicorp Tool Versions
 # -------------------------------------------------------------------------------
 
-nomad_version: 1.7.3
+nomad_version: 1.11.0
 consul_version: 1.22.0
 vault_version: 1.15.4
 
@@ -55,12 +55,7 @@ vault_version: 1.15.4
 # Vault Configuration
 # -------------------------------------------------------------------------------
 
-vault_api_addr: "https://192.168.68.69:8200"
-
-# --- AppRole credentials (set after vault-init.yml)
-
-vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
-vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
+vault_api_addr: "http://192.168.68.69:8200"
 
 # -------------------------------------------------------------------------------
 # Munchbox Infrastructure
