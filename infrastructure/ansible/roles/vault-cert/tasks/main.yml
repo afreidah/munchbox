@@ -4,13 +4,18 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Fetches TLS certificates from Vault PKI using AppRole authentication. Requires
-# vault_cert_role, vault_cert_common_name, and vault_cert_dest variables.
+# Fetches TLS certificates from Vault PKI. Uses VAULT_TOKEN from environment
+# if available, otherwise falls back to AppRole authentication.
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------
-# AppRole Authentication
+# Authentication - Token or AppRole
 # -------------------------------------------------------------------------------
+
+- name: Check for VAULT_TOKEN in environment
+  set_fact:
+    vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+  when: lookup('env', 'VAULT_TOKEN') | length > 0
 
 - name: Authenticate to Vault using AppRole
   uri:
@@ -23,13 +28,12 @@
     validate_certs: false
     status_code: 200
   register: vault_login
-  # delegate_to: localhost
-  # run_once: true
+  when: vault_token is not defined or vault_token | length == 0
 
-- name: Parse Vault token
+- name: Set token from AppRole login
   set_fact:
     vault_token: "{{ vault_login.json.auth.client_token }}"
-  # run_once: true
+  when: vault_login is not skipped and vault_login is succeeded
 
 # -------------------------------------------------------------------------------
 # Certificate Issuance
@@ -51,7 +55,6 @@
     validate_certs: false
     status_code: 200
   register: vault_cert_response
-  # delegate_to: localhost
 
 - name: Parse certificate data
   set_fact:
