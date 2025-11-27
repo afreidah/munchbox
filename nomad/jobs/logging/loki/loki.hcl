@@ -2,111 +2,43 @@
 # Loki — Centralized Log Aggregation
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Loki provides horizontally-scalable log aggregation with label-based indexing.
+# Receives logs from Promtail agents running across all cluster nodes and stores
+# them with 5-day retention on local storage.
 # -------------------------------------------------------------------------------
 
-job_name        = "loki"
-job_type        = "service"
-region          = "global"
-datacenters     = ["pi-dc"]
-namespace       = "default"
-node_pool       = "utility"
-priority        = 50
-job_description = "Loki centralized log aggregation with 5-day retention"
+# --- Core job configuration ---
+name  = "loki"
+image = "grafana/loki:3.5.8"
+port  = 3100
+node  = "cabot"
+size  = "medium"
+user  = "root"
 
-deployment_profile = "standard"
-meta_profile       = "tier1"
-category           = "logging"
+# --- Storage ---
+storage      = "local"
+storage_path = "/loki"
 
-resource_tier  = "medium"
-network_preset = "bridge"
+# --- Traefik routing ---
+traefik      = true
+traefik_host = "loki.munchbox"
 
-ports = [
-  {
-    name   = "http"
-    static = 3100
-  },
-  {
-    name = "grpc"
-    to   = 9096
-  }
-]
+# --- Health check ---
+health_path = "/ready"
 
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "cabot"
-  }
-]
-
-volume = {
-  name       = "loki-data"
-  type       = "host"
-  source     = "loki-data"
-  read_only  = false
-  mount_path = "/loki"
+# --- Environment ---
+env = {
+  TZ = "America/Los_Angeles"
 }
 
-external_files = {
-  enabled   = true
-  base_path = "jobs/logging/loki/files"
-}
+# --- Container arguments ---
+args = ["-config.file=/etc/loki/config.yaml"]
 
-external_templates = [
-  {
-    destination = "local/config/config.yaml"
-    source_file = "config.yaml"
-    perms       = "0644"
-    change_mode = "restart"
-  }
+# --- Configuration templates ---
+templates = [
+  { src = "config.yaml", dest = "/etc/loki/config.yaml" }
 ]
 
-task = {
-  name   = "loki"
-  driver = "docker"
-  user   = "root"
-  
-  config = {
-    image = "grafana/loki:3.5.8"
-    ports = ["http", "grpc"]
-    args = [
-      "-config.file=/etc/loki/config.yaml"
-    ]
-    volumes = [
-      "local/config:/etc/loki:ro"
-    ]
-  }
-  
-  env = {
-    TZ = "America/Los_Angeles"
-  }
-  
-  resources = {
-    cpu    = 500
-    memory = 512
-  }
-}
-
-# --- Consul Connect ---
-consul_connect_enabled = true
-traefik_enabled         = true
-traefik_host            = "loki.munchbox"
-traefik_entrypoints     = "websecure"
-traefik_tls_enabled     = true
-traefik_middlewares     = "dashboard-allowlan@file"
-
-# --- Standard service configuration ---
-standard_service_enabled    = true
-standard_service_port       = "http"
-standard_http_check_enabled = false
-standard_http_check_path    = "/ready"
-standard_service_address_mode     = "host"
-
-additional_tags = [
-  "logging",
-  "loki",
-  "observability"
-]
-
-kill_timeout = "30s"
-kill_signal  = "SIGTERM"
+# --- Service tags ---
+tags = ["logging", "loki", "observability"]
