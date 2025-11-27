@@ -1,3 +1,3 @@
-[[ with secret "kv/data/prometheus" ]]
-[[ .Data.data.consul_token ]]
-[[ end ]]
+{{ with secret "secret/data/prometheus" }}
+{{ .Data.data.consul_token }}
+{{ end }}

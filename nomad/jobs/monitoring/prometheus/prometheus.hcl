@@ -12,18 +12,21 @@
 name  = "prometheus"
 image = "prom/prometheus:v2.54.1"
 port  = 9090
-node  = "cabot"
+static_port = 9090
+host_network = true
+node  = "goren"
 size  = "medium"
 user  = "root"
 vault = true
 
 # --- Storage ---
-storage      = "local"
-storage_path = "/opt/nomad/data/prometheus-data"
+volumes = [
+  "/opt/nomad/data/prometheus:/opt/nomad/data/prometheus-data"
+]
 
 # --- Traefik routing ---
 traefik      = true
-traefik_host = "prometheus.munchbox"
+traefik_host = "prometheus.munchbox.cc"
 
 # --- Health check ---
 health_path = "/-/ready"
@@ -50,10 +53,10 @@ args = [
 
 # --- Configuration templates ---
 templates = [
-  { src = "prometheus.yml", dest = "/etc/prometheus/config/prometheus.yml" },
-  { src = "alert_rules.yml", dest = "/etc/prometheus/config/alert_rules.yml", change_mode = "signal" },
-  { src = "consul_token.tpl", dest = "/etc/prometheus/secrets/consul_token" },
-  { src = "vault_token.tpl", dest = "/etc/prometheus/secrets/vault_token" }
+  { src = "prometheus.yml", dest = "/etc/prometheus/config/prometheus.yml", vault = false },
+  { src = "alert_rules.yml", dest = "/etc/prometheus/config/alert_rules.yml", vault = false, change_mode = "signal" },
+  { src = "consul_token.tpl", dest = "/etc/prometheus/secrets/consul_token", vault = true },
+  { src = "vault_token.tpl", dest = "/etc/prometheus/secrets/vault_token", vault = true },
 ]
 
 # --- Termination ---

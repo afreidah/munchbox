@@ -9,16 +9,19 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name  = "loki"
-image = "grafana/loki:3.5.8"
-port  = 3100
-node  = "cabot"
-size  = "medium"
-user  = "root"
+name         = "loki"
+image        = "grafana/loki:3.5.8"
+port         = 3100
+static_port  = 3100
+host_network = true
+node         = "nomad-client-03"
+size         = "medium"
+user         = "root"
 
-# --- Storage ---
-storage      = "local"
-storage_path = "/loki"
+# --- Storage (manual pre-creation, no init task) ---
+volumes = [
+  "/opt/nomad/data/loki:/loki"
+]
 
 # --- Traefik routing ---
 traefik      = true

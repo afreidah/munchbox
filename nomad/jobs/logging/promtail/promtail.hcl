@@ -9,11 +9,13 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name  = "promtail"
-type  = "system"
-image = "grafana/promtail:3.5"
-port  = 9080
-size  = "tiny"
+name         = "promtail"
+type         = "system"
+image        = "grafana/promtail:3.5"
+port         = 9080
+static_port  = 9080
+host_network = true
+size         = "tiny"
 
 # --- Traefik routing ---
 traefik = false

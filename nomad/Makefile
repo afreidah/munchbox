@@ -18,7 +18,7 @@
 SHELL := /bin/bash
 
 # Pack registry location (relative to this Makefile)
-PACK_REGISTRY := packs/registry/registry
+PACK_REGISTRY := packs/registry
 
 # Default pack for jobs without explicit PACK directive
 DEFAULT_PACK := munchbox-service

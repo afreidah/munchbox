@@ -11,9 +11,10 @@
 # --- Core job configuration ---
 name  = "alertmanager"
 image = "prom/alertmanager:v0.27.0"
+job_dir = "jobs/monitoring/alertmanager"
 port  = 9093
-node  = "cabot"
 size  = "small"
+host_network = true
 vault = true
 
 # --- Additional ports ---
@@ -23,7 +24,7 @@ extra_ports = [
 
 # --- Traefik routing ---
 traefik      = true
-traefik_host = "alertmanager.munchbox"
+traefik_host = "alertmanager.munchbox.cc"
 
 # --- Health check ---
 health_path = "/-/ready"
@@ -39,12 +40,12 @@ args = [
   "--storage.path=/alertmanager",
   "--web.listen-address=0.0.0.0:9093",
   "--cluster.listen-address=0.0.0.0:9094",
-  "--web.external-url=https://alertmanager.munchbox"
+  "--web.external-url=https://alertmanager.munchbox.cc"
 ]
 
 # --- Configuration templates ---
 templates = [
-  { src = "alertmanager.yml", dest = "/etc/alertmanager/config/alertmanager.yml" }
+  { src = "alertmanager.yml", dest = "/etc/alertmanager/config/alertmanager.yml.tpl", vault = true }
 ]
 
 # --- Service tags ---
