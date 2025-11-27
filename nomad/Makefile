@@ -18,7 +18,7 @@
 SHELL := /bin/bash
 
 # Pack registry location (relative to this Makefile)
-PACK_REGISTRY := packs
+PACK_REGISTRY := packs/registry/registry
 
 # Default pack for jobs without explicit PACK directive
 DEFAULT_PACK := munchbox-service
@@ -132,7 +132,7 @@ endif
 		nomad-pack render \
 			--var-file="$(JOB_FILE)" \
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
-			"$(PACK_REGISTRY)/$(PACK)"; \
+			"./$(PACK_REGISTRY)/$(PACK)"; \
 	fi
 
 plan:
@@ -154,7 +154,7 @@ endif
 		nomad-pack plan \
 			--var-file="$(JOB_FILE)" \
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
-			"$(PACK_REGISTRY)/$(PACK)"; \
+			"./$(PACK_REGISTRY)/$(PACK)"; \
 	fi
 
 run:
@@ -176,7 +176,7 @@ endif
 		nomad-pack run \
 			--var-file="$(JOB_FILE)" \
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
-			"$(PACK_REGISTRY)/$(PACK)"; \
+			"./$(PACK_REGISTRY)/$(PACK)"; \
 	fi
 
 validate:
@@ -198,7 +198,7 @@ endif
 		nomad-pack render \
 			--var-file="$(JOB_FILE)" \
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
-			"$(PACK_REGISTRY)/$(PACK)" | nomad job validate -; \
+			"./$(PACK_REGISTRY)/$(PACK)" | nomad job validate -; \
 	fi
 
 stop:

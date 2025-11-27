@@ -1,183 +1,63 @@
 # -------------------------------------------------------------------------------
-# Prometheus — Metrics Collection with Alert Rules and Dynamic Discovery
+# Prometheus — Metrics Collection and Alerting
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Time-series metrics database with dynamic service discovery, alert evaluation,
-# and Consul Connect integration for secure Alertmanager communication.
+# Time-series metrics database with dynamic Consul service discovery and alert
+# evaluation. Scrapes infrastructure services including Nomad, Consul, Vault,
+# and node exporters. Forwards alerts to Alertmanager for notification routing.
 # -------------------------------------------------------------------------------
 
-job_name        = "prometheus"
-job_type        = "service"
-region          = "global"
-datacenters     = ["pi-dc"]
-node_pool       = "all"
-namespace       = "default"
-priority        = 50
-job_description = "Prometheus metrics collection with alerting via Connect mesh"
+# --- Core job configuration ---
+name  = "prometheus"
+image = "prom/prometheus:v2.54.1"
+port  = 9090
+node  = "cabot"
+size  = "medium"
+user  = "root"
+vault = true
 
-deployment_profile = "standard"
-meta_profile       = "tier1"
-category           = "monitoring"
+# --- Storage ---
+storage      = "local"
+storage_path = "/opt/nomad/data/prometheus-data"
 
-resource_tier  = "medium"
-network_preset = "bridge"
+# --- Traefik routing ---
+traefik      = true
+traefik_host = "prometheus.munchbox"
 
-ports = [
-  {
-    name = "web"
-    to   = 9090
-  }
-]
+# --- Health check ---
+health_path = "/-/ready"
 
-dns_servers  = ["192.168.68.62", "192.168.68.64"]
-dns_searches = ["service.consul"]
-dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
-
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "cabot"
-  }
-]
-
-volume = {
-  name       = "prometheus-data"
-  type       = "host"
-  source     = "prometheus-data"
-  mount_path = "/opt/nomad/data/prometheus-data"
-  read_only  = false
+# --- Environment ---
+env = {
+  TZ                              = "America/Los_Angeles"
+  CONSUL_HTTP_ADDR                = "127.0.0.1:8500"
+  PROMETHEUS_WEB_ENABLE_LIFECYCLE = "true"
+  PROMETHEUS_WEB_ENABLE_ADMIN_API = "true"
 }
 
-vault_role = "nomad-workloads"
-
-external_files = {
-  enabled   = true
-  base_path = "jobs/monitoring/prometheus/files"
-}
-
-external_templates = [
-  {
-    destination     = "local/config/prometheus.yml"
-    source_file     = "prometheus.yml"
-    env             = false
-    perms           = "0644"
-    change_mode     = "restart"
-    left_delimiter  = "[["
-    right_delimiter = "]]"
-  },
-  {
-    destination     = "local/config/alert_rules.yml"
-    source_file     = "alert_rules.yml"
-    env             = false
-    perms           = "0644"
-    change_mode     = "signal"
-    change_signal   = "SIGHUP"
-    left_delimiter  = "[["
-    right_delimiter = "]]"
-  },
-  {
-    destination     = "local/secrets/consul_token"
-    source_file     = "consul_token.tpl"
-    env             = false
-    perms           = "0600"
-    change_mode     = "restart"
-    left_delimiter  = "[["
-    right_delimiter = "]]"
-  },
-  {
-    destination     = "local/secrets/vault_token"
-    source_file     = "vault_token.tpl"
-    env             = false
-    perms           = "0600"
-    change_mode     = "restart"
-    left_delimiter  = "[["
-    right_delimiter = "]]"
-  }
+# --- Container arguments ---
+args = [
+  "--config.file=/etc/prometheus/config/prometheus.yml",
+  "--storage.tsdb.path=/opt/nomad/data/prometheus-data",
+  "--web.listen-address=0.0.0.0:9090",
+  "--web.enable-lifecycle",
+  "--web.enable-admin-api",
+  "--storage.tsdb.retention.time=30d",
+  "--storage.tsdb.wal-compression",
+  "--web.page-title=Munchbox Prometheus"
 ]
 
-task = {
-  name   = "prometheus"
-  driver = "docker"
-  user   = "root"
-
-  config = {
-    image              = "prom/prometheus:v2.54.1"
-    ports              = ["web"]
-    image_pull_timeout = "10m"
-
-    args = [
-      "--config.file=/etc/prometheus/config/prometheus.yml",
-      "--storage.tsdb.path=/opt/nomad/data/prometheus-data",
-      "--web.listen-address=0.0.0.0:9090",
-      "--web.enable-lifecycle",
-      "--web.enable-admin-api",
-      "--storage.tsdb.retention.time=30d",
-      "--storage.tsdb.wal-compression",
-      "--web.page-title=Munchbox Prometheus",
-    ]
-
-    volumes = [
-      "local/config:/etc/prometheus/config:ro",
-      "local/secrets:/etc/prometheus/secrets:ro",
-    ]
-  }
-
-  env = {
-    TZ                              = "America/Los_Angeles"
-    CONSUL_HTTP_ADDR                = "127.0.0.1:8500"
-    PROMETHEUS_WEB_ENABLE_LIFECYCLE = "true"
-    PROMETHEUS_WEB_ENABLE_ADMIN_API = "true"
-  }
-
-  resources = {
-    tier = "medium"
-  }
-}
-
-# -----------------------------------------------------------------------------
-# Consul Connect
-# -----------------------------------------------------------------------------
-
-consul_connect_enabled = false
-
-connect_upstreams = [
-  {
-    destination_name = "alertmanager"
-    local_bind_port  = 9093
-  }
+# --- Configuration templates ---
+templates = [
+  { src = "prometheus.yml", dest = "/etc/prometheus/config/prometheus.yml" },
+  { src = "alert_rules.yml", dest = "/etc/prometheus/config/alert_rules.yml", change_mode = "signal" },
+  { src = "consul_token.tpl", dest = "/etc/prometheus/secrets/consul_token" },
+  { src = "vault_token.tpl", dest = "/etc/prometheus/secrets/vault_token" }
 ]
 
-# -----------------------------------------------------------------------------
-# Service Registration
-# -----------------------------------------------------------------------------
-
-standard_service_enabled     = true
-standard_service_port        = "web"
-standard_service_port_number = 9090
-standard_http_check_enabled  = true
-standard_http_check_path     = "/-/ready"
-
-additional_tags = [
-  "monitoring",
-  "prometheus",
-  "metrics"
-]
-
-# -----------------------------------------------------------------------------
-# Traefik Routing
-# -----------------------------------------------------------------------------
-
-traefik_enabled         = true
-traefik_host            = "prometheus.munchbox"
-traefik_entrypoints     = "websecure"
-traefik_tls_enabled     = true
-traefik_middlewares     = "dashboard-allowlan@file"
-
-# -----------------------------------------------------------------------------
-# Termination
-# -----------------------------------------------------------------------------
-
+# --- Termination ---
 kill_timeout = "60s"
-kill_signal  = "SIGTERM"
+
+# --- Service tags ---
+tags = ["monitoring", "prometheus", "metrics"]
