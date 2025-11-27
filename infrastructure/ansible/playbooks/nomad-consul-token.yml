@@ -1,0 +1,76 @@
+# -------------------------------------------------------------------------------
+# Configure Nomad Consul Integration Token
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Adds Consul ACL tokens to Nomad configuration for service registration.
+# Servers get nomad-server token, clients get nomad-client token.
+# Tokens are fetched from Vault at runtime.
+# -------------------------------------------------------------------------------
+---
+- name: Configure Nomad Consul tokens
+  hosts: nomad_cluster
+  gather_facts: false
+  vars:
+    vault_addr: "http://192.168.68.61:8200"
+
+  tasks:
+    - name: Get Nomad server Consul token from Vault
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/secret/data/consul/nomad-server-token"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+        return_content: true
+      register: server_token_response
+
+    - name: Get Nomad client Consul token from Vault
+      delegate_to: localhost
+      run_once: true
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/secret/data/consul/nomad-client-token"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+        return_content: true
+      register: client_token_response
+
+    - name: Set token facts
+      ansible.builtin.set_fact:
+        nomad_server_consul_token: "{{ server_token_response.json.data.data.token }}"
+        nomad_client_consul_token: "{{ client_token_response.json.data.data.token }}"
+
+    - name: Set token variable based on node type
+      ansible.builtin.set_fact:
+        consul_token: "{{ nomad_server_consul_token if inventory_hostname in groups['nomad_servers'] else nomad_client_consul_token }}"
+
+    - name: Check if token already configured
+      ansible.builtin.shell: grep -q 'token\s*=' /etc/nomad.d/nomad.hcl
+      register: token_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Add Consul token to Nomad config
+      ansible.builtin.lineinfile:
+        path: /etc/nomad.d/nomad.hcl
+        insertafter: '^consul {'
+        line: '  token = "{{ consul_token }}"'
+        state: present
+      when: token_exists.rc != 0
+      notify: Restart Nomad
+
+    - name: Update existing Consul token in Nomad config
+      ansible.builtin.replace:
+        path: /etc/nomad.d/nomad.hcl
+        regexp: '(\s+)token\s*=\s*"[^"]*"'
+        replace: '\1token = "{{ consul_token }}"'
+      when: token_exists.rc == 0
+      notify: Restart Nomad
+
+  handlers:
+    - name: Restart Nomad
+      ansible.builtin.systemd:
+        name: nomad
+        state: restarted

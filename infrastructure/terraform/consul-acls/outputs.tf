@@ -8,6 +8,7 @@ output "policies_created" {
     consul_acl_policy.nomad_server.name,
     consul_acl_policy.nomad_client.name,
     consul_acl_policy.vault_storage.name,
+    consul_acl_policy.traefik.name,
   ]
 }
 
@@ -18,5 +19,11 @@ output "tokens_stored_in_vault" {
     nomad_server = "secret/consul/nomad-server-token"
     nomad_client = "secret/consul/nomad-client-token"
     vault        = "secret/consul/vault-storage-token"
+    traefik      = "secret/traefik"
   }
+}
+
+output "traefik_token_accessor" {
+  description = "Traefik token accessor ID"
+  value       = consul_acl_token.traefik.accessor_id
 }
