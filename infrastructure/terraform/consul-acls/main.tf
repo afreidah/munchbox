@@ -9,7 +9,7 @@
 
 terraform {
   required_version = ">= 1.0"
-  
+
   required_providers {
     consul = {
       source  = "hashicorp/consul"
@@ -20,8 +20,6 @@ terraform {
       version = "~> 3.25"
     }
   }
-  
-  # Backend will be added after ACLs are working
 }
 
 # -------------------------------------------------------------------------------
@@ -29,14 +27,15 @@ terraform {
 # -------------------------------------------------------------------------------
 
 provider "consul" {
-  address = "http://stabler:8500"
-  # Set via environment: CONSUL_HTTP_TOKEN, CONSUL_CACERT
+  address = "stabler:8501"
+  scheme  = "https"
+  ca_file = "/home/afreidah/.munchbox/consul/ca-chain.crt"
+  token   = var.consul_bootstrap_token
 }
 
 provider "vault" {
   address         = "http://192.168.68.61:8200"
   skip_tls_verify = false
-  # Set via environment: VAULT_TOKEN
 }
 
 # -------------------------------------------------------------------------------
@@ -56,6 +55,41 @@ resource "consul_acl_policy" "nomad_client" {
 resource "consul_acl_policy" "vault_storage" {
   name  = "vault-storage"
   rules = file("${path.module}/policies/vault-storage.hcl")
+}
+
+resource "consul_acl_policy" "health_checks" {
+  name  = "health-checks"
+  rules = file("${path.module}/policies/health-checks.hcl")
+}
+
+# -------------------------------------------------------------------------------
+# Consul Agent Policy - For Consul client agents on VMs
+# -------------------------------------------------------------------------------
+
+resource "consul_acl_policy" "consul_agent" {
+  name  = "consul-agent"
+  rules = file("${path.module}/policies/consul-agent.hcl")
+}
+
+resource "consul_acl_token" "consul_agent" {
+  description = "Token for Consul client agents"
+  policies    = [consul_acl_policy.consul_agent.name]
+  local       = false
+}
+
+resource "vault_kv_secret_v2" "consul_agent_token" {
+  mount = "secret"
+  name  = "consul/agent-token"
+
+  data_json = jsonencode({
+    token       = consul_acl_token.consul_agent.id
+    accessor_id = consul_acl_token.consul_agent.accessor_id
+  })
+}
+
+resource "consul_acl_policy" "traefik" {
+  name  = "traefik"
+  rules = file("${path.module}/policies/traefik.hcl")
 }
 
 # -------------------------------------------------------------------------------
@@ -80,6 +114,12 @@ resource "consul_acl_token" "vault_storage" {
   local       = false
 }
 
+resource "consul_acl_token" "traefik" {
+  description = "Token for Traefik reverse proxy"
+  policies    = [consul_acl_policy.traefik.name]
+  local       = false
+}
+
 # -------------------------------------------------------------------------------
 # Store Tokens in Vault KV
 # -------------------------------------------------------------------------------
@@ -87,7 +127,7 @@ resource "consul_acl_token" "vault_storage" {
 resource "vault_kv_secret_v2" "consul_bootstrap" {
   mount = "secret"
   name  = "consul/bootstrap-token"
-  
+
   data_json = jsonencode({
     token       = var.consul_bootstrap_token
     description = "Consul ACL bootstrap token - CRITICAL"
@@ -97,7 +137,7 @@ resource "vault_kv_secret_v2" "consul_bootstrap" {
 resource "vault_kv_secret_v2" "nomad_server_token" {
   mount = "secret"
   name  = "consul/nomad-server-token"
-  
+
   data_json = jsonencode({
     token       = consul_acl_token.nomad_server.id
     accessor_id = consul_acl_token.nomad_server.accessor_id
@@ -107,7 +147,7 @@ resource "vault_kv_secret_v2" "nomad_server_token" {
 resource "vault_kv_secret_v2" "nomad_client_token" {
   mount = "secret"
   name  = "consul/nomad-client-token"
-  
+
   data_json = jsonencode({
     token       = consul_acl_token.nomad_client.id
     accessor_id = consul_acl_token.nomad_client.accessor_id
@@ -117,15 +157,18 @@ resource "vault_kv_secret_v2" "nomad_client_token" {
 resource "vault_kv_secret_v2" "vault_storage_token" {
   mount = "secret"
   name  = "consul/vault-storage-token"
-  
+
   data_json = jsonencode({
     token       = consul_acl_token.vault_storage.id
     accessor_id = consul_acl_token.vault_storage.accessor_id
   })
 }
 
-# Health checks policy for anonymous token
-resource "consul_acl_policy" "health_checks" {
-  name  = "health-checks"
-  rules = file("${path.module}/policies/health-checks.hcl")
+resource "vault_kv_secret_v2" "traefik" {
+  mount = "secret"
+  name  = "traefik"
+
+  data_json = jsonencode({
+    consul_token = consul_acl_token.traefik.id
+  })
 }

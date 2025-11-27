@@ -70,3 +70,9 @@ ports {
   serf_wan  = {{ consul_ports.serf_wan }}
   server    = {{ consul_ports.server }}
 }
+
+acl {
+  enabled        = true
+  default_policy = "deny"
+  down_policy    = "extend-cache"
+}

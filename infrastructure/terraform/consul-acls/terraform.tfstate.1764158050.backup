@@ -1,20 +1,18 @@
 {
   "version": 4,
   "terraform_version": "1.13.4",
-  "serial": 86,
+  "serial": 52,
   "lineage": "7f215467-00ec-05df-0ed2-5bb35bdc6c46",
   "outputs": {
     "policies_created": {
       "value": [
         "nomad-server",
         "nomad-client",
-        "vault-storage",
-        "traefik"
+        "vault-storage"
       ],
       "type": [
         "tuple",
         [
-          "string",
           "string",
           "string",
           "string"
@@ -26,7 +24,6 @@
         "bootstrap": "secret/consul/bootstrap-token",
         "nomad_client": "secret/consul/nomad-client-token",
         "nomad_server": "secret/consul/nomad-server-token",
-        "traefik": "secret/traefik",
         "vault": "secret/consul/vault-storage-token"
       },
       "type": [
@@ -35,14 +32,9 @@
           "bootstrap": "string",
           "nomad_client": "string",
           "nomad_server": "string",
-          "traefik": "string",
           "vault": "string"
         }
       ]
-    },
-    "traefik_token_accessor": {
-      "value": "feea344f-e1f9-0358-2d91-74be383018c9",
-      "type": "string"
     }
   },
   "resources": [
@@ -65,99 +57,7 @@
           },
           "sensitive_attributes": [],
           "identity_schema_version": 0,
-          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjAifQ=="
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "consul_acl_policy",
-      "name": "nomad_client",
-      "provider": "provider[\"registry.terraform.io/hashicorp/consul\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "datacenters": [],
-            "description": "",
-            "id": "4154d3af-5608-a6ed-44df-fceb3ff969b7",
-            "name": "nomad-client",
-            "namespace": "",
-            "partition": "",
-            "rules": "# Nomad client policy - service registration only\nagent_prefix \"\" {\n  policy = \"read\"\n}\n\nnode_prefix \"\" {\n  policy = \"read\"\n}\n\nservice_prefix \"\" {\n  policy = \"write\"\n}\n\nkey_prefix \"\" {\n  policy = \"read\"\n}\n"
-          },
-          "sensitive_attributes": [],
-          "identity_schema_version": 0,
-          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjAifQ=="
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "consul_acl_policy",
-      "name": "nomad_server",
-      "provider": "provider[\"registry.terraform.io/hashicorp/consul\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "datacenters": [],
-            "description": "",
-            "id": "646f62c0-e5c3-1229-ab15-8a440f33a35e",
-            "name": "nomad-server",
-            "namespace": "",
-            "partition": "",
-            "rules": "# Nomad server policy - full cluster orchestration\nagent_prefix \"\" {\n  policy = \"read\"\n}\n\nnode_prefix \"\" {\n  policy = \"write\"\n}\n\nservice_prefix \"\" {\n  policy = \"write\"\n}\n\nquery_prefix \"\" {\n  policy = \"read\"\n}\n\nkey_prefix \"\" {\n  policy = \"write\"\n}\n"
-          },
-          "sensitive_attributes": [],
-          "identity_schema_version": 0,
-          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjAifQ=="
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "consul_acl_policy",
-      "name": "traefik",
-      "provider": "provider[\"registry.terraform.io/hashicorp/consul\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "datacenters": [],
-            "description": "",
-            "id": "29f21b3f-cf54-e81c-d6bf-fa064e3d36b7",
-            "name": "traefik",
-            "namespace": "",
-            "partition": "",
-            "rules": "# Traefik policy - Consul Catalog service discovery\nservice_prefix \"\" {\n  policy = \"read\"\n}\n\nnode_prefix \"\" {\n  policy = \"read\"\n}\n\nagent_prefix \"\" {\n  policy = \"read\"\n}\n"
-          },
-          "sensitive_attributes": [],
-          "identity_schema_version": 0,
           "private": "bnVsbA=="
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "consul_acl_policy",
-      "name": "vault_storage",
-      "provider": "provider[\"registry.terraform.io/hashicorp/consul\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "datacenters": [],
-            "description": "",
-            "id": "f3046858-b84b-6d16-a5fd-03d3692b17e1",
-            "name": "vault-storage",
-            "namespace": "",
-            "partition": "",
-            "rules": "# Vault storage backend policy\nkey_prefix \"vault/\" {\n  policy = \"write\"\n}\n\nnode_prefix \"\" {\n  policy = \"write\"\n}\n\nservice \"vault\" {\n  policy = \"write\"\n}\n\nagent_prefix \"\" {\n  policy = \"write\"\n}\n\nsession_prefix \"\" {\n  policy = \"write\"\n}\n"
-          },
-          "sensitive_attributes": [],
-          "identity_schema_version": 0,
-          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjAifQ=="
         }
       ]
     },
@@ -170,10 +70,10 @@
         {
           "schema_version": 0,
           "attributes": {
-            "accessor_id": "be14de42-6897-cfec-5ce0-3e436a4fc8f7",
+            "accessor_id": "a07b6ad5-94cf-b7f9-b210-570ecdc4f351",
             "description": "Token for Nomad clients",
             "expiration_time": "",
-            "id": "be14de42-6897-cfec-5ce0-3e436a4fc8f7",
+            "id": "a07b6ad5-94cf-b7f9-b210-570ecdc4f351",
             "local": false,
             "namespace": "",
             "node_identities": [],
@@ -181,7 +81,7 @@
             "policies": [
               "nomad-client"
             ],
-            "roles": null,
+            "roles": [],
             "service_identities": [],
             "templated_policies": []
           },
@@ -203,10 +103,10 @@
         {
           "schema_version": 0,
           "attributes": {
-            "accessor_id": "ab1afd11-9155-10a6-b8a5-6f7f1b78074f",
+            "accessor_id": "2781392a-ce3f-d9f2-29c8-5b05d0959ddc",
             "description": "Token for Nomad servers",
             "expiration_time": "",
-            "id": "ab1afd11-9155-10a6-b8a5-6f7f1b78074f",
+            "id": "2781392a-ce3f-d9f2-29c8-5b05d0959ddc",
             "local": false,
             "namespace": "",
             "node_identities": [],
@@ -214,7 +114,7 @@
             "policies": [
               "nomad-server"
             ],
-            "roles": null,
+            "roles": [],
             "service_identities": [],
             "templated_policies": []
           },
@@ -230,49 +130,16 @@
     {
       "mode": "managed",
       "type": "consul_acl_token",
-      "name": "traefik",
-      "provider": "provider[\"registry.terraform.io/hashicorp/consul\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "accessor_id": "feea344f-e1f9-0358-2d91-74be383018c9",
-            "description": "Token for Traefik reverse proxy",
-            "expiration_time": "",
-            "id": "feea344f-e1f9-0358-2d91-74be383018c9",
-            "local": false,
-            "namespace": "",
-            "node_identities": [],
-            "partition": "",
-            "policies": [
-              "traefik"
-            ],
-            "roles": [],
-            "service_identities": [],
-            "templated_policies": []
-          },
-          "sensitive_attributes": [],
-          "identity_schema_version": 0,
-          "private": "bnVsbA==",
-          "dependencies": [
-            "consul_acl_policy.traefik"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "consul_acl_token",
       "name": "vault_storage",
       "provider": "provider[\"registry.terraform.io/hashicorp/consul\"]",
       "instances": [
         {
           "schema_version": 0,
           "attributes": {
-            "accessor_id": "4e59dfbd-7ec5-62d5-232c-58ec4a3b41a2",
+            "accessor_id": "fb41fb77-17b8-a506-851e-34d06f39687f",
             "description": "Token for Vault storage backend",
             "expiration_time": "",
-            "id": "4e59dfbd-7ec5-62d5-232c-58ec4a3b41a2",
+            "id": "fb41fb77-17b8-a506-851e-34d06f39687f",
             "local": false,
             "namespace": "",
             "node_identities": [],
@@ -280,7 +147,7 @@
             "policies": [
               "vault-storage"
             ],
-            "roles": null,
+            "roles": [],
             "service_identities": [],
             "templated_policies": []
           },
@@ -370,19 +237,19 @@
               }
             ],
             "data": {
-              "accessor_id": "be14de42-6897-cfec-5ce0-3e436a4fc8f7",
-              "token": "be14de42-6897-cfec-5ce0-3e436a4fc8f7"
+              "accessor_id": "a07b6ad5-94cf-b7f9-b210-570ecdc4f351",
+              "token": "a07b6ad5-94cf-b7f9-b210-570ecdc4f351"
             },
-            "data_json": "{\"accessor_id\":\"be14de42-6897-cfec-5ce0-3e436a4fc8f7\",\"token\":\"be14de42-6897-cfec-5ce0-3e436a4fc8f7\"}",
+            "data_json": "{\"accessor_id\":\"a07b6ad5-94cf-b7f9-b210-570ecdc4f351\",\"token\":\"a07b6ad5-94cf-b7f9-b210-570ecdc4f351\"}",
             "delete_all_versions": false,
             "disable_read": false,
             "id": "secret/data/consul/nomad-client-token",
             "metadata": {
-              "created_time": "2025-11-26T12:45:17.551102763Z",
+              "created_time": "2025-11-25T20:41:08.332901353Z",
               "custom_metadata": "null",
               "deletion_time": "",
               "destroyed": "false",
-              "version": "2"
+              "version": "1"
             },
             "mount": "secret",
             "name": "consul/nomad-client-token",
@@ -432,19 +299,19 @@
               }
             ],
             "data": {
-              "accessor_id": "ab1afd11-9155-10a6-b8a5-6f7f1b78074f",
-              "token": "ab1afd11-9155-10a6-b8a5-6f7f1b78074f"
+              "accessor_id": "2781392a-ce3f-d9f2-29c8-5b05d0959ddc",
+              "token": "2781392a-ce3f-d9f2-29c8-5b05d0959ddc"
             },
-            "data_json": "{\"accessor_id\":\"ab1afd11-9155-10a6-b8a5-6f7f1b78074f\",\"token\":\"ab1afd11-9155-10a6-b8a5-6f7f1b78074f\"}",
+            "data_json": "{\"accessor_id\":\"2781392a-ce3f-d9f2-29c8-5b05d0959ddc\",\"token\":\"2781392a-ce3f-d9f2-29c8-5b05d0959ddc\"}",
             "delete_all_versions": false,
             "disable_read": false,
             "id": "secret/data/consul/nomad-server-token",
             "metadata": {
-              "created_time": "2025-11-26T12:45:17.556961611Z",
+              "created_time": "2025-11-25T20:41:08.33295389Z",
               "custom_metadata": "null",
               "deletion_time": "",
               "destroyed": "false",
-              "version": "2"
+              "version": "1"
             },
             "mount": "secret",
             "name": "consul/nomad-server-token",
@@ -478,67 +345,6 @@
     {
       "mode": "managed",
       "type": "vault_kv_secret_v2",
-      "name": "traefik",
-      "provider": "provider[\"registry.terraform.io/hashicorp/vault\"]",
-      "instances": [
-        {
-          "schema_version": 0,
-          "attributes": {
-            "cas": null,
-            "custom_metadata": [
-              {
-                "cas_required": false,
-                "data": {},
-                "delete_version_after": 0,
-                "max_versions": 0
-              }
-            ],
-            "data": {
-              "consul_token": "feea344f-e1f9-0358-2d91-74be383018c9"
-            },
-            "data_json": "{\"consul_token\":\"feea344f-e1f9-0358-2d91-74be383018c9\"}",
-            "delete_all_versions": false,
-            "disable_read": false,
-            "id": "secret/data/traefik",
-            "metadata": {
-              "created_time": "2025-11-26T12:39:45.321271051Z",
-              "custom_metadata": "null",
-              "deletion_time": "",
-              "destroyed": "false",
-              "version": "1"
-            },
-            "mount": "secret",
-            "name": "traefik",
-            "namespace": null,
-            "options": null,
-            "path": "secret/data/traefik"
-          },
-          "sensitive_attributes": [
-            [
-              {
-                "type": "get_attr",
-                "value": "data"
-              }
-            ],
-            [
-              {
-                "type": "get_attr",
-                "value": "data_json"
-              }
-            ]
-          ],
-          "identity_schema_version": 0,
-          "private": "bnVsbA==",
-          "dependencies": [
-            "consul_acl_policy.traefik",
-            "consul_acl_token.traefik"
-          ]
-        }
-      ]
-    },
-    {
-      "mode": "managed",
-      "type": "vault_kv_secret_v2",
       "name": "vault_storage_token",
       "provider": "provider[\"registry.terraform.io/hashicorp/vault\"]",
       "instances": [
@@ -555,19 +361,19 @@
               }
             ],
             "data": {
-              "accessor_id": "4e59dfbd-7ec5-62d5-232c-58ec4a3b41a2",
-              "token": "4e59dfbd-7ec5-62d5-232c-58ec4a3b41a2"
+              "accessor_id": "fb41fb77-17b8-a506-851e-34d06f39687f",
+              "token": "fb41fb77-17b8-a506-851e-34d06f39687f"
             },
-            "data_json": "{\"accessor_id\":\"4e59dfbd-7ec5-62d5-232c-58ec4a3b41a2\",\"token\":\"4e59dfbd-7ec5-62d5-232c-58ec4a3b41a2\"}",
+            "data_json": "{\"accessor_id\":\"fb41fb77-17b8-a506-851e-34d06f39687f\",\"token\":\"fb41fb77-17b8-a506-851e-34d06f39687f\"}",
             "delete_all_versions": false,
             "disable_read": false,
             "id": "secret/data/consul/vault-storage-token",
             "metadata": {
-              "created_time": "2025-11-26T12:45:17.557277316Z",
+              "created_time": "2025-11-25T20:41:08.332710926Z",
               "custom_metadata": "null",
               "deletion_time": "",
               "destroyed": "false",
-              "version": "2"
+              "version": "1"
             },
             "mount": "secret",
             "name": "consul/vault-storage-token",

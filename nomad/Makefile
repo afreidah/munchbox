@@ -1,165 +1,246 @@
+# -------------------------------------------------------------------------------
 # Munchbox Nomad Job Management
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Unified interface for deploying Nomad jobs regardless of whether they use
+# nomad-pack templates or raw HCL files.
+#
+# Usage:
+#   make run JOB=grafana        # Deploy grafana job
+#   make plan JOB=traefik       # Plan traefik changes
+#   make render JOB=prometheus  # Render to see generated HCL
+#   make list                   # Show all available jobs
 # -------------------------------------------------------------------------------
 
-.PHONY: help list render plan run stop purge render-all plan-all run-all
+.PHONY: help list render plan run stop purge validate
 
-PACK_REGISTRY := packs/registry
-DEFAULT_PACK := nomad-service
+SHELL := /bin/bash
 
-# Help target
+# Pack registry location (relative to this Makefile)
+PACK_REGISTRY := packs
+
+# Default pack for jobs without explicit PACK directive
+DEFAULT_PACK := munchbox-service
+
+# -------------------------------------------------------------------------------
+# Help
+# -------------------------------------------------------------------------------
+
 help:
-	@echo "Nomad Job Management Commands:"
-	@echo "  make list                    - List all available jobs"
-	@echo "  make render JOB=<name>       - Render a specific job"
-	@echo "  make plan JOB=<name>         - Plan a specific job"
-	@echo "  make run JOB=<name>          - Run a specific job"
-	@echo "  make stop JOB=<name>         - Stop a specific job"
-	@echo "  make purge JOB=<name>        - Purge a specific job"
+	@echo "Nomad Job Management"
 	@echo ""
-	@echo "  make render-all              - Render all jobs"
-	@echo "  make plan-all                - Plan all jobs"
-	@echo "  make run-all                 - Run all jobs"
+	@echo "Commands:"
+	@echo "  make list                 List all available jobs"
+	@echo "  make render JOB=<name>    Render job template (show generated HCL)"
+	@echo "  make plan JOB=<name>      Plan job deployment (diff)"
+	@echo "  make run JOB=<name>       Deploy job"
+	@echo "  make stop JOB=<name>      Stop running job"
+	@echo "  make purge JOB=<name>     Stop and purge job"
+	@echo "  make validate JOB=<name>  Validate job syntax"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make render JOB=grafana"
-	@echo "  make run JOB=temporal-backup-worker"
+	@echo "  make run JOB=grafana"
+	@echo "  make plan JOB=traefik"
+	@echo "  make render JOB=prometheus"
+	@echo ""
+	@echo "Job Detection:"
+	@echo "  - Files ending in .nomad.hcl -> nomad job run (raw HCL)"
+	@echo "  - Files with '# PACK: <name>' -> uses that pack"
+	@echo "  - All other .hcl files -> uses $(DEFAULT_PACK) pack"
 
-# Auto-discover all job files
-JOBS := $(shell find jobs -name '*.hcl' -type f | grep -v traefik)
+# -------------------------------------------------------------------------------
+# Job Discovery
+# -------------------------------------------------------------------------------
 
-# List all jobs
+# Find all job files (both pack var files and raw nomad files)
+JOBS := $(shell find jobs -name '*.hcl' -type f 2>/dev/null | sort)
+
 list:
-	@echo "Available jobs:"
+	@echo "Available Jobs:"
+	@echo ""
 	@for job in $(JOBS); do \
-		echo "  - $$(basename $$job .hcl) ($$job)"; \
+		name=$$(basename "$$job" .hcl); \
+		name=$${name%.nomad}; \
+		dir=$$(dirname "$$job" | sed 's|jobs/||'); \
+		if echo "$$job" | grep -q '\.nomad\.hcl$$'; then \
+			type="[raw]"; \
+		elif grep -q '^# PACK:' "$$job" 2>/dev/null; then \
+			pack=$$(grep '^# PACK:' "$$job" | awk '{print $$3}'); \
+			type="[pack:$$pack]"; \
+		else \
+			type="[pack:$(DEFAULT_PACK)]"; \
+		fi; \
+		printf "  %-25s %-20s %s\n" "$$name" "$$type" "$$dir"; \
 	done
+	@echo ""
 
-# Helper function to find job file
-define find-job
-$(shell find jobs -name "$(1).hcl" -type f | head -1)
+# -------------------------------------------------------------------------------
+# Internal: Find job file and determine how to run it
+# -------------------------------------------------------------------------------
+
+# --- Find job file by name (searches recursively) ---
+define find_job
+$(shell find jobs -name "$(1).hcl" -o -name "$(1).nomad.hcl" 2>/dev/null | head -1)
 endef
 
-# Helper function to get pack for job
-define get-pack
-$(shell if [ -f "$(1)" ]; then \
-	grep -q "^# PACK:" "$(1)" && grep "^# PACK:" "$(1)" | awk '{print $$3}' || echo "$(DEFAULT_PACK)"; \
+# --- Get job directory (for passing to pack) ---
+define get_job_dir
+$(shell dirname "$(1)")
+endef
+
+# --- Determine if job is raw HCL (ends in .nomad.hcl) ---
+define is_raw_hcl
+$(shell echo "$(1)" | grep -q '\.nomad\.hcl$$' && echo "yes" || echo "no")
+endef
+
+# --- Get pack name from job file (or default) ---
+define get_pack
+$(shell if grep -q '^# PACK:' "$(1)" 2>/dev/null; then \
+	grep '^# PACK:' "$(1)" | awk '{print $$3}'; \
 else \
 	echo "$(DEFAULT_PACK)"; \
 fi)
 endef
 
-# Helper function to get command type
-define get-command-type
-$(shell if [ -f "$(1)" ]; then \
-	grep -q "^# TYPE: nomad" "$(1)" && echo "nomad" || echo "nomad-pack"; \
-else \
-	echo "nomad-pack"; \
-fi)
-endef
+# -------------------------------------------------------------------------------
+# Commands
+# -------------------------------------------------------------------------------
 
-# Render a specific job
 render:
 ifndef JOB
-	@echo "Error: JOB not specified. Usage: make render JOB=<job-name>"
-	@exit 1
+	$(error JOB not specified. Usage: make render JOB=<name>)
 endif
-	$(eval JOB_FILE := $(call find-job,$(JOB)))
-	$(eval PACK := $(call get-pack,$(JOB_FILE)))
-	$(eval CMD_TYPE := $(call get-command-type,$(JOB_FILE)))
+	$(eval JOB_FILE := $(call find_job,$(JOB)))
 	@if [ -z "$(JOB_FILE)" ]; then \
 		echo "Error: Job '$(JOB)' not found"; \
+		echo "Run 'make list' to see available jobs"; \
 		exit 1; \
 	fi
-	@echo "Rendering $(JOB) from $(JOB_FILE) using $(CMD_TYPE)..."
-	@if [ "$(CMD_TYPE)" = "nomad" ]; then \
-		nomad job run -check-index 0 -detach -verbose $(JOB_FILE); \
+	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
+	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
+	$(eval PACK := $(call get_pack,$(JOB_FILE)))
+	@echo "=== Rendering $(JOB) ==="
+	@echo "File: $(JOB_FILE)"
+	@if [ "$(IS_RAW)" = "yes" ]; then \
+		echo "Type: Raw HCL"; \
+		echo ""; \
+		cat "$(JOB_FILE)"; \
 	else \
-		nomad-pack render --var-file=$(JOB_FILE) $(PACK_REGISTRY)/$(PACK); \
+		echo "Type: Pack ($(PACK))"; \
+		echo ""; \
+		nomad-pack render \
+			--var-file="$(JOB_FILE)" \
+			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
+			"$(PACK_REGISTRY)/$(PACK)"; \
 	fi
 
-# Plan a specific job
 plan:
 ifndef JOB
-	@echo "Error: JOB not specified. Usage: make plan JOB=<job-name>"
-	@exit 1
+	$(error JOB not specified. Usage: make plan JOB=<name>)
 endif
-	$(eval JOB_FILE := $(call find-job,$(JOB)))
-	$(eval PACK := $(call get-pack,$(JOB_FILE)))
-	$(eval CMD_TYPE := $(call get-command-type,$(JOB_FILE)))
+	$(eval JOB_FILE := $(call find_job,$(JOB)))
 	@if [ -z "$(JOB_FILE)" ]; then \
 		echo "Error: Job '$(JOB)' not found"; \
 		exit 1; \
 	fi
-	@echo "Planning $(JOB) from $(JOB_FILE) using $(CMD_TYPE)..."
-	@if [ "$(CMD_TYPE)" = "nomad" ]; then \
-		nomad job plan $(JOB_FILE); \
+	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
+	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
+	$(eval PACK := $(call get_pack,$(JOB_FILE)))
+	@echo "=== Planning $(JOB) ==="
+	@if [ "$(IS_RAW)" = "yes" ]; then \
+		nomad job plan "$(JOB_FILE)"; \
 	else \
-		nomad-pack plan --diff --var-file=$(JOB_FILE) $(PACK_REGISTRY)/$(PACK); \
+		nomad-pack plan \
+			--var-file="$(JOB_FILE)" \
+			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
+			"$(PACK_REGISTRY)/$(PACK)"; \
 	fi
 
-# Run a specific job
 run:
 ifndef JOB
-	@echo "Error: JOB not specified. Usage: make run JOB=<job-name>"
-	@exit 1
+	$(error JOB not specified. Usage: make run JOB=<name>)
 endif
-	$(eval JOB_FILE := $(call find-job,$(JOB)))
-	$(eval PACK := $(call get-pack,$(JOB_FILE)))
-	$(eval CMD_TYPE := $(call get-command-type,$(JOB_FILE)))
+	$(eval JOB_FILE := $(call find_job,$(JOB)))
 	@if [ -z "$(JOB_FILE)" ]; then \
 		echo "Error: Job '$(JOB)' not found"; \
 		exit 1; \
 	fi
-	@echo "Running $(JOB) from $(JOB_FILE) using $(CMD_TYPE)..."
-	@if [ "$(CMD_TYPE)" = "nomad" ]; then \
-		nomad job run $(JOB_FILE); \
+	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
+	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
+	$(eval PACK := $(call get_pack,$(JOB_FILE)))
+	@echo "=== Deploying $(JOB) ==="
+	@if [ "$(IS_RAW)" = "yes" ]; then \
+		nomad job run "$(JOB_FILE)"; \
 	else \
-		nomad-pack run --var-file=$(JOB_FILE) $(PACK_REGISTRY)/$(PACK); \
+		nomad-pack run \
+			--var-file="$(JOB_FILE)" \
+			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
+			"$(PACK_REGISTRY)/$(PACK)"; \
 	fi
 
-# Stop a specific job
+validate:
+ifndef JOB
+	$(error JOB not specified. Usage: make validate JOB=<name>)
+endif
+	$(eval JOB_FILE := $(call find_job,$(JOB)))
+	@if [ -z "$(JOB_FILE)" ]; then \
+		echo "Error: Job '$(JOB)' not found"; \
+		exit 1; \
+	fi
+	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
+	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
+	$(eval PACK := $(call get_pack,$(JOB_FILE)))
+	@echo "=== Validating $(JOB) ==="
+	@if [ "$(IS_RAW)" = "yes" ]; then \
+		nomad job validate "$(JOB_FILE)"; \
+	else \
+		nomad-pack render \
+			--var-file="$(JOB_FILE)" \
+			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
+			"$(PACK_REGISTRY)/$(PACK)" | nomad job validate -; \
+	fi
+
 stop:
 ifndef JOB
-	@echo "Error: JOB not specified. Usage: make stop JOB=<job-name>"
-	@exit 1
+	$(error JOB not specified. Usage: make stop JOB=<name>)
 endif
-	@echo "Stopping $(JOB)..."
-	@nomad job stop $(JOB)
+	@echo "=== Stopping $(JOB) ==="
+	@nomad job stop "$(JOB)" || true
 
-# Purge a specific job
 purge:
 ifndef JOB
-	@echo "Error: JOB not specified. Usage: make purge JOB=<job-name>"
-	@exit 1
+	$(error JOB not specified. Usage: make purge JOB=<name>)
 endif
-	@echo "Purging $(JOB)..."
-	@nomad job stop -purge $(JOB)
+	@echo "=== Purging $(JOB) ==="
+	@nomad job stop -purge "$(JOB)" || true
 
-# Render all jobs
+# -------------------------------------------------------------------------------
+# Batch Operations
+# -------------------------------------------------------------------------------
+
+.PHONY: render-all plan-all validate-all
+
 render-all:
 	@for job in $(JOBS); do \
-		job_name=$$(basename $$job .hcl); \
-		echo "=== Rendering $$job_name ==="; \
-		make render JOB=$$job_name || true; \
+		name=$$(basename "$$job" .hcl); \
+		name=$${name%.nomad}; \
 		echo ""; \
+		$(MAKE) render JOB=$$name || true; \
 	done
 
-# Plan all jobs
 plan-all:
 	@for job in $(JOBS); do \
-		job_name=$$(basename $$job .hcl); \
-		echo "=== Planning $$job_name ==="; \
-		make plan JOB=$$job_name || true; \
+		name=$$(basename "$$job" .hcl); \
+		name=$${name%.nomad}; \
 		echo ""; \
+		$(MAKE) plan JOB=$$name || true; \
 	done
 
-# Run all jobs (use with caution!)
-run-all:
-	@echo "WARNING: This will deploy ALL jobs. Press Ctrl+C to cancel or Enter to continue..."
-	@read confirm
+validate-all:
 	@for job in $(JOBS); do \
-		job_name=$$(basename $$job .hcl); \
-		echo "=== Running $$job_name ==="; \
-		make run JOB=$$job_name || true; \
+		name=$$(basename "$$job" .hcl); \
+		name=$${name%.nomad}; \
 		echo ""; \
+		$(MAKE) validate JOB=$$name || true; \
 	done
