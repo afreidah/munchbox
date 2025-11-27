@@ -1,1 +1,1 @@
-[[ env "VAULT_TOKEN" ]]
+{{ env "VAULT_TOKEN" }}

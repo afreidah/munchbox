@@ -4,7 +4,7 @@ server:
   log_level: info
 
 clients:
-  - url: http://localhost:3100/loki/api/v1/push  # ← Changed from loki.service.consul
+  - url: http://loki.service.consul:3100/loki/api/v1/push
 
 scrape_configs:
   # -----------------------------------------------------------------
@@ -32,17 +32,7 @@ scrape_configs:
     pipeline_stages:
       - template:
           source: level
-          template: |
-            {{- $p := .Labels.priority -}}
-            {{- if eq $p "0" -}}emerg
-            {{- else if eq $p "1" -}}alert
-            {{- else if eq $p "2" -}}crit
-            {{- else if eq $p "3" -}}error
-            {{- else if eq $p "4" -}}warning
-            {{- else if eq $p "5" -}}notice
-            {{- else if eq $p "6" -}}info
-            {{- else if eq $p "7" -}}debug
-            {{- else -}}unknown{{- end -}}
+          template: '{{- $p := .Labels.priority -}}{{- if eq $p "0" -}}emerg{{- else if eq $p "1" -}}alert{{- else if eq $p "2" -}}crit{{- else if eq $p "3" -}}error{{- else if eq $p "4" -}}warning{{- else if eq $p "5" -}}notice{{- else if eq $p "6" -}}info{{- else if eq $p "7" -}}debug{{- else -}}unknown{{- end -}}'
       - labels:
           level:
       - json:
@@ -75,17 +65,7 @@ scrape_configs:
     pipeline_stages:
       - template:
           source: level
-          template: |
-            {{- $p := .Labels.priority -}}
-            {{- if eq $p "0" -}}emerg
-            {{- else if eq $p "1" -}}alert
-            {{- else if eq $p "2" -}}crit
-            {{- else if eq $p "3" -}}error
-            {{- else if eq $p "4" -}}warning
-            {{- else if eq $p "5" -}}notice
-            {{- else if eq $p "6" -}}info
-            {{- else if eq $p "7" -}}debug
-            {{- else -}}unknown{{- end -}}
+          template: '{{- $p := .Labels.priority -}}{{- if eq $p "0" -}}emerg{{- else if eq $p "1" -}}alert{{- else if eq $p "2" -}}crit{{- else if eq $p "3" -}}error{{- else if eq $p "4" -}}warning{{- else if eq $p "5" -}}notice{{- else if eq $p "6" -}}info{{- else if eq $p "7" -}}debug{{- else -}}unknown{{- end -}}'
       - labels:
           level:
       - json:

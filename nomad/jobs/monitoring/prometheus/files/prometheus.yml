@@ -17,7 +17,7 @@ alerting:
   alertmanagers:
     - scheme: http
       static_configs:
-        - targets: ["localhost:9093"]  # ← Changed from alertmanager.service.consul:9093
+        - targets: ["localhost:9093"]
 
 # Scrape configuration - what to monitor
 scrape_configs:
@@ -31,8 +31,7 @@ scrape_configs:
           service: "prometheus"
 
   # -----------------------------------------------------------------------
-  # Nomad cluster metrics - HTTPS endpoints with custom certs
-  # (Multiple servers are scraped; rules dedupe across servers)
+  # Nomad cluster metrics - HTTPS endpoints
   # -----------------------------------------------------------------------
   - job_name: "nomad"
     metrics_path: "/v1/metrics"
@@ -43,29 +42,28 @@ scrape_configs:
       insecure_skip_verify: true
     static_configs:
       - targets:
-          - "192.168.68.59:4646"  # cabot
-          - "192.168.68.63:4646"  # mccoy
           - "192.168.68.61:4646"  # stabler
           - "192.168.68.60:4646"  # goren
+          - "192.168.68.69:4646"  # nomad-server-03
         labels:
           cluster: "nomad"
           role: "server"
 
   # -----------------------------------------------------------------------
-  # Vault/OpenBao metrics - requires bearer token
+  # Vault metrics - requires bearer token
   # -----------------------------------------------------------------------
   - job_name: "vault"
     metrics_path: "/v1/sys/metrics"
     params:
       format: ["prometheus"]
     scheme: "https"
-    bearer_token_file: "/etc/prometheus/secrets/vault_token"
+    bearer_token_file: "/secrets/vault_token"
     tls_config:
       insecure_skip_verify: true
     static_configs:
-      - targets: ["mccoy:8200"]  # hostname instead of IP
+      - targets: ["192.168.68.63:8200"]  # mccoy
         labels:
-          cluster: "vault-cluster-b193d95f"
+          cluster: "vault"
           service: "vault"
 
   # -----------------------------------------------------------------------
@@ -75,20 +73,18 @@ scrape_configs:
     scrape_interval: 15s
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.59:8500"
-        token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
+      - server: "192.168.68.61:8500"
+        scheme: "http"
         services: ["prometheus-node-exporter"]
-        datacenter: "dc1"
+        datacenter: "munchbox"
     relabel_configs:
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
       - source_labels: ["__meta_consul_dc"]
         target_label: "consul_dc"
-      - source_labels: ["__meta_consul_node_metadata_role"]
-        target_label: "node_role"
 
   # -----------------------------------------------------------------------
-  # Consul cluster metrics - leader and followers
+  # Consul cluster metrics
   # -----------------------------------------------------------------------
   - job_name: "consul"
     metrics_path: "/v1/agent/metrics"
@@ -96,46 +92,33 @@ scrape_configs:
       format: ["prometheus"]
     scheme: "http"
     authorization:
-      credentials_file: "/etc/prometheus/secrets/consul_token"
-    static_configs:
-      - targets:
-          - "192.168.68.59:8500"  # cabot - FIXED from :4646
-          - "192.168.68.63:8500"  # mccoy
-          - "192.168.68.61:8500"  # stabler
-          - "192.168.68.60:8500"  # goren
-        labels:
-          cluster: "consul"
-
-  # -----------------------------------------------------------------------
-  # Site monitoring via Blackbox Exporter (HTTPS-only targets)
-  # -----------------------------------------------------------------------
-  - job_name: "site_https"
-    metrics_path: "/probe"
-    params:
-      module: ["https_2xx"]
-    static_configs:
-      - targets:
-          - "https://resume.alexfreidah.com/"
-        labels:
-          vantage: "internal"
+      credentials_file: "/secrets/consul_token"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["consul"]
+        datacenter: "munchbox"
     relabel_configs:
-      - source_labels: ["__address__"]
-        target_label: "__param_target"
-      - source_labels: ["__param_target"]
+      - source_labels: ["__meta_consul_address"]
+        target_label: "__address__"
+        replacement: "$1:8500"
+      - source_labels: ["__meta_consul_node"]
         target_label: "instance"
-      - target_label: "__address__"
-        replacement: "192.168.68.59:9115"
+      - source_labels: ["__meta_consul_dc"]
+        target_label: "consul_dc"
+      - target_label: "cluster"
+        replacement: "consul"
 
   # -----------------------------------------------------------------------
-  # Traefik metrics - load balancer stats (Consul SD)
+  # Traefik metrics - Consul service discovery
   # -----------------------------------------------------------------------
   - job_name: "traefik"
     scheme: "http"
     consul_sd_configs:
-      - server: "192.168.68.59:8500"
-        token: '[[ with secret "kv/data/prometheus" ]][[ .Data.data.consul_token ]][[ end ]]'
+      - server: "192.168.68.61:8500"
+        scheme: "http"
         services: ["traefik"]
-        datacenter: "dc1"
+        datacenter: "munchbox"
     relabel_configs:
       - source_labels: ["__meta_consul_service_address"]
         regex: "(.+)"
@@ -145,5 +128,37 @@ scrape_configs:
         target_label: "service"
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
-      - source_labels: ["__meta_consul_tags"]
-        target_label: "consul_tags"
+
+  # -----------------------------------------------------------------------
+  # Blackbox Exporter - Consul service discovery
+  # -----------------------------------------------------------------------
+  - job_name: "blackbox"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["blackbox-exporter"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service"]
+        target_label: "job"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+
+  # -----------------------------------------------------------------------
+  # Site monitoring via Blackbox Exporter
+  # -----------------------------------------------------------------------
+  - job_name: "site_https"
+    metrics_path: "/probe"
+    params:
+      module: ["https_2xx"]
+    static_configs:
+      - targets:
+          - "https://resume.alexfreidah.com/"
+    relabel_configs:
+      - source_labels: ["__address__"]
+        target_label: "__param_target"
+      - source_labels: ["__param_target"]
+        target_label: "instance"
+      - target_label: "__address__"
+        replacement: "blackbox-exporter.service.consul:9115"
