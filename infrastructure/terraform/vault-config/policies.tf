@@ -93,9 +93,14 @@ path "secret/data/backup-worker" {
   capabilities = ["read"]
 }
 
+# KV secrets for workloads
+path "kv/data/traefik" {
+  capabilities = ["read"]
+}
+
 # --- PKI Certificate Issuance ---
 path "pki_int/issue/traefik" {
-  capabilities = ["create", "update"]
+  capabilities = ["create", "update", "read"]
 }
 
 path "pki_int/cert/ca" {
@@ -104,28 +109,6 @@ path "pki_int/cert/ca" {
 
 # --- Consul Dynamic Tokens ---
 path "consul/creds/*" {
-  capabilities = ["read"]
-}
-EOT
-}
-
-# -------------------------------------------------------------------------
-# Traefik Policy
-# -------------------------------------------------------------------------
-
-resource "vault_policy" "traefik" {
-  name = "traefik"
-
-  policy = <<EOT
-path "secret/data/traefik" {
-  capabilities = ["read"]
-}
-
-path "pki_int/issue/traefik" {
-  capabilities = ["create", "update"]
-}
-
-path "pki_int/cert/ca" {
   capabilities = ["read"]
 }
 EOT

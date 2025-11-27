@@ -54,3 +54,45 @@ resource "vault_consul_secret_backend" "consul" {
   scheme      = "http"
   token       = var.consul_bootstrap_token
 }
+
+# -------------------------------------------------------------------------------
+# Data Sources
+# -------------------------------------------------------------------------------
+
+data "vault_generic_secret" "pki_int_ca" {
+  path = "pki_int/cert/ca"
+}
+
+# -------------------------------------------------------------------------------
+# JWT Auth Backend for Nomad Workload Identity
+# -------------------------------------------------------------------------------
+
+resource "vault_jwt_auth_backend" "nomad" {
+  path               = "jwt-nomad"
+  type               = "jwt"
+  description        = "JWT auth for Nomad workload identity"
+  jwks_url           = "https://stabler:4646/.well-known/jwks.json"
+  jwt_supported_algs = ["RS256", "EdDSA"]
+  default_role       = "nomad-workloads"
+  jwks_ca_pem        = data.vault_generic_secret.pki_int_ca.data["certificate"]
+}
+
+resource "vault_jwt_auth_backend_role" "nomad_workloads" {
+  backend                 = vault_jwt_auth_backend.nomad.path
+  role_name               = "nomad-workloads"
+  role_type               = "jwt"
+  bound_audiences         = ["vault.io"]
+  user_claim              = "/nomad_job_id"
+  user_claim_json_pointer = true
+
+  claim_mappings = {
+    "nomad_namespace" = "nomad_namespace"
+    "nomad_job_id"    = "nomad_job_id"
+    "nomad_task"      = "nomad_task"
+  }
+
+  token_type     = "service"
+  token_ttl      = 3600
+  token_max_ttl  = 86400
+  token_policies = ["nomad-workloads"]
+}

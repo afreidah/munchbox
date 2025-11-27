@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # HTTPS-first ingress controller running as system job on ingress nodes.
-# Auto-discovers services via Consul Catalog, generates self-signed certs for
-# *.munchbox.cc, and exposes dashboard on :8081 (LAN-only).
+# Auto-discovers services via Consul Catalog, fetches TLS certs from Vault PKI,
+# and exposes dashboard on :8081 (LAN-only).
 # -------------------------------------------------------------------------------
 
 job "traefik" {
@@ -81,71 +81,6 @@ job "traefik" {
     }
 
     # -----------------------------------------------------------------------
-    # Task: certgen (prestart)
-    # -----------------------------------------------------------------------
-
-    task "certgen" {
-      lifecycle {
-        hook    = "prestart"
-        sidecar = false
-      }
-
-      driver = "docker"
-
-      # --- Docker Configuration ---
-      config {
-        image   = "alpine:latest"
-        command = "sh"
-        args    = ["-c", "apk add --no-cache openssl && /local/generate-certs.sh"]
-      }
-
-      # --- Certificate Generation Script ---
-      template {
-        destination = "local/generate-certs.sh"
-        perms       = "0755"
-        data        = <<EOH
-#!/bin/sh
-# -------------------------------------------------------------------------
-# Generate self-signed wildcard certificate for *.munchbox.cc
-# -------------------------------------------------------------------------
-
-CERT_DIR="${NOMAD_ALLOC_DIR}/data"
-CERT_FILE="${CERT_DIR}/munchbox.crt"
-KEY_FILE="${CERT_DIR}/munchbox.key"
-
-mkdir -p "${CERT_DIR}"
-
-# --- Skip if certificate already exists and is valid ---
-if [ -f "${CERT_FILE}" ] && [ -f "${KEY_FILE}" ]; then
-  if openssl x509 -checkend 86400 -noout -in "${CERT_FILE}" 2>/dev/null; then
-    echo "Certificate exists and is valid for at least 24h, skipping generation"
-    exit 0
-  fi
-fi
-
-echo "Generating new wildcard certificate for *.munchbox.cc..."
-
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-  -keyout "${KEY_FILE}" \
-  -out "${CERT_FILE}" \
-  -subj "/CN=*.munchbox.cc/O=Munchbox/C=US" \
-  -addext "subjectAltName=DNS:*.munchbox.cc,DNS:munchbox.cc"
-
-chmod 644 "${CERT_FILE}"
-chmod 600 "${KEY_FILE}"
-
-echo "Certificate generated successfully"
-EOH
-      }
-
-      # --- Resources ---
-      resources {
-        cpu    = 200
-        memory = 128
-      }
-    }
-
-    # -----------------------------------------------------------------------
     # Task: traefik
     # -----------------------------------------------------------------------
 
@@ -170,7 +105,8 @@ EOH
         ports        = ["http", "https", "dashboard"]
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
-          "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro"
+          "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
+          "secrets/tls:/etc/traefik/tls:ro"
         ]
       }
 
@@ -179,8 +115,22 @@ EOH
         destination = "secrets/consul.env"
         env         = true
         data        = <<EOH
-{{ with secret "kv/data/traefik" -}}
+{{ with secret "secret/data/traefik" -}}
 CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
+{{- end }}
+EOH
+      }
+
+      # --- TLS Certificate and Key from Vault PKI (combined PEM) ---
+      template {
+        destination = "secrets/tls/munchbox.pem"
+        change_mode = "restart"
+        perms       = "0600"
+        data        = <<EOH
+{{ with pkiCert "pki_int/issue/traefik" "common_name=*.munchbox.cc" "ttl=720h" -}}
+{{ .Cert }}
+{{ .CA }}
+{{ .Key }}
 {{- end }}
 EOH
       }
@@ -236,7 +186,7 @@ EOH
 
   [providers.consulCatalog.endpoint]
     address = "127.0.0.1:8500"
-{{ with secret "kv/data/traefik" -}}
+{{ with secret "secret/data/traefik" -}}
     token   = "{{ .Data.data.consul_token }}"
 {{- end }}
 
@@ -263,15 +213,15 @@ EOH
 # Traefik Dynamic Configuration
 # -------------------------------------------------------------------------
 
-# --- TLS Certificates ---
+# --- TLS Certificates (from Vault PKI - combined PEM) ---
 [[tls.certificates]]
-  certFile = "/alloc/data/munchbox.crt"
-  keyFile  = "/alloc/data/munchbox.key"
+  certFile = "/etc/traefik/tls/munchbox.pem"
+  keyFile  = "/etc/traefik/tls/munchbox.pem"
 
 [tls.stores]
   [tls.stores.default.defaultCertificate]
-    certFile = "/alloc/data/munchbox.crt"
-    keyFile  = "/alloc/data/munchbox.key"
+    certFile = "/etc/traefik/tls/munchbox.pem"
+    keyFile  = "/etc/traefik/tls/munchbox.pem"
 
 [tls.options]
   [tls.options.default]
