@@ -3,112 +3,56 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# PostgreSQL 15 backend for Temporal workflow orchestration. Runs in Consul
-# Connect service mesh for zero-trust database access. Persistent storage on
-# stabler node with host volume mount.
+# PostgreSQL 15 backend for Temporal workflow orchestration. Persistent storage
+# on stabler node with local volume mount. Auto-creates both required databases.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
-job_name        = "temporal-postgres"
-job_type        = "service"
-region          = "global"
-datacenters     = ["pi-dc"]
-node_pool       = "all"
-namespace       = "default"
-priority        = 50
-job_description = "Temporal PostgreSQL database backend with Connect mesh isolation"
+# --- General Settings ---
+name  = "temporal-postgres"
+type  = "service"
+image = "postgres:15-alpine"
+port  = 5432
+static_port = 5432
+host_network = true
+node = "stabler.munchbox.cc"
+size = "medium"
 
-# --- Deployment and metadata ---
-deployment_profile = "standard"
-meta_profile       = "tier1"
-category           = "database"
+# --- Storage ---
+storage = "local"
+storage_path = "/var/lib/postgresql/data"
 
-# --- Resource allocation ---
-resource_tier = "medium"
-
-# --- Network configuration ---
-network_preset = "bridge"
-
-ports = [
-  {
-    name = "db"
-    to   = 5432
-  }
-]
-
-dns_servers  = ["192.168.68.62", "192.168.68.64"]
-dns_searches = ["service.consul"]
-dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
-
-# --- Placement constraints ---
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "stabler"
-  }
-]
-
-# --- Persistent storage volume ---
-volume = {
-  name       = "temporal-postgres-data"
-  type       = "host"
-  source     = "temporal-postgres-data"
-  mount_path = "/var/lib/postgresql/data"
-  read_only  = false
+# --- Environment variables ---
+env = {
+  TZ                = "UTC"
+  POSTGRES_USER     = "temporal"
+  POSTGRES_PASSWORD = "temporal"
+  POSTGRES_DB       = "temporal"
 }
 
-# --- Restart policy ---
-restart_attempts = 3
-restart_interval = "5m"
-restart_delay    = "15s"
-restart_mode     = "delay"
+# --- Configuration templates ---
+templates = [
+  { src = "init-db.sql", dest = "/docker-entrypoint-initdb.d/init.sql" }
+]
 
-# --- Reschedule policy ---
-reschedule_preset = "standard"
+# --- Traefik integration ---
+traefik = false
 
-# --- Task definition ---
-task = {
-  name   = "postgres"
-  driver = "docker"
+# --- Service registration ---
+register_service = true
 
-  config = {
-    image              = "postgres:15-alpine"
-    image_pull_timeout = "10m"
-    ports              = ["db"]
-  }
+# --- Health check (disabled for PostgreSQL) ---
+health_type = "none"
 
-  env = {
-    TZ                = "UTC"
-    POSTGRES_USER     = "temporal"
-    POSTGRES_PASSWORD = "temporal"
-    POSTGRES_DB       = "temporal"
-  }
-
-  resources = {
-    cpu    = 500
-    memory = 512
-  }
-}
-
-# --- Consul Connect service mesh ---
-consul_connect_enabled = true
-
-# --- Standard service configuration ---
-standard_service_enabled     = true
-standard_service_port        = "db"
-standard_service_port_number = 5432
-standard_http_check_enabled  = false
-
-additional_tags = [
+# --- Service tags ---
+tags = [
   "temporal",
   "postgres",
   "database"
 ]
 
-# --- Traefik routing ---
-traefik_enabled = false
+# --- Resources override ---
+cpu = 500
+memory = 512
 
-# --- Termination ---
-kill_timeout = "30s"
-kill_signal  = "SIGTERM"
+# --- DNS configuration ---
+dns = ["192.168.68.62", "192.168.68.64"]
