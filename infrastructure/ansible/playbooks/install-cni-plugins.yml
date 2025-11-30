@@ -5,8 +5,15 @@
   become: true
   vars:
     cni_version: "1.4.0"
-    cni_arch: "arm64"
   tasks:
+    - name: Detect architecture
+      set_fact:
+        cni_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+
+    - name: Show detected architecture
+      debug:
+        msg: "Installing CNI plugins for {{ cni_arch }} on {{ inventory_hostname }}"
+
     - name: Create CNI bin directory
       file:
         path: /opt/cni/bin
@@ -18,6 +25,10 @@
         url: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_version }}/cni-plugins-linux-{{ cni_arch }}-v{{ cni_version }}.tgz"
         dest: /tmp/cni-plugins.tgz
         mode: '0644'
+
+    - name: Remove old ARM binaries if present
+      shell: rm -rf /opt/cni/bin/*
+      when: cni_arch == "amd64"
 
     - name: Extract CNI plugins
       unarchive:
@@ -31,10 +42,10 @@
         state: absent
 
     - name: Verify CNI plugins installed
-      command: ls /opt/cni/bin
-      register: cni_plugins
+      command: file /opt/cni/bin/bridge
+      register: cni_verify
       changed_when: false
 
-    - name: Show installed plugins
+    - name: Show installed plugin architecture
       debug:
-        var: cni_plugins.stdout_lines
+        var: cni_verify.stdout

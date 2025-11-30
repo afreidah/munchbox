@@ -1,0 +1,12 @@
+<div class="fa-icon">
+  {{- $icon := .icon -}}
+  {{- $parts := split $icon " " -}}
+  {{- $first := index $parts 0 -}}
+
+  {{- if hasPrefix $first "fa-" -}}
+    <i class="{{ $icon }}"></i>
+  {{- else -}}
+    {{- partial "svg" $icon -}}
+  {{- end -}}
+</div>
+

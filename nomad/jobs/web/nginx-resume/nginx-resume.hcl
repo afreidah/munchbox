@@ -3,116 +3,36 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Static resume site with Nginx and rate limiting. Dual routing: public access
-# via alexfreidah.com and internal access via resume.munchbox.
+# Static resume site served from custom Docker image. Dual routing: public
+# access via alexfreidah.com and internal access via resume.munchbox.cc.
 # -------------------------------------------------------------------------------
 
-# --- Core job configuration ---
-job_name        = "nginx-resume"
-job_type        = "service"
-region          = "global"
-datacenters     = ["pi-dc"]
-node_pool       = "core"
-namespace       = "default"
-priority        = 50
-count           = 1
-job_description = "Static resume site with Nginx and rate limiting"
+# --- General Settings ---
+name  = "nginx-resume"
+type  = "service"
+image = "registry.munchbox.cc/alex-resume:latest"
+port  = 80
+host_network = false
+node  = "nomad-client-02"
+size = "small"
+storage = "ephemeral"
 
-# --- Deployment and metadata ---
-deployment_profile = "standard"
-meta_profile       = "tier2"
-category           = "web"
+# --- Traefik integration ---
+traefik = false
+health_path = "/"
 
-# --- Resource allocation ---
-resource_tier = "small"
-
-# --- Network configuration ---
-network_preset = "bridge"
-
-dns_servers = ["192.168.68.62", "192.168.68.64"]
-
-ports = [
-  {
-    name = "http"
-    to   = 80
-  }
-]
-
-# --- Placement constraints ---
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "mccoy"
-  }
-]
-
-# --- Persistent storage volume ---
-volume = {
-  name       = "site"
-  type       = "host"
-  source     = "nginx-resume"
-  mount_path = "/usr/share/nginx/html"
-  read_only  = true
-}
-
-# --- Restart policy ---
-restart_attempts = 3
-restart_interval = "5m"
-restart_delay    = "15s"
-restart_mode     = "fail"
-
-# --- Reschedule policy ---
-reschedule_preset = "standard"
-
-# --- External configuration files ---
-external_files = {
-  enabled   = true
-  base_path = "jobs/web/nginx-resume/files"
-}
-
-external_templates = [
-  {
-    destination   = "local/default.conf"
-    source_file   = "nginx.conf"
-    env           = false
-    perms         = "0644"
-    change_mode   = "signal"
-    change_signal = "SIGHUP"
-  }
-]
-
-# --- Task definition ---
-task = {
-  name   = "nginx"
-  driver = "docker"
-
-  config = {
-    image = "nginx:stable"
-    ports = ["http"]
-    volumes = [
-      "local/default.conf:/etc/nginx/conf.d/default.conf:ro"
-    ]
-  }
-}
-
-# --- Consul Connect ---
-consul_connect_enabled = false
-
-# --- Service Registration ---
-standard_service_enabled     = true
-standard_service_port        = "http"
-standard_service_port_number = 80
-standard_http_check_enabled  = true
-standard_http_check_path     = "/"
-
-additional_tags = [
-  "traefik.enable=true",  # ← ADD THIS - Critical for Consul discovery!
+# --- Service tags (completely custom routers) ---
+tags = [
   "web",
   "resume",
-  "nginx"
+  "nginx",
+  "traefik.enable=true",
+  "traefik.http.routers.resume-public.rule=Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)",
+  "traefik.http.routers.resume-public.entrypoints=web",
+  "traefik.http.routers.resume-public.middlewares=redirect-resume-www@file,resume-sec@file,resume-ratelimit@file",
+  "traefik.http.routers.resume-public.priority=100",
+  "traefik.http.routers.resume-apex.rule=Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)",
+  "traefik.http.routers.resume-apex.entrypoints=web",
+  "traefik.http.routers.resume-apex.middlewares=redirect-apex-to-resume@file,resume-sec@file",
+  "traefik.http.routers.resume-apex.priority=101"
 ]
-
-# --- Termination ---
-kill_timeout = "30s"
-kill_signal  = "SIGTERM"

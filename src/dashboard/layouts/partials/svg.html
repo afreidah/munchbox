@@ -1,0 +1,19 @@
+{{- $iconName := . -}}
+
+{{- $noIcon := resources.Get "icons/no-icon.svg" -}}
+
+{{- $iconPath := "" -}}
+{{- if or (strings.HasSuffix $iconName ".png") (strings.HasSuffix $iconName ".jpg") (strings.HasSuffix $iconName ".jpeg") (strings.HasSuffix $iconName ".svg") -}}
+  {{- $iconPath = printf "icons/%s" $iconName -}}
+{{- else -}}
+  {{- $iconPath = printf "icons/%s.svg" $iconName -}}
+{{- end -}}
+
+{{- $icon := resources.Get $iconPath | default $noIcon -}}
+
+<img
+  class="w-12 h-12"
+  src="{{ $icon.RelPermalink }}"
+  alt="{{ $iconName }}"
+>
+

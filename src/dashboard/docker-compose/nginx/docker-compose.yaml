@@ -1,0 +1,20 @@
+version: '3'
+services:
+  app:
+    container_name: "hugo-dash-ssg"
+    image: ghcr.io/gehno/hugo-dash
+    volumes:
+       - ~/hugo/data:/src/data/
+       - ~/hugo/icons:/src/assets/icons/
+       - site:/src/public/
+
+  nginx: 
+      container_name: "hugo-dash-nginx"
+      image: nginx:alpine
+      volumes:
+       - site:/usr/share/nginx/html:ro
+       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      ports:
+      - 8080:8080
+volumes:
+  site:

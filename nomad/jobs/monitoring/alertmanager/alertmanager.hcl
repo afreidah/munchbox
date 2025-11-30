@@ -10,8 +10,7 @@
 
 # --- Core job configuration ---
 name  = "alertmanager"
-image = "prom/alertmanager:v0.27.0"
-job_dir = "jobs/monitoring/alertmanager"
+image = "prom/alertmanager:v0.29.0"
 port  = 9093
 size  = "small"
 host_network = true
@@ -45,7 +44,7 @@ args = [
 
 # --- Configuration templates ---
 templates = [
-  { src = "alertmanager.yml", dest = "/etc/alertmanager/config/alertmanager.yml.tpl", vault = true }
+  { src = "alertmanager.yml.tpl", dest = "/etc/alertmanager/config/alertmanager.yml", vault = true }
 ]
 
 # --- Service tags ---

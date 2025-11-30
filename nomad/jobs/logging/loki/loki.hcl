@@ -14,7 +14,7 @@ image        = "grafana/loki:3.5.8"
 port         = 3100
 static_port  = 3100
 host_network = true
-node         = "nomad-client-03"
+node         = "nomad-client-02"  # Changed from nomad-client-03
 size         = "medium"
 user         = "root"
 

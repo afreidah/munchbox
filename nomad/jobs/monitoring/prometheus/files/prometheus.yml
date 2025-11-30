@@ -12,12 +12,23 @@ global:
 rule_files:
   - /etc/prometheus/config/alert_rules.yml
 
-# Alerting configuration - send alerts to Alertmanager
+# Alerting configuration - send alerts to Alertmanager via Consul service discovery
 alerting:
   alertmanagers:
     - scheme: http
-      static_configs:
-        - targets: ["localhost:9093"]
+      consul_sd_configs:
+        - server: 'localhost:8500'
+          services: ['alertmanager']
+      relabel_configs:
+        # Use the service address from Consul
+        - source_labels: [__meta_consul_service_address]
+          target_label: __address__
+          replacement: '${1}:9093'
+        # If service address is empty, use node address
+        - source_labels: [__meta_consul_service_address]
+          regex: ''
+          target_label: __address__
+          replacement: '${__meta_consul_address}:9093'
 
 # Scrape configuration - what to monitor
 scrape_configs:
@@ -31,40 +42,85 @@ scrape_configs:
           service: "prometheus"
 
   # -----------------------------------------------------------------------
-  # Nomad cluster metrics - HTTPS endpoints
+  # Nomad servers - Dynamic discovery via Consul
   # -----------------------------------------------------------------------
   - job_name: "nomad"
     metrics_path: "/v1/metrics"
-    params:
-      format: ["prometheus"]
     scheme: "https"
     tls_config:
       insecure_skip_verify: true
-    static_configs:
-      - targets:
-          - "192.168.68.61:4646"  # stabler
-          - "192.168.68.60:4646"  # goren
-          - "192.168.68.69:4646"  # nomad-server-03
-        labels:
-          cluster: "nomad"
-          role: "server"
+    params:
+      format: ['prometheus']
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["nomad"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_address"]
+        target_label: "__address__"
+        replacement: "$1:4646"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - source_labels: ["__meta_consul_dc"]
+        target_label: "consul_dc"
+      - target_label: "cluster"
+        replacement: "nomad"
+      - target_label: "role"
+        replacement: "server"
 
   # -----------------------------------------------------------------------
-  # Vault metrics - requires bearer token
+  # Nomad clients - Dynamic discovery via Consul
+  # -----------------------------------------------------------------------
+  - job_name: "nomad-client"
+    metrics_path: "/v1/metrics"
+    scheme: "https"
+    tls_config:
+      insecure_skip_verify: true
+    params:
+      format: ['prometheus']
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["nomad-client"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_address"]
+        target_label: "__address__"
+        replacement: "$1:4646"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - source_labels: ["__meta_consul_dc"]
+        target_label: "consul_dc"
+      - target_label: "cluster"
+        replacement: "nomad"
+      - target_label: "role"
+        replacement: "client"
+
+  # -----------------------------------------------------------------------
+  # Vault metrics - Dynamic discovery via Consul
   # -----------------------------------------------------------------------
   - job_name: "vault"
     metrics_path: "/v1/sys/metrics"
     params:
       format: ["prometheus"]
-    scheme: "https"
+    scheme: "http"
     bearer_token_file: "/secrets/vault_token"
-    tls_config:
-      insecure_skip_verify: true
-    static_configs:
-      - targets: ["192.168.68.63:8200"]  # mccoy
-        labels:
-          cluster: "vault"
-          service: "vault"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["vault"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_address"]
+        target_label: "__address__"
+        replacement: "$1:8200"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - source_labels: ["__meta_consul_dc"]
+        target_label: "consul_dc"
+      - target_label: "cluster"
+        replacement: "vault"
 
   # -----------------------------------------------------------------------
   # Node Exporter - Dynamic discovery via Consul
@@ -75,13 +131,48 @@ scrape_configs:
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
-        services: ["prometheus-node-exporter"]
+        services: ["node-exporter"]
         datacenter: "munchbox"
     relabel_configs:
+      # Use the service address:port directly from Consul
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ':'
+        regex: '(.+)'
+        target_label: "__address__"
+      # Fallback to node address if service address is empty
+      - source_labels: ["__meta_consul_service_address"]
+        regex: ''
+        target_label: "__address__"
+        replacement: '${__meta_consul_address}:${__meta_consul_service_port}'
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
       - source_labels: ["__meta_consul_dc"]
         target_label: "consul_dc"
+
+  # -----------------------------------------------------------------------
+  # Cloudflared Tunnel metrics - Consul service discovery
+  # -----------------------------------------------------------------------
+  - job_name: "cloudflared-tunnel"
+    scheme: "http"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["cloudflared-tunnel"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address"]
+        regex: "(.+)"
+        target_label: "__address__"
+        replacement: "$1:2000"
+      - source_labels: ["__meta_consul_service_address"]
+        regex: ""
+        target_label: "__address__"
+        replacement: "${__meta_consul_address}:2000"
+      - source_labels: ["__meta_consul_service"]
+        target_label: "service"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
 
   # -----------------------------------------------------------------------
   # Consul cluster metrics

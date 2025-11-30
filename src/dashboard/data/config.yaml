@@ -1,0 +1,140 @@
+# -------------------------------------------------------------------------------
+# Munchbox Dashboard configuration for hugo-dash
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Defines dashboard groups and tile metadata for internal service navigation.
+# Icons referenced here must exist under assets/icons. The structure aligns with
+# the hugo-dash template, which expects a top-level services list containing
+# groups, each with items that define downstream service URLs.
+# -------------------------------------------------------------------------------
+
+title: Munchbox Dashboard
+subtitle: Central access to Munchbox services
+icon: other-icon
+
+links:
+  - name: Hugo-Dash Repo
+    url: https://github.com/gehno/hugo-dash
+    icon: fa-brands fa-github
+
+services:
+  # -------------------------------------------------------------------------
+  # INFRASTRUCTURE
+  # -------------------------------------------------------------------------
+
+  - name: Infrastructure
+    icon: fa-solid fa-network-wired
+    items:
+      - name: Proxmox
+        subtitle: Virtualization cluster
+        url: https://proxmox.internal.munchbox
+        tag: virtualization
+        icon: proxmox.png
+
+      - name: Nomad
+        subtitle: Cluster orchestration
+        url: https://nomad.internal.munchbox.cc
+        tag: orchestration
+        icon: nomad.png
+
+      - name: Consul
+        subtitle: Service mesh and key value store
+        url: https://consul.internal.munchbox.cc
+        tag: infra
+        icon: consul.png
+
+  # -------------------------------------------------------------------------
+  # MONITORING
+  # -------------------------------------------------------------------------
+
+  - name: Monitoring
+    icon: fa-solid fa-chart-line
+    items:
+      - name: Grafana
+        subtitle: Dashboards and metrics
+        url: https://grafana.munchbox.cc
+        tag: monitoring
+        icon: grafana.png
+
+      - name: Prometheus
+        subtitle: Time series metrics
+        url: https://prometheus.munchbox.cc
+        tag: metrics
+        icon: prometheus.png
+
+      - name: Alertmanager
+        subtitle: Alert routing and silences
+        url: https://alertmanager.munchbox.cc
+        tag: alerts
+        icon: alertmanager.png
+
+  # -------------------------------------------------------------------------
+  # MEDIA AND DOWNLOADS
+  # -------------------------------------------------------------------------
+
+  - name: Media and Downloads
+    icon: fa-solid fa-film
+    items:
+      - name: Emby
+        subtitle: Media server
+        url: https://emby.munchbox.cc
+        tag: media
+        icon: emby.png
+
+      - name: Ersatz
+        subtitle: Alternate or backup media
+        url: https://ersatz.munchbox.cc
+        tag: media
+        icon: ersatz.png
+
+      - name: Deluge
+        subtitle: Torrent client
+        url: https://deluge.munchbox.cc
+        tag: download
+        icon: deluge.png
+
+  # -------------------------------------------------------------------------
+  # DEV
+  # -------------------------------------------------------------------------
+
+  - name: Dev
+    icon: fa-solid fa-code-branch
+    items:
+      - name: Registry UI
+        subtitle: Container registry
+        url: https://registry-ui.munchbox.cc
+        tag: dev
+        icon: registry-ui.png
+
+      - name: Temporal UI
+        subtitle: Workflow orchestration
+        url: https://temporal.munchbox.cc
+        tag: workflows
+        icon: temporal-ui.png
+
+      - name: HashiCorp Waypoint
+        subtitle: Application deployment workflows
+        url: https://waypoint.munchbox.cc
+        tag: deploy
+        icon: waypoint.png
+
+  # -------------------------------------------------------------------------
+  # WEB
+  # -------------------------------------------------------------------------
+
+  - name: Web
+    icon: fa-solid fa-globe
+    items:
+      - name: Resume Site
+        subtitle: Personal resume
+        url: https://resume.yourdomain.tld
+        tag: personal
+        icon: resume-site.png
+
+      - name: k3s Health Checker
+        subtitle: k3s cluster status
+        url: https://k3s-health.munchbox.cc
+        tag: web
+        icon: k3s-health-checker.svg
+

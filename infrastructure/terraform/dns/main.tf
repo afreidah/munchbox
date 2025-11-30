@@ -47,9 +47,10 @@ data "vault_kv_secret_v2" "dns" {
 # -------------------------------------------------------------------------
 
 locals {
-  cloudflare_api_token = data.vault_kv_secret_v2.dns.data["cloudflare_api_token"]
-  cloudflare_zone_id   = data.vault_kv_secret_v2.dns.data["cloudflare_zone_id"]
-  tunnel_cname         = data.vault_kv_secret_v2.dns.data["tunnel_cname"]
+  cloudflare_api_token  = data.vault_kv_secret_v2.dns.data["cloudflare_api_token"]
+  cloudflare_zone_id    = data.vault_kv_secret_v2.dns.data["cloudflare_zone_id"]
+  cloudflare_account_id = data.vault_kv_secret_v2.dns.data["cloudflare_account_id"]
+  tunnel_cname          = data.vault_kv_secret_v2.dns.data["tunnel_cname"]
 }
 
 # -------------------------------------------------------------------------
@@ -107,4 +108,52 @@ resource "cloudflare_record" "www" {
   content = local.tunnel_cname
   type    = "CNAME"
   proxied = true
+}
+
+# -------------------------------------------------------------------------
+# Cloudflare Tunnel Configuration
+# -------------------------------------------------------------------------
+
+resource "cloudflare_tunnel_config" "munchbox" {
+  account_id = local.cloudflare_account_id
+  tunnel_id  = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
+
+  config {
+    ingress_rule {
+      hostname = "alexfreidah.com"
+      service  = "http://traefik.service.consul:80"
+      origin_request {
+        http_host_header = "alexfreidah.com"
+      }
+    }
+
+    ingress_rule {
+      hostname = "www.alexfreidah.com"
+      service  = "http://traefik.service.consul:80"
+      origin_request {
+        http_host_header = "www.alexfreidah.com"
+      }
+    }
+
+    ingress_rule {
+      hostname = "resume.alexfreidah.com"
+      service  = "http://traefik.service.consul:80"
+      origin_request {
+        http_host_header = "resume.alexfreidah.com"
+      }
+    }
+
+    ingress_rule {
+      hostname = "k3s-status.alexfreidah.com"
+      service  = "http://traefik.service.consul:80"
+      origin_request {
+        http_host_header = "k3s-status.alexfreidah.com"
+      }
+    }
+
+    # Required catch-all rule
+    ingress_rule {
+      service = "http_status:404"
+    }
+  }
 }

@@ -1,0 +1,13 @@
+{{$title := .title}}
+{{$subtitle := .subtitle}}
+
+{{ if or (isset . "title") (isset . "subtitle") }}
+<div>
+    {{ if $title }}
+    <div class="text-3xl font-bold">{{ index $title }}</div>
+    {{ end }}
+    {{ if $subtitle }}
+    <div class="text-2xl">{{ index $subtitle }}</div>
+    {{ end }}
+</div>
+{{ end }}

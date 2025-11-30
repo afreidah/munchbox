@@ -28,8 +28,8 @@ route:
 receivers:
   - name: 'telegram'
     telegram_configs:
-      - bot_token: '{{ with nomadVar "nomad/jobs/alertmanager" }}{{ .telegram_bot_token }}{{ end }}'
-        chat_id: {{ with nomadVar "nomad/jobs/alertmanager" }}{{ .telegram_chat_id }}{{ end }}
+      - bot_token: '{{ with secret "secret/data/alertmanager" }}{{ .Data.data.telegram_bot_token }}{{ end }}'
+        chat_id: {{ with secret "secret/data/alertmanager" }}{{ .Data.data.telegram_chat_id }}{{ end }}
         parse_mode: 'HTML'
         send_resolved: true
         message: |
@@ -55,8 +55,8 @@ receivers:
 
   - name: 'telegram-critical'
     telegram_configs:
-      - bot_token: '{{ with nomadVar "nomad/jobs/alertmanager" }}{{ .telegram_bot_token }}{{ end }}'
-        chat_id: {{ with nomadVar "nomad/jobs/alertmanager" }}{{ .telegram_chat_id }}{{ end }}
+      - bot_token: '{{ with secret "secret/data/alertmanager" }}{{ .Data.data.telegram_bot_token }}{{ end }}'
+        chat_id: {{ with secret "secret/data/alertmanager" }}{{ .Data.data.telegram_chat_id }}{{ end }}
         parse_mode: 'HTML'
         send_resolved: true
         message: |
@@ -73,8 +73,8 @@ receivers:
 
   - name: 'telegram-warnings'
     telegram_configs:
-      - bot_token: '{{ with nomadVar "nomad/jobs/alertmanager" }}{{ .telegram_bot_token }}{{ end }}'
-        chat_id: {{ with nomadVar "nomad/jobs/alertmanager" }}{{ .telegram_chat_id }}{{ end }}
+      - bot_token: '{{ with secret "secret/data/alertmanager" }}{{ .Data.data.telegram_bot_token }}{{ end }}'
+        chat_id: {{ with secret "secret/data/alertmanager" }}{{ .Data.data.telegram_chat_id }}{{ end }}
         parse_mode: 'HTML'
         send_resolved: true
         message: |
