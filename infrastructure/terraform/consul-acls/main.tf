@@ -172,3 +172,27 @@ resource "vault_kv_secret_v2" "traefik" {
     consul_token = consul_acl_token.traefik.id
   })
 }
+
+resource "consul_acl_policy" "prometheus" {
+  name  = "prometheus"
+  rules = file("${path.module}/policies/prometheus.hcl")
+}
+
+# -------------------------------------------------------------------------------
+# Prometheus ACL Token
+# -------------------------------------------------------------------------------
+
+resource "consul_acl_token" "prometheus" {
+  description = "Token for Prometheus service discovery"
+  policies    = [consul_acl_policy.prometheus.name]
+  local       = false
+}
+
+resource "vault_kv_secret_v2" "prometheus" {
+  mount = "secret"
+  name  = "prometheus"
+
+  data_json = jsonencode({
+    consul_token = consul_acl_token.prometheus.id
+  })
+}

@@ -81,7 +81,7 @@ path "secret/data/traefik" {
   capabilities = ["read"]
 }
 
-path "secret/data/prometheus-nomad" {
+path "secret/data/prometheus" {
   capabilities = ["read"]
 }
 
@@ -90,6 +90,26 @@ path "secret/data/hashiuisecret" {
 }
 
 path "secret/data/backup-worker" {
+  capabilities = ["read"]
+}
+
+path "secret/data/alertmanager" {
+  capabilities = ["read"]
+}
+
+path "secret/data/grafana" {
+  capabilities = ["read"]
+}
+
+path "secret/data/deluge" {
+  capabilities = ["read"]
+}
+
+path "secret/data/cloudflared" {
+  capabilities = ["read"]
+}
+
+path "sys/metrics" {
   capabilities = ["read"]
 }
 

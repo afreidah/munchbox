@@ -10,17 +10,17 @@
 
 # --- Core job configuration ---
 name         = "grafana"
-image        = "grafana/grafana:12.2.0"
+image        = "grafana/grafana:12.3.0"
 port         = 3000
 static_port  = 3000
 host_network = true
-size         = "small"
+size         = "medium"
 user         = "root"
 vault        = true
 
 # --- Traefik routing ---
 traefik      = true
-traefik_host = "grafana.munchbox"
+traefik_host = "grafana.munchbox.cc"
 
 # --- Health check ---
 health_path = "/api/health"
@@ -28,7 +28,7 @@ health_path = "/api/health"
 # --- Environment ---
 env = {
   GF_SERVER_SERVE_FROM_SUB_PATH = "false"
-  GF_SERVER_ROOT_URL            = "https://grafana.munchbox/"
+  GF_SERVER_ROOT_URL            = "https://grafana.munchbox.cc/"
 }
 
 # --- Host volume mounts ---
@@ -38,7 +38,7 @@ volumes = [
 
 # --- Configuration templates ---
 templates = [
-  { src = "grafana.env.tpl", dest = "/secrets/grafana.env", env = true }
+  { src = "grafana.env.tpl", dest = "/secrets/grafana.env", env = true, vault = true }
 ]
 
 # --- Service tags ---

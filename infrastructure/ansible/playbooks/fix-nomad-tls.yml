@@ -1,0 +1,30 @@
+---
+- hosts: nomad_cluster
+  become: true
+  tasks:
+    - name: Check if verify_server_hostname exists
+      command: grep -q "verify_server_hostname" /etc/nomad.d/nomad.hcl
+      register: has_verify
+      failed_when: false
+      changed_when: false
+
+    - name: Add TLS verification settings
+      blockinfile:
+        path: /etc/nomad.d/nomad.hcl
+        marker: "  # {mark} TLS Verification"
+        insertafter: 'key_file  = "/etc/nomad.d/tls/nomad.key"'
+        block: |2
+          
+          verify_server_hostname = true
+          verify_https_client    = false
+      when: has_verify.rc != 0
+
+    - name: Restart Nomad
+      systemd:
+        name: nomad
+        state: restarted
+        
+    - name: Wait for Nomad
+      wait_for:
+        port: 4646
+        timeout: 30

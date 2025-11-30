@@ -2,68 +2,46 @@
 # ErsatzTV — Virtual TV Channel Engine with Emby Integration
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# ErsatzTV creates virtual TV channels from your media library with scheduling,
+# commercials, and live streaming capabilities. Integrates with Emby for content.
 # -------------------------------------------------------------------------------
 
-job_name        = "ersatztv"
-job_type        = "service"
-region          = "global"
-datacenters     = ["pi-dc"]
-node_pool       = "core"
-namespace       = "default"
-priority        = 50
-job_description = "ErsatzTV virtual TV channel engine with Emby backend"
+# --- Core job configuration ---
+name  = "ersatztv"
+type  = "service"
+image = "jasongdove/ersatztv:latest"
+port  = 8409
+static_port = 8409
+host_network = true
+size = "medium"
 
-deployment_profile = "standard"
-meta_profile       = "tier2"
-category           = "media"
-
-resource_tier  = "medium"
-network_preset = "host"
-
-ports = [
-  {
-    name   = "ui"
-    static = 8409
-  }
+# --- Storage ---
+storage = "ephemeral"
+volumes = [
+  "/opt/nomad/data/ersatztv/config:/config",
+  "/opt/nomad/data/ersatztv/transcode:/transcode",
+  "/mnt/gdrive/media/Movies:/media/Movies:ro",
+  "/mnt/gdrive/media/TV:/media/TV:ro"
 ]
 
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "mccoy"
-  }
-]
+# --- Traefik routing ---
+traefik      = false
 
-task = {
-  name   = "ersatztv"
-  driver = "docker"
-  config = {
-    image              = "jasongdove/ersatztv:latest"
-    image_pull_timeout = "10m"
-    ports              = ["ui"]
-    volumes = [
-      "/opt/nomad/data/ersatztv/config:/config",
-      "/opt/nomad/data/ersatztv/transcode:/transcode",
-      "/mnt/gdrive/media/Movies:/media/Movies:ro",
-      "/mnt/gdrive/media/TV:/media/TV:ro"
-    ]
-  }
-  env = {
-    TZ = "UTC"
-  }
-  resources = {
-    cpu    = 500
-    memory = 1024
-  }
+# --- Health check ---
+health_path = "/"
+
+# --- Environment variables ---
+env = {
+  TZ = "America/Los_Angeles"
 }
 
-standard_service_enabled     = true
-standard_service_port        = "ui"
-standard_service_port_number = 8409
-standard_http_check_enabled  = true
-standard_http_check_path     = "/"
-additional_tags              = ["media", "ersatztv", "streaming"]
+# --- Service tags ---
+tags = [
+  "media",
+  "ersatztv",
+  "streaming"
+]
 
+# --- Termination ---
 kill_timeout = "30s"
-kill_signal  = "SIGTERM"

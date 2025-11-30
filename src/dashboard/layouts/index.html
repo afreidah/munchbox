@@ -1,0 +1,106 @@
+{{ define "main" }}
+<main class="min-h-screen bg-slate-950 text-slate-100">
+  <div class="mx-auto max-w-6xl px-4 py-10">
+
+    <!-- Page header -->
+    <header class="mb-8">
+      <h1 class="text-2xl font-semibold text-slate-100">
+        {{ with .Site.Data.config.title }}{{ . }}{{ else }}Munchbox Dashboard{{ end }}
+      </h1>
+      {{ with .Site.Data.config.subtitle }}
+        <p class="mt-1 text-sm text-slate-400">
+          {{ . }}
+        </p>
+      {{ end }}
+    </header>
+
+    <!-- Search box -->
+    <div class="max-w-3xl mx-auto mb-8">
+      <input
+        id="service-search"
+        type="text"
+        placeholder="Filter services by name or tag"
+        class="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+      >
+    </div>
+
+    <!-- Service groups -->
+    <div class="flex flex-col gap-8">
+      {{ range .Site.Data.config.services }}
+        <section>
+          <!-- Group header -->
+          <div class="mb-3 flex items-center gap-2">
+            <div class="h-6 w-6 text-slate-400">
+              {{ partial "fa" (dict "icon" .icon ) }}
+            </div>
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              {{ .name }}
+            </h2>
+          </div>
+
+          <!-- Tile grid -->
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {{ range .items }}
+              <a
+                href="{{ .url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="service-tile block rounded-xl border border-slate-800 bg-slate-900/80 p-4 shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-lg hover:border-slate-500/60"
+                data-name="{{ .name }}"
+                data-subtitle="{{ with .subtitle }}{{ . }}{{ end }}"
+                data-tag="{{ with .tag }}{{ . }}{{ end }}"
+              >
+                <div class="flex items-center gap-3">
+                  <!-- UPDATED: larger icon container -->
+                  <div class="h-12 w-12 flex items-center justify-center">
+                    {{ partial "fa" (dict "icon" .icon ) }}
+                  </div>
+
+                  <div class="min-w-0">
+                    <div class="mb-1 text-sm font-semibold text-slate-100 truncate">
+                      {{ .name }}
+                    </div>
+                    {{ with .subtitle }}
+                      <div class="text-xs text-slate-400 leading-snug">
+                        {{ . }}
+                      </div>
+                    {{ end }}
+                  </div>
+                </div>
+              </a>
+            {{ end }}
+          </div>
+        </section>
+      {{ end }}
+    </div>
+  </div>
+
+  <!-- Client-side search filter -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var input = document.getElementById("service-search");
+      if (!input) return;
+
+      var tiles = Array.prototype.slice.call(
+        document.querySelectorAll(".service-tile")
+      );
+
+      input.addEventListener("input", function () {
+        var q = input.value.toLowerCase().trim();
+
+        tiles.forEach(function (tile) {
+          var name = (tile.getAttribute("data-name") || "").toLowerCase();
+          var subtitle = (tile.getAttribute("data-subtitle") || "").toLowerCase();
+          var tag = (tile.getAttribute("data-tag") || "").toLowerCase();
+
+          var haystack = name + " " + subtitle + " " + tag;
+          var match = q === "" || haystack.indexOf(q) !== -1;
+
+          tile.style.display = match ? "" : "none";
+        });
+      });
+    });
+  </script>
+</main>
+{{ end }}
+

@@ -1,101 +1,42 @@
 # -------------------------------------------------------------------------------
-# Cloudflare Tunnel — Ingress Gateway
+# Cloudflared Tunnel — Cloudflare Zero Trust Tunnel
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Cloudflare Tunnel for external access to Munchbox services. Routes public
-# domains through Cloudflare's network to local Traefik ingress controller.
+# Secure tunnel exposing internal services to the internet via Cloudflare's
+# network. Routes traffic for alexfreidah.com and subdomains through Traefik.
+# Credentials stored securely in Vault.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-job_name        = "cloudflared-tunnel"
-job_type        = "service"
-region          = "global"
-datacenters     = ["pi-dc"]
-node_pool       = "core"
-namespace       = "default"
-priority        = 50
-job_description = "Cloudflare Tunnel ingress gateway with Consul KV templating"
+name  = "cloudflared-tunnel"
+type  = "service"
+image = "cloudflare/cloudflared:latest"
+port  = 2000
+host_network = true
+size = "tiny"
 
-# --- Deployment and metadata ---
-deployment_profile = "standard"
-meta_profile       = "tier2"
-category           = "networking"
+# --- Storage ---
+storage = "ephemeral"
 
-# --- Resource allocation ---
-resource_tier = "nano"
+# --- Vault integration ---
+vault = true
 
-# --- Network configuration ---
-network_preset = "host"
+# --- Container arguments ---
+args = ["tunnel", "--config", "/secrets/config.yml", "run"]
 
-dns_servers = ["192.168.68.62", "192.168.68.64"]
-
-# --- Placement constraints ---
-constraints = [
-  {
-    attribute = "$${node.unique.name}"
-    operator  = "="
-    value     = "mccoy"
-  }
+# --- Configuration templates ---
+templates = [
+  { src = "credentials.json.tpl", dest = "/local/credentials.json", vault = true },
+  { src = "config.yml.tpl", dest = "/local/config.yml", vault = true }
 ]
 
-# --- Restart policy ---
-restart_attempts = 5
-restart_interval = "5m"
-restart_delay    = "10s"
-restart_mode     = "delay"
+# --- Health check ---
+health_type = "http"
+health_path = "/ready"
 
-# --- Reschedule policy ---
-reschedule_preset = "standard"
-
-# --- External configuration files ---
-external_files = {
-  enabled   = true
-  base_path = "jobs/infrastructure/cloudflared-tunnel/files"
-}
-
-external_templates = [
-  {
-    destination   = "local/credentials.json"
-    source_file   = "credentials.json.tpl"
-    env           = false
-    perms         = "0644"
-    change_mode   = "restart"
-    change_signal = "SIGTERM"
-  },
-  {
-    destination   = "local/config.yml"
-    source_file   = "config.yml.tpl"
-    env           = false
-    perms         = "0644"
-    change_mode   = "restart"
-    change_signal = "SIGTERM"
-  }
-]
-
-# --- Task definition ---
-task = {
-  name   = "cloudflared"
-  driver = "docker"
-
-  config = {
-    image        = "cloudflare/cloudflared:latest"
-    network_mode = "host"
-    force_pull   = true
-    args = [
-      "tunnel",
-      "--config", "/local/config.yml",
-      "run"
-    ]
-  }
-}
-
-# --- Consul Connect ---
-consul_connect_enabled = false
-
-# --- Service registration ---
-standard_service_enabled = false
+# --- Service tags ---
+tags = ["infrastructure", "cloudflare", "tunnel", "ingress"]
 
 # --- Termination ---
 kill_timeout = "30s"
-kill_signal  = "SIGTERM"

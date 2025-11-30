@@ -282,6 +282,14 @@ EOH
     service     = "ping@internal"
     [http.routers.ping.tls]
 
+  # --- k3s-status public (Cloudflare Tunnel) ---
+  [http.routers.k3s-status-public]
+    rule        = "Host(`k3s-status.alexfreidah.com`)"
+    entryPoints = ["web"]
+    service     = "health-checker-svc"
+    middlewares = ["k3s-status-sec"]
+    priority    = 102
+
   # --- Resume public (Cloudflare Tunnel) ---
   [http.routers.resume-public]
     rule        = "Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)"
@@ -297,14 +305,6 @@ EOH
     service     = "nginx-resume"
     middlewares = ["redirect-apex-to-resume", "resume-sec"]
     priority    = 101
-
-  # --- k3s-status public (Cloudflare Tunnel) ---
-  [http.routers.k3s-status-public]
-    rule        = "Host(`k3s-status.alexfreidah.com`)"
-    entryPoints = ["web"]
-    service     = "health-checker-svc"
-    middlewares = ["k3s-status-sec"]
-    priority    = 102
 
 # -------------------------------------------------------------------------
 # HTTP Middlewares
@@ -368,7 +368,7 @@ EOH
     contentTypeNosniff      = true
     customFrameOptionsValue = "SAMEORIGIN"
     referrerPolicy          = "no-referrer"
-    contentSecurityPolicy   = "default-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; connect-src 'self' https: ws: wss:; worker-src 'self' blob:; frame-ancestors 'self'"
+    contentSecurityPolicy   = "default-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; connect-src 'self' https: ws: wss:; worker-src 'self' blob:; frame-ancestors 'self'"
     [http.middlewares.k3s-status-sec.headers.customResponseHeaders]
       Cache-Control = "no-store, no-cache, must-revalidate"
 
@@ -383,15 +383,15 @@ EOH
     [[http.services.consul-ui.loadBalancer.servers]]
       url = "http://127.0.0.1:8500"
 
-  # --- Resume backend (static IP until Consul-discovered) ---
+  # --- Nginx Resume via Consul DNS ---
   [http.services.nginx-resume.loadBalancer]
     [[http.services.nginx-resume.loadBalancer.servers]]
-      url = "http://192.168.68.63:8080"
+      url = "http://nginx-resume.service.consul"
 
   # --- Health checker via Consul DNS ---
   [http.services.health-checker-svc.loadBalancer]
     [[http.services.health-checker-svc.loadBalancer.servers]]
-      url = "http://health-checker.service.consul:18080"
+      url = "http://health-checker.service.consul:8080"
 EOH
       }
 

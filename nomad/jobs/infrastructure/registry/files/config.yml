@@ -4,13 +4,14 @@ log:
 storage:
   filesystem:
     rootdirectory: /var/lib/registry
+  delete:
+    enabled: true
 http:
   addr: :5000
-  timeouts:
-    read: 300s
-    write: 300s
-    idle: 300s
   headers:
-    Access-Control-Allow-Origin: ["http://192.168.68.60:5001", "http://registry.munchbox"]
-    Access-Control-Allow-Methods: ["GET", "HEAD", "OPTIONS"]
-    Access-Control-Allow-Headers: ["Authorization", "Accept", "Cache-Control", "Content-Type", "Origin"]
+    X-Content-Type-Options: [nosniff]
+    Access-Control-Allow-Origin: ['https://registry-ui.munchbox.cc']
+    Access-Control-Allow-Methods: ['HEAD', 'GET', 'OPTIONS', 'DELETE']
+    Access-Control-Allow-Headers: ['Authorization', 'Accept', 'Cache-Control']
+    Access-Control-Expose-Headers: ['Docker-Content-Digest']
+    Access-Control-Allow-Credentials: ['true']

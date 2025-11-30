@@ -11,14 +11,14 @@
 # --- Core job configuration ---
 name         = "node-exporter"
 type         = "system"
-image        = "quay.io/prometheus/node-exporter:v1.8.2"
+image        = "quay.io/prometheus/node-exporter:v1.10.2"
 port         = 9100
 static_port  = 9100
 host_network = true
 size         = "tiny"
 
 # --- Traefik routing ---
-traefik = false
+traefik = true
 
 # --- Health check ---
 health_path = "/metrics"

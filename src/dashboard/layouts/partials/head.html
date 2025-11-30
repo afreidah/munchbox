@@ -1,0 +1,21 @@
+{{- $styles := resources.Get "style.css" -}}
+{{- if $styles -}}
+<link rel="stylesheet" href="{{ $styles.RelPermalink }}">
+{{- end -}}
+
+<title>
+  {{- with .Site.Data.config.title -}}
+    {{ . }}
+  {{- else -}}
+    Munchbox Dashboard
+  {{- end -}}
+</title>
+
+{{- $favicon := resources.Get (printf "icons/%s.svg" .Site.Data.config.icon) | default (resources.Get "icons/no-icon.svg") -}}
+{{- if $favicon -}}
+<link rel="icon" type="image/svg+xml" href="{{ $favicon.RelPermalink }}">
+{{- end -}}
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+

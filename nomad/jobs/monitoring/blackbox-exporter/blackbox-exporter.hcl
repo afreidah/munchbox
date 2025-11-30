@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name         = "blackbox-exporter"
-image        = "prom/blackbox-exporter:v0.25.0"
+image        = "prom/blackbox-exporter:v0.27.0"
 port         = 9115
 static_port  = 9115
 host_network = true

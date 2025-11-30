@@ -1,0 +1,10 @@
+version: '3'
+services:
+  app:
+    container_name: "hugo-dash"
+    image: ghcr.io/gehno/hugo-dash
+    volumes:
+       - ~/hugo/data:/src/data/
+       - ~/hugo/icons:/src/assets/icons/
+    ports: 
+      - 1313:1313
