@@ -1,4 +1,5 @@
-.PHONY: all build clean test worker trigger worker-arm trigger-arm install deploy update help
+.PHONY: all build clean test worker trigger worker-arm trigger-arm install deploy update \
+        docker-build docker-run-worker docker-run-trigger run-worker run-trigger dispatch help
 
 # Variables
 BINARY_DIR = bin
@@ -7,6 +8,13 @@ TRIGGER_BINARY = $(BINARY_DIR)/trigger
 WORKER_BINARY_ARM = $(BINARY_DIR)/worker-arm64
 TRIGGER_BINARY_ARM = $(BINARY_DIR)/trigger-arm64
 INSTALL_DIR = /usr/local/bin
+
+# Docker variables
+REGISTRY ?= registry.service.consul:5000
+IMAGE_NAME = temporal-backup-worker
+IMAGE_TAG ?= latest
+IMAGE_FULL = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+PLATFORMS ?= linux/amd64,linux/arm64
 
 # Go parameters
 GOCMD = go
@@ -134,6 +142,28 @@ run-trigger: trigger
 dispatch:
 	@echo "Dispatching backup job..."
 	nomad job dispatch -detach temporal-backup-trigger
+
+## docker-build: Build and push multi-arch image
+docker-build:
+	@echo "Building and pushing $(IMAGE_FULL) for $(PLATFORMS)..."
+	docker buildx build --platform $(PLATFORMS) -t $(IMAGE_FULL) --push .
+	@echo "✓ Pushed $(IMAGE_FULL)"
+
+## docker-run-worker: Run worker container locally
+docker-run-worker:
+	@echo "Starting worker container..."
+	docker run --rm \
+		-e TEMPORAL_ADDRESS=192.168.68.61:7233 \
+		-v /mnt/gdrive:/mnt/gdrive \
+		$(IMAGE_FULL) worker
+
+## docker-run-trigger: Run trigger container locally
+docker-run-trigger:
+	@echo "Running trigger container..."
+	docker run --rm \
+		-e TEMPORAL_ADDRESS=192.168.68.61:7233 \
+		-v /mnt/gdrive:/mnt/gdrive \
+		$(IMAGE_FULL) trigger
 
 ## help: Show this help
 help:

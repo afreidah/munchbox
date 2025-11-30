@@ -73,6 +73,10 @@ path "kv/data/grafana" {
   capabilities = ["read"]
 }
 
+path "kv/data/backup-worker" {
+  capabilities = ["read"]
+}
+
 path "kv/data/prometheus" {
   capabilities = ["read"]
 }
