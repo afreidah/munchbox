@@ -114,6 +114,7 @@ job "temporal-backup-worker" {
         args               = ["worker"]
         network_mode       = "host"
         volumes            = ["/mnt/gdrive:/mnt/gdrive"]
+        dns_servers        = ["192.168.68.62", "192.168.68.64"]
       }
 
       env {

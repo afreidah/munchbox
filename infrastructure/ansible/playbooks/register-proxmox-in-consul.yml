@@ -1,0 +1,160 @@
+---
+# -------------------------------------------------------------------------------
+# Register Proxmox Hosts in Consul
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs Consul agents on Proxmox hosts and registers Proxmox API services
+# for service discovery and health monitoring across the infrastructure.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# FIX PROXMOX ENTERPRISE REPOS
+# -------------------------------------------------------------------------
+
+- name: Disable Proxmox Enterprise repositories
+  hosts: proxmox_hosts
+  become: true
+  tasks:
+    - name: Remove Proxmox Enterprise repository file
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/pve-enterprise.list
+        state: absent
+
+    - name: Remove Ceph Enterprise repository file
+      ansible.builtin.file:
+        path: /etc/apt/sources.list.d/ceph.list
+        state: absent
+  tags: [repos]
+
+# -------------------------------------------------------------------------
+# INSTALL CONSUL ON PROXMOX HOSTS
+# -------------------------------------------------------------------------
+
+- name: Install Consul on Proxmox hosts
+  hosts: proxmox_hosts
+  become: true
+  vars:
+    consul_server_enabled: false
+    consul_client_enabled: true
+    consul_datacenter: munchbox
+    consul_retry_join:
+      - "192.168.68.60"
+      - "192.168.68.61"
+      - "192.168.68.69"
+  roles:
+    - consul
+  tags: [consul, install]
+
+# -------------------------------------------------------------------------
+# REGISTER PROXMOX API SERVICE
+# -------------------------------------------------------------------------
+
+- name: Register Proxmox API service in Consul
+  hosts: proxmox_hosts
+  become: true
+  tasks:
+    - name: Create Proxmox service definition
+      copy:
+        dest: /etc/consul.d/proxmox-api.hcl
+        owner: consul
+        group: consul
+        mode: '0640'
+        content: |
+          # ---------------------------------------------------------------------
+          # Proxmox API Service
+          #
+          # Project: Munchbox / Author: Alex Freidah
+          # ---------------------------------------------------------------------
+          
+          service {
+            name = "proxmox-api"
+            port = 8006
+            tags = ["proxmox", "management", "api"]
+            
+            check {
+              name     = "Proxmox API HTTPS"
+              http     = "https://127.0.0.1:8006"
+              interval = "30s"
+              timeout  = "5s"
+              tls_skip_verify = true
+            }
+          }
+      notify: restart consul
+
+    - name: Create Proxmox web UI service definition
+      copy:
+        dest: /etc/consul.d/proxmox-web.hcl
+        owner: consul
+        group: consul
+        mode: '0640'
+        content: |
+          # ---------------------------------------------------------------------
+          # Proxmox Web UI Service
+          #
+          # Project: Munchbox / Author: Alex Freidah
+          # ---------------------------------------------------------------------
+          
+          service {
+            name = "proxmox-web"
+            port = 8006
+            tags = ["proxmox", "web", "ui"]
+            
+            meta {
+              node_name = "{{ inventory_hostname }}"
+              host_ip   = "{{ ansible_default_ipv4.address }}"
+            }
+          }
+      notify: restart consul
+
+  handlers:
+    - name: restart consul
+      systemd:
+        name: consul
+        state: restarted
+
+# -------------------------------------------------------------------------
+# VERIFICATION
+# -------------------------------------------------------------------------
+
+- name: Verify Proxmox services registered
+  hosts: nomad_servers[0]
+  become: true
+  tasks:
+    - name: Query Consul for Proxmox API services
+      command: consul catalog services -tags
+      environment:
+        CONSUL_HTTP_ADDR: "https://127.0.0.1:8501"
+        CONSUL_CACERT: "/etc/consul.d/tls/ca.crt"
+        CONSUL_CLIENT_CERT: "/etc/consul.d/tls/consul.crt"
+        CONSUL_CLIENT_KEY: "/etc/consul.d/tls/consul.key"
+      register: consul_services
+      changed_when: false
+
+    - name: Display registered services
+      debug:
+        var: consul_services.stdout_lines
+
+    - name: Query proxmox-api service instances
+      command: consul catalog nodes -service=proxmox-api
+      environment:
+        CONSUL_HTTP_ADDR: "https://127.0.0.1:8501"
+        CONSUL_CACERT: "/etc/consul.d/tls/ca.crt"
+        CONSUL_CLIENT_CERT: "/etc/consul.d/tls/consul.crt"
+        CONSUL_CLIENT_KEY: "/etc/consul.d/tls/consul.key"
+      register: proxmox_nodes
+      changed_when: false
+
+    - name: Display Proxmox nodes
+      debug:
+        var: proxmox_nodes.stdout_lines
+
+    - name: Test DNS resolution
+      command: dig +short proxmox-api.service.consul
+      register: dns_lookup
+      changed_when: false
+
+    - name: Display DNS results
+      debug:
+        msg: "Proxmox API resolved to: {{ dns_lookup.stdout_lines }}"
+  tags: [verify]

@@ -8,6 +8,10 @@ storage:
     enabled: true
 http:
   addr: :5000
+  draintimeout: 10m
+  readtimeout: 10m
+  writetimeout: 10m
+  idletimeout: 10m
   headers:
     X-Content-Type-Options: [nosniff]
     Access-Control-Allow-Origin: ['https://registry-ui.munchbox.cc']

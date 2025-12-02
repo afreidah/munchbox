@@ -290,22 +290,6 @@ EOH
     middlewares = ["k3s-status-sec"]
     priority    = 102
 
-  # --- Resume public (Cloudflare Tunnel) ---
-  [http.routers.resume-public]
-    rule        = "Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)"
-    entryPoints = ["web"]
-    service     = "nginx-resume"
-    middlewares = ["redirect-resume-www", "resume-sec", "resume-ratelimit"]
-    priority    = 100
-
-  # --- Apex domain redirect ---
-  [http.routers.resume-apex]
-    rule        = "Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)"
-    entryPoints = ["web"]
-    service     = "nginx-resume"
-    middlewares = ["redirect-apex-to-resume", "resume-sec"]
-    priority    = 101
-
 # -------------------------------------------------------------------------
 # HTTP Middlewares
 # -------------------------------------------------------------------------
@@ -382,11 +366,6 @@ EOH
   [http.services.consul-ui.loadBalancer]
     [[http.services.consul-ui.loadBalancer.servers]]
       url = "http://127.0.0.1:8500"
-
-  # --- Nginx Resume via Consul DNS ---
-  [http.services.nginx-resume.loadBalancer]
-    [[http.services.nginx-resume.loadBalancer.servers]]
-      url = "http://nginx-resume.service.consul"
 
   # --- Health checker via Consul DNS ---
   [http.services.health-checker-svc.loadBalancer]

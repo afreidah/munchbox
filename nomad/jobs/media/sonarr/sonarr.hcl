@@ -1,31 +1,32 @@
 # -------------------------------------------------------------------------------
-# Deluge — BitTorrent Client
+# Sonarr — TV Show Management
 #
 # Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name         = "deluge"
+name         = "sonarr"
 type         = "service"
-image        = "linuxserver/deluge:latest"
-port         = 8112
-static_port  = 8112
+image        = "linuxserver/sonarr:latest"
+port         = 8989
+static_port  = 8989
 host_network = true
+node         = "nomad-client-01"
 size         = "medium"
-memory       = 1024
 cpu          = 1500
 
 # --- Storage ---
-storage      = "local"           # Local, not NFS
+storage      = "local"
 storage_path = "/config"
 volumes = [
+  "/mnt/gdrive/media/TV:/tv",
   "/mnt/gdrive/nomad_deluge_downloads:/downloads",
   "/mnt/gdrive/nomad_deluge_completed:/completed"
 ]
 
 # --- Traefik routing ---
 traefik      = true
-traefik_host = "deluge.munchbox.cc"
+traefik_host = "sonarr.munchbox.cc"
 
 # --- Environment variables ---
 env = {
@@ -36,10 +37,7 @@ env = {
 
 # --- Service tags ---
 tags = [
-  "deluge",
-  "torrent",
+  "sonarr",
   "media",
+  "arr"
 ]
-
-# --- Termination ---
-kill_timeout = "30s"

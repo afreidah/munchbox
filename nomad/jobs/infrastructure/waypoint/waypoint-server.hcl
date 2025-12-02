@@ -74,7 +74,7 @@ task = {
   driver = "docker"
 
   config = {
-    image      = "registry.munchbox/ops-waypoint-image:latest"
+    image      = "registry.munchbox.cc/ops-waypoint-image:latest"
     entrypoint = ["/bin/sh", "-lc"]
     args = [
       "mkdir -p /var/lib/waypoint && exec waypoint server run -accept-tos -db=/var/lib/waypoint/waypoint.db -listen-grpc=0.0.0.0:9701 -listen-http=0.0.0.0:9702"

@@ -1,31 +1,31 @@
 # -------------------------------------------------------------------------------
-# Deluge — BitTorrent Client
+# Lidarr — Music Management
 #
 # Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name         = "deluge"
+name         = "lidarr"
 type         = "service"
-image        = "linuxserver/deluge:latest"
-port         = 8112
-static_port  = 8112
+image        = "linuxserver/lidarr:latest"
+port         = 8686
+static_port  = 8686
 host_network = true
+node         = "nomad-client-02"
 size         = "medium"
-memory       = 1024
-cpu          = 1500
 
 # --- Storage ---
-storage      = "local"           # Local, not NFS
+storage      = "local"
 storage_path = "/config"
 volumes = [
+  "/mnt/gdrive/media/Music:/music",
   "/mnt/gdrive/nomad_deluge_downloads:/downloads",
   "/mnt/gdrive/nomad_deluge_completed:/completed"
 ]
 
 # --- Traefik routing ---
 traefik      = true
-traefik_host = "deluge.munchbox.cc"
+traefik_host = "lidarr.munchbox.cc"
 
 # --- Environment variables ---
 env = {
@@ -36,10 +36,8 @@ env = {
 
 # --- Service tags ---
 tags = [
-  "deluge",
-  "torrent",
+  "lidarr",
   "media",
+  "arr",
+  "music"
 ]
-
-# --- Termination ---
-kill_timeout = "30s"

@@ -15,6 +15,10 @@ terraform {
       source  = "hashicorp/vault"
       version = "~> 3.25"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   backend "consul" {
@@ -27,6 +31,14 @@ terraform {
 provider "vault" {
   address         = "http://192.168.68.61:8200"
   skip_tls_verify = true
+}
+
+# -------------------------------------------------------------------------------
+# Data Sources
+# -------------------------------------------------------------------------------
+
+data "vault_generic_secret" "pki_int_ca" {
+  path = "pki_int/cert/ca"
 }
 
 # -------------------------------------------------------------------------------
@@ -53,14 +65,6 @@ resource "vault_consul_secret_backend" "consul" {
   address     = "http://192.168.68.61:8500"
   scheme      = "http"
   token       = var.consul_bootstrap_token
-}
-
-# -------------------------------------------------------------------------------
-# Data Sources
-# -------------------------------------------------------------------------------
-
-data "vault_generic_secret" "pki_int_ca" {
-  path = "pki_int/cert/ca"
 }
 
 # -------------------------------------------------------------------------------

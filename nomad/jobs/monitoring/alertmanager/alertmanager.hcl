@@ -12,7 +12,7 @@
 name  = "alertmanager"
 image = "prom/alertmanager:v0.29.0"
 port  = 9093
-size  = "small"
+size  = "tiny"
 host_network = true
 vault = true
 

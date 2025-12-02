@@ -1,3 +1,4 @@
 {{ with secret "secret/data/deluge" -}}
-DELUGE_WEB_PASSWORD={{ .Data.data.web_password }}
+DELUGE_LOGLEVEL=info
+DELUGE_WEB_LOG_LEVEL=info
 {{- end }}

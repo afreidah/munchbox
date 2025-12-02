@@ -8,7 +8,7 @@
 // This workflow coordinates the creation of snapshots for:
 //   - Nomad cluster state (job specs, allocations, ACLs)
 //   - Consul cluster state (KV store, services, ACLs)
-//   - OpenBao cluster state (secrets, policies, auth methods)
+//   - Vault cluster state (secrets, policies, auth methods)
 //
 // Snapshots are stored in /mnt/gdrive with 7-day retention.
 //
@@ -34,13 +34,13 @@ import (
 type BackupResult struct {
 	NomadSnapshot   string    // Path to Nomad snapshot file
 	ConsulSnapshot  string    // Path to Consul snapshot file
-	OpenbaoSnapshot string    // Path to OpenBao snapshot file
+	VaultSnapshot string    // Path to Vault snapshot file
 	Timestamp       time.Time // When the backup workflow started
 	Success         bool      // Whether all backups completed successfully
 	Error           string    // Error message if any backup failed
 }
 
-// BackupWorkflow orchestrates the backup of Nomad, Consul, and OpenBao clusters.
+// BackupWorkflow orchestrates the backup of Nomad, Consul, and Vault clusters.
 //
 // The workflow executes three snapshot activities sequentially, followed by cleanup.
 // If any snapshot fails, the workflow terminates immediately and returns an error.
@@ -100,18 +100,18 @@ func BackupWorkflow(ctx workflow.Context) (*BackupResult, error) {
 	result.ConsulSnapshot = consulPath
 	logger.Info("Consul snapshot complete", "path", consulPath)
 
-	// Take OpenBao snapshot
-	logger.Info("Taking OpenBao snapshot")
-	var openbaoPath string
-	err = workflow.ExecuteActivity(ctx, TakeOpenbaoSnapshot).Get(ctx, &openbaoPath)
+	// Take Vault snapshot
+	logger.Info("Taking Vault snapshot")
+	var vaultPath string
+	err = workflow.ExecuteActivity(ctx, TakeVaultSnapshot).Get(ctx, &vaultPath)
 	if err != nil {
-		logger.Error("OpenBao backup failed", "error", err)
-		result.Error = "OpenBao backup failed: " + err.Error()
+		logger.Error("Vault backup failed", "error", err)
+		result.Error = "Vault backup failed: " + err.Error()
 		result.Success = false
 		return result, err
 	}
-	result.OpenbaoSnapshot = openbaoPath
-	logger.Info("OpenBao snapshot complete", "path", openbaoPath)
+	result.VaultSnapshot = vaultPath
+	logger.Info("Vault snapshot complete", "path", vaultPath)
 
 	// Clean up old backups (keep last 7 days)
 	logger.Info("Cleaning up old backups")
