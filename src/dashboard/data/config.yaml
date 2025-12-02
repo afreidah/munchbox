@@ -13,11 +13,6 @@ title: Munchbox Dashboard
 subtitle: Central access to Munchbox services
 icon: other-icon
 
-links:
-  - name: Hugo-Dash Repo
-    url: https://github.com/gehno/hugo-dash
-    icon: fa-brands fa-github
-
 services:
   # -------------------------------------------------------------------------
   # INFRASTRUCTURE
@@ -28,21 +23,27 @@ services:
     items:
       - name: Proxmox
         subtitle: Virtualization cluster
-        url: https://proxmox.internal.munchbox
+        url: https://proxmox.munchbox.cc
         tag: virtualization
         icon: proxmox.png
 
       - name: Nomad
         subtitle: Cluster orchestration
-        url: https://nomad.internal.munchbox.cc
+        url: https://nomad.munchbox.cc
         tag: orchestration
         icon: nomad.png
 
       - name: Consul
         subtitle: Service mesh and key value store
-        url: https://consul.internal.munchbox.cc
+        url: https://consul.munchbox.cc
         tag: infra
         icon: consul.png
+        
+      - name: Cloudflare
+        subtitle: CDN
+        url: https://cloudflare.com
+        tag: cdn
+        icon: cloudflare.svg
 
   # -------------------------------------------------------------------------
   # MONITORING
@@ -82,17 +83,41 @@ services:
         tag: media
         icon: emby.png
 
-      - name: Ersatz
-        subtitle: Alternate or backup media
-        url: https://ersatz.munchbox.cc
-        tag: media
-        icon: ersatz.png
-
       - name: Deluge
         subtitle: Torrent client
         url: https://deluge.munchbox.cc
         tag: download
         icon: deluge.png
+
+      - name: Sonarr
+        subtitle: TV bittorent/usenet
+        url: https://sonarr.munchbox.cc
+        tag: media
+        icon: sonarr.svg
+
+      - name: Radarr
+        subtitle: Movie bittorent/usenet
+        url: https://radarr.munchbox.cc
+        tag: media
+        icon: radarr.svg
+
+      - name: Lidarr
+        subtitle: Music bittorent/usenet
+        url: https://lidarr.munchbox.cc
+        tag: media
+        icon: lidarr.svg
+
+      - name: Prowlarr
+        subtitle: Index Manager bittorent/usenet
+        url: https://prowlarr.munchbox.cc
+        tag: media
+        icon: prowlarr.svg
+
+      - name: Ersatz
+        subtitle: Alternate or backup media
+        url: https://ersatz.munchbox.cc
+        tag: media
+        icon: ersatz.png
 
   # -------------------------------------------------------------------------
   # DEV
@@ -128,13 +153,13 @@ services:
     items:
       - name: Resume Site
         subtitle: Personal resume
-        url: https://resume.yourdomain.tld
+        url: https://resume.alexfreidah.com
         tag: personal
         icon: resume-site.png
 
       - name: k3s Health Checker
         subtitle: k3s cluster status
-        url: https://k3s-health.munchbox.cc
+        url: https://k3s-status.alexfreidah.com
         tag: web
         icon: k3s-health-checker.svg
 

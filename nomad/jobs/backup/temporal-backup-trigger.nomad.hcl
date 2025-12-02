@@ -72,6 +72,7 @@ job "temporal-backup-trigger" {
         image_pull_timeout = "10m"
         args               = ["trigger"]
         network_mode       = "host"
+        dns_servers        = ["192.168.68.62", "192.168.68.64"]
       }
 
       env {

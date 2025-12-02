@@ -1,0 +1,217 @@
+---
+# -------------------------------------------------------------------------------
+# Register DNS Server Services with Consul (External Registration)
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Registers DNS server exporters with Consul using external service registration
+# via HTTP API. No Consul agent required - perfect for ARMv6 Pi Zero W boards.
+# -------------------------------------------------------------------------------
+
+- name: Verify connectivity to DNS servers
+  hosts: dns_servers
+  gather_facts: true
+  tasks:
+    - name: Gather facts
+      setup:
+
+# -------------------------------------------------------------------------
+# External Service Registration
+# -------------------------------------------------------------------------
+
+- name: Register DNS server services with Consul
+  hosts: dns_servers
+  become: true
+  vars:
+    consul_api_addr: "http://192.168.68.61:8500"
+  tasks:
+    - name: Create consul-register directory
+      file:
+        path: /etc/consul-register
+        state: directory
+        mode: '0755'
+
+    - name: Deploy node-exporter service registration JSON
+      copy:
+        content: |
+          {
+            "Node": "{{ inventory_hostname }}",
+            "Address": "{{ ansible_default_ipv4.address }}",
+            "NodeMeta": {
+              "node_type": "raspberry-pi-zero",
+              "role": "dns-server",
+              "arch": "armv6"
+            },
+            "Service": {
+              "ID": "node-exporter-{{ inventory_hostname }}",
+              "Service": "node-exporter",
+              "Port": 9100,
+              "Tags": ["monitoring", "external", "dns", "{{ inventory_hostname }}"],
+              "Meta": {
+                "node_type": "raspberry-pi-zero",
+                "role": "dns-server",
+                "host": "{{ inventory_hostname }}"
+              }
+            }
+          }
+        dest: /etc/consul-register/node-exporter.json
+        mode: '0644'
+
+    - name: Deploy pihole-exporter service registration JSON
+      copy:
+        content: |
+          {
+            "Node": "{{ inventory_hostname }}",
+            "Address": "{{ ansible_default_ipv4.address }}",
+            "NodeMeta": {
+              "node_type": "raspberry-pi-zero",
+              "role": "dns-server",
+              "arch": "armv6"
+            },
+            "Service": {
+              "ID": "pihole-exporter-{{ inventory_hostname }}",
+              "Service": "pihole-exporter",
+              "Port": 9617,
+              "Tags": ["monitoring", "external", "dns", "pihole", "{{ inventory_hostname }}"],
+              "Meta": {
+                "node_type": "raspberry-pi-zero",
+                "role": "dns-server",
+                "host": "{{ inventory_hostname }}"
+              }
+            }
+          }
+        dest: /etc/consul-register/pihole-exporter.json
+        mode: '0644'
+
+    - name: Create registration script
+      copy:
+        content: |
+          #!/bin/bash
+          # -----------------------------------------------------------------------
+          # Consul Service Registration Script
+          #
+          # Project: Munchbox / Author: Alex Freidah
+          # -----------------------------------------------------------------------
+          
+          set -euo pipefail
+          
+          CONSUL_ADDR="{{ consul_api_addr }}"
+          REGISTER_DIR="/etc/consul-register"
+          
+          register_service() {
+              local service_file="$1"
+              echo "Registering $(basename "$service_file")..."
+              
+              curl -s -X PUT \
+                  -H "Content-Type: application/json" \
+                  -d @"$service_file" \
+                  "$CONSUL_ADDR/v1/catalog/register" || {
+                  echo "Failed to register $service_file"
+                  return 1
+              }
+          }
+          
+          # Register all service definitions
+          for service_json in "$REGISTER_DIR"/*.json; do
+              if [ -f "$service_json" ]; then
+                  register_service "$service_json"
+              fi
+          done
+          
+          echo "Service registration complete for {{ inventory_hostname }}"
+        dest: /usr/local/bin/consul-register.sh
+        mode: '0755'
+
+    - name: Create systemd service for registration
+      copy:
+        content: |
+          [Unit]
+          Description=Register services with Consul
+          After=network-online.target
+          Wants=network-online.target
+          
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/consul-register.sh
+          RemainAfterExit=yes
+          Restart=on-failure
+          RestartSec=30
+          
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/consul-register.service
+        mode: '0644'
+
+    - name: Create systemd timer for periodic re-registration
+      copy:
+        content: |
+          [Unit]
+          Description=Periodic Consul service re-registration
+          
+          [Timer]
+          OnBootSec=1min
+          OnUnitActiveSec=5min
+          
+          [Install]
+          WantedBy=timers.target
+        dest: /etc/systemd/system/consul-register.timer
+        mode: '0644'
+
+    - name: Enable and start registration service
+      systemd:
+        name: consul-register.service
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Enable and start registration timer
+      systemd:
+        name: consul-register.timer
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Wait for registration to complete
+      pause:
+        seconds: 5
+
+# -------------------------------------------------------------------------
+# Verification
+# -------------------------------------------------------------------------
+
+- name: Verify registration from Consul cluster
+  hosts: nomad_servers[0]
+  become: true
+  tasks:
+    - name: Query node-exporter services
+      command: consul catalog service node-exporter
+      register: node_exporters
+      changed_when: false
+      environment:
+        CONSUL_HTTP_ADDR: "https://127.0.0.1:8501"
+        CONSUL_CACERT: "/etc/consul.d/tls/ca.crt"
+        CONSUL_CLIENT_CERT: "/etc/consul.d/tls/consul.crt"
+        CONSUL_CLIENT_KEY: "/etc/consul.d/tls/consul.key"
+
+    - name: Check for DNS servers
+      debug:
+        msg: |
+          {% if 'green' in node_exporters.stdout %}✓ green registered{% else %}✗ green NOT registered{% endif %}
+          {% if 'logan' in node_exporters.stdout %}✓ logan registered{% else %}✗ logan NOT registered{% endif %}
+
+    - name: Display completion message
+      debug:
+        msg:
+          - "====================================================================="
+          - "DNS servers registered with Consul (external registration)!"
+          - "====================================================================="
+          - ""
+          - "Services registered:"
+          - "  - node-exporter (port 9100)"
+          - "  - pihole-exporter (port 9617)"
+          - ""
+          - "No Consul agent required - registration via HTTP API"
+          - "Services re-register every 5 minutes via systemd timer"
+          - ""
+          - "These services will now be automatically discovered by Prometheus"
+          - "====================================================================="

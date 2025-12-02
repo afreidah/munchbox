@@ -8,7 +8,7 @@
 # to ensure consistent scheduling behavior across heterogeneous Nomad clients.
 # -------------------------------------------------------------------------------
 
-REGISTRY   ?= registry.service.consul:5000
+REGISTRY   ?= registry.munchbox.cc:5000
 IMAGE      := dash
 VERSION    := latest
 

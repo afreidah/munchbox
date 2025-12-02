@@ -1,31 +1,28 @@
 # -------------------------------------------------------------------------------
-# Deluge — BitTorrent Client
+# Prowlarr — Indexer Management
 #
 # Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name         = "deluge"
+name         = "prowlarr"
 type         = "service"
-image        = "linuxserver/deluge:latest"
-port         = 8112
-static_port  = 8112
+image        = "linuxserver/prowlarr:latest"
+port         = 9696
+static_port  = 9696
 host_network = true
+node         = "nomad-client-03"
 size         = "medium"
-memory       = 1024
-cpu          = 1500
+memory       = 300
+cpu          = 1000
 
 # --- Storage ---
-storage      = "local"           # Local, not NFS
+storage      = "local"
 storage_path = "/config"
-volumes = [
-  "/mnt/gdrive/nomad_deluge_downloads:/downloads",
-  "/mnt/gdrive/nomad_deluge_completed:/completed"
-]
 
 # --- Traefik routing ---
 traefik      = true
-traefik_host = "deluge.munchbox.cc"
+traefik_host = "prowlarr.munchbox.cc"
 
 # --- Environment variables ---
 env = {
@@ -36,10 +33,7 @@ env = {
 
 # --- Service tags ---
 tags = [
-  "deluge",
-  "torrent",
+  "prowlarr",
   "media",
+  "arr"
 ]
-
-# --- Termination ---
-kill_timeout = "30s"

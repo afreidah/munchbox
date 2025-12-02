@@ -1,31 +1,30 @@
 # -------------------------------------------------------------------------------
-# Deluge — BitTorrent Client
+# Radarr — Movie Management
 #
 # Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name         = "deluge"
+name         = "radarr"
 type         = "service"
-image        = "linuxserver/deluge:latest"
-port         = 8112
-static_port  = 8112
-host_network = true
+image        = "linuxserver/radarr:latest"
+port         = 7878
+static_port  = 7878
+node         = "nomad-client-01"
 size         = "medium"
-memory       = 1024
-cpu          = 1500
 
 # --- Storage ---
-storage      = "local"           # Local, not NFS
+storage      = "local"
 storage_path = "/config"
 volumes = [
+  "/mnt/gdrive/media/Movies:/movies",
   "/mnt/gdrive/nomad_deluge_downloads:/downloads",
   "/mnt/gdrive/nomad_deluge_completed:/completed"
 ]
 
 # --- Traefik routing ---
 traefik      = true
-traefik_host = "deluge.munchbox.cc"
+traefik_host = "radarr.munchbox.cc"
 
 # --- Environment variables ---
 env = {
@@ -36,10 +35,7 @@ env = {
 
 # --- Service tags ---
 tags = [
-  "deluge",
-  "torrent",
+  "radarr",
   "media",
+  "arr"
 ]
-
-# --- Termination ---
-kill_timeout = "30s"

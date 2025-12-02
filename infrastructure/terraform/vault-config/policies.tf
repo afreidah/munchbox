@@ -100,6 +100,9 @@ path "secret/data/backup-worker" {
 path "secret/data/alertmanager" {
   capabilities = ["read"]
 }
+path "secret/data/postgres-shared/root" {
+  capabilities = ["read"]
+}
 
 path "secret/data/grafana" {
   capabilities = ["read"]

@@ -102,5 +102,5 @@ func runTrigger() {
 	log.Println("✓ Backup complete!")
 	log.Printf("  Nomad snapshot: %s", result.NomadSnapshot)
 	log.Printf("  Consul snapshot: %s", result.ConsulSnapshot)
-	log.Printf("  OpenBao snapshot: %s", result.OpenbaoSnapshot)
+	log.Printf("  Vault snapshot: %s", result.VaultSnapshot)
 }

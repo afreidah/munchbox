@@ -32,7 +32,7 @@ env = {
 
 # --- Traefik integration ---
 traefik = true
-traefik_host = "temporal.munchbox"
+traefik_host = "temporal.munchbox.cc"
 
 # --- Health check ---
 health_path = "/"

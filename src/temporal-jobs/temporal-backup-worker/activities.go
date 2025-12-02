@@ -12,7 +12,7 @@
 // Activities:
 //   - TakeNomadSnapshot: Creates Raft snapshot of Nomad cluster state
 //   - TakeConsulSnapshot: Creates Raft snapshot of Consul cluster state
-//   - TakeOpenbaoSnapshot: Creates Raft snapshot of OpenBao cluster state
+//   - TakeVaultSnapshot: Creates Raft snapshot of Vault cluster state
 //   - CleanupOldBackups: Removes snapshots older than retention period
 //
 // Storage:
@@ -32,7 +32,7 @@
 //   Activities use environment variables for service authentication:
 //   - NOMAD_TOKEN: From Vault via workload identity
 //   - CONSUL_HTTP_TOKEN: From Vault via workload identity
-//   - BAO_TOKEN: From Vault via workload identity
+//   - VAULT_TOKEN: From Vault via workload identity
 //
 // Error handling:
 //   - Failed snapshots return errors to the workflow for retry
@@ -57,9 +57,9 @@ import (
 )
 
 const (
-	nomadBackupDir   = "/mnt/gdrive/nomad-snapshots"
-	consulBackupDir  = "/mnt/gdrive/consul-snapshots"
-	openbaoBackupDir = "/mnt/gdrive/openbao-snapshots"
+	nomadBackupDir  = "/mnt/gdrive/nomad-snapshots"
+	consulBackupDir = "/mnt/gdrive/consul-snapshots"
+	vaultBackupDir  = "/mnt/gdrive/vault-snapshots"
 )
 
 // TakeNomadSnapshot creates a Raft snapshot of the Nomad cluster.
@@ -142,53 +142,53 @@ func TakeConsulSnapshot(ctx context.Context) (string, error) {
 	return filename, nil
 }
 
-// TakeOpenbaoSnapshot creates a Raft snapshot of the OpenBao cluster.
+// TakeVaultSnapshot creates a Raft snapshot of the Vault cluster.
 //
-// This captures the complete state of the OpenBao cluster including:
+// This captures the complete state of the Vault cluster including:
 //   - All secrets stored in KV engines
 //   - Authentication methods and configurations
 //   - Policies and entity metadata
 //   - Audit log configuration
 //   - Seal/unseal configuration
 //
-// The snapshot can be used to restore OpenBao cluster state after a disaster.
-// Requires BAO_TOKEN with snapshot read permissions.
+// The snapshot can be used to restore Vault cluster state after a disaster.
+// Requires VAULT_TOKEN with snapshot read permissions.
 //
-// Note: The snapshot is encrypted with OpenBao's master key and cannot be
-// read without access to the unsealed OpenBao cluster.
+// Note: The snapshot is encrypted with Vault's master key and cannot be
+// read without access to the unsealed Vault cluster.
 //
 // Returns:
 //   - string: Full path to the created snapshot file
 //   - error: Non-nil if snapshot creation fails
-func TakeOpenbaoSnapshot(ctx context.Context) (string, error) {
+func TakeVaultSnapshot(ctx context.Context) (string, error) {
 	logger := activity.GetLogger(ctx)
-	logger.Info("Starting OpenBao snapshot")
+	logger.Info("Starting Vault snapshot")
 
 	// Ensure backup directory exists
-	if err := os.MkdirAll(openbaoBackupDir, 0o755); err != nil {
+	if err := os.MkdirAll(vaultBackupDir, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create backup dir: %w", err)
 	}
 
 	timestamp := time.Now().Format("20060102150405")
-	filename := filepath.Join(openbaoBackupDir, fmt.Sprintf("openbao-%s.snap", timestamp))
+	filename := filepath.Join(vaultBackupDir, fmt.Sprintf("vault-%s.snap", timestamp))
 
-	cmd := exec.CommandContext(ctx, "bao", "operator", "raft", "snapshot", "save", filename)
+	cmd := exec.CommandContext(ctx, "vault", "operator", "raft", "snapshot", "save", filename)
 
 	// Set environment variables for the command
 	cmd.Env = append(os.Environ(),
-		"BAO_ADDR="+os.Getenv("BAO_ADDR"),
-		"BAO_TOKEN="+os.Getenv("BAO_TOKEN"),
-		"BAO_SKIP_VERIFY="+os.Getenv("BAO_SKIP_VERIFY"),
+		"VAULT_ADDR=https://stabler.munchbox.cc:8200",
+		"VAULT_TOKEN="+os.Getenv("VAULT_TOKEN"),
+		"VAULT_SKIP_VERIFY="+os.Getenv("VAULT_SKIP_VERIFY"),
 	)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("openbao snapshot failed: %w, output: %s", err, output)
+		return "", fmt.Errorf("vault snapshot failed: %w, output: %s", err, output)
 	}
 
 	// Get file size for logging
 	info, _ := os.Stat(filename)
-	logger.Info("OpenBao snapshot saved", "path", filename, "size_bytes", info.Size())
+	logger.Info("Vault snapshot saved", "path", filename, "size_bytes", info.Size())
 
 	return filename, nil
 }
@@ -200,7 +200,7 @@ func TakeOpenbaoSnapshot(ctx context.Context) (string, error) {
 // deletion, protecting other files that may exist in the backup directories.
 //
 // The cleanup process:
-//  1. Scans all three backup directories (Nomad, Consul, OpenBao)
+//  1. Scans all three backup directories (Nomad, Consul, Vault)
 //  2. Identifies .snap files older than the retention period
 //  3. Attempts to delete each old snapshot
 //  4. Logs success/failure for each deletion attempt
@@ -229,9 +229,9 @@ func CleanupOldBackups(ctx context.Context, retentionDays int) error {
 		return fmt.Errorf("failed to cleanup consul backups: %w", err)
 	}
 
-	// Clean OpenBao backups
-	if err := cleanupDirectory(openbaoBackupDir, cutoff, logger); err != nil {
-		return fmt.Errorf("failed to cleanup openbao backups: %w", err)
+	// Clean Vault backups
+	if err := cleanupDirectory(vaultBackupDir, cutoff, logger); err != nil {
+		return fmt.Errorf("failed to cleanup vault backups: %w", err)
 	}
 
 	return nil

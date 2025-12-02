@@ -7,7 +7,7 @@ Automated backup system for HashiCorp infrastructure using Temporal workflows an
 This project creates scheduled snapshots of:
 - **Nomad** cluster state (jobs, allocations, ACLs)
 - **Consul** cluster state (KV store, services, ACLs)
-- **OpenBao** cluster state (secrets, policies, auth methods)
+- **vault** cluster state (secrets, policies, auth methods)
 
 Snapshots are stored on `/mnt/gdrive` with 7-day retention.
 
@@ -34,7 +34,7 @@ Single multi-stage image contains:
 - `temporal-backup-trigger` - Trigger binary
 - `nomad` CLI - For cluster snapshots
 - `consul` CLI - For cluster snapshots
-- `bao` CLI - For OpenBao snapshots
+- `vault` CLI - For vault snapshots
 
 ## Building
 
@@ -89,7 +89,7 @@ make docker-push IMAGE_TAG=v1.0.0
    kv/data/nomad/backup-worker:
      - nomad_token
      - consul_token
-     - bao_token
+     - vault_token
    ```
 
 ### Deploy Worker
@@ -123,9 +123,9 @@ nomad job dispatch temporal-backup-trigger
 - `TEMPORAL_ADDRESS` - Temporal server endpoint
 - `NOMAD_TOKEN` - From Vault via template
 - `CONSUL_HTTP_TOKEN` - From Vault via template
-- `BAO_ADDR` - OpenBao server address
-- `BAO_TOKEN` - From Vault via template
-- `BAO_SKIP_VERIFY` - Skip TLS verification (true/false)
+- `vault_ADDR` - vault server address
+- `vault_TOKEN` - From Vault via template
+- `vault_SKIP_VERIFY` - Skip TLS verification (true/false)
 
 **Trigger:**
 - `TEMPORAL_ADDRESS` - Temporal server endpoint
@@ -142,7 +142,7 @@ Worker requires:
 Snapshots stored in:
 - `/mnt/gdrive/nomad-snapshots/`
 - `/mnt/gdrive/consul-snapshots/`
-- `/mnt/gdrive/openbao-snapshots/`
+- `/mnt/gdrive/vault-snapshots/`
 
 File naming: `{service}-{timestamp}.snap`
 
@@ -169,9 +169,9 @@ docker run --rm \
   -e TEMPORAL_ADDRESS=192.168.68.61:7233 \
   -e NOMAD_TOKEN=your-token \
   -e CONSUL_HTTP_TOKEN=your-token \
-  -e BAO_ADDR=https://openbao.service.consul:8200 \
-  -e BAO_TOKEN=your-token \
-  -e BAO_SKIP_VERIFY=true \
+  -e vault_ADDR=https://vault.service.consul:8200 \
+  -e vault_TOKEN=your-token \
+  -e vault_SKIP_VERIFY=true \
   -v /mnt/gdrive:/mnt/gdrive \
   localhost:5000/temporal-backup-worker:latest worker
 ```
@@ -207,7 +207,7 @@ http://192.168.68.61:8080/namespaces/default/workflows
 ```bash
 ls -lh /mnt/gdrive/nomad-snapshots/
 ls -lh /mnt/gdrive/consul-snapshots/
-ls -lh /mnt/gdrive/openbao-snapshots/
+ls -lh /mnt/gdrive/vault-snapshots/
 ```
 
 ## Troubleshooting
@@ -235,7 +235,7 @@ ls -lh /mnt/gdrive/openbao-snapshots/
    ```bash
    nomad alloc exec <alloc-id> nomad version
    nomad alloc exec <alloc-id> consul version
-   nomad alloc exec <alloc-id> bao version
+   nomad alloc exec <alloc-id> vault version
    ```
 
 2. Verify authentication tokens:
