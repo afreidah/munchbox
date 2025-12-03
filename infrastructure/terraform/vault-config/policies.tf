@@ -104,6 +104,10 @@ path "secret/data/postgres-shared/root" {
   capabilities = ["read"]
 }
 
+path "secret/data/nextcloud" {
+  capabilities = ["read"]
+}
+
 path "secret/data/grafana" {
   capabilities = ["read"]
 }

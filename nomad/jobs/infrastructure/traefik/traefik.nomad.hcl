@@ -282,14 +282,6 @@ EOH
     service     = "ping@internal"
     [http.routers.ping.tls]
 
-  # --- k3s-status public (Cloudflare Tunnel) ---
-  [http.routers.k3s-status-public]
-    rule        = "Host(`k3s-status.alexfreidah.com`)"
-    entryPoints = ["web"]
-    service     = "health-checker-svc"
-    middlewares = ["k3s-status-sec"]
-    priority    = 102
-
 # -------------------------------------------------------------------------
 # HTTP Middlewares
 # -------------------------------------------------------------------------
@@ -366,11 +358,6 @@ EOH
   [http.services.consul-ui.loadBalancer]
     [[http.services.consul-ui.loadBalancer.servers]]
       url = "http://127.0.0.1:8500"
-
-  # --- Health checker via Consul DNS ---
-  [http.services.health-checker-svc.loadBalancer]
-    [[http.services.health-checker-svc.loadBalancer.servers]]
-      url = "http://health-checker.service.consul:8080"
 EOH
       }
 

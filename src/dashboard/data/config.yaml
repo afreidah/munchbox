@@ -15,30 +15,23 @@ icon: other-icon
 
 services:
   # -------------------------------------------------------------------------
-  # INFRASTRUCTURE
+  # DNS
   # -------------------------------------------------------------------------
-
-  - name: Infrastructure
+  - name: DNS
     icon: fa-solid fa-network-wired
     items:
-      - name: Proxmox
-        subtitle: Virtualization cluster
-        url: https://proxmox.munchbox.cc
-        tag: virtualization
-        icon: proxmox.png
-
-      - name: Nomad
-        subtitle: Cluster orchestration
-        url: https://nomad.munchbox.cc
-        tag: orchestration
-        icon: nomad.png
-
-      - name: Consul
-        subtitle: Service mesh and key value store
-        url: https://consul.munchbox.cc
+      - name: green.munchbox.cc
+        subtitle: PiHole/Unbound DNS server 1
+        url: http://green.munchbox/admin/login
         tag: infra
-        icon: consul.png
-        
+        icon: pi-hole-unbound.svg
+
+      - name: logan.munchbox.cc
+        subtitle: PiHole/Unbound DNS server 2
+        url: http://logan.munchbox/admin/login
+        tag: infra
+        icon: pi-hole-unbound.svg
+
       - name: Cloudflare
         subtitle: CDN
         url: https://cloudflare.com
@@ -49,7 +42,7 @@ services:
   # MONITORING
   # -------------------------------------------------------------------------
 
-  - name: Monitoring
+  - name: Monitoring/Alerting
     icon: fa-solid fa-chart-line
     items:
       - name: Grafana
@@ -71,7 +64,50 @@ services:
         icon: alertmanager.png
 
   # -------------------------------------------------------------------------
-  # MEDIA AND DOWNLOADS
+  # ORCHESTRATION/VIRTUALIZATION
+  # -------------------------------------------------------------------------
+
+  - name: Orchestration/Virtualization
+    icon: fa-solid fa-network-wired
+    items:
+      - name: Proxmox
+        subtitle: Virtualization cluster
+        url: https://proxmox.munchbox.cc
+        tag: virtualization
+        icon: proxmox.png
+
+      - name: Nomad
+        subtitle: Cluster orchestration
+        url: https://nomad.munchbox.cc
+        tag: orchestration
+        icon: nomad.png
+
+      - name: Consul
+        subtitle: Service mesh and key value store
+        url: https://consul.munchbox.cc
+        tag: infra
+        icon: consul.png
+
+      - name: Temporal UI
+        subtitle: Workflow orchestration
+        url: https://temporal.munchbox.cc
+        tag: workflows
+        icon: temporal-ui.png
+
+      - name: HashiCorp Waypoint
+        subtitle: Application deployment workflows
+        url: https://waypoint.munchbox.cc
+        tag: deploy
+        icon: waypoint.png
+
+      - name: Registry
+        subtitle: Local Docker Registry
+        url: https://registry-ui.munchbox.cc
+        tag: deploy
+        icon: registry-ui.png
+
+  # -------------------------------------------------------------------------
+  # MEDIA AND TORRENTING
   # -------------------------------------------------------------------------
 
   - name: Media and Downloads
@@ -122,27 +158,6 @@ services:
   # -------------------------------------------------------------------------
   # DEV
   # -------------------------------------------------------------------------
-
-  - name: Dev
-    icon: fa-solid fa-code-branch
-    items:
-      - name: Registry UI
-        subtitle: Container registry
-        url: https://registry-ui.munchbox.cc
-        tag: dev
-        icon: registry-ui.png
-
-      - name: Temporal UI
-        subtitle: Workflow orchestration
-        url: https://temporal.munchbox.cc
-        tag: workflows
-        icon: temporal-ui.png
-
-      - name: HashiCorp Waypoint
-        subtitle: Application deployment workflows
-        url: https://waypoint.munchbox.cc
-        tag: deploy
-        icon: waypoint.png
 
   # -------------------------------------------------------------------------
   # WEB

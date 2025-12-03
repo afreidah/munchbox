@@ -121,7 +121,7 @@ resource "cloudflare_tunnel_config" "munchbox" {
   config {
     ingress_rule {
       hostname = "alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "alexfreidah.com"
       }
@@ -129,7 +129,7 @@ resource "cloudflare_tunnel_config" "munchbox" {
 
     ingress_rule {
       hostname = "www.alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "www.alexfreidah.com"
       }
@@ -137,7 +137,7 @@ resource "cloudflare_tunnel_config" "munchbox" {
 
     ingress_rule {
       hostname = "resume.alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "resume.alexfreidah.com"
       }
@@ -145,7 +145,7 @@ resource "cloudflare_tunnel_config" "munchbox" {
 
     ingress_rule {
       hostname = "k3s-status.alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "k3s-status.alexfreidah.com"
       }
