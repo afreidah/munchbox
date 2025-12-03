@@ -44,7 +44,7 @@ resource "vault_database_secrets_mount" "postgres" {
     password          = random_password.postgres_root.result
     connection_url    = "postgresql://{{username}}:{{password}}@postgres-shared.service.consul:5432/postgres?sslmode=disable"
     verify_connection = true
-    allowed_roles     = ["temporal", "rreading-glasses"]
+    allowed_roles     = ["temporal", "kanboard"]
   }
 }
 
@@ -69,19 +69,23 @@ resource "vault_database_secret_backend_role" "temporal" {
 }
 
 # -------------------------------------------------------------------------------
-# Database Role: rreading-glasses
+# Database Role: Kanboard
 # -------------------------------------------------------------------------------
 
-resource "vault_database_secret_backend_role" "rreading_glasses" {
+resource "vault_database_secret_backend_role" "kanboard" {
   count   = var.configure_database_engine ? 1 : 0
   backend = vault_database_secrets_mount.postgres[0].path
-  name    = "rreading-glasses"
+  name    = "kanboard"
   db_name = vault_database_secrets_mount.postgres[0].postgresql[0].name
 
   creation_statements = [
     "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
-    "GRANT ALL PRIVILEGES ON DATABASE rreading_glasses TO \"{{name}}\";",
-    "GRANT ALL ON SCHEMA public TO \"{{name}}\";"
+    "GRANT CONNECT ON DATABASE kanboard TO \"{{name}}\";",
+    "GRANT USAGE, CREATE ON SCHEMA public TO \"{{name}}\";",
+    "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
+    "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"{{name}}\";",
+    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"{{name}}\";"
   ]
 
   default_ttl = 86400

@@ -1,10 +1,10 @@
 # -------------------------------------------------------------------------------
-# Nginx Resume — Static Site Serving
+# nginx-resume — Static Resume Site
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Static resume site served from custom Docker image. Dual routing: public
-# access via alexfreidah.com and internal access via resume.munchbox.cc.
+# Serves static resume website with custom routing for both resume subdomain
+# and apex domain, all redirecting to canonical resume.alexfreidah.com.
 # -------------------------------------------------------------------------------
 
 # --- General Settings ---
@@ -12,20 +12,22 @@ name  = "nginx-resume"
 type  = "service"
 image = "registry.munchbox.cc/alex-resume:latest"
 port  = 80
-host_network = false
-node  = "nomad-client-02"
-size = "small"
+size  = "tiny"
 storage = "ephemeral"
+
+# --- Vault integration ---
+vault = false
 
 # --- Traefik integration ---
 traefik = false
+traefik_public = false
 health_path = "/"
 
-# --- Service tags (completely custom routers) ---
+# --- Service tags (custom routing via cloudflared) ---
 tags = [
   "web",
-  "resume",
   "nginx",
+  "static",
   "traefik.enable=true",
   "traefik.http.routers.resume-public.rule=Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)",
   "traefik.http.routers.resume-public.entrypoints=web",
@@ -34,5 +36,5 @@ tags = [
   "traefik.http.routers.resume-apex.rule=Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)",
   "traefik.http.routers.resume-apex.entrypoints=web",
   "traefik.http.routers.resume-apex.middlewares=redirect-apex-to-resume@file,resume-sec@file",
-  "traefik.http.routers.resume-apex.priority=101"
+  "traefik.http.routers.resume-apex.priority=101",
 ]
