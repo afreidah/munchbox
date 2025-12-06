@@ -40,8 +40,9 @@ tags = [
   "monitoring",
   "health",
   "go",
-  "traefik.http.routers.health-checker-public.rule=Host(`k3s-status.alexfreidah.com`)",  # ← Different name!
+  "traefik.http.routers.health-checker-public.rule=Host(`k3s-status.alexfreidah.com`)",
   "traefik.http.routers.health-checker-public.entrypoints=web",
+  "traefik.http.routers.health-checker-public.service=health-checker",  # ← ADD THIS
   "traefik.http.routers.health-checker-public.middlewares=k3s-status-sec@file",
   "traefik.http.services.health-checker.loadbalancer.server.port=8080",
 ]
