@@ -32,8 +32,7 @@ env = {
 vault = false
 
 # --- Traefik integration ---
-traefik = false
-traefik_public = false
+traefik = true
 health_path = "/health"
 
 # --- Service tags (custom routing via cloudflared) ---
@@ -41,9 +40,8 @@ tags = [
   "monitoring",
   "health",
   "go",
-  "traefik.enable=true",
-  "traefik.http.routers.health-checker.rule=Host(`k3s-status.alexfreidah.com`)",
-  "traefik.http.routers.health-checker.entrypoints=web",
-  "traefik.http.routers.health-checker.middlewares=k3s-status-sec@file",
+  "traefik.http.routers.health-checker-public.rule=Host(`k3s-status.alexfreidah.com`)",  # ← Different name!
+  "traefik.http.routers.health-checker-public.entrypoints=web",
+  "traefik.http.routers.health-checker-public.middlewares=k3s-status-sec@file",
   "traefik.http.services.health-checker.loadbalancer.server.port=8080",
 ]

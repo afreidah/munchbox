@@ -100,7 +100,7 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.6.2"
+        image        = "traefik:v3.6.4"
         network_mode = "host"
         ports        = ["http", "https", "dashboard"]
         volumes      = [
