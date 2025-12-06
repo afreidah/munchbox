@@ -19,8 +19,7 @@ storage = "ephemeral"
 vault = false
 
 # --- Traefik integration ---
-traefik = false
-traefik_public = false
+traefik = true
 health_path = "/"
 
 # --- Service tags (custom routing via cloudflared) ---
@@ -28,7 +27,6 @@ tags = [
   "web",
   "nginx",
   "static",
-  "traefik.enable=true",
   "traefik.http.routers.resume-public.rule=Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)",
   "traefik.http.routers.resume-public.entrypoints=web",
   "traefik.http.routers.resume-public.middlewares=redirect-resume-www@file,resume-sec@file,resume-ratelimit@file",
