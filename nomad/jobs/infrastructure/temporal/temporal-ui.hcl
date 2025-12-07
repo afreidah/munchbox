@@ -13,7 +13,7 @@ name  = "temporal-ui"
 type  = "service"
 image = "temporalio/ui:2.31.1"
 port  = 8080
-host_network = false
+host_network = true
 size = "small"
 storage = "ephemeral"
 

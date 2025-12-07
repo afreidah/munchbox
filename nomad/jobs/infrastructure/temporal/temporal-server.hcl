@@ -25,9 +25,10 @@ env = {
   DB_PORT                         = "5432"
   POSTGRES_USER                   = "temporal"
   POSTGRES_PWD                    = "temporal"
-  POSTGRES_SEEDS                  = "temporal-postgres.service.consul"
+  POSTGRES_SEEDS                  = "postgres-shared.service.consul"
   SKIP_DB_CREATE                  = "true"
-  SKIP_DEFAULT_NAMESPACE_CREATION = "false"
+  SKIP_SCHEMA_SETUP               = "true"
+  SKIP_DEFAULT_NAMESPACE_CREATION = "true"
   BIND_ON_IP                      = "0.0.0.0"
 }
 
