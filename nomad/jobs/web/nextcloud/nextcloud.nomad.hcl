@@ -88,7 +88,7 @@ job "nextcloud" {
         "traefik.http.routers.nextcloud.entrypoints=websecure",
         "traefik.http.routers.nextcloud.tls=true",
         "traefik.http.routers.nextcloud.middlewares=dashboard-allowlan@file",
-        "traefik.http.services.nextcloud.loadbalancer.server.port=80",
+        "traefik.http.services.nextcloud.loadbalancer.server.port=18081",
         "cloud",
         "files",
         "collaboration",
@@ -138,7 +138,6 @@ job "nextcloud" {
         POSTGRES_DB          = "nextcloud"
         REDIS_HOST           = "127.0.0.1"
         REDIS_PORT           = "6379"
-        NEXTCLOUD_ADMIN_USER = "admin"
         TRUSTED_PROXIES      = "172.26.64.0/18"
         OVERWRITEPROTOCOL    = "https"
         OVERWRITEHOST        = "nextcloud.munchbox.cc"
@@ -152,17 +151,15 @@ job "nextcloud" {
         change_mode = "restart"
         data        = <<EOH
 {{ with secret "secret/data/nextcloud" }}
-POSTGRES_USER={{ .Data.data.db_username }}
 POSTGRES_PASSWORD={{ .Data.data.db_password }}
-NEXTCLOUD_ADMIN_PASSWORD={{ .Data.data.admin_password }}
 {{ end }}
 EOH
       }
 
       # --- Resources ---
       resources {
-        cpu    = 500
-        memory = 768
+        cpu    = 2000
+        memory = 1300
       }
 
       # --- Termination ---
