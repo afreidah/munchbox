@@ -12,6 +12,7 @@ name  = "health-checker"
 type  = "service"
 image = "registry.munchbox.cc/health-checker:latest"
 port  = 8080
+node  = "nomad-client-02"
 host_network = true
 size = "small"
 storage = "ephemeral"
@@ -42,7 +43,7 @@ tags = [
   "go",
   "traefik.http.routers.health-checker-public.rule=Host(`k3s-status.alexfreidah.com`)",
   "traefik.http.routers.health-checker-public.entrypoints=web",
-  "traefik.http.routers.health-checker-public.service=health-checker",  # ← ADD THIS
+  "traefik.http.routers.health-checker-public.service=health-checker",
   "traefik.http.routers.health-checker-public.middlewares=k3s-status-sec@file",
   "traefik.http.services.health-checker.loadbalancer.server.port=8080",
 ]

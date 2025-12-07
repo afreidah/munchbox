@@ -34,6 +34,12 @@ job "cloudflared-tunnel" {
     value     = "ingress"
   }
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "="
+    value     = "stabler.munchbox.cc"
+  }
+
   # ---------------------------------------------------------------------------
   # Task Group: cloudflared-tunnel
   # ---------------------------------------------------------------------------
@@ -120,22 +126,22 @@ metrics: 0.0.0.0:2000
 
 ingress:
   - hostname: "alexfreidah.com"
-    service: "http://127.0.0.1:80"
+    service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: alexfreidah.com
   
   - hostname: "www.alexfreidah.com"
-    service: "http://127.0.0.1:80"
+    service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: www.alexfreidah.com
   
   - hostname: "resume.alexfreidah.com"
-    service: "http://127.0.0.1:80"
+    service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: resume.alexfreidah.com
   
   - hostname: "k3s-status.alexfreidah.com"
-    service: "http://127.0.0.1:80"
+    service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: k3s-status.alexfreidah.com
   

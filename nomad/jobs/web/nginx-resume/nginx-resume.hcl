@@ -12,6 +12,8 @@ name  = "nginx-resume"
 type  = "service"
 image = "registry.munchbox.cc/alex-resume:latest"
 port  = 80
+node  = "nomad-client-02"
+host_network = true
 size  = "tiny"
 storage = "ephemeral"
 
