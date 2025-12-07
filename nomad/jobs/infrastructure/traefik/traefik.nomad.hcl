@@ -49,6 +49,12 @@ job "traefik" {
     value     = "ingress"
   }
 
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "="
+    value     = "stabler.munchbox.cc"
+  }
+
   # -------------------------------------------------------------------------
   # Task Group: traefik
   # -------------------------------------------------------------------------
