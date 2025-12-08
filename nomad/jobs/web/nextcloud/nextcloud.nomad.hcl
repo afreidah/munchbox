@@ -136,12 +136,15 @@ job "nextcloud" {
       env {
         POSTGRES_HOST        = "postgres-shared.service.consul"
         POSTGRES_DB          = "nextcloud"
-        REDIS_HOST           = "127.0.0.1"
+        REDIS_HOST           = "redis-shared.service.consul"
         REDIS_PORT           = "6379"
+        REDIS_HOST_PORT      = "6379"
+        REDIS_HOST_DB        = "0"
         TRUSTED_PROXIES      = "172.26.64.0/18"
         OVERWRITEPROTOCOL    = "https"
         OVERWRITEHOST        = "nextcloud.munchbox.cc"
         OVERWRITECLIURL      = "https://nextcloud.munchbox.cc"
+
       }
 
       # --- Dynamic Secrets from Vault ---
@@ -158,40 +161,13 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 2000
-        memory = 1300
+        cpu    = 2100
+        memory = 1600
       }
 
       # --- Termination ---
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
-    }
-
-    # -----------------------------------------------------------------------
-    # Sidecar Task: redis
-    # -----------------------------------------------------------------------
-
-    task "redis" {
-      driver = "docker"
-
-      lifecycle {
-        hook    = "prestart"
-        sidecar = true
-      }
-
-      config {
-        image = "redis:7-alpine"
-        args  = [
-          "redis-server",
-          "--maxmemory", "128mb",
-          "--maxmemory-policy", "allkeys-lru"
-        ]
-      }
-
-      resources {
-        cpu    = 100
-        memory = 128
-      }
     }
 
     # -----------------------------------------------------------------------
