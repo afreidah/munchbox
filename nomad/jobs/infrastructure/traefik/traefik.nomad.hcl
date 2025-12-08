@@ -294,6 +294,18 @@ EOH
 
 [http.middlewares]
 
+  # --- Authentik Forward Auth (domain-level SSO) ---
+  [http.middlewares.authentik.forwardAuth]
+    address              = "http://authentik.service.consul:9000/outpost.goauthentik.io/auth/traefik"
+    trustForwardHeader   = true
+    authResponseHeaders  = [
+      "X-authentik-username",
+      "X-authentik-groups",
+      "X-authentik-email",
+      "X-authentik-name",
+      "X-authentik-uid"
+    ]
+
   # --- HTTPS redirect ---
   [http.middlewares.redirect-https.redirectScheme]
     scheme    = "https"
