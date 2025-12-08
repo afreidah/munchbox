@@ -63,4 +63,9 @@ templates = [
 kill_timeout = "60s"
 
 # --- Service tags ---
-tags = ["monitoring", "prometheus", "metrics"]
+tags = [
+  "monitoring",
+  "prometheus",
+  "metrics",
+  "traefik.http.routers.prometheus.middlewares=authentik@file"
+]

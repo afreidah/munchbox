@@ -116,7 +116,15 @@ path "secret/data/deluge" {
   capabilities = ["read"]
 }
 
+path "secret/data/authentik" {
+  capabilities = ["read"]
+}
+
 path "secret/data/cloudflared" {
+  capabilities = ["read"]
+}
+
+path "secret/data/vaultwarden" {
   capabilities = ["read"]
 }
 
