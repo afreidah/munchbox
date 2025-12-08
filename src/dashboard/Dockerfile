@@ -1,37 +1,25 @@
 # -------------------------------------------------------------------------------
-# Munchbox Dash - Hugo Static Dashboard Site
+# Munchbox Dashboard - Static Site Container
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Multi-stage image for the Munchbox dashboard landing page. Uses a Hugo
-# extended image to compile the site into static assets during the build so
-# the runtime container only serves static files from Nginx for predictable
-# behavior in the Nomad cluster.
+# Multi-architecture build using Hugo on amd64 only. The static output is
+# platform-agnostic, so we build once and copy to both arch variants.
 # -------------------------------------------------------------------------------
 
-# -------------------------------------------------------------------------
-# HUGO BUILD STAGE
-# -------------------------------------------------------------------------
+# --- Build stage (amd64 only) ---
+FROM --platform=linux/amd64 klakegg/hugo:ext-alpine AS builder
 
-FROM klakegg/hugo:ext-alpine AS builder
 WORKDIR /src
-
-# --- Copy complete site into the build context so Hugo sees all content ---
 COPY . .
-
-# --- Build static site output under /src/public for Nginx to serve ---
 RUN hugo --minify
 
-# -------------------------------------------------------------------------
-# NGINX RUNTIME STAGE
-# -------------------------------------------------------------------------
-
+# --- Runtime stage (multi-arch) ---
 FROM nginx:alpine
-WORKDIR /usr/share/nginx/html
 
-# --- Replace default Nginx content with the Hugo build output ---
+WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
+
 COPY --from=builder /src/public ./
 
 EXPOSE 80
-

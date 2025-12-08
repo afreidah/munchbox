@@ -73,4 +73,3 @@ run: ## Run the dashboard container on port 8080
 clean: ## Remove the local dashboard image
 	@echo "Removing local image $(FULL_TAG)"
 	docker rmi $(FULL_TAG) || true
-
