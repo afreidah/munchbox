@@ -15,60 +15,28 @@ icon: other-icon
 
 services:
   # -------------------------------------------------------------------------
-  # DNS
+  # Identity & Security
   # -------------------------------------------------------------------------
-  - name: DNS
-    icon: fa-solid fa-network-wired
+  - name: Identity & Security
+    icon: fa-solid fa-shield-halved
     items:
-      - name: green.munchbox.cc
-        subtitle: PiHole/Unbound DNS server 1
-        url: http://green.munchbox/admin/login
-        tag: infra
-        icon: pi-hole-unbound.svg
+      - name: Authentik
+        subtitle: SSO and identity provider
+        url: https://auth.munchbox.cc
+        tag: security
+        icon: authentik.png
 
-      - name: logan.munchbox.cc
-        subtitle: PiHole/Unbound DNS server 2
-        url: http://logan.munchbox/admin/login
-        tag: infra
-        icon: pi-hole-unbound.svg
-
-      - name: Cloudflare
-        subtitle: CDN
-        url: https://cloudflare.com
-        tag: cdn
-        icon: cloudflare.svg
+      - name: Vaultwarden
+        subtitle: Password manager
+        url: https://vaultwarden.munchbox.cc
+        tag: security
+        icon: vaultwarden.svg
 
   # -------------------------------------------------------------------------
-  # MONITORING
+  # Infrastructure
   # -------------------------------------------------------------------------
-
-  - name: Monitoring/Alerting
-    icon: fa-solid fa-chart-line
-    items:
-      - name: Grafana
-        subtitle: Dashboards and metrics
-        url: https://grafana.munchbox.cc
-        tag: monitoring
-        icon: grafana.png
-
-      - name: Prometheus
-        subtitle: Time series metrics
-        url: https://prometheus.munchbox.cc
-        tag: metrics
-        icon: prometheus.png
-
-      - name: Alertmanager
-        subtitle: Alert routing and silences
-        url: https://alertmanager.munchbox.cc
-        tag: alerts
-        icon: alertmanager.png
-
-  # -------------------------------------------------------------------------
-  # ORCHESTRATION/VIRTUALIZATION
-  # -------------------------------------------------------------------------
-
-  - name: Orchestration/Virtualization
-    icon: fa-solid fa-network-wired
+  - name: Infrastructure
+    icon: fa-solid fa-server
     items:
       - name: Proxmox
         subtitle: Virtualization cluster
@@ -77,40 +45,93 @@ services:
         icon: proxmox.png
 
       - name: Nomad
-        subtitle: Cluster orchestration
+        subtitle: Workload orchestration
         url: https://nomad.munchbox.cc
         tag: orchestration
         icon: nomad.png
 
       - name: Consul
-        subtitle: Service mesh and key value store
+        subtitle: Service discovery and mesh
         url: https://consul.munchbox.cc
         tag: infra
         icon: consul.png
 
-      - name: Temporal UI
+      - name: Traefik
+        subtitle: Reverse proxy and load balancer
+        url: https://traefik.munchbox.cc
+        tag: infra
+        icon: traefik.png
+
+      - name: Cloudflare
+        subtitle: CDN, DNS, and tunnels
+        url: https://dash.cloudflare.com
+        tag: external
+        icon: cloudflare.svg
+
+  # -------------------------------------------------------------------------
+  # Monitoring
+  # -------------------------------------------------------------------------
+  - name: Monitoring
+    icon: fa-solid fa-chart-line
+    items:
+      - name: Grafana
+        subtitle: Dashboards and visualization
+        url: https://grafana.munchbox.cc
+        tag: monitoring
+        icon: grafana.png
+
+      - name: Prometheus
+        subtitle: Metrics collection
+        url: https://prometheus.munchbox.cc
+        tag: metrics
+        icon: prometheus.png
+
+      - name: Alertmanager
+        subtitle: Alert routing
+        url: https://alertmanager.munchbox.cc
+        tag: alerts
+        icon: alertmanager.png
+
+  # -------------------------------------------------------------------------
+  # Development
+  # -------------------------------------------------------------------------
+  - name: Development
+    icon: fa-solid fa-code
+    items:
+      - name: Temporal
         subtitle: Workflow orchestration
         url: https://temporal.munchbox.cc
         tag: workflows
         icon: temporal-ui.png
 
-      - name: HashiCorp Waypoint
-        subtitle: Application deployment workflows
+      - name: Registry
+        subtitle: Docker container registry
+        url: https://registry-ui.munchbox.cc
+        tag: containers
+        icon: registry-ui.png
+
+      - name: Waypoint
+        subtitle: Application deployment
         url: https://waypoint.munchbox.cc
         tag: deploy
         icon: waypoint.png
 
-      - name: Registry
-        subtitle: Local Docker Registry
-        url: https://registry-ui.munchbox.cc
-        tag: deploy
-        icon: registry-ui.png
+  # -------------------------------------------------------------------------
+  # Cloud Apps
+  # -------------------------------------------------------------------------
+  - name: Cloud Apps
+    icon: fa-solid fa-cloud
+    items:
+      - name: Nextcloud
+        subtitle: Files, calendar, contacts
+        url: https://nextcloud.munchbox.cc
+        tag: cloud
+        icon: nextcloud.png
 
   # -------------------------------------------------------------------------
-  # MEDIA AND TORRENTING
+  # Media
   # -------------------------------------------------------------------------
-
-  - name: Media and Downloads
+  - name: Media
     icon: fa-solid fa-film
     items:
       - name: Emby
@@ -119,62 +140,74 @@ services:
         tag: media
         icon: emby.png
 
+      - name: Sonarr
+        subtitle: TV management
+        url: https://sonarr.munchbox.cc
+        tag: media
+        icon: sonarr.svg
+
+      - name: Radarr
+        subtitle: Movie management
+        url: https://radarr.munchbox.cc
+        tag: media
+        icon: radarr.svg
+
+      - name: Lidarr
+        subtitle: Music management
+        url: https://lidarr.munchbox.cc
+        tag: media
+        icon: lidarr.svg
+
+      - name: Prowlarr
+        subtitle: Indexer management
+        url: https://prowlarr.munchbox.cc
+        tag: media
+        icon: prowlarr.svg
+
       - name: Deluge
         subtitle: Torrent client
         url: https://deluge.munchbox.cc
         tag: download
         icon: deluge.png
 
-      - name: Sonarr
-        subtitle: TV bittorent/usenet
-        url: https://sonarr.munchbox.cc
-        tag: media
-        icon: sonarr.svg
-
-      - name: Radarr
-        subtitle: Movie bittorent/usenet
-        url: https://radarr.munchbox.cc
-        tag: media
-        icon: radarr.svg
-
-      - name: Lidarr
-        subtitle: Music bittorent/usenet
-        url: https://lidarr.munchbox.cc
-        tag: media
-        icon: lidarr.svg
-
-      - name: Prowlarr
-        subtitle: Index Manager bittorent/usenet
-        url: https://prowlarr.munchbox.cc
-        tag: media
-        icon: prowlarr.svg
-
       - name: Ersatz
-        subtitle: Alternate or backup media
+        subtitle: Backup media
         url: https://ersatz.munchbox.cc
         tag: media
         icon: ersatz.png
 
   # -------------------------------------------------------------------------
-  # DEV
+  # DNS
   # -------------------------------------------------------------------------
-
-  # -------------------------------------------------------------------------
-  # WEB
-  # -------------------------------------------------------------------------
-
-  - name: Web
+  - name: DNS
     icon: fa-solid fa-globe
     items:
-      - name: Resume Site
-        subtitle: Personal resume
+      - name: Green
+        subtitle: Pi-hole DNS server 1
+        url: http://green.munchbox/admin
+        tag: dns
+        icon: pi-hole-unbound.svg
+
+      - name: Logan
+        subtitle: Pi-hole DNS server 2
+        url: http://logan.munchbox/admin
+        tag: dns
+        icon: pi-hole-unbound.svg
+
+  # -------------------------------------------------------------------------
+  # Public Sites
+  # -------------------------------------------------------------------------
+  - name: Public Sites
+    icon: fa-solid fa-arrow-up-right-from-square
+    items:
+      - name: Resume
+        subtitle: alexfreidah.com
         url: https://resume.alexfreidah.com
-        tag: personal
+        tag: public
         icon: resume-site.png
 
-      - name: k3s Health Checker
-        subtitle: k3s cluster status
+      - name: k3s Status
+        subtitle: Cluster health checker
         url: https://k3s-status.alexfreidah.com
-        tag: web
+        tag: public
         icon: k3s-health-checker.svg
-
