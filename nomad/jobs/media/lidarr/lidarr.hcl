@@ -39,5 +39,6 @@ tags = [
   "lidarr",
   "media",
   "arr",
-  "music"
+  "music",
+  "traefik.http.routers.lidarr.middlewares=authentik@file"
 ]

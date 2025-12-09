@@ -36,8 +36,7 @@ volumes = [
   "/var/log/journal:/var/log/journal:ro",
   "/run/log/journal:/run/log/journal:ro",
   "/etc/machine-id:/etc/machine-id:ro",
-  "/opt/nomad/alloc:/opt/nomad/alloc:ro",
-  "/opt/nomad/data/alloc:/opt/nomad/data/alloc:ro"
+  "/var/lib/nomad/alloc:/var/lib/nomad/alloc:ro"
 ]
 
 # --- Configuration templates ---

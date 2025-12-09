@@ -70,7 +70,16 @@
           service {
             name = "proxmox-api"
             port = 8006
-            tags = ["proxmox", "management", "api"]
+
+            tags = [
+              "traefik.enable=true",
+              "traefik.http.routers.proxmox.rule=Host(`proxmox.munchbox.cc`)",
+              "traefik.http.routers.proxmox.entrypoints=websecure",
+              "traefik.http.routers.proxmox.tls=true",
+              "traefik.http.routers.proxmox.middlewares=dashboard-allowlan@file",
+              "traefik.http.services.proxmox.loadbalancer.server.scheme=https",
+              "traefik.http.services.proxmox.loadbalancer.serversTransport=insecure@file"
+            ]
             
             check {
               name     = "Proxmox API HTTPS"

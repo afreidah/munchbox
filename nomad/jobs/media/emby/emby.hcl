@@ -14,8 +14,8 @@ port  = 8096
 static_port = 8096
 host_network = true
 node = "nomad-client-01"
-cpu    = 2000
-memory = 4096
+cpu    = 900
+memory = 3276
 
 # --- Additional ports ---
 extra_ports = [
@@ -59,7 +59,11 @@ env = {
 }
 
 # --- Service tags ---
-tags = ["media", "emby", "streaming"]
+tags = [
+  "media",
+  "emby",
+  "streaming"
+]
 
 # --- Termination ---
 kill_timeout = "30s"

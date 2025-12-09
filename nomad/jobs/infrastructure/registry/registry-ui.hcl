@@ -39,7 +39,8 @@ tags = [
   "registry-ui",
   "docker",
   "ui",
-  "infrastructure"
+  "infrastructure",
+  "traefik.http.routers.registry-ui.middlewares=authentik@file"
 ]
 
 # --- Termination ---

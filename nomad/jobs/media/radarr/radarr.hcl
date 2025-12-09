@@ -37,5 +37,6 @@ env = {
 tags = [
   "radarr",
   "media",
-  "arr"
+  "arr",
+  "traefik.http.routers.radarr.middlewares=authentik@file"
 ]

@@ -27,5 +27,6 @@ tags = [
   "web",
   "dashboard",
   "nginx",
-  "hugo"
+  "hugo",
+  "traefik.http.routers.dashboard.middlewares=authentik@file"
 ]

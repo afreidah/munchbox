@@ -104,7 +104,9 @@ scrape_configs:
     metrics_path: "/v1/sys/metrics"
     params:
       format: ["prometheus"]
-    scheme: "http"
+    scheme: "https"
+    tls_config:
+      insecure_skip_verify: true
     bearer_token_file: "/secrets/vault_token"
     consul_sd_configs:
       - server: "192.168.68.61:8500"
@@ -134,16 +136,16 @@ scrape_configs:
         services: ["node-exporter"]
         datacenter: "munchbox"
     relabel_configs:
-      # Use the service address:port directly from Consul
+      # First, set address from node address (fallback)
+      - source_labels: ["__meta_consul_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      # Override with service address if it exists (non-empty)
       - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ':'
-        regex: '(.+)'
+        separator: ":"
+        regex: "([^:]+):(.*)"
+        replacement: "$1:$2"
         target_label: "__address__"
-      # Fallback to node address if service address is empty
-      - source_labels: ["__meta_consul_service_address"]
-        regex: ''
-        target_label: "__address__"
-        replacement: '${__meta_consul_address}:${__meta_consul_service_port}'
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
       - source_labels: ["__meta_consul_dc"]

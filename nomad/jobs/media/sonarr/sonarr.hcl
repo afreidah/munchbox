@@ -39,5 +39,6 @@ env = {
 tags = [
   "sonarr",
   "media",
-  "arr"
+  "arr",
+  "traefik.http.routers.sonarr.middlewares=authentik@file"
 ]

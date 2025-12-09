@@ -116,7 +116,7 @@ job "authentik" {
           "traefik.http.routers.authentik.rule=Host(`auth.munchbox.cc`)",
           "traefik.http.routers.authentik.entrypoints=websecure",
           "traefik.http.routers.authentik.tls=true",
-          "traefik.http.routers.authentik.middlewares=dashboard-allowlan@file",
+          "traefik.http.routers.authentik.tls.certresolver=letsencrypt"
         ]
 
         check {
@@ -146,6 +146,8 @@ AUTHENTIK_POSTGRESQL__PORT={{ with secret "secret/data/authentik" }}{{ .Data.dat
 AUTHENTIK_POSTGRESQL__NAME={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_db }}{{ end }}
 AUTHENTIK_POSTGRESQL__USER={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_user }}{{ end }}
 AUTHENTIK_POSTGRESQL__PASSWORD={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_password }}{{ end }}
+AUTHENTIK_HOST=https://auth.munchbox.cc
+AUTHENTIK_HOST_BROWSER=https://auth.munchbox.cc
 EOH
         destination = "secrets/env"
         env         = true

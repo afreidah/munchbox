@@ -128,6 +128,10 @@ path "secret/data/vaultwarden" {
   capabilities = ["read"]
 }
 
+path "secret/data/authentik/*" {
+  capabilities = ["read"]
+}
+
 path "sys/metrics" {
   capabilities = ["read"]
 }

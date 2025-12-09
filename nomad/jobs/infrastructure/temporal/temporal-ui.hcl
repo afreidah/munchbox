@@ -41,7 +41,8 @@ health_path = "/"
 tags = [
   "temporal",
   "ui",
-  "monitoring"
+  "monitoring",
+  "traefik.http.routers.temporal-ui.middlewares=authentik@file"
 ]
 
 # --- DNS configuration ---

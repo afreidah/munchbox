@@ -113,14 +113,19 @@ job "temporal-backup-worker" {
         image_pull_timeout = "10m"
         args               = ["worker"]
         network_mode       = "host"
-        volumes            = ["/mnt/gdrive:/mnt/gdrive"]
+        volumes            = [
+          "/mnt/gdrive:/mnt/gdrive",
+          "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
+          "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/vault-ca.pem:ro"
+        ]
         dns_servers        = ["192.168.68.62", "192.168.68.64"]
       }
 
       env {
         TEMPORAL_ADDRESS = "192.168.68.61:7233"
-        NOMAD_ADDR = "https://nomad.service.consul:4646"
-        NOMAD_SKIP_VERIFY = "true"
+        NOMAD_ADDR       = "https://nomad.service.consul:4646"
+        NOMAD_CACERT     = "/etc/ssl/certs/nomad-ca.pem"
+        VAULT_CACERT     = "/etc/ssl/certs/vault-ca.pem"
       }
 
       template {
@@ -130,7 +135,6 @@ NOMAD_TOKEN={{ .Data.data.nomad_token }}
 CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
 VAULT_ADDR=https://vault.service.consul:8200
 VAULT_TOKEN={{ .Data.data.vault_token }}
-VAULT_SKIP_VERIFY=true
 {{ end }}
 EOH
 
