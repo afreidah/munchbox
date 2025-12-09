@@ -49,6 +49,8 @@ scrape_configs:
     scheme: "https"
     tls_config:
       insecure_skip_verify: true
+    authorization:
+      credentials_file: "/etc/prometheus/secrets/nomad_token"
     params:
       format: ['prometheus']
     consul_sd_configs:
@@ -77,6 +79,8 @@ scrape_configs:
     scheme: "https"
     tls_config:
       insecure_skip_verify: true
+    authorization:
+      credentials_file: "/etc/prometheus/secrets/nomad_token"
     params:
       format: ['prometheus']
     consul_sd_configs:

@@ -125,6 +125,9 @@ job "traefik" {
 CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
 CF_DNS_API_TOKEN={{ .Data.data.cloudflare_api_token }}
 {{- end }}
+{{ with secret "secret/data/nomad-ui" -}}
+NOMAD_UI_TOKEN={{ .Data.data.token }}
+{{- end }}
 EOH
       }
 
@@ -249,6 +252,15 @@ EOH
         main = "munchbox.cc"
         sans = ["*.munchbox.cc"]
 
+  # --- Nomad UI (HTTPS, LAN-only) ---
+  [http.routers.nomad]
+    rule        = "Host(`nomad.munchbox.cc`)"
+    entryPoints = ["websecure"]
+    service     = "nomad-ui"
+    middlewares = ["authentik", "dashboard-allowlan", "nomad-token"]
+    [http.routers.nomad.tls]
+      certResolver = "letsencrypt"
+
   # --- Traefik Dashboard (HTTPS, LAN-only) ---
   [http.routers.traefik-dashboard]
     rule        = "Host(`traefik.munchbox.cc`)"
@@ -362,6 +374,13 @@ EOH
     customFrameOptionsValue = "SAMEORIGIN"
     referrerPolicy          = "strict-origin-when-cross-origin"
 
+  # --- Nomad UI token injection ---
+  [http.middlewares.nomad-token.headers]
+    [http.middlewares.nomad-token.headers.customRequestHeaders]
+{{ with secret "secret/data/nomad-ui" -}}
+      X-Nomad-Token = "{{ .Data.data.token }}"
+{{- end }}
+
 # -------------------------------------------------------------------------
 # HTTP Services (non-Consul backends)
 # -------------------------------------------------------------------------
@@ -372,6 +391,12 @@ EOH
   [http.services.consul-ui.loadBalancer]
     [[http.services.consul-ui.loadBalancer.servers]]
       url = "http://127.0.0.1:8500"
+
+  # --- Nomad UI ---
+  [http.services.nomad-ui.loadBalancer]
+    serversTransport = "insecure"
+    [[http.services.nomad-ui.loadBalancer.servers]]
+      url = "https://127.0.0.1:4646"
 
 # -------------------------------------------------------------------------
 # Server Transports

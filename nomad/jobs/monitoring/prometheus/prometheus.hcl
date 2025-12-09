@@ -57,6 +57,7 @@ templates = [
   { src = "alert_rules.yml", dest = "/etc/prometheus/config/alert_rules.yml", vault = false, change_mode = "signal" },
   { src = "consul_token.tpl", dest = "/etc/prometheus/secrets/consul_token", vault = true },
   { src = "vault_token.tpl", dest = "/etc/prometheus/secrets/vault_token", vault = true },
+  { src = "nomad_token.tpl", dest = "/etc/prometheus/secrets/nomad_token", vault = true },
 ]
 
 # --- Termination ---

@@ -47,7 +47,7 @@ nomad_servers:
 nomad_consul_address: "127.0.0.1:8500"
 nomad_consul_datacenter: "munchbox"
 
-nomad_acl_enabled: false
+nomad_acl_enabled: true
 
 nomad_tls_http: false
 nomad_tls_rpc: false
