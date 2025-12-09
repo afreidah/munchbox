@@ -89,6 +89,14 @@ path "secret/data/prometheus" {
   capabilities = ["read"]
 }
 
+path "secret/data/prometheus-nomad" {
+  capabilities = ["read"]
+}
+
+path "secret/data/nomad-ui" {
+  capabilities = ["read"]
+}
+
 path "secret/data/hashiuisecret" {
   capabilities = ["read"]
 }
