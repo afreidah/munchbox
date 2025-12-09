@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # HTTPS-first ingress controller running as system job on ingress nodes.
-# Auto-discovers services via Consul Catalog, fetches TLS certs from Vault PKI,
-# and exposes dashboard on :8081 (LAN-only).
+# Auto-discovers services via Consul Catalog, fetches TLS certs from Let's Encrypt
+# via Cloudflare DNS challenge, and exposes dashboard on :8081 (LAN-only).
 # -------------------------------------------------------------------------------
 
 job "traefik" {
@@ -112,31 +112,18 @@ job "traefik" {
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
-          "secrets/tls:/etc/traefik/tls:ro"
+          "/mnt/gdrive/munchbox-data/traefik/acme.json:/etc/traefik/acme.json"
         ]
       }
 
-      # --- Consul Token from Vault ---
+      # --- Consul Token and Cloudflare Token from Vault ---
       template {
-        destination = "secrets/consul.env"
+        destination = "secrets/traefik.env"
         env         = true
         data        = <<EOH
 {{ with secret "secret/data/traefik" -}}
 CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
-{{- end }}
-EOH
-      }
-
-      # --- TLS Certificate and Key from Vault PKI (combined PEM) ---
-      template {
-        destination = "secrets/tls/munchbox.pem"
-        change_mode = "restart"
-        perms       = "0600"
-        data        = <<EOH
-{{ with pkiCert "pki_int/issue/traefik" "common_name=*.munchbox.cc" "ttl=720h" -}}
-{{ .Cert }}
-{{ .CA }}
-{{ .Key }}
+CF_DNS_API_TOKEN={{ .Data.data.cloudflare_api_token }}
 {{- end }}
 EOH
       }
@@ -207,6 +194,17 @@ EOH
 
 [log]
   level = "INFO"
+
+# -------------------------------------------------------------------------
+# ACME (Let's Encrypt) Configuration
+# -------------------------------------------------------------------------
+
+[certificatesResolvers.letsencrypt.acme]
+  email = "alex@alexfreidah.com"
+  storage = "/etc/traefik/acme.json"
+  [certificatesResolvers.letsencrypt.acme.dnsChallenge]
+    provider = "cloudflare"
+    resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
 EOH
       }
 
@@ -219,29 +217,11 @@ EOH
 # Traefik Dynamic Configuration
 # -------------------------------------------------------------------------
 
-# --- TLS Certificates (from Vault PKI - combined PEM) ---
-[[tls.certificates]]
-  certFile = "/etc/traefik/tls/munchbox.pem"
-  keyFile  = "/etc/traefik/tls/munchbox.pem"
-
-[tls.stores]
-  [tls.stores.default.defaultCertificate]
-    certFile = "/etc/traefik/tls/munchbox.pem"
-    keyFile  = "/etc/traefik/tls/munchbox.pem"
-
+# --- TLS Options ---
 [tls.options]
   [tls.options.default]
     minVersion = "VersionTLS12"
-    sniStrict  = true
-    curvePreferences = ["CurveP521", "CurveP384"]
-    cipherSuites = [
-      "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-      "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-      "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-      "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-      "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-      "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
-    ]
+    sniStrict  = false
 
 # -------------------------------------------------------------------------
 # HTTP Routers
@@ -262,23 +242,28 @@ EOH
     rule        = "Host(`consul.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "consul-ui"
-    middlewares = ["dashboard-allowlan"]
+    middlewares = ["authentik", "dashboard-allowlan"]
     [http.routers.consul.tls]
+      certResolver = "letsencrypt"
+      [[http.routers.consul.tls.domains]]
+        main = "munchbox.cc"
+        sans = ["*.munchbox.cc"]
 
   # --- Traefik Dashboard (HTTPS, LAN-only) ---
   [http.routers.traefik-dashboard]
     rule        = "Host(`traefik.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "api@internal"
-    middlewares = ["dashboard-allowlan", "dashboard-auth", "dashboard-redirect"]
+    middlewares = ["authentik", "dashboard-allowlan", "dashboard-redirect"]
     [http.routers.traefik-dashboard.tls]
+      certResolver = "letsencrypt"
 
   # --- Traefik Dashboard fallback on :8081 ---
   [http.routers.traefik-fallback]
     rule        = "PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
     entryPoints = ["traefik"]
     service     = "api@internal"
-    middlewares = ["dashboard-allowlan", "dashboard-auth"]
+    middlewares = ["authentik", "dashboard-allowlan"]
     priority    = 2
 
   # --- Health check endpoint (no auth) ---
@@ -287,6 +272,7 @@ EOH
     entryPoints = ["websecure"]
     service     = "ping@internal"
     [http.routers.ping.tls]
+      certResolver = "letsencrypt"
 
 # -------------------------------------------------------------------------
 # HTTP Middlewares
@@ -366,6 +352,16 @@ EOH
     [http.middlewares.k3s-status-sec.headers.customResponseHeaders]
       Cache-Control = "no-store, no-cache, must-revalidate"
 
+  # --- Default security headers (for services without custom CSP) ---
+  [http.middlewares.default-sec.headers]
+    stsSeconds              = 31536000
+    stsIncludeSubdomains    = true
+    forceSTSHeader          = true
+    contentTypeNosniff      = true
+    browserXssFilter        = true
+    customFrameOptionsValue = "SAMEORIGIN"
+    referrerPolicy          = "strict-origin-when-cross-origin"
+
 # -------------------------------------------------------------------------
 # HTTP Services (non-Consul backends)
 # -------------------------------------------------------------------------
@@ -376,6 +372,14 @@ EOH
   [http.services.consul-ui.loadBalancer]
     [[http.services.consul-ui.loadBalancer.servers]]
       url = "http://127.0.0.1:8500"
+
+# -------------------------------------------------------------------------
+# Server Transports
+# -------------------------------------------------------------------------
+
+[http.serversTransports]
+  [http.serversTransports.insecure]
+    insecureSkipVerify = true
 EOH
       }
 

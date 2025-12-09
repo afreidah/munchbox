@@ -87,7 +87,7 @@ job "nextcloud" {
         "traefik.http.routers.nextcloud.rule=Host(`nextcloud.munchbox.cc`)",
         "traefik.http.routers.nextcloud.entrypoints=websecure",
         "traefik.http.routers.nextcloud.tls=true",
-        "traefik.http.routers.nextcloud.middlewares=dashboard-allowlan@file",
+        "traefik.http.routers.nextcloud.middlewares=authentik@file,dashboard-allowlan@file",
         "traefik.http.services.nextcloud.loadbalancer.server.port=18081",
         "cloud",
         "files",
@@ -161,8 +161,8 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 2100
-        memory = 1600
+        cpu    = 2500
+        memory = 1800
       }
 
       # --- Termination ---

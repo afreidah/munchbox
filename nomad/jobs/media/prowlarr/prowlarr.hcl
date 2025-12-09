@@ -35,5 +35,6 @@ env = {
 tags = [
   "prowlarr",
   "media",
-  "arr"
+  "arr",
+  "traefik.http.routers.prowlarr.middlewares=authentik@file"
 ]

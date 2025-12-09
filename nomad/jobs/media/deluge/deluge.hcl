@@ -39,6 +39,7 @@ tags = [
   "deluge",
   "torrent",
   "media",
+  "traefik.http.routers.deluge.middlewares=authentik@file"
 ]
 
 # --- Termination ---

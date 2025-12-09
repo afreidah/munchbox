@@ -42,4 +42,8 @@ templates = [
 ]
 
 # --- Service tags ---
-tags = ["monitoring", "grafana"]
+tags = [
+  "monitoring",
+  "grafana",
+  "traefik.http.routers.grafana.middlewares=authentik@file"
+]

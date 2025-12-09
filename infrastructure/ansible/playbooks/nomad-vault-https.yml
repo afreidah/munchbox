@@ -1,0 +1,63 @@
+---
+# -------------------------------------------------------------------------------
+# Update Nomad to use HTTPS for Vault
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Updates Nomad configuration to connect to Vault over HTTPS.
+# -------------------------------------------------------------------------------
+
+- name: Update Nomad Vault configuration to use HTTPS
+  hosts: nomad_servers:nomad_clients
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Backup current Nomad config
+      ansible.builtin.copy:
+        src: /etc/nomad.d/nomad.hcl
+        dest: /etc/nomad.d/nomad.hcl.bak
+        remote_src: true
+        mode: '0640'
+
+    - name: Update Vault address to HTTPS
+      ansible.builtin.replace:
+        path: /etc/nomad.d/nomad.hcl
+        regexp: 'address\s*=\s*"http://([^"]+):8200"'
+        replace: 'address = "https://\1:8200"'
+
+    - name: Add CA cert config to vault block
+      ansible.builtin.replace:
+        path: /etc/nomad.d/nomad.hcl
+        regexp: '(vault\s*\{\s*\n\s*enabled\s*=\s*true\s*\n\s*address\s*=\s*"https://[^"]+")(\s*\n)'
+        replace: '\1\n  ca_file = "/opt/nomad/tls/vault-intermediate-ca.pem"\2'
+      when: "'ca_file' not in lookup('file', '/etc/nomad.d/nomad.hcl')"
+      ignore_errors: true
+
+    - name: Alternative - use sed to add ca_file after vault address line
+      ansible.builtin.shell: |
+        if ! grep -q 'ca_file.*vault-intermediate-ca' /etc/nomad.d/nomad.hcl; then
+          sed -i '/vault {/,/^}/ s|address = "https://[^"]*"|&\n  ca_file = "/opt/nomad/tls/vault-intermediate-ca.pem"|' /etc/nomad.d/nomad.hcl
+        fi
+      args:
+        executable: /bin/bash
+
+    - name: Restart Nomad service
+      ansible.builtin.systemd:
+        name: nomad
+        state: restarted
+
+    - name: Wait for Nomad to be responsive
+      ansible.builtin.uri:
+        url: "https://{{ ansible_default_ipv4.address }}:4646/v1/status/leader"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      register: nomad_health
+      retries: 30
+      delay: 2
+      until: nomad_health.status == 200
+
+    - name: Display Nomad status
+      ansible.builtin.debug:
+        msg: "Nomad on {{ inventory_hostname }} is responding (leader: {{ nomad_health.json }})"

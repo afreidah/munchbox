@@ -107,6 +107,7 @@ job "vaultwarden" {
           "traefik.http.routers.vaultwarden-ws.tls=true",
           "traefik.http.routers.vaultwarden-ws.middlewares=dashboard-allowlan@file",
           "traefik.http.routers.vaultwarden-ws.service=vaultwarden-ws",
+          "traefik.http.routers.vaultwarden.middlewares=authentik@file"
         ]
 
         check {
@@ -124,7 +125,7 @@ job "vaultwarden" {
           ADMIN_TOKEN={{ .Data.data.admin_token }}
           {{ end }}
           DOMAIN=https://vaultwarden.munchbox.cc
-          SIGNUPS_ALLOWED=true
+          SIGNUPS_ALLOWED=false
           INVITATIONS_ALLOWED=true
           WEBSOCKET_ENABLED=true
         EOH

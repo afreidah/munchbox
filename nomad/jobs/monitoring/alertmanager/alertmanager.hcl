@@ -48,4 +48,9 @@ templates = [
 ]
 
 # --- Service tags ---
-tags = ["monitoring", "alertmanager", "alerts"]
+tags = [
+  "monitoring",
+  "alertmanager",
+  "alerts",
+  "traefik.http.routers.alertmanager.middlewares=authentik@file"
+]

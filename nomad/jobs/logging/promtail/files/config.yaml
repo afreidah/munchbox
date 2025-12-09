@@ -2,153 +2,152 @@
 server:
   http_listen_port: 9080
   log_level: info
+  log_format: json
 
 clients:
   - url: http://loki.service.consul:3100/loki/api/v1/push
 
 scrape_configs:
   # -----------------------------------------------------------------
-  # Systemd journal
+  # Systemd journal (persistent logs)
   # -----------------------------------------------------------------
   - job_name: systemd-journal
     journal:
       path: /var/log/journal
       max_age: 12h
       labels:
-        job: systemd-journal
-        node: default
+        job: systemd
+        source: journal
 
     relabel_configs:
       - source_labels: ['__journal__systemd_unit']
         target_label: 'unit'
       - source_labels: ['__journal__hostname']
-        target_label: 'hostname'
+        target_label: 'node'
       - source_labels: ['__journal__syslog_identifier']
         regex: '(.+)'
         target_label: 'service'
       - source_labels: ['__journal__priority']
         target_label: 'priority'
+      - source_labels: ['__journal__transport']
+        target_label: 'transport'
 
     pipeline_stages:
       - template:
           source: level
-          template: '{{- $p := .Labels.priority -}}{{- if eq $p "0" -}}emerg{{- else if eq $p "1" -}}alert{{- else if eq $p "2" -}}crit{{- else if eq $p "3" -}}error{{- else if eq $p "4" -}}warning{{- else if eq $p "5" -}}notice{{- else if eq $p "6" -}}info{{- else if eq $p "7" -}}debug{{- else -}}unknown{{- end -}}'
+          template: '{{ if eq .priority "0" }}emerg{{ else if eq .priority "1" }}alert{{ else if eq .priority "2" }}crit{{ else if eq .priority "3" }}error{{ else if eq .priority "4" }}warning{{ else if eq .priority "5" }}notice{{ else if eq .priority "6" }}info{{ else if eq .priority "7" }}debug{{ else }}unknown{{ end }}'
       - labels:
           level:
-      - json:
-          expressions:
-            msg: message
-            level: level
 
   # -----------------------------------------------------------------
-  # Systemd journal (volatile)
+  # Systemd journal (volatile logs - /run tmpfs)
   # -----------------------------------------------------------------
   - job_name: systemd-journal-volatile
     journal:
       path: /run/log/journal
       max_age: 12h
       labels:
-        job: systemd-journal
-        node: default
+        job: systemd
+        source: journal-volatile
 
     relabel_configs:
       - source_labels: ['__journal__systemd_unit']
         target_label: 'unit'
       - source_labels: ['__journal__hostname']
-        target_label: 'hostname'
+        target_label: 'node'
       - source_labels: ['__journal__syslog_identifier']
         regex: '(.+)'
         target_label: 'service'
       - source_labels: ['__journal__priority']
         target_label: 'priority'
+      - source_labels: ['__journal__transport']
+        target_label: 'transport'
 
     pipeline_stages:
       - template:
           source: level
-          template: '{{- $p := .Labels.priority -}}{{- if eq $p "0" -}}emerg{{- else if eq $p "1" -}}alert{{- else if eq $p "2" -}}crit{{- else if eq $p "3" -}}error{{- else if eq $p "4" -}}warning{{- else if eq $p "5" -}}notice{{- else if eq $p "6" -}}info{{- else if eq $p "7" -}}debug{{- else -}}unknown{{- end -}}'
+          template: '{{ if eq .priority "0" }}emerg{{ else if eq .priority "1" }}alert{{ else if eq .priority "2" }}crit{{ else if eq .priority "3" }}error{{ else if eq .priority "4" }}warning{{ else if eq .priority "5" }}notice{{ else if eq .priority "6" }}info{{ else if eq .priority "7" }}debug{{ else }}unknown{{ end }}'
       - labels:
           level:
-      - json:
-          expressions:
-            msg: message
-            level: level
 
   # -----------------------------------------------------------------
-  # Nomad stdout logs - FIFO-safe pattern
+  # Nomad allocation logs (stdout)
   # -----------------------------------------------------------------
-  - job_name: nomad-stdout
+  - job_name: nomad-alloc-stdout
     static_configs:
       - targets: [localhost]
         labels:
-          job: nomad-alloc
-          node: default
+          job: nomad
+          source: alloc
           stream: stdout
-          __path__: /opt/nomad/alloc/*/alloc/logs/*.stdout.[0-9]*
-
-      - targets: [localhost]
-        labels:
-          job: nomad-alloc
-          node: default
-          stream: stdout
-          __path__: /opt/nomad/data/alloc/*/alloc/logs/*.stdout.[0-9]*
+          __path__: /var/lib/nomad/alloc/*/alloc/logs/*.stdout.[0-9]*
 
     pipeline_stages:
+      # Extract alloc_id and task_name from the file path
       - regex:
           source: filename
-          expression: '.*/alloc/(?P<alloc_id>[^/]+)/alloc/logs/(?P<task_name>[^.]+)\.stdout\.\d+'
+          expression: '.*/alloc/(?P<alloc_id>[a-f0-9-]+)/alloc/logs/(?P<task_name>[^.]+)\.stdout\.\d+'
       - labels:
           alloc_id:
           task_name:
+      # Use task_name as job_name (they typically match in munchbox)
+      - template:
+          source: job_name
+          template: '{{ .task_name }}'
+      - labels:
+          job_name:
+      # Try to parse JSON logs (many containers output JSON)
       - json:
           expressions:
             level: level
             msg: msg
             message: message
-      - match:
-          selector: '{job="nomad-alloc"}'
-          stages:
-            - drop:
-                expression: '^\s*$'
+      - labels:
+          level:
+      # Drop empty lines
+      - drop:
+          expression: '^\s*$'
 
   # -----------------------------------------------------------------
-  # Nomad stderr logs - FIFO-safe pattern
+  # Nomad allocation logs (stderr)
   # -----------------------------------------------------------------
-  - job_name: nomad-stderr
+  - job_name: nomad-alloc-stderr
     static_configs:
       - targets: [localhost]
         labels:
-          job: nomad-alloc
-          node: default
+          job: nomad
+          source: alloc
           stream: stderr
-          __path__: /opt/nomad/alloc/*/alloc/logs/*.stderr.[0-9]*
-
-      - targets: [localhost]
-        labels:
-          job: nomad-alloc
-          node: default
-          stream: stderr
-          __path__: /opt/nomad/data/alloc/*/alloc/logs/*.stderr.[0-9]*
+          __path__: /var/lib/nomad/alloc/*/alloc/logs/*.stderr.[0-9]*
 
     pipeline_stages:
+      # Extract alloc_id and task_name from the file path
       - regex:
           source: filename
-          expression: '.*/alloc/(?P<alloc_id>[^/]+)/alloc/logs/(?P<task_name>[^.]+)\.stderr\.\d+'
+          expression: '.*/alloc/(?P<alloc_id>[a-f0-9-]+)/alloc/logs/(?P<task_name>[^.]+)\.stderr\.\d+'
       - labels:
           alloc_id:
           task_name:
+      # Use task_name as job_name (they typically match in munchbox)
+      - template:
+          source: job_name
+          template: '{{ .task_name }}'
+      - labels:
+          job_name:
+      # Try to parse JSON logs
       - json:
           expressions:
             level: level
             msg: msg
             message: message
-      - match:
-          selector: '{job="nomad-alloc"}'
-          stages:
-            - drop:
-                expression: '^\s*$'
+      - labels:
+          level:
+      # Drop empty lines
+      - drop:
+          expression: '^\s*$'
 
 positions:
-  filename: /alloc/data/positions.yaml
+  filename: /tmp/positions.yaml
 
 limits_config:
   readline_rate_enabled: true
