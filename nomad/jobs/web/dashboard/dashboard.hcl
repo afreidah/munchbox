@@ -28,5 +28,9 @@ tags = [
   "dashboard",
   "nginx",
   "hugo",
-  "traefik.http.routers.dashboard.middlewares=authentik@file"
+  "traefik.http.routers.dashboard.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.dashboard-http.rule=Host(`dashboard.munchbox.cc`)",
+  "traefik.http.routers.dashboard-http.entrypoints=web",
+  "traefik.http.routers.dashboard-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]

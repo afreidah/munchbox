@@ -40,5 +40,9 @@ tags = [
   "media",
   "arr",
   "music",
-  "traefik.http.routers.lidarr.middlewares=authentik@file"
+  "traefik.http.routers.lidarr.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.lidarr-http.rule=Host(`lidarr.munchbox.cc`)",
+  "traefik.http.routers.lidarr-http.entrypoints=web",
+  "traefik.http.routers.lidarr-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]

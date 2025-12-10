@@ -13,7 +13,7 @@ type  = "service"
 image = "temporalio/auto-setup:1.25.0"
 port  = 7233
 static_port = 7233
-host_network = false
+host_network = true
 node = "stabler.munchbox.cc"
 size = "large"
 storage = "ephemeral"
@@ -23,14 +23,20 @@ env = {
   TZ                              = "UTC"
   DB                              = "postgres12_pgx"
   DB_PORT                         = "5432"
-  POSTGRES_USER                   = "temporal"
-  POSTGRES_PWD                    = "temporal"
   POSTGRES_SEEDS                  = "postgres-shared.service.consul"
   SKIP_DB_CREATE                  = "true"
   SKIP_SCHEMA_SETUP               = "true"
   SKIP_DEFAULT_NAMESPACE_CREATION = "true"
   BIND_ON_IP                      = "0.0.0.0"
 }
+
+# --- Vault integration ---
+vault = true
+
+# --- Templates (inject secrets from Vault) ---
+templates = [
+  { src = "temporal.env.tpl", dest = "/secrets/temporal.env", env = true, vault = true }
+]
 
 # --- Traefik integration ---
 traefik = false

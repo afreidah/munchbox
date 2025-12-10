@@ -11,20 +11,20 @@
 
 title: Munchbox Dashboard
 subtitle: Central access to Munchbox services
-icon: other-icon
+icon: munchbox
 
 services:
   # -------------------------------------------------------------------------
-  # Identity & Security
+  # Cloud Apps
   # -------------------------------------------------------------------------
-  - name: Identity & Security
-    icon: fa-solid fa-shield-halved
+  - name: Cloud Apps
+    icon: fa-solid fa-cloud
     items:
-      - name: Authentik
-        subtitle: SSO and identity provider
-        url: https://auth.munchbox.cc
-        tag: security
-        icon: authentik.png
+      - name: Nextcloud
+        subtitle: Files, calendar, contacts
+        url: https://nextcloud.munchbox.cc
+        tag: cloud
+        icon: nextcloud.png
 
       - name: Vaultwarden
         subtitle: Password manager
@@ -33,40 +33,22 @@ services:
         icon: vaultwarden.svg
 
   # -------------------------------------------------------------------------
-  # Infrastructure
+  # DNS
   # -------------------------------------------------------------------------
-  - name: Infrastructure
-    icon: fa-solid fa-server
+  - name: DNS
+    icon: fa-solid fa-globe
     items:
-      - name: Proxmox
-        subtitle: Virtualization cluster
-        url: https://proxmox.munchbox.cc
-        tag: virtualization
-        icon: proxmox.png
+      - name: Green
+        subtitle: Pi-hole DNS server 1
+        url: http://green.munchbox/admin
+        tag: dns
+        icon: pi-hole-unbound.svg
 
-      - name: Nomad
-        subtitle: Workload orchestration
-        url: https://nomad.munchbox.cc
-        tag: orchestration
-        icon: nomad.png
-
-      - name: Consul
-        subtitle: Service discovery and mesh
-        url: https://consul.munchbox.cc
-        tag: infra
-        icon: consul.png
-
-      - name: Traefik
-        subtitle: Reverse proxy and load balancer
-        url: https://traefik.munchbox.cc
-        tag: infra
-        icon: traefik.png
-
-      - name: Cloudflare
-        subtitle: CDN, DNS, and tunnels
-        url: https://dash.cloudflare.com
-        tag: external
-        icon: cloudflare.svg
+      - name: Logan
+        subtitle: Pi-hole DNS server 2
+        url: http://logan.munchbox/admin
+        tag: dns
+        icon: pi-hole-unbound.svg
 
   # -------------------------------------------------------------------------
   # Monitoring
@@ -91,42 +73,6 @@ services:
         url: https://alertmanager.munchbox.cc
         tag: alerts
         icon: alertmanager.png
-
-  # -------------------------------------------------------------------------
-  # Development
-  # -------------------------------------------------------------------------
-  - name: Development
-    icon: fa-solid fa-code
-    items:
-      - name: Temporal
-        subtitle: Workflow orchestration
-        url: https://temporal.munchbox.cc
-        tag: workflows
-        icon: temporal-ui.png
-
-      - name: Registry
-        subtitle: Docker container registry
-        url: https://registry-ui.munchbox.cc
-        tag: containers
-        icon: registry-ui.png
-
-      - name: Waypoint
-        subtitle: Application deployment
-        url: https://waypoint.munchbox.cc
-        tag: deploy
-        icon: waypoint.png
-
-  # -------------------------------------------------------------------------
-  # Cloud Apps
-  # -------------------------------------------------------------------------
-  - name: Cloud Apps
-    icon: fa-solid fa-cloud
-    items:
-      - name: Nextcloud
-        subtitle: Files, calendar, contacts
-        url: https://nextcloud.munchbox.cc
-        tag: cloud
-        icon: nextcloud.png
 
   # -------------------------------------------------------------------------
   # Media
@@ -177,22 +123,58 @@ services:
         icon: ersatz.png
 
   # -------------------------------------------------------------------------
-  # DNS
+  # Infrastructure
   # -------------------------------------------------------------------------
-  - name: DNS
-    icon: fa-solid fa-globe
+  - name: Infrastructure
+    icon: fa-solid fa-server
     items:
-      - name: Green
-        subtitle: Pi-hole DNS server 1
-        url: http://green.munchbox/admin
-        tag: dns
-        icon: pi-hole-unbound.svg
+      - name: Proxmox
+        subtitle: Virtualization cluster
+        url: https://proxmox.munchbox.cc
+        tag: virtualization
+        icon: proxmox.png
 
-      - name: Logan
-        subtitle: Pi-hole DNS server 2
-        url: http://logan.munchbox/admin
-        tag: dns
-        icon: pi-hole-unbound.svg
+      - name: Nomad
+        subtitle: Workload orchestration
+        url: https://nomad.munchbox.cc
+        tag: orchestration
+        icon: nomad.png
+
+      - name: Consul
+        subtitle: Service discovery and mesh
+        url: https://consul.munchbox.cc
+        tag: infra
+        icon: consul.png
+
+      - name: Traefik
+        subtitle: Reverse proxy and load balancer
+        url: https://traefik.munchbox.cc
+        tag: infra
+        icon: traefik.png
+
+      - name: Authentik
+        subtitle: SSO and identity provider
+        url: https://auth.munchbox.cc
+        tag: security
+        icon: authentik.png
+
+      - name: Temporal
+        subtitle: Workflow orchestration
+        url: https://temporal.munchbox.cc
+        tag: workflows
+        icon: temporal-ui.png
+
+      - name: Registry
+        subtitle: Docker container registry
+        url: https://registry-ui.munchbox.cc
+        tag: containers
+        icon: registry-ui.png
+
+      - name: Cloudflare
+        subtitle: CDN, DNS, and tunnels
+        url: https://dash.cloudflare.com
+        tag: external
+        icon: cloudflare.svg
 
   # -------------------------------------------------------------------------
   # Public Sites

@@ -191,14 +191,16 @@ EOH
         destination = "local/init-temporal.sql"
         change_mode = "noop"
         data        = <<EOH
-      CREATE USER temporal WITH ENCRYPTED PASSWORD 'temporal';
-      CREATE DATABASE temporal OWNER temporal;
-      CREATE DATABASE temporal_visibility OWNER temporal;
-      \c temporal
-      GRANT ALL ON SCHEMA public TO temporal;
-      \c temporal_visibility
-      GRANT ALL ON SCHEMA public TO temporal;
-      EOH
+{{ with secret "secret/data/temporal" }}
+CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+CREATE DATABASE temporal OWNER {{ .Data.data.db_username }};
+CREATE DATABASE temporal_visibility OWNER {{ .Data.data.db_username }};
+\c temporal
+GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
+\c temporal_visibility
+GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
+{{ end }}
+EOH
       }
 
       # --- Environment ---

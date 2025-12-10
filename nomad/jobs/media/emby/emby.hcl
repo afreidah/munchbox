@@ -80,6 +80,7 @@ tags = [
   "traefik.http.routers.emby-http.entrypoints=web",
   "traefik.http.routers.emby-http.middlewares=cf-tunnel-https@file,authentik@file,emby-ratelimit@file,emby-sec@file",
   "traefik.http.routers.emby-http.priority=1",
+  "traefik.http.routers.emby-http.service=emby",
   # API router (no Authentik) - HTTPS - for devices like Roku
   "traefik.http.routers.emby-api.rule=Host(`emby.munchbox.cc`) && (PathPrefix(`/emby`) || PathPrefix(`/mediabrowser`) || PathPrefix(`/socket`) || PathPrefix(`/Videos`) || PathPrefix(`/Items`) || PathPrefix(`/System`) || PathPrefix(`/Users/AuthenticateByName`))",
   "traefik.http.routers.emby-api.entrypoints=websecure",
@@ -91,7 +92,8 @@ tags = [
   "traefik.http.routers.emby-api-http.rule=Host(`emby.munchbox.cc`) && (PathPrefix(`/emby`) || PathPrefix(`/mediabrowser`) || PathPrefix(`/socket`) || PathPrefix(`/Videos`) || PathPrefix(`/Items`) || PathPrefix(`/System`) || PathPrefix(`/Users/AuthenticateByName`))",
   "traefik.http.routers.emby-api-http.entrypoints=web",
   "traefik.http.routers.emby-api-http.middlewares=cf-tunnel-https@file,emby-ratelimit@file,emby-sec@file",
-  "traefik.http.routers.emby-api-http.priority=10"
+  "traefik.http.routers.emby-api-http.priority=10",
+  "traefik.http.routers.emby-api-http.service=emby"
 ]
 
 # --- Termination ---

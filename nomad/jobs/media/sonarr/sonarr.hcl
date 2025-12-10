@@ -40,5 +40,9 @@ tags = [
   "sonarr",
   "media",
   "arr",
-  "traefik.http.routers.sonarr.middlewares=authentik@file"
+  "traefik.http.routers.sonarr.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.sonarr-http.rule=Host(`sonarr.munchbox.cc`)",
+  "traefik.http.routers.sonarr-http.entrypoints=web",
+  "traefik.http.routers.sonarr-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]

@@ -38,5 +38,9 @@ tags = [
   "radarr",
   "media",
   "arr",
-  "traefik.http.routers.radarr.middlewares=authentik@file"
+  "traefik.http.routers.radarr.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.radarr-http.rule=Host(`radarr.munchbox.cc`)",
+  "traefik.http.routers.radarr-http.entrypoints=web",
+  "traefik.http.routers.radarr-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]

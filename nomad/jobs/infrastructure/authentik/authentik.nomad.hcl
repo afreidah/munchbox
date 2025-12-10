@@ -74,6 +74,35 @@ job "authentik" {
       unlimited      = false
     }
 
+    # --- Service Registration ---
+    service {
+      name     = "authentik"
+      port     = "http"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=true",
+        # HTTPS router (for direct LAN access)
+        "traefik.http.routers.authentik.rule=Host(`auth.munchbox.cc`)",
+        "traefik.http.routers.authentik.entrypoints=websecure",
+        "traefik.http.routers.authentik.tls=true",
+        "traefik.http.routers.authentik.tls.certresolver=letsencrypt",
+        # HTTP router (for Cloudflare tunnel - TLS terminated at CF edge)
+        "traefik.http.routers.authentik-http.rule=Host(`auth.munchbox.cc`)",
+        "traefik.http.routers.authentik-http.entrypoints=web",
+        "traefik.http.routers.authentik-http.middlewares=cf-tunnel-https@file",
+        "traefik.http.routers.authentik-http.service=authentik"
+      ]
+
+      check {
+        name     = "authentik-health"
+        type     = "http"
+        path     = "/-/health/ready/"
+        interval = "15s"
+        timeout  = "5s"
+      }
+    }
+
     # -------------------------------------------------------------------------
     # Task: Authentik Server
     # -------------------------------------------------------------------------
@@ -105,34 +134,6 @@ job "authentik" {
         ]
       }
 
-      # --- Service Registration ---
-      service {
-        name     = "authentik"
-        port     = "http"
-        provider = "consul"
-
-        tags = [
-          "traefik.enable=true",
-          # HTTPS router (for direct LAN access)
-          "traefik.http.routers.authentik.rule=Host(`auth.munchbox.cc`)",
-          "traefik.http.routers.authentik.entrypoints=websecure",
-          "traefik.http.routers.authentik.tls=true",
-          "traefik.http.routers.authentik.tls.certresolver=letsencrypt",
-          # HTTP router (for Cloudflare tunnel - TLS terminated at CF edge)
-          "traefik.http.routers.authentik-http.rule=Host(`auth.munchbox.cc`)",
-          "traefik.http.routers.authentik-http.entrypoints=web",
-          "traefik.http.routers.authentik-http.middlewares=cf-tunnel-https@file"
-        ]
-
-        check {
-          name     = "authentik-health"
-          type     = "http"
-          path     = "/-/health/ready/"
-          interval = "15s"
-          timeout  = "5s"
-        }
-      }
-
       # --- Static Environment Variables ---
       env {
         AUTHENTIK_REDIS__HOST               = "redis-shared.service.consul"
@@ -153,6 +154,7 @@ AUTHENTIK_POSTGRESQL__PORT={{ with secret "secret/data/authentik" }}{{ .Data.dat
 AUTHENTIK_POSTGRESQL__NAME={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_db }}{{ end }}
 AUTHENTIK_POSTGRESQL__USER={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_user }}{{ end }}
 AUTHENTIK_POSTGRESQL__PASSWORD={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_password }}{{ end }}
+AUTHENTIK_REDIS__PASSWORD={{ with secret "secret/data/redis-shared" }}{{ .Data.data.password }}{{ end }}
 AUTHENTIK_HOST=https://auth.munchbox.cc
 AUTHENTIK_HOST_BROWSER=https://auth.munchbox.cc
 EOH
@@ -203,6 +205,16 @@ EOH
       unlimited      = false
     }
 
+    # --- Service Registration ---
+    service {
+      name     = "authentik-worker"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+      ]
+    }
+
     # -------------------------------------------------------------------------
     # Task: Authentik Worker
     # -------------------------------------------------------------------------
@@ -234,16 +246,6 @@ EOH
         ]
       }
 
-      # --- Service Registration ---
-      service {
-        name     = "authentik-worker"
-        provider = "consul"
-
-        tags = [
-          "traefik.enable=false",
-        ]
-      }
-
       # --- Static Environment Variables ---
       env {
         AUTHENTIK_REDIS__HOST               = "redis-shared.service.consul"
@@ -262,6 +264,7 @@ AUTHENTIK_POSTGRESQL__PORT={{ with secret "secret/data/authentik" }}{{ .Data.dat
 AUTHENTIK_POSTGRESQL__NAME={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_db }}{{ end }}
 AUTHENTIK_POSTGRESQL__USER={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_user }}{{ end }}
 AUTHENTIK_POSTGRESQL__PASSWORD={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_password }}{{ end }}
+AUTHENTIK_REDIS__PASSWORD={{ with secret "secret/data/redis-shared" }}{{ .Data.data.password }}{{ end }}
 EOH
         destination = "secrets/env"
         env         = true

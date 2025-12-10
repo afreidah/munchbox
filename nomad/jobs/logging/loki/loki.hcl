@@ -16,7 +16,6 @@ static_port  = 3100
 host_network = true
 node         = "nomad-client-02"  # Changed from nomad-client-03
 size         = "medium"
-user         = "root"
 
 # --- Storage (manual pre-creation, no init task) ---
 volumes = [

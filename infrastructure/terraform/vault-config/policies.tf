@@ -108,6 +108,10 @@ path "secret/data/backup-worker" {
 path "secret/data/alertmanager" {
   capabilities = ["read"]
 }
+
+path "secret/data/redis-shared" {
+  capabilities = ["read"]
+}
 path "secret/data/postgres-shared/root" {
   capabilities = ["read"]
 }
@@ -133,6 +137,10 @@ path "secret/data/cloudflared" {
 }
 
 path "secret/data/vaultwarden" {
+  capabilities = ["read"]
+}
+
+path "secret/data/temporal" {
   capabilities = ["read"]
 }
 

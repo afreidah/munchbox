@@ -11,9 +11,14 @@
   {{- end -}}
 </title>
 
-{{- $favicon := resources.Get (printf "icons/%s.svg" .Site.Data.config.icon) | default (resources.Get "icons/no-icon.svg") -}}
-{{- if $favicon -}}
-<link rel="icon" type="image/svg+xml" href="{{ $favicon.RelPermalink }}">
+{{- $faviconSvg := resources.Get (printf "icons/%s.svg" .Site.Data.config.icon) -}}
+{{- $faviconPng := resources.Get (printf "icons/%s.png" .Site.Data.config.icon) -}}
+{{- if $faviconSvg -}}
+<link rel="icon" type="image/svg+xml" href="{{ $faviconSvg.RelPermalink }}">
+{{- else if $faviconPng -}}
+<link rel="icon" type="image/png" href="{{ $faviconPng.RelPermalink }}">
+{{- else -}}
+<link rel="icon" type="image/svg+xml" href="{{ (resources.Get "icons/no-icon.svg").RelPermalink }}">
 {{- end -}}
 
 <meta charset="utf-8">

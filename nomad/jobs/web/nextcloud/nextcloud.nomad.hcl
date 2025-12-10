@@ -93,7 +93,7 @@ job "nextcloud" {
         # HTTP router (for Cloudflare tunnel - TLS terminated at CF edge)
         "traefik.http.routers.nextcloud-http.rule=Host(`nextcloud.munchbox.cc`)",
         "traefik.http.routers.nextcloud-http.entrypoints=web",
-        "traefik.http.routers.nextcloud-http.middlewares=authentik@file,nextcloud-ratelimit@file,nextcloud-sec@file",
+        "traefik.http.routers.nextcloud-http.middlewares=cf-tunnel-https@file,authentik@file,nextcloud-ratelimit@file,nextcloud-sec@file",
         "traefik.http.services.nextcloud.loadbalancer.server.port=18081",
         "cloud",
         "files",
@@ -109,6 +109,7 @@ job "nextcloud" {
         interval = "30s"
         timeout  = "5s"
       }
+
     }
 
     # -----------------------------------------------------------------------
@@ -161,6 +162,9 @@ job "nextcloud" {
         data        = <<EOH
 {{ with secret "secret/data/nextcloud" }}
 POSTGRES_PASSWORD={{ .Data.data.db_password }}
+{{ end }}
+{{ with secret "secret/data/redis-shared" }}
+REDIS_HOST_PASSWORD={{ .Data.data.password }}
 {{ end }}
 EOH
       }

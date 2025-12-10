@@ -21,8 +21,8 @@ storage = "ephemeral"
 env = {
   TZ                                    = "UTC"
   TEMPORAL_ADDRESS                      = "temporal-server.service.consul:7233"
-  TEMPORAL_CORS_ORIGINS                 = "http://localhost:8080"
-  TEMPORAL_CSRF_COOKIE_INSECURE         = "true"
+  TEMPORAL_CORS_ORIGINS                 = "https://temporal.munchbox.cc"
+  TEMPORAL_CSRF_COOKIE_INSECURE         = "false"
   TEMPORAL_TLS_CA_PATH                  = ""
   TEMPORAL_TLS_CERT_PATH                = ""
   TEMPORAL_TLS_KEY_PATH                 = ""
@@ -42,7 +42,11 @@ tags = [
   "temporal",
   "ui",
   "monitoring",
-  "traefik.http.routers.temporal-ui.middlewares=authentik@file"
+  "traefik.http.routers.temporal-ui.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.temporal-ui-http.rule=Host(`temporal.munchbox.cc`)",
+  "traefik.http.routers.temporal-ui-http.entrypoints=web",
+  "traefik.http.routers.temporal-ui-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]
 
 # --- DNS configuration ---
