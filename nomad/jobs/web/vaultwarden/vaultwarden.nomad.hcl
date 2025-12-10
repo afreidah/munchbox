@@ -97,17 +97,30 @@ job "vaultwarden" {
 
         tags = [
           "traefik.enable=true",
+          # --- HTTPS router for API (no Authentik - Vaultwarden handles auth) ---
+          # Required for Bitwarden CLI, mobile apps, browser extensions
+          "traefik.http.routers.vaultwarden-api.rule=Host(`vaultwarden.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/identity`) || PathPrefix(`/icons`) || PathPrefix(`/notifications`))",
+          "traefik.http.routers.vaultwarden-api.entrypoints=websecure",
+          "traefik.http.routers.vaultwarden-api.tls=true",
+          "traefik.http.routers.vaultwarden-api.tls.certresolver=letsencrypt",
+          "traefik.http.routers.vaultwarden-api.priority=20",
+          # --- HTTPS router for Web UI (with Authentik) ---
           "traefik.http.routers.vaultwarden.rule=Host(`vaultwarden.munchbox.cc`)",
           "traefik.http.routers.vaultwarden.entrypoints=websecure",
           "traefik.http.routers.vaultwarden.tls=true",
-          "traefik.http.routers.vaultwarden.middlewares=dashboard-allowlan@file",
-          "traefik.http.routers.vaultwarden.service=vaultwarden",
-          "traefik.http.routers.vaultwarden-ws.rule=Host(`vaultwarden.munchbox.cc`) && Path(`/notifications/hub`)",
-          "traefik.http.routers.vaultwarden-ws.entrypoints=websecure",
-          "traefik.http.routers.vaultwarden-ws.tls=true",
-          "traefik.http.routers.vaultwarden-ws.middlewares=dashboard-allowlan@file",
-          "traefik.http.routers.vaultwarden-ws.service=vaultwarden-ws",
-          "traefik.http.routers.vaultwarden.middlewares=authentik@file"
+          "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt",
+          "traefik.http.routers.vaultwarden.middlewares=authentik@file",
+          "traefik.http.routers.vaultwarden.priority=10",
+          # --- HTTP router for API (Cloudflare tunnel, no Authentik) ---
+          "traefik.http.routers.vaultwarden-api-http.rule=Host(`vaultwarden.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/identity`) || PathPrefix(`/icons`) || PathPrefix(`/notifications`))",
+          "traefik.http.routers.vaultwarden-api-http.entrypoints=web",
+          "traefik.http.routers.vaultwarden-api-http.middlewares=cf-tunnel-https@file",
+          "traefik.http.routers.vaultwarden-api-http.priority=20",
+          # --- HTTP router for Web UI (Cloudflare tunnel, with Authentik) ---
+          "traefik.http.routers.vaultwarden-http.rule=Host(`vaultwarden.munchbox.cc`)",
+          "traefik.http.routers.vaultwarden-http.entrypoints=web",
+          "traefik.http.routers.vaultwarden-http.middlewares=cf-tunnel-https@file,authentik@file",
+          "traefik.http.routers.vaultwarden-http.priority=10"
         ]
 
         check {
@@ -123,9 +136,9 @@ job "vaultwarden" {
         data        = <<-EOH
           {{ with secret "secret/data/vaultwarden" }}
           ADMIN_TOKEN={{ .Data.data.admin_token }}
+          SIGNUPS_ALLOWED={{ .Data.data.signups_allowed }}
           {{ end }}
           DOMAIN=https://vaultwarden.munchbox.cc
-          SIGNUPS_ALLOWED=false
           INVITATIONS_ALLOWED=true
           WEBSOCKET_ENABLED=true
         EOH

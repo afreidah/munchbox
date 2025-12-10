@@ -39,7 +39,20 @@ tags = [
   "deluge",
   "torrent",
   "media",
-  "traefik.http.routers.deluge.middlewares=authentik@file"
+  # HTTPS router (direct LAN access)
+  "traefik.http.routers.deluge.middlewares=authentik@file",
+  # HTTP router (Cloudflare tunnel - TLS terminated at CF edge)
+  "traefik.http.routers.deluge-http.rule=Host(`deluge.munchbox.cc`)",
+  "traefik.http.routers.deluge-http.entrypoints=web",
+  "traefik.http.routers.deluge-http.middlewares=cf-tunnel-https@file,authentik@file"
+]
+
+# --- Vault integration ---
+vault = true
+
+# --- Templates ---
+templates = [
+  { src = "web.conf.tpl", dest = "/config/web.conf", vault = true }
 ]
 
 # --- Termination ---

@@ -34,7 +34,8 @@ terraform {
 # -------------------------------------------------------------------------
 
 provider "vault" {
-  address = "http://192.168.68.61:8200"
+  address      = "https://192.168.68.61:8200"
+  ca_cert_file = pathexpand("~/.munchbox/ca-chain.crt")
 }
 
 data "vault_kv_secret_v2" "dns" {
@@ -51,6 +52,7 @@ locals {
   cloudflare_zone_id    = data.vault_kv_secret_v2.dns.data["cloudflare_zone_id"]
   cloudflare_account_id = data.vault_kv_secret_v2.dns.data["cloudflare_account_id"]
   tunnel_cname          = data.vault_kv_secret_v2.dns.data["tunnel_cname"]
+  munchbox_zone_id      = data.vault_kv_secret_v2.dns.data["munchbox_zone_id"]
 }
 
 # -------------------------------------------------------------------------
@@ -111,6 +113,52 @@ resource "cloudflare_record" "www" {
 }
 
 # -------------------------------------------------------------------------
+# Cloudflare - munchbox.cc DNS Records (Wildcard)
+# -------------------------------------------------------------------------
+# Wildcard record routes all *.munchbox.cc subdomains through the tunnel.
+# Services control their own routing via Traefik tags in their Nomad jobs.
+# No per-service DNS changes needed - just add traefik tags to expose publicly.
+
+resource "cloudflare_record" "munchbox_wildcard" {
+  zone_id = local.munchbox_zone_id
+  name    = "*"
+  content = local.tunnel_cname
+  type    = "CNAME"
+  proxied = true
+}
+
+# -------------------------------------------------------------------------
+# Cloudflare WAF Rate Limiting Rules (munchbox.cc)
+# -------------------------------------------------------------------------
+# Protects public API endpoints from brute force attacks.
+# Blocks IPs that exceed request limits at Cloudflare edge.
+
+resource "cloudflare_ruleset" "munchbox_rate_limiting" {
+  zone_id     = local.munchbox_zone_id
+  name        = "Munchbox Rate Limiting"
+  description = "Rate limiting rules for munchbox.cc services"
+  kind        = "zone"
+  phase       = "http_ratelimit"
+
+  # --- Authentication Rate Limiting (Free tier: 1 rule max) ---
+  # Block IPs making too many auth requests (brute force protection)
+  # Covers Emby auth endpoint - add more hosts with OR as needed
+  rules {
+    action      = "block"
+    expression  = "(http.request.uri.path contains \"/Users/AuthenticateByName\")"
+    description = "Rate limit authentication attempts"
+    enabled     = true
+
+    ratelimit {
+      characteristics     = ["cf.colo.id", "ip.src"]
+      period              = 10
+      requests_per_period = 3
+      mitigation_timeout  = 10
+    }
+  }
+}
+
+# -------------------------------------------------------------------------
 # Cloudflare Tunnel Configuration
 # -------------------------------------------------------------------------
 
@@ -149,6 +197,15 @@ resource "cloudflare_tunnel_config" "munchbox" {
       origin_request {
         http_host_header = "k3s-status.alexfreidah.com"
       }
+    }
+
+    # --- munchbox.cc wildcard ---
+    # All *.munchbox.cc subdomains route to Traefik.
+    # Traefik handles routing based on service tags registered in Consul.
+    # To expose a new service: add traefik tags to its Nomad job - no Terraform changes needed.
+    ingress_rule {
+      hostname = "*.munchbox.cc"
+      service  = "http://traefik.service.consul:80"
     }
 
     # Required catch-all rule

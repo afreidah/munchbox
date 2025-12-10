@@ -53,7 +53,10 @@ RUN apk add --no-cache \
     curl \
     bash \
     unzip \
-    gcompat
+    gcompat \
+    postgresql16-client \
+    tar \
+    gzip
 
 # Install Nomad CLI
 ARG NOMAD_VERSION=1.7.2
@@ -87,7 +90,8 @@ COPY --from=builder /build/temporal-backup-trigger /usr/local/bin/
 # Create backup directories (will be mounted as volumes)
 RUN mkdir -p /mnt/gdrive/nomad-snapshots \
     && mkdir -p /mnt/gdrive/consul-snapshots \
-    && mkdir -p /mnt/gdrive/vault-snapshots
+    && mkdir -p /mnt/gdrive/postgres-backups \
+    && mkdir -p /mnt/gdrive/registry-backups
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh

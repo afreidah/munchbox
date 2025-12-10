@@ -164,3 +164,18 @@ path "consul/creds/*" {
 }
 EOT
 }
+
+# -------------------------------------------------------------------------
+# Backup Worker Policy (for Vault Raft snapshots)
+# -------------------------------------------------------------------------
+
+resource "vault_policy" "backup_worker" {
+  name = "backup-worker"
+
+  policy = <<EOT
+# Allow taking Raft snapshots for disaster recovery
+path "sys/storage/raft/snapshot" {
+  capabilities = ["read"]
+}
+EOT
+}

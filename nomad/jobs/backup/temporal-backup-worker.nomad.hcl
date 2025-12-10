@@ -133,8 +133,9 @@ job "temporal-backup-worker" {
 {{ with secret "secret/data/backup-worker" }}
 NOMAD_TOKEN={{ .Data.data.nomad_token }}
 CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
-VAULT_ADDR=https://vault.service.consul:8200
-VAULT_TOKEN={{ .Data.data.vault_token }}
+{{ end }}
+{{ with secret "secret/data/postgres-shared/root" }}
+PGPASSWORD={{ .Data.data.password }}
 {{ end }}
 EOH
 

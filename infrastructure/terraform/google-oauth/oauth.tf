@@ -3,13 +3,12 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Creates OAuth consent screen (IAP brand) and OAuth 2.0 client credentials.
-# The brand resource is immutable after creation and must be imported if it
-# already exists in the project.
+# Creates OAuth consent screen and OAuth 2.0 Web Application client credentials
+# for Authentik SSO integration. Stores credentials in Vault.
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
-# OAUTH CONSENT SCREEN
+# OAUTH CONSENT SCREEN (using IAP brand for consent screen config)
 # -------------------------------------------------------------------------
 
 resource "google_iap_brand" "authentik" {
@@ -21,7 +20,7 @@ resource "google_iap_brand" "authentik" {
 }
 
 # -------------------------------------------------------------------------
-# OAUTH CLIENT CREDENTIALS
+# OAUTH CLIENT CREDENTIALS (Web Application type)
 # -------------------------------------------------------------------------
 
 resource "google_iap_client" "authentik" {
@@ -32,6 +31,16 @@ resource "google_iap_client" "authentik" {
 # -------------------------------------------------------------------------
 # STORE CREDENTIALS IN VAULT
 # -------------------------------------------------------------------------
+
+# NOTE: The google_iap_client resource does NOT support custom redirect URIs.
+# You must manually add the redirect URI in Google Cloud Console:
+#   1. Go to APIs & Services → Credentials
+#   2. Click on the OAuth 2.0 Client ID "Authentik"
+#   3. Under "Authorized redirect URIs", add:
+#      https://auth.munchbox.cc/source/oauth/callback/google/
+#
+# Alternatively, create a separate Web Application OAuth client in the console
+# and update the client_id/client_secret in Vault manually.
 
 resource "vault_kv_secret_v2" "authentik_google_oauth" {
   mount = "secret"

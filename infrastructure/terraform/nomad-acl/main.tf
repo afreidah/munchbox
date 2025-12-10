@@ -27,13 +27,13 @@ terraform {
 # -----------------------------------------------------------------------------
 
 provider "nomad" {
-  address     = var.nomad_address
-  secret_id   = var.nomad_token
-  skip_verify = true
+  address   = var.nomad_address
+  secret_id = var.nomad_token
+  ca_file   = pathexpand("~/.munchbox/ca-chain.crt")
 }
 
 provider "vault" {
-  address         = var.vault_address
-  token           = var.vault_token
-  skip_tls_verify = true
+  address      = var.vault_address
+  token        = var.vault_token
+  ca_cert_file = pathexpand("~/.munchbox/ca-chain.crt")
 }

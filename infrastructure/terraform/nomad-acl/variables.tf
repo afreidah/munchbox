@@ -23,7 +23,7 @@ variable "nomad_token" {
 variable "vault_address" {
   description = "Vault API address"
   type        = string
-  default     = "http://192.168.68.61:8200"
+  default     = "https://192.168.68.61:8200"
 }
 
 variable "vault_token" {

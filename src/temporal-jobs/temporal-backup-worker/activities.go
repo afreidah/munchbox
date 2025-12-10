@@ -3,7 +3,7 @@
 // ============================================================================
 //
 // Package: main
-// Purpose: Implements Temporal activities for HashiCorp infrastructure backups
+// Purpose: Implements Temporal activities for Munchbox infrastructure backups
 //
 // This file contains the actual backup operations executed by the worker when
 // the BackupWorkflow is triggered. Each activity is a discrete unit of work
@@ -11,8 +11,9 @@
 //
 // Activities:
 //   - TakeNomadSnapshot: Creates Raft snapshot of Nomad cluster state
-//   - TakeConsulSnapshot: Creates Raft snapshot of Consul cluster state
-//   - TakeVaultSnapshot: Creates Raft snapshot of Vault cluster state
+//   - TakeConsulSnapshot: Creates Raft snapshot of Consul cluster state (includes Vault)
+//   - TakePostgresBackup: Dumps all PostgreSQL databases (pg_dumpall)
+//   - TakeRegistryBackup: Creates tarball of container registry data
 //   - CleanupOldBackups: Removes snapshots older than retention period
 //
 // Storage:
@@ -22,7 +23,7 @@
 //   - Centralized backup location
 //
 // Naming convention:
-//   {service}-{timestamp}.snap (e.g., nomad-20251030020000.snap)
+//   {service}-{timestamp}.{ext} (e.g., nomad-20251030020000.snap)
 //
 // Retention:
 //   Snapshots older than 7 days are automatically removed during cleanup.
@@ -32,7 +33,7 @@
 //   Activities use environment variables for service authentication:
 //   - NOMAD_TOKEN: From Vault via workload identity
 //   - CONSUL_HTTP_TOKEN: From Vault via workload identity
-//   - VAULT_TOKEN: From Vault via workload identity
+//   - PGPASSWORD: From Vault via workload identity
 //
 // Error handling:
 //   - Failed snapshots return errors to the workflow for retry
@@ -51,15 +52,18 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"go.temporal.io/sdk/activity"
 )
 
 const (
-	nomadBackupDir  = "/mnt/gdrive/nomad-snapshots"
-	consulBackupDir = "/mnt/gdrive/consul-snapshots"
-	vaultBackupDir  = "/mnt/gdrive/vault-snapshots"
+	nomadBackupDir    = "/mnt/gdrive/nomad-snapshots"
+	consulBackupDir   = "/mnt/gdrive/consul-snapshots"
+	postgresBackupDir = "/mnt/gdrive/postgres-backups"
+	registryBackupDir = "/mnt/gdrive/registry-backups"
+	registryDataDir   = "/mnt/gdrive/munchbox-data/registry"
 )
 
 // TakeNomadSnapshot creates a Raft snapshot of the Nomad cluster.
@@ -142,53 +146,89 @@ func TakeConsulSnapshot(ctx context.Context) (string, error) {
 	return filename, nil
 }
 
-// TakeVaultSnapshot creates a Raft snapshot of the Vault cluster.
+// TakePostgresBackup creates a full dump of all PostgreSQL databases.
 //
-// This captures the complete state of the Vault cluster including:
-//   - All secrets stored in KV engines
-//   - Authentication methods and configurations
-//   - Policies and entity metadata
-//   - Audit log configuration
-//   - Seal/unseal configuration
+// This captures all databases in postgres-shared including:
+//   - authentik (SSO/authentication)
+//   - nextcloud (file sharing)
+//   - temporal / temporal_visibility (workflow engine)
 //
-// The snapshot can be used to restore Vault cluster state after a disaster.
-// Requires VAULT_TOKEN with snapshot read permissions.
+// Uses pg_dumpall for a complete backup including roles and permissions.
+// The dump is compressed with gzip for storage efficiency.
 //
-// Note: The snapshot is encrypted with Vault's master key and cannot be
-// read without access to the unsealed Vault cluster.
+// Requires PGPASSWORD environment variable set.
 //
 // Returns:
-//   - string: Full path to the created snapshot file
-//   - error: Non-nil if snapshot creation fails
-func TakeVaultSnapshot(ctx context.Context) (string, error) {
+//   - string: Full path to the created dump file
+//   - error: Non-nil if dump creation fails
+func TakePostgresBackup(ctx context.Context) (string, error) {
 	logger := activity.GetLogger(ctx)
-	logger.Info("Starting Vault snapshot")
+	logger.Info("Starting PostgreSQL backup")
 
 	// Ensure backup directory exists
-	if err := os.MkdirAll(vaultBackupDir, 0o755); err != nil {
+	if err := os.MkdirAll(postgresBackupDir, 0o755); err != nil {
 		return "", fmt.Errorf("failed to create backup dir: %w", err)
 	}
 
 	timestamp := time.Now().Format("20060102150405")
-	filename := filepath.Join(vaultBackupDir, fmt.Sprintf("vault-%s.snap", timestamp))
+	filename := filepath.Join(postgresBackupDir, fmt.Sprintf("postgres-%s.sql.gz", timestamp))
 
-	cmd := exec.CommandContext(ctx, "vault", "operator", "raft", "snapshot", "save", filename)
+	// Create the dump command piped to gzip
+	// Use bash with pipefail so we catch pg_dumpall errors even when piped to gzip
+	cmd := exec.CommandContext(ctx, "bash", "-c",
+		fmt.Sprintf("set -o pipefail; pg_dumpall -h postgres-shared.service.consul -U postgres | gzip > %s", filename))
 
-	// Set environment variables for the command
 	cmd.Env = append(os.Environ(),
-		"VAULT_ADDR=https://stabler.munchbox.cc:8200",
-		"VAULT_TOKEN="+os.Getenv("VAULT_TOKEN"),
-		"VAULT_SKIP_VERIFY="+os.Getenv("VAULT_SKIP_VERIFY"),
+		"PGPASSWORD="+os.Getenv("PGPASSWORD"),
 	)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("vault snapshot failed: %w, output: %s", err, output)
+		return "", fmt.Errorf("postgres backup failed: %w, output: %s", err, output)
 	}
 
 	// Get file size for logging
 	info, _ := os.Stat(filename)
-	logger.Info("Vault snapshot saved", "path", filename, "size_bytes", info.Size())
+	logger.Info("PostgreSQL backup saved", "path", filename, "size_bytes", info.Size())
+
+	return filename, nil
+}
+
+// TakeRegistryBackup creates a tarball of the container registry data.
+//
+// This captures all container images stored in the local registry including:
+//   - All pushed Docker images
+//   - Image layers and manifests
+//   - Registry metadata
+//
+// The backup is compressed with gzip for storage efficiency.
+//
+// Returns:
+//   - string: Full path to the created tarball
+//   - error: Non-nil if backup creation fails
+func TakeRegistryBackup(ctx context.Context) (string, error) {
+	logger := activity.GetLogger(ctx)
+	logger.Info("Starting Registry backup")
+
+	// Ensure backup directory exists
+	if err := os.MkdirAll(registryBackupDir, 0o755); err != nil {
+		return "", fmt.Errorf("failed to create backup dir: %w", err)
+	}
+
+	timestamp := time.Now().Format("20060102150405")
+	filename := filepath.Join(registryBackupDir, fmt.Sprintf("registry-%s.tar.gz", timestamp))
+
+	// Create tarball of registry data
+	cmd := exec.CommandContext(ctx, "tar", "-czf", filename, "-C", filepath.Dir(registryDataDir), filepath.Base(registryDataDir))
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("registry backup failed: %w, output: %s", err, output)
+	}
+
+	// Get file size for logging
+	info, _ := os.Stat(filename)
+	logger.Info("Registry backup saved", "path", filename, "size_bytes", info.Size())
 
 	return filename, nil
 }
@@ -229,23 +269,28 @@ func CleanupOldBackups(ctx context.Context, retentionDays int) error {
 		return fmt.Errorf("failed to cleanup consul backups: %w", err)
 	}
 
-	// Clean Vault backups
-	if err := cleanupDirectory(vaultBackupDir, cutoff, logger); err != nil {
-		return fmt.Errorf("failed to cleanup vault backups: %w", err)
+	// Clean PostgreSQL backups
+	if err := cleanupDirectory(postgresBackupDir, cutoff, logger); err != nil {
+		return fmt.Errorf("failed to cleanup postgres backups: %w", err)
+	}
+
+	// Clean Registry backups
+	if err := cleanupDirectory(registryBackupDir, cutoff, logger); err != nil {
+		return fmt.Errorf("failed to cleanup registry backups: %w", err)
 	}
 
 	return nil
 }
 
-// cleanupDirectory removes .snap files older than cutoff time from a directory.
+// cleanupDirectory removes backup files older than cutoff time from a directory.
 //
 // Helper function that performs the actual cleanup logic for a single directory.
-// Skips non-snapshot files and subdirectories. Deletion failures are logged
-// but do not stop the cleanup process.
+// Handles various backup file extensions (.snap, .sql.gz, .tar.gz).
+// Skips subdirectories. Deletion failures are logged but do not stop the cleanup process.
 //
 // Parameters:
 //   - dir: Path to the directory to clean
-//   - cutoff: Time before which snapshots should be deleted
+//   - cutoff: Time before which backups should be deleted
 //   - logger: Temporal activity logger for status messages
 //
 // Returns:
@@ -257,6 +302,11 @@ func cleanupDirectory(dir string, cutoff time.Time, logger interface {
 ) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
+		// Directory may not exist yet if no backups have been taken
+		if os.IsNotExist(err) {
+			logger.Info("Backup directory does not exist, skipping cleanup", "dir", dir)
+			return nil
+		}
 		return fmt.Errorf("failed to read dir %s: %w", dir, err)
 	}
 
@@ -266,8 +316,12 @@ func cleanupDirectory(dir string, cutoff time.Time, logger interface {
 			continue
 		}
 
-		// Skip non-snapshot files
-		if filepath.Ext(entry.Name()) != ".snap" {
+		// Check for backup file extensions
+		name := entry.Name()
+		isBackup := filepath.Ext(name) == ".snap" ||
+			strings.HasSuffix(name, ".sql.gz") ||
+			strings.HasSuffix(name, ".tar.gz")
+		if !isBackup {
 			continue
 		}
 

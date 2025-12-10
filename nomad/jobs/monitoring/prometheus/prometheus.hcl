@@ -21,7 +21,8 @@ vault = true
 
 # --- Storage ---
 volumes = [
-  "/opt/nomad/data/prometheus:/opt/nomad/data/prometheus-data"
+  "/opt/nomad/data/prometheus:/opt/nomad/data/prometheus-data",
+  "/etc/nomad.d/tls/ca-chain.crt:/etc/prometheus/certs/ca-chain.crt:ro"
 ]
 
 # --- Traefik routing ---

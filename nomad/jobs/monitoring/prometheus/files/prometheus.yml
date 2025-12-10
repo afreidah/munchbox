@@ -48,7 +48,7 @@ scrape_configs:
     metrics_path: "/v1/metrics"
     scheme: "https"
     tls_config:
-      insecure_skip_verify: true
+      ca_file: "/etc/prometheus/certs/ca-chain.crt"
     authorization:
       credentials_file: "/etc/prometheus/secrets/nomad_token"
     params:
@@ -78,7 +78,7 @@ scrape_configs:
     metrics_path: "/v1/metrics"
     scheme: "https"
     tls_config:
-      insecure_skip_verify: true
+      ca_file: "/etc/prometheus/certs/ca-chain.crt"
     authorization:
       credentials_file: "/etc/prometheus/secrets/nomad_token"
     params:
@@ -110,7 +110,7 @@ scrape_configs:
       format: ["prometheus"]
     scheme: "https"
     tls_config:
-      insecure_skip_verify: true
+      ca_file: "/etc/prometheus/certs/ca-chain.crt"
     bearer_token_file: "/secrets/vault_token"
     consul_sd_configs:
       - server: "192.168.68.61:8500"

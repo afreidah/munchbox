@@ -20,7 +20,7 @@ size = "medium"
 # --- Storage ---
 storage      = "ephemeral"
 volumes = [
-  "/mnt/gdrive/nomad-data/registry:/var/lib/registry"
+  "/mnt/gdrive/munchbox-data/registry:/var/lib/registry"
 ]
 
 # --- Traefik routing ---
