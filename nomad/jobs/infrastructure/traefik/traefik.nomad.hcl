@@ -112,7 +112,8 @@ job "traefik" {
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
-          "/mnt/gdrive/munchbox-data/traefik/acme.json:/etc/traefik/acme.json"
+          "/mnt/gdrive/munchbox-data/traefik/acme.json:/etc/traefik/acme.json",
+          "/etc/nomad.d/tls/ca-chain.crt:/etc/traefik/certs/ca-chain.crt:ro"
         ]
       }
 
@@ -374,12 +375,53 @@ EOH
     customFrameOptionsValue = "SAMEORIGIN"
     referrerPolicy          = "strict-origin-when-cross-origin"
 
+  # --- Nextcloud rate limiting ---
+  [http.middlewares.nextcloud-ratelimit.rateLimit]
+    average = 100
+    burst   = 200
+    [http.middlewares.nextcloud-ratelimit.rateLimit.sourceCriterion]
+      requestHeaderName = "CF-Connecting-IP"
+
+  # --- Nextcloud security headers ---
+  [http.middlewares.nextcloud-sec.headers]
+    stsSeconds              = 31536000
+    stsIncludeSubdomains    = true
+    stsPreload              = true
+    forceSTSHeader          = true
+    contentTypeNosniff      = true
+    browserXssFilter        = true
+    customFrameOptionsValue = "SAMEORIGIN"
+    referrerPolicy          = "strict-origin-when-cross-origin"
+    permissionsPolicy       = "camera=(), microphone=(), geolocation=(), payment=()"
+
+  # --- Emby rate limiting ---
+  [http.middlewares.emby-ratelimit.rateLimit]
+    average = 100
+    burst   = 200
+    [http.middlewares.emby-ratelimit.rateLimit.sourceCriterion]
+      requestHeaderName = "CF-Connecting-IP"
+
+  # --- Emby security headers ---
+  [http.middlewares.emby-sec.headers]
+    stsSeconds              = 31536000
+    stsIncludeSubdomains    = true
+    forceSTSHeader          = true
+    contentTypeNosniff      = true
+    browserXssFilter        = true
+    customFrameOptionsValue = "SAMEORIGIN"
+    referrerPolicy          = "strict-origin-when-cross-origin"
+
   # --- Nomad UI token injection ---
   [http.middlewares.nomad-token.headers]
     [http.middlewares.nomad-token.headers.customRequestHeaders]
 {{ with secret "secret/data/nomad-ui" -}}
       X-Nomad-Token = "{{ .Data.data.token }}"
 {{- end }}
+
+  # --- Cloudflare tunnel HTTPS header (for HTTP entrypoint traffic from CF tunnel) ---
+  [http.middlewares.cf-tunnel-https.headers]
+    [http.middlewares.cf-tunnel-https.headers.customRequestHeaders]
+      X-Forwarded-Proto = "https"
 
 # -------------------------------------------------------------------------
 # HTTP Services (non-Consul backends)
@@ -394,7 +436,7 @@ EOH
 
   # --- Nomad UI ---
   [http.services.nomad-ui.loadBalancer]
-    serversTransport = "insecure"
+    serversTransport = "nomad-tls"
     [[http.services.nomad-ui.loadBalancer.servers]]
       url = "https://127.0.0.1:4646"
 
@@ -403,8 +445,8 @@ EOH
 # -------------------------------------------------------------------------
 
 [http.serversTransports]
-  [http.serversTransports.insecure]
-    insecureSkipVerify = true
+  [http.serversTransports.nomad-tls]
+    rootCAs = ["/etc/traefik/certs/ca-chain.crt"]
 EOH
       }
 

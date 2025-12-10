@@ -45,7 +45,8 @@ devices = [
 ]
 
 # --- Traefik routing ---
-traefik      = true
+# Note: Setting traefik=false to disable auto-generated router, using manual tags instead
+traefik      = false
 traefik_host = "emby.munchbox.cc"
 
 # --- Health check ---
@@ -58,11 +59,39 @@ env = {
   TZ   = "America/Los_Angeles"
 }
 
-# --- Service tags ---
+# --- Service tags (including Traefik routing) ---
 tags = [
   "media",
   "emby",
-  "streaming"
+  "streaming",
+  # Enable Traefik
+  "traefik.enable=true",
+  # Service definition
+  "traefik.http.services.emby.loadbalancer.server.port=8096",
+  # Web UI router (with Authentik) - HTTPS
+  "traefik.http.routers.emby.rule=Host(`emby.munchbox.cc`)",
+  "traefik.http.routers.emby.entrypoints=websecure",
+  "traefik.http.routers.emby.tls=true",
+  "traefik.http.routers.emby.tls.certresolver=letsencrypt",
+  "traefik.http.routers.emby.middlewares=authentik@file,emby-ratelimit@file,emby-sec@file",
+  "traefik.http.routers.emby.priority=1",
+  # Web UI router (with Authentik) - HTTP (for CF tunnel)
+  "traefik.http.routers.emby-http.rule=Host(`emby.munchbox.cc`)",
+  "traefik.http.routers.emby-http.entrypoints=web",
+  "traefik.http.routers.emby-http.middlewares=cf-tunnel-https@file,authentik@file,emby-ratelimit@file,emby-sec@file",
+  "traefik.http.routers.emby-http.priority=1",
+  # API router (no Authentik) - HTTPS - for devices like Roku
+  "traefik.http.routers.emby-api.rule=Host(`emby.munchbox.cc`) && (PathPrefix(`/emby`) || PathPrefix(`/mediabrowser`) || PathPrefix(`/socket`) || PathPrefix(`/Videos`) || PathPrefix(`/Items`) || PathPrefix(`/System`) || PathPrefix(`/Users/AuthenticateByName`))",
+  "traefik.http.routers.emby-api.entrypoints=websecure",
+  "traefik.http.routers.emby-api.tls=true",
+  "traefik.http.routers.emby-api.tls.certresolver=letsencrypt",
+  "traefik.http.routers.emby-api.middlewares=emby-ratelimit@file,emby-sec@file",
+  "traefik.http.routers.emby-api.priority=10",
+  # API router (no Authentik) - HTTP (for CF tunnel)
+  "traefik.http.routers.emby-api-http.rule=Host(`emby.munchbox.cc`) && (PathPrefix(`/emby`) || PathPrefix(`/mediabrowser`) || PathPrefix(`/socket`) || PathPrefix(`/Videos`) || PathPrefix(`/Items`) || PathPrefix(`/System`) || PathPrefix(`/Users/AuthenticateByName`))",
+  "traefik.http.routers.emby-api-http.entrypoints=web",
+  "traefik.http.routers.emby-api-http.middlewares=cf-tunnel-https@file,emby-ratelimit@file,emby-sec@file",
+  "traefik.http.routers.emby-api-http.priority=10"
 ]
 
 # --- Termination ---

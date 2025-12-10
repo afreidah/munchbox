@@ -40,8 +40,8 @@ provider "google" {
 }
 
 provider "vault" {
-  address         = "http://192.168.68.61:8200"
-  skip_tls_verify = false
+  address      = "https://192.168.68.61:8200"
+  ca_cert_file = pathexpand("~/.munchbox/ca-chain.crt")
 }
 
 # -------------------------------------------------------------------------

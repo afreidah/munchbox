@@ -84,10 +84,16 @@ job "nextcloud" {
 
       tags = [
         "traefik.enable=true",
+        # HTTPS router (for direct LAN access)
         "traefik.http.routers.nextcloud.rule=Host(`nextcloud.munchbox.cc`)",
         "traefik.http.routers.nextcloud.entrypoints=websecure",
         "traefik.http.routers.nextcloud.tls=true",
-        "traefik.http.routers.nextcloud.middlewares=authentik@file,dashboard-allowlan@file",
+        "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt",
+        "traefik.http.routers.nextcloud.middlewares=authentik@file,nextcloud-ratelimit@file,nextcloud-sec@file",
+        # HTTP router (for Cloudflare tunnel - TLS terminated at CF edge)
+        "traefik.http.routers.nextcloud-http.rule=Host(`nextcloud.munchbox.cc`)",
+        "traefik.http.routers.nextcloud-http.entrypoints=web",
+        "traefik.http.routers.nextcloud-http.middlewares=authentik@file,nextcloud-ratelimit@file,nextcloud-sec@file",
         "traefik.http.services.nextcloud.loadbalancer.server.port=18081",
         "cloud",
         "files",

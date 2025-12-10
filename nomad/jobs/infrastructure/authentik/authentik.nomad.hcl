@@ -113,10 +113,15 @@ job "authentik" {
 
         tags = [
           "traefik.enable=true",
+          # HTTPS router (for direct LAN access)
           "traefik.http.routers.authentik.rule=Host(`auth.munchbox.cc`)",
           "traefik.http.routers.authentik.entrypoints=websecure",
           "traefik.http.routers.authentik.tls=true",
-          "traefik.http.routers.authentik.tls.certresolver=letsencrypt"
+          "traefik.http.routers.authentik.tls.certresolver=letsencrypt",
+          # HTTP router (for Cloudflare tunnel - TLS terminated at CF edge)
+          "traefik.http.routers.authentik-http.rule=Host(`auth.munchbox.cc`)",
+          "traefik.http.routers.authentik-http.entrypoints=web",
+          "traefik.http.routers.authentik-http.middlewares=cf-tunnel-https@file"
         ]
 
         check {
@@ -135,6 +140,8 @@ job "authentik" {
         AUTHENTIK_ERROR_REPORTING__ENABLED  = "false"
         AUTHENTIK_DISABLE_UPDATE_CHECK      = "true"
         AUTHENTIK_DISABLE_STARTUP_ANALYTICS = "true"
+        # Trust proxy headers for HTTPS detection behind reverse proxy
+        AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS = "172.26.64.0/18,192.168.68.0/24,127.0.0.1/32"
       }
 
       # --- Dynamic Secrets from Vault ---
