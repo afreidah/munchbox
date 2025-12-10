@@ -96,7 +96,6 @@ job "temporal-backup-worker" {
 
     task "worker" {
       driver = "docker"
-      user   = "root"
 
       vault {
         role = "nomad-workloads"
@@ -122,7 +121,7 @@ job "temporal-backup-worker" {
       }
 
       env {
-        TEMPORAL_ADDRESS = "192.168.68.61:7233"
+        TEMPORAL_ADDRESS = "temporal-server.service.consul:7233"
         NOMAD_ADDR       = "https://nomad.service.consul:4646"
         NOMAD_CACERT     = "/etc/ssl/certs/nomad-ca.pem"
         VAULT_CACERT     = "/etc/ssl/certs/vault-ca.pem"

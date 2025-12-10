@@ -57,6 +57,28 @@ job "redis-shared" {
       unlimited      = false
     }
 
+    # --- Service Registration ---
+    service {
+      name     = "redis-shared"
+      port     = "redis"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+        "database",
+        "redis",
+        "shared",
+      ]
+
+      check {
+        name     = "redis-tcp"
+        type     = "tcp"
+        port     = "redis"
+        interval = "10s"
+        timeout  = "2s"
+      }
+    }
+
     # -------------------------------------------------------------------------
     # Task: Redis
     # -------------------------------------------------------------------------
@@ -64,41 +86,46 @@ job "redis-shared" {
     task "redis" {
       driver = "docker"
 
+      # --- Vault Integration ---
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
       # --- Container Configuration ---
       config {
         image              = "redis:7-alpine"
         image_pull_timeout = "10m"
         ports              = ["redis"]
         args               = [
-          "--save", "60", "1",
-          "--loglevel", "warning",
-          "--maxmemory", "512mb",
-          "--maxmemory-policy", "allkeys-lru"
+          "/usr/local/etc/redis/redis.conf"
         ]
         volumes = [
           "/mnt/gdrive-secondary/redis-shared:/data",
+          "local/redis.conf:/usr/local/etc/redis/redis.conf:ro"
         ]
       }
 
-      # --- Service Registration ---
-      service {
-        name     = "redis-shared"
-        port     = "redis"
-        provider = "consul"
-
-        tags = [
-          "traefik.enable=false",
-          "database",
-          "redis",
-          "shared",
-        ]
-
-        check {
-          name     = "redis-health"
-          type     = "tcp"
-          interval = "10s"
-          timeout  = "3s"
-        }
+      # --- Redis Configuration Template ---
+      template {
+        destination = "local/redis.conf"
+        change_mode = "restart"
+        data        = <<EOH
+# Redis configuration
+save 60 1
+loglevel warning
+maxmemory 512mb
+maxmemory-policy allkeys-lru
+dir /data
+{{ with secret "secret/data/redis-shared" }}
+requirepass {{ .Data.data.password }}
+{{ end }}
+EOH
       }
 
       # --- Resources ---

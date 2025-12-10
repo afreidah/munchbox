@@ -3,9 +3,12 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# HTTPS-first ingress controller running as system job on ingress nodes.
+# HTTPS-first ingress controller running as system job on ingress node.
 # Auto-discovers services via Consul Catalog, fetches TLS certs from Let's Encrypt
 # via Cloudflare DNS challenge, and exposes dashboard on :8081 (LAN-only).
+#
+# Note: Zero-downtime updates require running on multiple ingress nodes.
+# With a single node and static ports, brief downtime during updates is expected.
 # -------------------------------------------------------------------------------
 
 job "traefik" {
@@ -39,10 +42,9 @@ job "traefik" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement
+  # Placement — Pin to ingress node
   # -------------------------------------------------------------------------
 
-  # --- Pin to ingress nodes ---
   constraint {
     attribute = "${meta.role}"
     operator  = "="
@@ -146,11 +148,15 @@ EOH
     address = ":80"
     [entryPoints.web.forwardedHeaders]
       trustedIPs = ["127.0.0.1/32"]
+    [entryPoints.web.http]
+      middlewares = ["default-sec@file"]
 
   [entryPoints.websecure]
     address = ":443"
     [entryPoints.websecure.forwardedHeaders]
       trustedIPs = ["127.0.0.1/32"]
+    [entryPoints.websecure.http]
+      middlewares = ["default-sec@file"]
 
   [entryPoints.traefik]
     address = ":8081"
@@ -253,6 +259,13 @@ EOH
         main = "munchbox.cc"
         sans = ["*.munchbox.cc"]
 
+  # --- Consul UI (HTTP, for CF tunnel) ---
+  [http.routers.consul-http]
+    rule        = "Host(`consul.munchbox.cc`)"
+    entryPoints = ["web"]
+    service     = "consul-ui"
+    middlewares = ["cf-tunnel-https", "authentik"]
+
   # --- Nomad UI (HTTPS, LAN-only) ---
   [http.routers.nomad]
     rule        = "Host(`nomad.munchbox.cc`)"
@@ -261,6 +274,13 @@ EOH
     middlewares = ["authentik", "dashboard-allowlan", "nomad-token"]
     [http.routers.nomad.tls]
       certResolver = "letsencrypt"
+
+  # --- Nomad UI (HTTP, for CF tunnel) ---
+  [http.routers.nomad-http]
+    rule        = "Host(`nomad.munchbox.cc`)"
+    entryPoints = ["web"]
+    service     = "nomad-ui"
+    middlewares = ["cf-tunnel-https", "authentik", "nomad-token"]
 
   # --- Traefik Dashboard (HTTPS, LAN-only) ---
   [http.routers.traefik-dashboard]
@@ -271,6 +291,13 @@ EOH
     [http.routers.traefik-dashboard.tls]
       certResolver = "letsencrypt"
 
+  # --- Traefik Dashboard (HTTP, for CF tunnel) ---
+  [http.routers.traefik-dashboard-http]
+    rule        = "Host(`traefik.munchbox.cc`)"
+    entryPoints = ["web"]
+    service     = "api@internal"
+    middlewares = ["cf-tunnel-https", "authentik", "dashboard-redirect"]
+
   # --- Traefik Dashboard fallback on :8081 ---
   [http.routers.traefik-fallback]
     rule        = "PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
@@ -278,6 +305,22 @@ EOH
     service     = "api@internal"
     middlewares = ["authentik", "dashboard-allowlan"]
     priority    = 2
+
+  # --- Proxmox UI (HTTPS, LAN-only) ---
+  [http.routers.proxmox]
+    rule        = "Host(`proxmox.munchbox.cc`)"
+    entryPoints = ["websecure"]
+    service     = "proxmox-ui"
+    middlewares = ["authentik", "dashboard-allowlan"]
+    [http.routers.proxmox.tls]
+      certResolver = "letsencrypt"
+
+  # --- Proxmox UI (HTTP, for CF tunnel) ---
+  [http.routers.proxmox-http]
+    rule        = "Host(`proxmox.munchbox.cc`)"
+    entryPoints = ["web"]
+    service     = "proxmox-ui"
+    middlewares = ["cf-tunnel-https", "authentik"]
 
   # --- Health check endpoint (no auth) ---
   [http.routers.ping]
@@ -294,8 +337,9 @@ EOH
 [http.middlewares]
 
   # --- Authentik Forward Auth (domain-level SSO) ---
+  # Using direct IP since system DNS doesn't resolve .service.consul properly
   [http.middlewares.authentik.forwardAuth]
-    address              = "http://authentik.service.consul:9000/outpost.goauthentik.io/auth/traefik"
+    address              = "http://192.168.68.72:9000/outpost.goauthentik.io/auth/traefik"
     trustForwardHeader   = true
     authResponseHeaders  = [
       "X-authentik-username",
@@ -313,10 +357,6 @@ EOH
   # --- LAN-only access ---
   [http.middlewares.dashboard-allowlan.ipAllowList]
     sourceRange = ["192.168.68.0/24", "127.0.0.1/32"]
-
-  # --- Dashboard authentication ---
-  [http.middlewares.dashboard-auth.basicAuth]
-    users = ["alex:$2y$05$2pwj9TDZZ29xWxv.eUAKLeKOhm/RrbbrbNewMkzjg1aGm4Bp81yKS"]
 
   # --- Dashboard root redirect ---
   [http.middlewares.dashboard-redirect.redirectRegex]
@@ -437,8 +477,18 @@ EOH
   # --- Nomad UI ---
   [http.services.nomad-ui.loadBalancer]
     serversTransport = "nomad-tls"
+    # Extended timeouts for websockets/long-polling during deployments
+    passHostHeader = true
+    [http.services.nomad-ui.loadBalancer.responseForwarding]
+      flushInterval = "100ms"
     [[http.services.nomad-ui.loadBalancer.servers]]
       url = "https://127.0.0.1:4646"
+
+  # --- Proxmox UI ---
+  [http.services.proxmox-ui.loadBalancer]
+    serversTransport = "insecure"
+    [[http.services.proxmox-ui.loadBalancer.servers]]
+      url = "https://192.168.68.59:8006"
 
 # -------------------------------------------------------------------------
 # Server Transports
@@ -447,6 +497,13 @@ EOH
 [http.serversTransports]
   [http.serversTransports.nomad-tls]
     rootCAs = ["/etc/traefik/certs/ca-chain.crt"]
+    # Extended timeouts for Nomad UI streaming/websockets
+    [http.serversTransports.nomad-tls.forwardingTimeouts]
+      dialTimeout = "30s"
+      responseHeaderTimeout = "0s"
+      idleConnTimeout = "90s"
+  [http.serversTransports.insecure]
+    insecureSkipVerify = true
 EOH
       }
 

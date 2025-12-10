@@ -36,5 +36,9 @@ tags = [
   "prowlarr",
   "media",
   "arr",
-  "traefik.http.routers.prowlarr.middlewares=authentik@file"
+  "traefik.http.routers.prowlarr.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.prowlarr-http.rule=Host(`prowlarr.munchbox.cc`)",
+  "traefik.http.routers.prowlarr-http.entrypoints=web",
+  "traefik.http.routers.prowlarr-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]

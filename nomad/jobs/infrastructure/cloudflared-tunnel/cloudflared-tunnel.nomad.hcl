@@ -125,26 +125,83 @@ credentials-file: /local/credentials.json
 metrics: 0.0.0.0:2000
 
 ingress:
+  # --- alexfreidah.com domains ---
   - hostname: "alexfreidah.com"
     service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: alexfreidah.com
-  
+
   - hostname: "www.alexfreidah.com"
     service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: www.alexfreidah.com
-  
+
   - hostname: "resume.alexfreidah.com"
     service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: resume.alexfreidah.com
-  
+
   - hostname: "k3s-status.alexfreidah.com"
     service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: k3s-status.alexfreidah.com
-  
+
+  # --- munchbox.cc domains (Authentik-protected) ---
+  - hostname: "dashboard.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: dashboard.munchbox.cc
+
+  - hostname: "nomad.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: nomad.munchbox.cc
+
+  - hostname: "consul.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: consul.munchbox.cc
+
+  - hostname: "traefik.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: traefik.munchbox.cc
+
+  - hostname: "auth.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: auth.munchbox.cc
+
+  - hostname: "nextcloud.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: nextcloud.munchbox.cc
+
+  - hostname: "prometheus.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: prometheus.munchbox.cc
+
+  - hostname: "grafana.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: grafana.munchbox.cc
+
+  - hostname: "vaultwarden.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: vaultwarden.munchbox.cc
+
+  - hostname: "alertmanager.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: alertmanager.munchbox.cc
+
+  - hostname: "emby.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: emby.munchbox.cc
+
   - service: http_status:404
 
 warp-routing:

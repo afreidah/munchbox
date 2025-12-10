@@ -1,0 +1,40 @@
+---
+# -------------------------------------------------------------------------------
+# Add Consul gRPC Address to Nomad
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Adds grpc_address to Nomad's consul stanza for Consul Connect support.
+# This is required for Envoy sidecars to communicate with the Consul agent.
+# -------------------------------------------------------------------------------
+
+- name: Add Consul gRPC address to Nomad configuration
+  hosts: nomad_cluster
+  become: true
+  serial: 1
+  handlers:
+    - name: restart nomad
+      systemd:
+        name: nomad
+        state: restarted
+  tasks:
+    - name: Add grpc_address to Consul TLS block
+      lineinfile:
+        path: /etc/nomad.d/nomad.hcl
+        regexp: '^\s*grpc_address\s*='
+        line: 'grpc_address = "127.0.0.1:8502"'
+        insertafter: 'address\s*=\s*"127.0.0.1:8501"'
+      notify: restart nomad
+
+    - name: Flush handlers
+      meta: flush_handlers
+
+    - name: Wait for Nomad to be ready
+      wait_for:
+        host: "{{ ansible_default_ipv4.address }}"
+        port: 4646
+        timeout: 60
+
+    - name: Wait for node stabilization
+      pause:
+        seconds: 10

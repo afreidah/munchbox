@@ -16,7 +16,6 @@ static_port = 9090
 host_network = true
 node  = "goren"
 size  = "medium"
-user  = "root"
 vault = true
 
 # --- Storage ---
@@ -69,5 +68,9 @@ tags = [
   "monitoring",
   "prometheus",
   "metrics",
-  "traefik.http.routers.prometheus.middlewares=authentik@file"
+  "traefik.http.routers.prometheus.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.prometheus-http.rule=Host(`prometheus.munchbox.cc`)",
+  "traefik.http.routers.prometheus-http.entrypoints=web",
+  "traefik.http.routers.prometheus-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]

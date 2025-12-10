@@ -26,7 +26,8 @@ volumes = [
 ]
 
 # --- Traefik routing ---
-traefik      = false
+traefik      = true
+traefik_host = "ersatz.munchbox.cc"
 
 # --- Health check ---
 health_path = "/"
@@ -40,7 +41,12 @@ env = {
 tags = [
   "media",
   "ersatztv",
-  "streaming"
+  "streaming",
+  "traefik.http.routers.ersatztv.middlewares=authentik@file",
+  # HTTP router for CF tunnel
+  "traefik.http.routers.ersatztv-http.rule=Host(`ersatz.munchbox.cc`)",
+  "traefik.http.routers.ersatztv-http.entrypoints=web",
+  "traefik.http.routers.ersatztv-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]
 
 # --- Termination ---

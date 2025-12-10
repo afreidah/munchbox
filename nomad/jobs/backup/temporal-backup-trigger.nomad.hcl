@@ -65,7 +65,6 @@ job "temporal-backup-trigger" {
 
     task "trigger" {
       driver = "docker"
-      user   = "root"
 
       config {
         image              = "registry.munchbox.cc/temporal-backup-worker:latest"
@@ -76,7 +75,7 @@ job "temporal-backup-trigger" {
       }
 
       env {
-        TEMPORAL_ADDRESS = "192.168.68.61:7233"
+        TEMPORAL_ADDRESS = "temporal-server.service.consul:7233"
       }
 
       # --- Resources ---
