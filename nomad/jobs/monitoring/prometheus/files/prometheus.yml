@@ -17,18 +17,13 @@ alerting:
   alertmanagers:
     - scheme: http
       consul_sd_configs:
-        - server: 'localhost:8500'
+        - server: '192.168.68.61:8500'
           services: ['alertmanager']
       relabel_configs:
-        # Use the service address from Consul
-        - source_labels: [__meta_consul_service_address]
+        # Combine service address and port into __address__
+        - source_labels: [__meta_consul_service_address, __meta_consul_service_port]
+          separator: ':'
           target_label: __address__
-          replacement: '${1}:9093'
-        # If service address is empty, use node address
-        - source_labels: [__meta_consul_service_address]
-          regex: ''
-          target_label: __address__
-          replacement: '${__meta_consul_address}:9093'
 
 # Scrape configuration - what to monitor
 scrape_configs:
@@ -251,7 +246,21 @@ scrape_configs:
       module: ["https_2xx"]
     static_configs:
       - targets:
+          # External sites
           - "https://resume.alexfreidah.com/"
+          # Public munchbox.cc services (via Cloudflare tunnel)
+          - "https://auth.munchbox.cc/-/health/ready/"
+          - "https://dashboard.munchbox.cc/"
+          - "https://nextcloud.munchbox.cc/"
+          - "https://grafana.munchbox.cc/"
+          - "https://prometheus.munchbox.cc/"
+          - "https://alertmanager.munchbox.cc/"
+          - "https://vaultwarden.munchbox.cc/"
+          - "https://emby.munchbox.cc/"
+          - "https://jellyfin.munchbox.cc/"
+          - "https://nomad.munchbox.cc/"
+          - "https://consul.munchbox.cc/"
+          - "https://traefik.munchbox.cc/"
     relabel_configs:
       - source_labels: ["__address__"]
         target_label: "__param_target"

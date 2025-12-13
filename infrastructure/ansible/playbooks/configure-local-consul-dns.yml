@@ -1,0 +1,138 @@
+# -------------------------------------------------------------------------------
+# Configure Local Consul DNS Resolution
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# This playbook configures dnsmasq on each node to handle .consul DNS queries
+# locally via the Consul agent, reducing load on Pi-hole and eliminating the
+# single point of failure for service discovery.
+#
+# The setup:
+# - dnsmasq listens on 127.0.0.53:53 (avoiding conflict with Consul on 8600)
+# - .consul queries are forwarded to local Consul agent (127.0.0.1:8600)
+# - All other queries go to Pi-hole (192.168.68.62, 192.168.68.64)
+# - resolv.conf points to local dnsmasq first
+#
+# Usage:
+#   ansible-playbook playbooks/configure-local-consul-dns.yml -l nomad_cluster
+# -------------------------------------------------------------------------------
+---
+- name: Configure local Consul DNS resolution via dnsmasq
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    dnsmasq_listen_address: "127.0.0.53"
+    consul_dns_port: 8600
+    upstream_dns_servers:
+      - "192.168.68.62"  # pihole-01
+      - "192.168.68.64"  # pihole-02
+
+  tasks:
+    - name: Install dnsmasq
+      ansible.builtin.apt:
+        name: dnsmasq
+        state: present
+        update_cache: true
+
+    - name: Stop systemd-resolved if running (conflicts with dnsmasq)
+      ansible.builtin.systemd:
+        name: systemd-resolved
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Create dnsmasq configuration
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.d/consul.conf
+        mode: '0644'
+        content: |
+          # Consul DNS forwarding configuration
+          # Forward .consul queries to local Consul agent
+          server=/consul/127.0.0.1#{{ consul_dns_port }}
+
+          # Listen only on localhost to avoid conflicts
+          listen-address={{ dnsmasq_listen_address }}
+          bind-interfaces
+
+          # Don't use /etc/resolv.conf for upstream (we manage it below)
+          no-resolv
+
+          # Upstream DNS servers (Pi-hole)
+          {% for server in upstream_dns_servers %}
+          server={{ server }}
+          {% endfor %}
+
+          # Cache settings
+          cache-size=1000
+
+          # Don't forward plain names (without dots)
+          domain-needed
+
+          # Never forward reverse lookups for private ranges
+          bogus-priv
+
+          # Log queries for debugging (comment out in production)
+          # log-queries
+
+          # Set reasonable timeouts
+          dns-forward-max=150
+      notify: Restart dnsmasq
+
+    - name: Configure NetworkManager to not manage resolv.conf
+      ansible.builtin.copy:
+        dest: /etc/NetworkManager/conf.d/dns.conf
+        mode: '0644'
+        content: |
+          [main]
+          dns=none
+      notify: Restart NetworkManager
+      when: ansible_facts.services['NetworkManager.service'] is defined
+
+    - name: Create static resolv.conf
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        mode: '0644'
+        content: |
+          # Managed by Ansible - configure-local-consul-dns.yml
+          # Local dnsmasq handles .consul queries via Consul agent
+          search munchbox.cc
+          nameserver {{ dnsmasq_listen_address }}
+          nameserver {{ upstream_dns_servers[0] }}
+          nameserver {{ upstream_dns_servers[1] }}
+
+    - name: Ensure dnsmasq is enabled and started
+      ansible.builtin.systemd:
+        name: dnsmasq
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  handlers:
+    - name: Restart dnsmasq
+      ansible.builtin.systemd:
+        name: dnsmasq
+        state: restarted
+
+    - name: Restart NetworkManager
+      ansible.builtin.systemd:
+        name: NetworkManager
+        state: restarted
+
+- name: Verify Consul DNS resolution
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Test local Consul DNS resolution
+      ansible.builtin.command:
+        cmd: dig +short redis-shared.service.consul
+      register: dig_result
+      changed_when: false
+      failed_when: dig_result.rc != 0 or dig_result.stdout == ""
+
+    - name: Display resolution result
+      ansible.builtin.debug:
+        msg: "Consul DNS working: redis-shared.service.consul -> {{ dig_result.stdout }}"

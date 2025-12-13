@@ -1,0 +1,108 @@
+# -------------------------------------------------------------------------------
+# Configure Static Network - Standardize Network Configuration
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# This playbook ensures all VMs have:
+# - Static IP configuration in /etc/network/interfaces
+# - Static DNS configuration in /etc/resolv.conf (with immutable flag)
+# - dhcpcd disabled to prevent interference
+#
+# Usage:
+#   ansible-playbook playbooks/configure-static-network.yml -l nomad_clients
+#   ansible-playbook playbooks/configure-static-network.yml -l nomad_servers
+# -------------------------------------------------------------------------------
+---
+- name: Configure static network on Debian VMs
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    network_interface: ens18
+    netmask: 255.255.252.0
+
+  tasks:
+    - name: Ensure static_ip is defined for this host
+      ansible.builtin.fail:
+        msg: "static_ip variable must be defined for {{ inventory_hostname }}"
+      when: static_ip is not defined
+
+    - name: Check if dhcpcd is installed
+      ansible.builtin.command: dpkg -l dhcpcd-base
+      register: dhcpcd_check
+      changed_when: false
+      failed_when: false
+
+    - name: Stop dhcpcd service if running
+      ansible.builtin.systemd:
+        name: dhcpcd
+        state: stopped
+        enabled: false
+      when: dhcpcd_check.rc == 0
+      ignore_errors: true
+
+    - name: Configure static IP in /etc/network/interfaces
+      ansible.builtin.copy:
+        dest: /etc/network/interfaces
+        content: |
+          # This file describes the network interfaces available on your system
+          # and how to activate them. For more information, see interfaces(5).
+
+          source /etc/network/interfaces.d/*
+
+          # The loopback network interface
+          auto lo
+          iface lo inet loopback
+
+          # The primary network interface - Static IP
+          # Managed by Ansible - do not edit manually
+          auto {{ network_interface }}
+          iface {{ network_interface }} inet static
+              address {{ static_ip }}
+              netmask {{ netmask }}
+              gateway {{ gateway }}
+              dns-nameservers {{ dns_servers | join(' ') }}
+        owner: root
+        group: root
+        mode: '0644'
+        backup: true
+      register: interfaces_changed
+
+    - name: Remove immutable flag from resolv.conf if set
+      ansible.builtin.command: chattr -i /etc/resolv.conf
+      changed_when: false
+      failed_when: false
+
+    - name: Configure static DNS in /etc/resolv.conf
+      ansible.builtin.copy:
+        dest: /etc/resolv.conf
+        content: |
+          # Static DNS configuration
+          # Managed by Ansible - protected with immutable flag
+          {% for dns in dns_servers %}
+          nameserver {{ dns }}
+          {% endfor %}
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Set immutable flag on /etc/resolv.conf
+      ansible.builtin.command: chattr +i /etc/resolv.conf
+      changed_when: true
+
+    - name: Verify DNS resolution works
+      ansible.builtin.command: "dig +short google.com @{{ dns_servers[0] }}"
+      register: dns_test
+      changed_when: false
+      failed_when: dns_test.rc != 0
+
+    - name: Display network configuration summary
+      ansible.builtin.debug:
+        msg: |
+          Host: {{ inventory_hostname }}
+          Static IP: {{ static_ip }}
+          Gateway: {{ gateway }}
+          DNS Servers: {{ dns_servers | join(', ') }}
+          Interface: {{ network_interface }}
+          DNS Test: {{ 'PASSED' if dns_test.rc == 0 else 'FAILED' }}

@@ -1,0 +1,108 @@
+---
+# -------------------------------------------------------------------------------
+# Proxmox GVT-g Setup Playbook
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Enables Intel GVT-g (GPU virtualization) on Proxmox hosts to allow VMs to share
+# the Intel integrated GPU for hardware transcoding (VAAPI). Requires reboot.
+# -------------------------------------------------------------------------------
+
+- name: Enable Intel GVT-g on Proxmox hosts
+  hosts: proxmox_hosts
+  become: true
+  gather_facts: true
+
+  vars:
+    grub_cmdline_params: "quiet intel_iommu=on i915.enable_gvt=1"
+    kvmgt_modules:
+      - kvmgt
+      - vfio-iommu-type1
+      - vfio-mdev
+
+  tasks:
+    # -------------------------------------------------------------------------
+    # Pre-Flight Checks
+    # -------------------------------------------------------------------------
+
+    - name: Check if Intel GPU is present
+      shell: lspci | grep -i "VGA.*Intel"
+      register: intel_gpu_check
+      changed_when: false
+      failed_when: false
+
+    - name: Skip host if no Intel GPU found
+      meta: end_host
+      when: intel_gpu_check.rc != 0
+
+    - name: Display detected Intel GPU
+      debug:
+        msg: "Intel GPU detected: {{ intel_gpu_check.stdout }}"
+
+    # -------------------------------------------------------------------------
+    # GRUB Configuration
+    # -------------------------------------------------------------------------
+
+    - name: Check current GRUB cmdline
+      shell: grep 'GRUB_CMDLINE_LINUX_DEFAULT' /etc/default/grub
+      register: current_grub
+      changed_when: false
+
+    - name: Check if GVT-g already enabled
+      set_fact:
+        gvt_enabled: "{{ 'i915.enable_gvt=1' in current_grub.stdout }}"
+
+    - name: Update GRUB cmdline for GVT-g
+      lineinfile:
+        path: /etc/default/grub
+        regexp: '^GRUB_CMDLINE_LINUX_DEFAULT='
+        line: 'GRUB_CMDLINE_LINUX_DEFAULT="{{ grub_cmdline_params }}"'
+        backup: true
+      register: grub_updated
+      when: not gvt_enabled
+
+    - name: Update GRUB
+      command: update-grub
+      when: grub_updated.changed
+
+    # -------------------------------------------------------------------------
+    # Kernel Modules
+    # -------------------------------------------------------------------------
+
+    - name: Ensure GVT-g kernel modules are loaded on boot
+      lineinfile:
+        path: /etc/modules
+        line: "{{ item }}"
+        create: true
+      loop: "{{ kvmgt_modules }}"
+      register: modules_updated
+
+    # -------------------------------------------------------------------------
+    # Reboot Notification
+    # -------------------------------------------------------------------------
+
+    - name: Set reboot required flag
+      set_fact:
+        reboot_required: "{{ grub_updated.changed or modules_updated.changed }}"
+
+    - name: Display reboot notice
+      debug:
+        msg: |
+          GVT-g configuration complete for {{ inventory_hostname }}.
+          {% if reboot_required %}
+          REBOOT REQUIRED to enable GVT-g.
+          After reboot, verify with: ls /sys/bus/pci/devices/0000:00:02.0/mdev_supported_types/
+          {% else %}
+          GVT-g already configured. No changes needed.
+          {% endif %}
+
+    # -------------------------------------------------------------------------
+    # Optional: Auto-reboot (disabled by default)
+    # -------------------------------------------------------------------------
+
+    # Uncomment to enable automatic reboot
+    # - name: Reboot to apply GVT-g changes
+    #   reboot:
+    #     msg: "Rebooting to enable GVT-g"
+    #     reboot_timeout: 300
+    #   when: reboot_required

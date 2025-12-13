@@ -1,0 +1,207 @@
+# -------------------------------------------------------------------------------
+# Setup Auto-Restart Webhook - AlertManager Webhook for Nomad Job Restarts
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# This playbook sets up a lightweight webhook receiver that:
+# - Listens for AlertManager webhook POSTs
+# - Extracts the nomad_job label from firing alerts with auto_restart=true
+# - Restarts the specified Nomad job using the Nomad CLI
+#
+# Prerequisites:
+# - Nomad CLI installed and configured on the target host
+# - NOMAD_ADDR and NOMAD_TOKEN environment variables set
+#
+# Usage:
+#   ansible-playbook playbooks/setup-auto-restart-webhook.yml -l stabler
+# -------------------------------------------------------------------------------
+---
+- name: Setup auto-restart webhook on Nomad server
+  hosts: stabler
+  become: true
+  gather_facts: true
+
+  vars:
+    webhook_port: 9095
+    webhook_user: root
+    webhook_script_path: /usr/local/bin/nomad-auto-restart-webhook.sh
+    nomad_addr: "https://127.0.0.1:4646"
+    cooldown_seconds: 300  # 5 minute cooldown between restarts of same job
+
+  tasks:
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - jq
+          - curl
+          - ncat
+        state: present
+        update_cache: true
+
+    - name: Create webhook script
+      ansible.builtin.copy:
+        dest: "{{ webhook_script_path }}"
+        mode: '0755'
+        content: |
+          #!/bin/bash
+          # AlertManager Webhook Receiver for Nomad Job Auto-Restart
+          # Listens for alerts with auto_restart=true and restarts the specified nomad_job
+
+          COOLDOWN_FILE="/tmp/nomad-restart-cooldown"
+          COOLDOWN_SECONDS={{ cooldown_seconds }}
+          LOG_FILE="/var/log/nomad-auto-restart.log"
+
+          log() {
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+          }
+
+          handle_request() {
+            local body=""
+            local content_length=0
+            local line
+
+            # Read headers
+            while IFS= read -r line; do
+              line="${line%$'\r'}"
+              [[ -z "$line" ]] && break
+              if [[ "$line" =~ ^Content-Length:\ ([0-9]+) ]]; then
+                content_length="${BASH_REMATCH[1]}"
+              fi
+            done
+
+            # Read body
+            if [[ $content_length -gt 0 ]]; then
+              body=$(head -c "$content_length")
+            fi
+
+            log "Received webhook payload"
+
+            # Parse alerts from AlertManager JSON
+            local status=$(echo "$body" | jq -r '.status // empty')
+
+            if [[ "$status" != "firing" ]]; then
+              log "Alert status is '$status', not 'firing'. Skipping."
+              echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"skipped\",\"reason\":\"not firing\"}"
+              return
+            fi
+
+            # Extract alerts that have auto_restart=true
+            local jobs_to_restart=$(echo "$body" | jq -r '
+              .alerts[]
+              | select(.status == "firing")
+              | select(.labels.auto_restart == "true")
+              | .labels.nomad_job
+            ' | sort -u)
+
+            if [[ -z "$jobs_to_restart" ]]; then
+              log "No jobs with auto_restart=true found"
+              echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"skipped\",\"reason\":\"no auto_restart jobs\"}"
+              return
+            fi
+
+            local restarted=""
+            local skipped=""
+
+            for job in $jobs_to_restart; do
+              # Check cooldown
+              local cooldown_marker="$COOLDOWN_FILE-$job"
+              if [[ -f "$cooldown_marker" ]]; then
+                local last_restart=$(cat "$cooldown_marker")
+                local now=$(date +%s)
+                local elapsed=$((now - last_restart))
+                if [[ $elapsed -lt $COOLDOWN_SECONDS ]]; then
+                  log "Job '$job' is in cooldown (${elapsed}s < ${COOLDOWN_SECONDS}s). Skipping."
+                  skipped="$skipped $job"
+                  continue
+                fi
+              fi
+
+              log "Restarting Nomad job: $job"
+
+              # Restart the job
+              if nomad job restart -on-error=fail "$job" >> "$LOG_FILE" 2>&1; then
+                log "Successfully restarted job: $job"
+                date +%s > "$cooldown_marker"
+                restarted="$restarted $job"
+              else
+                log "Failed to restart job: $job"
+              fi
+            done
+
+            echo -e "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"status\":\"ok\",\"restarted\":\"$restarted\",\"skipped\":\"$skipped\"}"
+          }
+
+          # Main: handle incoming request
+          handle_request
+
+    - name: Create systemd service for webhook
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/nomad-auto-restart-webhook.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=AlertManager Webhook for Nomad Job Auto-Restart
+          After=network.target nomad.service
+          Wants=nomad.service
+
+          [Service]
+          Type=simple
+          User={{ webhook_user }}
+          Environment=NOMAD_ADDR={{ nomad_addr }}
+          Environment=NOMAD_CACERT=/etc/nomad.d/certs/ca.crt
+          Environment=NOMAD_CLIENT_CERT=/etc/nomad.d/certs/nomad-cert.pem
+          Environment=NOMAD_CLIENT_KEY=/etc/nomad.d/certs/nomad-key.pem
+          ExecStart=/bin/bash -c 'while true; do ncat -l -p {{ webhook_port }} -k -c "{{ webhook_script_path }}" 2>/dev/null || sleep 1; done'
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and start webhook service
+      ansible.builtin.systemd:
+        name: nomad-auto-restart-webhook
+        enabled: true
+        state: started
+
+    - name: Create log file
+      ansible.builtin.file:
+        path: /var/log/nomad-auto-restart.log
+        state: touch
+        owner: "{{ webhook_user }}"
+        mode: '0644'
+
+    - name: Register webhook service in Consul
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8500/v1/agent/service/register"
+        method: PUT
+        body_format: json
+        body:
+          Name: "nomad-auto-restart-webhook"
+          Port: "{{ webhook_port }}"
+          Tags:
+            - "auto-restart"
+            - "webhook"
+          Check:
+            TCP: "127.0.0.1:{{ webhook_port }}"
+            Interval: "30s"
+            Timeout: "5s"
+        status_code: [200]
+      register: consul_register
+      failed_when: false
+
+    - name: Display webhook info
+      ansible.builtin.debug:
+        msg: |
+          Webhook service started on port {{ webhook_port }}
+
+          To test manually:
+            curl -X POST http://stabler:{{ webhook_port }} -d '{"status":"firing","alerts":[{"status":"firing","labels":{"auto_restart":"true","nomad_job":"authentik"}}]}'
+
+          AlertManager should route alerts with auto_restart=true label to:
+            http://stabler.node.consul:{{ webhook_port }}

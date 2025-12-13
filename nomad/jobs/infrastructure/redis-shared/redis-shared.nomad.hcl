@@ -130,8 +130,8 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 200
-        memory = 512
+        cpu    = 200    # Keep CPU - usage reasonable at 0.6%
+        memory = 128    # Reduced from 512 - actual usage ~30MB
       }
 
       # --- Termination ---

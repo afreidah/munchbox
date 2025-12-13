@@ -202,6 +202,11 @@ ingress:
     originRequest:
       httpHostHeader: emby.munchbox.cc
 
+  - hostname: "jellyfin.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: jellyfin.munchbox.cc
+
   - service: http_status:404
 
 warp-routing:
