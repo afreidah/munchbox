@@ -5,8 +5,8 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: 'munchbox'
-    datacenter: 'pi-dc'
+    cluster: "munchbox"
+    datacenter: "pi-dc"
 
 # Alert rules file
 rule_files:
@@ -17,12 +17,13 @@ alerting:
   alertmanagers:
     - scheme: http
       consul_sd_configs:
-        - server: '192.168.68.61:8500'
-          services: ['alertmanager']
+        - server: "192.168.68.61:8500"
+          services: ["alertmanager"]
       relabel_configs:
         # Combine service address and port into __address__
-        - source_labels: [__meta_consul_service_address, __meta_consul_service_port]
-          separator: ':'
+        - source_labels:
+            [__meta_consul_service_address, __meta_consul_service_port]
+          separator: ":"
           target_label: __address__
 
 # Scrape configuration - what to monitor
@@ -47,7 +48,7 @@ scrape_configs:
     authorization:
       credentials_file: "/etc/prometheus/secrets/nomad_token"
     params:
-      format: ['prometheus']
+      format: ["prometheus"]
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
@@ -77,7 +78,7 @@ scrape_configs:
     authorization:
       credentials_file: "/etc/prometheus/secrets/nomad_token"
     params:
-      format: ['prometheus']
+      format: ["prometheus"]
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
@@ -140,7 +141,8 @@ scrape_configs:
         separator: ":"
         target_label: "__address__"
       # Override with service address if it exists (non-empty)
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+      - source_labels:
+          ["__meta_consul_service_address", "__meta_consul_service_port"]
         separator: ":"
         regex: "([^:]+):(.*)"
         replacement: "$1:$2"
@@ -238,6 +240,65 @@ scrape_configs:
         target_label: "instance"
 
   # -----------------------------------------------------------------------
+  # PostgreSQL Exporter - Database metrics via Consul service discovery
+  # -----------------------------------------------------------------------
+  - job_name: "postgres-exporter"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["postgres-exporter"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "database"
+        replacement: "postgres-shared"
+
+  # -----------------------------------------------------------------------
+  # Redis Exporter - Cache metrics via Consul service discovery
+  # -----------------------------------------------------------------------
+  - job_name: "redis-exporter"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["redis-exporter"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "database"
+        replacement: "redis-shared"
+
+  # -----------------------------------------------------------------------
+  # Nextcloud Exporter - Cloud storage metrics via Consul service discovery
+  # -----------------------------------------------------------------------
+  - job_name: "nextcloud-exporter"
+    metrics_path: "/metrics"
+    scrape_interval: 60s
+    scrape_timeout: 30s
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["nextcloud-exporter"]
+        datacenter: "munchbox"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "nextcloud"
+
+  # -----------------------------------------------------------------------
   # Site monitoring via Blackbox Exporter
   # -----------------------------------------------------------------------
   - job_name: "site_https"
@@ -248,19 +309,9 @@ scrape_configs:
       - targets:
           # External sites
           - "https://resume.alexfreidah.com/"
-          # Public munchbox.cc services (via Cloudflare tunnel)
-          - "https://auth.munchbox.cc/-/health/ready/"
-          - "https://dashboard.munchbox.cc/"
-          - "https://nextcloud.munchbox.cc/"
-          - "https://grafana.munchbox.cc/"
-          - "https://prometheus.munchbox.cc/"
-          - "https://alertmanager.munchbox.cc/"
-          - "https://vaultwarden.munchbox.cc/"
-          - "https://emby.munchbox.cc/"
+          - "https://k3s-status.alexfreidah.com/"
+          # Public munchbox.cc services (via Cloudflare tunnel, no Authentik)
           - "https://jellyfin.munchbox.cc/"
-          - "https://nomad.munchbox.cc/"
-          - "https://consul.munchbox.cc/"
-          - "https://traefik.munchbox.cc/"
     relabel_configs:
       - source_labels: ["__address__"]
         target_label: "__param_target"

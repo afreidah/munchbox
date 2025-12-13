@@ -14,6 +14,9 @@ host_network = true
 node         = "nomad-client-02"
 size         = "medium"
 
+# --- Health check (use /ping to avoid auth failures in logs) ---
+health_path  = "/ping"
+
 # --- Storage ---
 storage      = "local"
 storage_path = "/config"
