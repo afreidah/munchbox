@@ -16,6 +16,9 @@ size         = "medium"
 memory       = 300
 cpu          = 1000
 
+# --- Health check (use /ping to avoid auth failures in logs) ---
+health_path  = "/ping"
+
 # --- Storage ---
 storage      = "local"
 storage_path = "/config"

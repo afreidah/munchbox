@@ -13,7 +13,10 @@ static_port  = 8989
 host_network = true
 node         = "nomad-client-01"
 size         = "medium"
-cpu          = 1500
+cpu          = 1000
+
+# --- Health check (use /ping to avoid auth failures in logs) ---
+health_path  = "/ping"
 
 # --- Storage ---
 storage      = "local"

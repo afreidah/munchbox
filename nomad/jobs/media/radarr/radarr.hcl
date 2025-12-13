@@ -13,6 +13,9 @@ static_port  = 7878
 node         = "nomad-client-01"
 size         = "medium"
 
+# --- Health check (use /ping to avoid auth failures in logs) ---
+health_path  = "/ping"
+
 # --- Storage ---
 storage      = "local"
 storage_path = "/config"
