@@ -14,7 +14,9 @@ image = "jasongdove/ersatztv:latest"
 port  = 8409
 static_port = 8409
 host_network = true
-size = "medium"
+node = "nomad-client-02"
+cpu    = 500   # Reduced from 2000 - actual usage ~1%
+memory = 800   # Keep memory - actual usage 658MB
 
 # --- Storage ---
 storage = "ephemeral"

@@ -121,6 +121,17 @@ groups:
           summary: "Slow response time: {{"{{"}} $labels.instance {{"}}"}}"
           description: "Site {{"{{"}} $labels.instance {{"}}"}} response time is above 5 seconds."
 
+      - alert: AuthentikSlowResponse
+        expr: probe_duration_seconds{job="site_https", instance=~".*auth.munchbox.cc.*"} > 2
+        for: 2m
+        labels:
+          severity: critical
+          auto_restart: "true"
+          nomad_job: "authentik"
+        annotations:
+          summary: "Authentik is responding slowly"
+          description: "Authentik response time is above 2 seconds (current: {{"{{"}} $value | printf \"%.2f\" {{"}}"}}s). Auto-restart triggered."
+
   # ---------------------------------------------------------------------------
   # Consul Health
   # ---------------------------------------------------------------------------

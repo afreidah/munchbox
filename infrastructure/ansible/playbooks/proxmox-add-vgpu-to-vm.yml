@@ -1,0 +1,122 @@
+---
+# -------------------------------------------------------------------------------
+# Proxmox vGPU Passthrough Playbook
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Creates a GVT-g mediated device (vGPU) and attaches it to a specified VM for
+# hardware transcoding. Requires GVT-g to be enabled (run proxmox-enable-gvt-g.yml
+# first). VM will be stopped and started to apply changes.
+# -------------------------------------------------------------------------------
+
+- name: Add Intel vGPU to Proxmox VM
+  hosts: "{{ target_host | default('fontana') }}"
+  become: true
+  gather_facts: true
+
+  vars:
+    # VM to add vGPU to
+    vm_id: "{{ target_vmid | default('180') }}"
+    # vGPU type: V5_4 (smaller) or V5_8 (larger, better for transcoding)
+    vgpu_type: "i915-GVTg_V5_8"
+    # GPU PCI address
+    gpu_pci_addr: "0000:00:02.0"
+
+  tasks:
+    # -------------------------------------------------------------------------
+    # Pre-Flight Checks
+    # -------------------------------------------------------------------------
+
+    - name: Check if GVT-g is enabled
+      stat:
+        path: "/sys/bus/pci/devices/{{ gpu_pci_addr }}/mdev_supported_types"
+      register: mdev_types
+
+    - name: Fail if GVT-g not enabled
+      fail:
+        msg: "GVT-g not enabled on {{ inventory_hostname }}. Run proxmox-enable-gvt-g.yml first and reboot."
+      when: not mdev_types.stat.exists
+
+    - name: Check available vGPU instances
+      slurp:
+        src: "/sys/bus/pci/devices/{{ gpu_pci_addr }}/mdev_supported_types/{{ vgpu_type }}/available_instances"
+      register: available_instances
+
+    - name: Parse available instances
+      set_fact:
+        vgpu_available: "{{ available_instances.content | b64decode | trim | int }}"
+
+    - name: Display vGPU availability
+      debug:
+        msg: "Available {{ vgpu_type }} instances: {{ vgpu_available }}"
+
+    - name: Fail if no vGPU instances available
+      fail:
+        msg: "No {{ vgpu_type }} instances available. May already be allocated."
+      when: vgpu_available | int < 1
+
+    - name: Get VM info
+      command: "qm config {{ vm_id }}"
+      register: vm_config
+      changed_when: false
+
+    - name: Check if vGPU already configured
+      set_fact:
+        vgpu_configured: "{{ 'hostpci' in vm_config.stdout and 'mdev' in vm_config.stdout }}"
+
+    - name: Display current VM config
+      debug:
+        msg: "VM {{ vm_id }} already has vGPU configured"
+      when: vgpu_configured
+
+    # -------------------------------------------------------------------------
+    # Create vGPU and Add to VM
+    # -------------------------------------------------------------------------
+
+    - name: Stop VM to add vGPU
+      command: "qm stop {{ vm_id }}"
+      when: not vgpu_configured
+      register: vm_stopped
+
+    - name: Wait for VM to stop
+      command: "qm status {{ vm_id }}"
+      register: vm_status
+      until: "'stopped' in vm_status.stdout"
+      retries: 30
+      delay: 5
+      when: vm_stopped.changed
+
+    - name: Add vGPU to VM configuration
+      command: "qm set {{ vm_id }} -hostpci0 {{ gpu_pci_addr }},mdev={{ vgpu_type }}"
+      when: not vgpu_configured
+      register: vgpu_added
+
+    - name: Start VM with vGPU
+      command: "qm start {{ vm_id }}"
+      when: vgpu_added.changed
+
+    - name: Wait for VM to start
+      command: "qm status {{ vm_id }}"
+      register: vm_status_after
+      until: "'running' in vm_status_after.stdout"
+      retries: 30
+      delay: 5
+      when: vgpu_added.changed
+
+    # -------------------------------------------------------------------------
+    # Verification
+    # -------------------------------------------------------------------------
+
+    - name: Get updated VM config
+      command: "qm config {{ vm_id }}"
+      register: final_config
+      changed_when: false
+
+    - name: Display vGPU configuration result
+      debug:
+        msg: |
+          vGPU configured for VM {{ vm_id }}:
+          {{ final_config.stdout_lines | select('match', '.*hostpci.*') | list | join('\n') }}
+
+          VM should now have /dev/dri/renderD128 available for VAAPI transcoding.
+          Verify inside VM with: ls -la /dev/dri/

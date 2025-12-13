@@ -40,13 +40,13 @@ services:
     items:
       - name: Green
         subtitle: Pi-hole DNS server 1
-        url: http://green.munchbox/admin
+        url: http://green/admin
         tag: dns
         icon: pi-hole-unbound.svg
 
       - name: Logan
         subtitle: Pi-hole DNS server 2
-        url: http://logan.munchbox/admin
+        url: http://logan/admin
         tag: dns
         icon: pi-hole-unbound.svg
 
@@ -130,7 +130,7 @@ services:
     items:
       - name: Proxmox
         subtitle: Virtualization cluster
-        url: https://proxmox.munchbox.cc
+        url: https://proxmox.munchbox.cc:8006
         tag: virtualization
         icon: proxmox.png
 

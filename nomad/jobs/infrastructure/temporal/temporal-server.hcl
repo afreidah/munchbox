@@ -52,8 +52,8 @@ tags = [
 ]
 
 # --- Resources override ---
-cpu = 1000
-memory = 1024
+cpu = 300      # Reduced from 1000 - actual usage <1%
+memory = 256   # Reduced from 1024 - actual usage 81MB
 
 # --- DNS configuration ---
 dns = ["192.168.68.62", "192.168.68.64"]

@@ -16,6 +16,7 @@ static_port  = 3100
 host_network = true
 node         = "nomad-client-02"  # Changed from nomad-client-03
 size         = "medium"
+memory       = 384    # Reduced from 512 - actual usage 301MB
 
 # --- Storage (manual pre-creation, no init task) ---
 volumes = [

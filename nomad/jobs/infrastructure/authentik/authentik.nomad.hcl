@@ -45,14 +45,12 @@ job "authentik" {
 
     # --- Network Configuration ---
     network {
-      mode = "bridge"
+      mode = "host"
       port "http" {
         static = 9000
-        to     = 9000
       }
       port "https" {
         static = 9443
-        to     = 9443
       }
     }
 
@@ -98,8 +96,9 @@ job "authentik" {
         name     = "authentik-health"
         type     = "http"
         path     = "/-/health/ready/"
-        interval = "15s"
-        timeout  = "5s"
+        interval = "30s"
+        timeout  = "10s"
+        failures_before_critical = 3
       }
     }
 
@@ -126,6 +125,7 @@ job "authentik" {
       config {
         image              = "ghcr.io/goauthentik/server:2024.10"
         image_pull_timeout = "10m"
+        network_mode       = "host"
         ports              = ["http", "https"]
         args               = ["server"]
         volumes            = [
@@ -165,8 +165,8 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 500
-        memory = 1024
+        cpu    = 1500
+        memory = 2048
       }
 
       # --- Termination ---
@@ -184,7 +184,7 @@ EOH
 
     # --- Network Configuration ---
     network {
-      mode = "bridge"
+      mode = "host"
     }
 
     # --- Restart Policy ---
@@ -238,6 +238,7 @@ EOH
       config {
         image              = "ghcr.io/goauthentik/server:2024.10"
         image_pull_timeout = "10m"
+        network_mode       = "host"
         args               = ["worker"]
         volumes            = [
           "/mnt/gdrive-secondary/authentik/media:/media",
@@ -273,8 +274,8 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 500
-        memory = 1024
+        cpu    = 300    # Reduced from 500 - actual usage <0.2%
+        memory = 512    # Reduced from 1024 - actual usage 351MB
       }
 
       # --- Termination ---
