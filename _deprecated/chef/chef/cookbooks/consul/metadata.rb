@@ -1,11 +1,10 @@
-# --------------------------------------------------------------------
-# Cookbook:: consul
-# Metadata
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Metadata
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
-# Cookbook:: metadata for Consul installation and configuration.
-# --------------------------------------------------------------------
+# Cookbook metadata for Consul service mesh installation and configuration.
+# -------------------------------------------------------------------------------
 
 name             'consul'
 maintainer       'Alex Freidah'

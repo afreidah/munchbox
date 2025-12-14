@@ -1,4 +1,11 @@
-# playbooks/setup-nfs-mounts.yml
+# -------------------------------------------------------------------------------
+# Setup NFS Mounts - Google Drive Storage Access
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures NFS mounts for accessing Google Drive storage exported from mccoy.
+# Skips the NFS server itself (mccoy) and Pi-hole nodes (green, logan).
+# -------------------------------------------------------------------------------
 ---
 - name: Setup NFS mounts for gdrive
   hosts: all:!mccoy:!green:!logan

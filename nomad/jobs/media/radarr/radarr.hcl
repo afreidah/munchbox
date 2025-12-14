@@ -2,6 +2,9 @@
 # Radarr — Movie Management
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Monitors RSS feeds and interfaces with indexers to automatically grab movies.
+# Integrates with Deluge for downloads and manages movie library organization.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---

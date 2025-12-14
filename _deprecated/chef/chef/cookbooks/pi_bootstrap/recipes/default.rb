@@ -1,23 +1,18 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: pi_bootstrap
-# Recipe:: default
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - Default Recipe
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
-# Bootstraps a Raspberry Pi with hostname, package installation, and Docker service.
-# --------------------------------------------------------------------
+# Bootstraps a Raspberry Pi with hostname, package installation, and Docker.
+# -------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Set Variables
-# --------------------------------------------------------------------
+# --- Set Variables ---
 
 host = node['set_fqdn']
 
-# --------------------------------------------------------------------
-# Log Detected IP Address
-# --------------------------------------------------------------------
+# --- Log Detected IP Address ---
 
 ruby_block 'log my ipaddress' do
   block do
@@ -26,9 +21,7 @@ ruby_block 'log my ipaddress' do
   end
 end
 
-# --------------------------------------------------------------------
-# Set Hostname Based on IP Address
-# --------------------------------------------------------------------
+# --- Set Hostname Based on IP Address ---
 
 template '/etc/hostname' do
   source 'hostname.erb'
@@ -41,9 +34,7 @@ execute 'hostnamectl-set' do
   action :nothing
 end
 
-# --------------------------------------------------------------------
-# Update /etc/hosts with New Hostname
-# --------------------------------------------------------------------
+# --- Update /etc/hosts with New Hostname ---
 
 ruby_block 'update_etc_hosts' do
   block do
@@ -54,17 +45,13 @@ ruby_block 'update_etc_hosts' do
   only_if { ::File.exist?('/etc/hosts') }
 end
 
-# --------------------------------------------------------------------
-# Install Required Packages
-# --------------------------------------------------------------------
+# --- Install Required Packages ---
 
 package node['pi_bootstrap']['packages'] do
   action :install
 end
 
-# --------------------------------------------------------------------
-# Enable and Start Docker Service
-# --------------------------------------------------------------------
+# --- Enable and Start Docker Service ---
 
 service 'docker' do
   action [:enable, :start]
@@ -72,9 +59,7 @@ service 'docker' do
 end
 
 
-# --------------------------------------------------------------------
-# Install nvm and Node.js (as root)
-# --------------------------------------------------------------------
+# --- Install nvm and Node.js (as root) ---
 
 bash 'install_nvm_and_node' do
   code <<-CODE
@@ -97,9 +82,7 @@ bash 'install_nvm_and_node' do
   not_if { ::File.exist?('/root/.nvm/nvm.sh') }
 end
 
-# --------------------------------------------------------------------
-# Install Node.js using nvm
-# --------------------------------------------------------------------
+# --- Install Node.js using nvm ---
 
 bash 'install_node' do
   code <<-CODE

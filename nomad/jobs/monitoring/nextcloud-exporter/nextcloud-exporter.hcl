@@ -19,7 +19,9 @@ vault       = true
 traefik = false
 
 # --- Health check ---
-health_path = "/metrics"
+health_path    = "/metrics"
+health_timeout = "35s"
+health_interval = "60s"
 
 # --- Environment (static) ---
 # Note: Using direct IP since container doesn't have Consul DNS

@@ -1,15 +1,14 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Recipe:: deploy_osds
-#
-# Creates loopback devices from OSD files and deploys OSDs.
-# Must run after bootstrap and only on bootstrap node.
-# --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Only Run on Bootstrap Node
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - Deploy OSDs Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Creates loopback devices from OSD files and deploys OSDs on bootstrap node.
+# -------------------------------------------------------------------------------
+
+# --- Only Run on Bootstrap Node ---
 
 bootstrap_node = node['ceph']['bootstrap_node']
 current_node   = node['hostname']

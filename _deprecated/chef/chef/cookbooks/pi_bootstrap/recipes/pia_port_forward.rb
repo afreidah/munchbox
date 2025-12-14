@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - PIA Port Forward Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Sets up PIA port forwarding service via systemd.
+# -------------------------------------------------------------------------------
+
 pia_item = data_bag_item('pia_vpn', 'wg')
 
 template '/etc/systemd/system/pia-portforward.service' do

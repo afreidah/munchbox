@@ -1,6 +1,10 @@
 # -------------------------------------------------------------------------------
-# cdktf-ops-operator.hcl
-# SRE/operator day-to-day: drain nodes, exec into allocs, read logs
+# Ops Operator Policy - Nomad ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# SRE/operator day-to-day policy for draining nodes, exec into allocations, and
+# reading logs without full admin access.
 # -------------------------------------------------------------------------------
 namespace "*" {
   policy       = "read"

@@ -1,39 +1,11 @@
-// --------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // Metadata Management for Nomad Jobs
-// File: common/metadata.go
 //
-// Purpose:
-//   - Defines standard metadata schema for all Nomad jobs
-//   - Automatically infers category from directory structure
-//   - Auto-populates Git information (branch)
-//   - Generates HCL meta blocks for injection into jobs
+// Project: Munchbox / Author: Alex Freidah
 //
-// Metadata Fields:
-//   Version Tracking:
-//     - version: Semantic version (e.g., "2.54.1") or "dev"
-//     - image_tag: Docker image tag
-//
-//   Ownership:
-//     - owner: Owner name (alex.freidah for personal projects)
-//
-//   Classification:
-//     - category: Inferred from directory (monitoring, infrastructure, etc.)
-//     - tier: Service criticality (tier-0 to tier-3)
-//     - environment: Deployment environment (production, staging, dev)
-//
-//   Technical:
-//     - description: Human-readable job description
-//     - repository: Optional source repository URL
-//
-//   Auto-populated:
-//     - git_branch: Git branch at deployment time
-//
-// Usage:
-//   metadata := DefaultMetadata()
-//   metadata.Category = InferCategoryFromPath("/path/to/job.nomad.hcl")
-//   metadata.Tier = InferTierFromCategory(metadata.Category)
-//   hclBlock := metadata.ToHCL()
-// --------------------------------------------------------------------
+// Defines standard metadata schema for Nomad jobs with automatic category
+// inference from directory structure, Git branch population, and HCL generation.
+// -------------------------------------------------------------------------------
 
 package common
 

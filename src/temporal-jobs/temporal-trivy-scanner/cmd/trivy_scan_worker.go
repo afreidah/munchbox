@@ -1,3 +1,13 @@
+// -------------------------------------------------------------------------------
+// Trivy Scan Worker - Vulnerability Scanner
+//
+// Project: Munchbox / Author: Alex Freidah
+//
+// Long-running worker service that executes Trivy vulnerability scans on all
+// container images running in the Nomad cluster. Discovers images via Nomad API
+// and scans each with Trivy, reporting critical/high/medium/low vulnerability counts.
+// -------------------------------------------------------------------------------
+
 package main
 
 import (

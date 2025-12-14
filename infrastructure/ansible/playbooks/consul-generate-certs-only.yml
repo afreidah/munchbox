@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Generate Consul Certificates Only - Certificate Pre-staging
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Generates TLS certificates from Vault PKI for all Consul nodes without
+# enabling TLS. Use before consul-enable-tls-all.yml for staged rollout.
+# -------------------------------------------------------------------------------
 ---
 - name: Generate Consul server certificates (no TLS enablement)
   hosts: nomad_servers

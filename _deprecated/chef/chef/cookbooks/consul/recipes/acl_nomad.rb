@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: consul
-# Recipe:: acl_nomad
-# Purpose:: Ensure Nomad Consul ACL policies exist; optionally mint tokens once.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - ACL Nomad Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Ensures Nomad Consul ACL policies exist; optionally mints tokens once.
+# -------------------------------------------------------------------------------
 
 # TODO re-token here...old token is missing so can't run this until I update
 # --- Configuration knobs (set these in role/env or attrs) ---
@@ -23,9 +25,7 @@ raise 'Consul ACL management token is required for policy management' if mgmt_se
 # Helper to run consul CLI with token (avoids repeating env everywhere)
 consul_env = { 'CONSUL_HTTP_TOKEN' => mgmt_secret }
 
-# --------------------------------------------------------------------
-# Render policy files (for audit/versioning)
-# --------------------------------------------------------------------
+# --- Render policy files (for audit/versioning) ---
 directory '/etc/consul.d/policies' do
   owner 'root'
   group 'root'
@@ -47,9 +47,7 @@ template '/etc/consul.d/policies/nomad-client.hcl' do
   mode   '0640'
 end
 
-# --------------------------------------------------------------------
-# Ensure policies exist (idempotent)
-# --------------------------------------------------------------------
+# --- Ensure policies exist (idempotent) ---
 execute 'consul-acl-policy-create-nomad-server' do
   command 'consul acl policy create -name nomad-server -rules @/etc/consul.d/policies/nomad-server.hcl'
   environment(consul_env)
@@ -75,10 +73,8 @@ execute 'consul-acl-policy-update-nomad-client' do
   only_if 'consul acl policy read -name nomad-client >/dev/null 2>&1', environment: consul_env
 end
 
-# --------------------------------------------------------------------
-# Optional: Mint Nomad server/client tokens ONCE and store them securely.
+# --- Optional: Mint Nomad server/client tokens ONCE and store them securely ---
 # Gate this to exactly one node (acl provisioner) to avoid duplicates.
-# --------------------------------------------------------------------
 if provisioner
   # Create server token unless already in Vault/databag
   begin

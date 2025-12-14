@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  Resource: consul_config — Renders Consul HCL configuration file
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Config Resource
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Renders Consul HCL configuration file from data bag values.
+# -------------------------------------------------------------------------------
 
 unified_mode true
 
@@ -11,9 +15,8 @@ property :install_dir, String, required: true
 property :user,        String, required: true
 property :group,       String, required: true
 
-# ------------------------------------------------------------------------------
-#  Action: :create — Renders Consul HCL configuration file
-# ------------------------------------------------------------------------------
+# --- ACTION: :create ---
+# Renders Consul HCL configuration file.
 
 action :create do
   config_path = ::File.join(new_resource.config_dir, 'consul.hcl')
@@ -60,9 +63,8 @@ action :create do
   end
 end
 
-# ------------------------------------------------------------------------------
-#  Action: :delete — Removes Consul HCL configuration file
-# ------------------------------------------------------------------------------
+# --- ACTION: :delete ---
+# Removes Consul HCL configuration file.
 
 action :delete do
   config_path = ::File.join(new_resource.config_dir, 'consul.hcl')

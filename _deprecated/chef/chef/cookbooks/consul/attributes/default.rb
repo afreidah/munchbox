@@ -1,17 +1,14 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: consul
-# Attributes:: default
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Default Attributes
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
 # Default attributes for Consul installation and configuration.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Consul Installation
-# --------------------------------------------------------------------
+# --- Consul Installation ---
 
 default['consul']['install_method'] = 'binary'
 default['consul']['version']        = '1.21.3'

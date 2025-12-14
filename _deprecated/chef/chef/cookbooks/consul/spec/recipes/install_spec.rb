@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  install_spec.rb — ChefSpec tests for consul::install recipe
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Install Recipe Spec
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# ChefSpec tests for consul::install recipe.
+# -------------------------------------------------------------------------------
 
 require 'spec_helper'
 

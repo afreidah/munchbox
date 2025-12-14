@@ -7,7 +7,7 @@
 # or host_vars as needed for environment-specific configuration.
 # -------------------------------------------------------------------------------
 
-nomad_version: "1.11.0"
+nomad_version: "1.11.1"
 nomad_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 nomad_archive: "nomad_{{ nomad_version }}_linux_{{ nomad_arch }}.zip"
 nomad_download_url: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/{{ nomad_archive }}"
@@ -32,17 +32,17 @@ nomad_advertise_rpc: "{{ ansible_default_ipv4.address }}:4647"
 nomad_advertise_serf: "{{ ansible_default_ipv4.address }}:4648"
 
 nomad_server_enabled: "{{ 'nomad_servers' in group_names }}"
-nomad_bootstrap_expect: 3
-nomad_retry_join:
-  - "192.168.68.60:4647"
-  - "192.168.68.61:4647"
-  - "192.168.68.69:4647"
+nomad_bootstrap_expect: "{{ groups['nomad_servers'] | length }}"
+
+# Dynamic server_join - automatically computed from nomad_servers group
+# Uses serf port 4648 (not RPC 4647) to avoid TLS issues with retry_join
+# Excludes the current host from the join list
+nomad_server_join: "{{ groups['nomad_servers'] | map('extract', hostvars, 'ansible_host') | reject('equalto', ansible_default_ipv4.address) | map('regex_replace', '$', ':4648') | list }}"
 
 nomad_client_enabled: "{{ 'nomad_clients' in group_names }}"
-nomad_servers:
-  - "192.168.68.60:4647"
-  - "192.168.68.61:4647"
-  - "192.168.68.69:4647"
+
+# For clients to connect to servers
+nomad_servers: "{{ groups['nomad_servers'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '$', ':4647') | list }}"
 
 nomad_consul_address: "127.0.0.1:8500"
 nomad_consul_datacenter: "munchbox"

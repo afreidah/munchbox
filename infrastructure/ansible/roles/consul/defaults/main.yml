@@ -30,13 +30,12 @@ consul_domain: "consul"
 consul_bind_addr: "{{ ansible_default_ipv4.address }}"
 consul_client_addr: "0.0.0.0"
 
-consul_server_enabled: "{{ 'nomad_servers' in group_names }}"
-consul_bootstrap_expect: 3
+consul_server_enabled: "{{ 'consul_servers' in group_names or 'nomad_servers' in group_names }}"
+consul_bootstrap_expect: "{{ groups['consul_servers'] | default(groups['nomad_servers']) | length }}"
 
-consul_retry_join:
-  - "192.168.68.60"
-  - "192.168.68.61"
-  - "192.168.68.69"
+# Dynamic retry_join - automatically computed from consul_servers group
+# Falls back to nomad_servers if consul_servers doesn't exist
+consul_retry_join: "{{ (groups['consul_servers'] | default(groups['nomad_servers'])) | map('extract', hostvars, 'ansible_host') | list }}"
 
 consul_client_enabled: true
 

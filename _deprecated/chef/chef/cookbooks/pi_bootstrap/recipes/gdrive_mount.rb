@@ -1,22 +1,18 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: pi_bootstrap
-# Recipe:: gdrive_mount
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - GDrive Mount Recipe
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
 # Mounts a remote Google Drive (via SSHFS) from 'mccoy' to /mnt/gdrive.
-# Ensures the mount point exists and persists the mount in /etc/fstab.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 package 'sshfs' do
   action :install
 end
 
-# --------------------------------------------------------------------
-# Ensure Mount Point Exists
-# --------------------------------------------------------------------
+# --- Ensure Mount Point Exists ---
 
 directory '/mnt/gdrive' do
   owner 'afreidah'
@@ -25,9 +21,7 @@ directory '/mnt/gdrive' do
   action :create
 end
 
-# --------------------------------------------------------------------
-# Mount Remote GDrive via SSHFS and Persist in fstab
-# --------------------------------------------------------------------
+# --- Mount Remote GDrive via SSHFS and Persist in fstab ---
 
 mount '/mnt/gdrive' do
   device 'mccoy:/mnt/gdrive'

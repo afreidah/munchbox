@@ -21,7 +21,7 @@ job "nextcloud" {
   update {
     max_parallel      = 1
     canary            = 1
-    health_check      = "checks"
+    health_check      = "task_states"
     min_healthy_time  = "30s"
     healthy_deadline  = "10m"
     progress_deadline = "15m"
@@ -52,6 +52,13 @@ job "nextcloud" {
       port "http" {
         to     = 80
         static = 18081
+      }
+      # Bridge mode containers need explicit DNS config at network level
+      # Use goren's local dnsmasq for Consul DNS resolution
+      dns {
+        servers  = ["192.168.68.60", "192.168.68.64", "192.168.68.62"]
+        searches = ["service.consul"]
+        options  = ["ndots:1", "timeout:2", "attempts:2"]
       }
     }
 
@@ -107,7 +114,7 @@ job "nextcloud" {
         path     = "/status.php"
         port     = "http"
         interval = "30s"
-        timeout  = "5s"
+        timeout  = "10s"
       }
 
     }
@@ -139,8 +146,26 @@ job "nextcloud" {
         ]
       }
 
-      # --- Static Environment Variables ---
+      # --- Vault Secrets (Nomad 1.11 secret block) ---
+      secret "nextcloud" {
+        provider = "vault"
+        path     = "secret/data/nextcloud"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
+      secret "redis_shared" {
+        provider = "vault"
+        path     = "secret/data/redis-shared"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
+      # --- Environment Variables (static + dynamic from Vault) ---
       env {
+        # Static config
         POSTGRES_HOST        = "postgres-shared.service.consul"
         POSTGRES_DB          = "nextcloud"
         REDIS_HOST           = "redis-shared.service.consul"
@@ -151,22 +176,9 @@ job "nextcloud" {
         OVERWRITEPROTOCOL    = "https"
         OVERWRITEHOST        = "nextcloud.munchbox.cc"
         OVERWRITECLIURL      = "https://nextcloud.munchbox.cc"
-
-      }
-
-      # --- Dynamic Secrets from Vault ---
-      template {
-        destination = "secrets/nextcloud.env"
-        env         = true
-        change_mode = "restart"
-        data        = <<EOH
-{{ with secret "secret/data/nextcloud" }}
-POSTGRES_PASSWORD={{ .Data.data.db_password }}
-{{ end }}
-{{ with secret "secret/data/redis-shared" }}
-REDIS_HOST_PASSWORD={{ .Data.data.password }}
-{{ end }}
-EOH
+        # Dynamic secrets from Vault
+        POSTGRES_PASSWORD    = "${secret.nextcloud.db_password}"
+        REDIS_HOST_PASSWORD  = "${secret.redis_shared.password}"
       }
 
       # --- Resources ---

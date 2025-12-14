@@ -1,47 +1,11 @@
-# ---------------------------------------------------------------------------
-#  Cookbook:: pi_bootstrap
-#  Recipe:: wireguard_split
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - WireGuard Recipe
 #
-#  Purpose:
-#    - Install WireGuard packages
-#    - Create dedicated service user (vpnmark)
-#    - Generate wg keypair if missing
-#    - Render /etc/wireguard/wg0.conf for SPLIT-TUNNEL via policy routing
-#    - Mark only vpnmark traffic (fwmark 0x1) and route via table 51820
-#    - Enable/start wg-quick@wg0
+# Project: Munchbox / Author: Alex Freidah
 #
-#  Notes:
-#    - We DO NOT hijack the default route. Only MARKED traffic uses table 51820.
-#    - DNS left alone (no DNS= in wg0.conf).
-#    - All routing glue (ip rule / table 51820 / endpoint host-route / marks)
-#      lives in PostUp/PreDown so it stays coupled to interface state.
-#
-#  Data bag (YOU HAVE TODAY):
-#    bag:  pia_vpn
-#    item: wg
-#    body:
-#      {
-#        "id": "wg",
-#        "pia_user": "p0673666",
-#        "pia_pass": "j*#37w$ttMGv+q3",
-#        "preferred_region": "greenland",
-#        "wg_hostname": "greenland403",
-#        "wg_server_ip": "91.90.120.137",
-#        "wg_port": 1337,
-#        "wireguard": {                 # <-- OPTIONAL (preferred if present)
-#          "server_ip": "91.90.120.137",
-#          "server_pubkey": "BASE64_PIA_SERVER_PUBKEY",
-#          "server_port": 1337,
-#          "peer_address_cidr": "10.7.142.96/32",
-#          "allowed_ips": ["0.0.0.0/0"]
-#        }
-#      }
-#
-#  Validation:
-#    - wg show
-#    - curl ifconfig.me                         # normal user -> ISP egress
-#    - sudo -u vpnmark curl ifconfig.me         # vpnmark user -> PIA egress
-# ---------------------------------------------------------------------------
+# Installs WireGuard for split-tunnel VPN via policy routing. Creates vpnmark
+# user, generates keypair, and marks only vpnmark traffic through the VPN.
+# -------------------------------------------------------------------------------
 
 # --- Packages ----------------------------------------------------------------
 package %w(wireguard wireguard-tools iproute2) do

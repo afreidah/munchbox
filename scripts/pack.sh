@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# ------------------------------------------------------------------------------
-# Nomad Pack Wrapper (clean jobspec)
+# -------------------------------------------------------------------------------
+# Nomad Pack Wrapper - Clean Jobspec Generator
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Renders Nomad packs and strips prolog lines before the first job block. Writes
+# cleaned jobspec to nomad/.tmp.<pack>.nomad.hcl for direct submission.
 #
 # Usage:
-#   scripts/pack.sh render  <pack> <env>
+#   scripts/pack.sh render   <pack> <env>
 #   scripts/pack.sh validate <pack> <env>
-#   scripts/pack.sh run     <pack> <env>
-#   scripts/pack.sh stop    <pack> [--ref REF]
-#   scripts/pack.sh status  <pack> [--ref REF]
-#
-# Notes:
-# - Renders the pack, then STRIPS any prolog lines before the first `job "..." {`
-# - Writes the cleaned jobspec to nomad/.tmp.<pack>.nomad.hcl
-# - `run` uses `nomad job run` on the cleaned file to avoid pack’s internal validate noise
-# ------------------------------------------------------------------------------
+#   scripts/pack.sh run      <pack> <env>
+#   scripts/pack.sh stop     <pack> [--ref REF]
+#   scripts/pack.sh status   <pack> [--ref REF]
+# -------------------------------------------------------------------------------
 
 set -euo pipefail
 

@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Distribute Vault PKI CA - Certificate Authority Distribution
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Fetches the Vault PKI intermediate CA certificate and distributes it to all
+# cluster nodes. Required for services to trust certificates issued by Vault.
+# -------------------------------------------------------------------------------
 ---
 - name: Fetch Vault PKI Intermediate CA
   hosts: stabler

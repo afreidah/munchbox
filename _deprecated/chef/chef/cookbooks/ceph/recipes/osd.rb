@@ -1,16 +1,14 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Recipe:: osd
-#
-# Creates directory-based OSDs for Ceph storage.
-# Uses directories on existing filesystem rather than raw disks.
-# Supports per-node size allocations.
-# --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Inputs / Defaults
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - OSD Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Creates directory-based OSDs for Ceph storage with per-node size allocations.
+# -------------------------------------------------------------------------------
+
+# --- Inputs / Defaults ---
 
 use_directory = node.dig('ceph', 'osd', 'use_directory') ? true : false
 osd_directory = node['ceph']['osd']['directory']

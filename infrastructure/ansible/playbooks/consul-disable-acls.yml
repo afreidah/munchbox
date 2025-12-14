@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Disable Consul ACLs - Temporary ACL Removal for Troubleshooting
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Temporarily disables Consul ACL system for troubleshooting. Removes ACL config
+# block and restarts Consul. Re-enable with consul-enable-acls.yml when done.
+# -------------------------------------------------------------------------------
 ---
 - name: Temporarily disable ACLs on all Consul nodes
   hosts: nomad_cluster

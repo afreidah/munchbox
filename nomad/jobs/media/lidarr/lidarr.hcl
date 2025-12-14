@@ -2,6 +2,9 @@
 # Lidarr — Music Management
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Monitors RSS feeds and interfaces with indexers to automatically grab music.
+# Integrates with Deluge for downloads and manages music library organization.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---

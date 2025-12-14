@@ -1,17 +1,13 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  attributes/default.rb — k3s Firewall Defaults
+# -------------------------------------------------------------------------------
+# K3s Cookbook - Default Attributes
 #
-#  Purpose:
-#    Define the inbound firewall rules commonly required for a k3s control-plane
-#    (single-node or seed server) on Debian/Ubuntu hosts.
+# Project: Munchbox / Author: Alex Freidah
 #
-#  Notes:
-#    • kubelet (10250/tcp) is included as many operators allow control-plane access.
-#    • etcd ports are commented out; enable only if running HA with embedded etcd.
-#    • If you expose NodePort services, you may also need 30000–32767 (tcp/udp).
-# ------------------------------------------------------------------------------
+# Default attributes for k3s installation. Defines inbound firewall rules for
+# k3s control-plane and cluster CIDRs for pod/service networking.
+# -------------------------------------------------------------------------------
 
 default['k3s']['firewall_rules'] = [
   # --- Core Kubernetes API (control-plane) ---
@@ -28,11 +24,7 @@ default['k3s']['firewall_rules'] = [
   # { name: 'k3s-etcd-peer',   port: 2380, protocol: :tcp },  # etcd peer
 ]
 
-# ------------------------------------------------------------------------------
-#  Optional: Cluster CIDR allowances (UFW "allow from <cidr> to any")
-#  - These are not "ports", but many deployments allow pod/service CIDRs explicitly.
-#  - Use in your firewall recipe to create UFW rules that allow these ranges.
-# ------------------------------------------------------------------------------
+# --- Cluster CIDR allowances (UFW "allow from <cidr> to any") ---
 default['k3s']['allow_cidrs'] = [
   { name: 'k3s-pod-cidr',     cidr: '10.42.0.0/16' },  # pods
   { name: 'k3s-service-cidr', cidr: '10.43.0.0/16' },  # services

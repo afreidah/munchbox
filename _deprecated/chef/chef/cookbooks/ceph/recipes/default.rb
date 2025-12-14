@@ -1,15 +1,15 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Recipe:: default
-#
-# Main entry point for Ceph installation and configuration.
-# Installs Ceph on all nodes, bootstraps on designated node.
-# --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Install Ceph Prerequisites & Packages
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - Default Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Main entry point for Ceph installation. Installs on all nodes and bootstraps
+# on designated node.
+# -------------------------------------------------------------------------------
+
+# --- Install Ceph Prerequisites & Packages ---
 
 include_recipe 'ceph::install'
 

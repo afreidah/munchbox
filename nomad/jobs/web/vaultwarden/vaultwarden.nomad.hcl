@@ -131,20 +131,22 @@ job "vaultwarden" {
         }
       }
 
+      # --- Vault Secrets (Nomad 1.11 secret block) ---
+      secret "vaultwarden" {
+        provider = "vault"
+        path     = "secret/data/vaultwarden"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
       # --- Environment Variables ---
-      template {
-        data        = <<-EOH
-          {{ with secret "secret/data/vaultwarden" }}
-          ADMIN_TOKEN={{ .Data.data.admin_token }}
-          SIGNUPS_ALLOWED={{ .Data.data.signups_allowed }}
-          {{ end }}
-          DOMAIN=https://vaultwarden.munchbox.cc
-          INVITATIONS_ALLOWED=true
-          WEBSOCKET_ENABLED=true
-        EOH
-        destination = "secrets/env"
-        env         = true
-        change_mode = "restart"
+      env {
+        ADMIN_TOKEN         = "${secret.vaultwarden.admin_token}"
+        SIGNUPS_ALLOWED     = "${secret.vaultwarden.signups_allowed}"
+        DOMAIN              = "https://vaultwarden.munchbox.cc"
+        INVITATIONS_ALLOWED = "true"
+        WEBSOCKET_ENABLED   = "true"
       }
 
 

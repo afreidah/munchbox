@@ -1,4 +1,11 @@
-# consul::mgmt_token_file
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Management Token Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Writes the Consul management token from data bag to a file for local access.
+# -------------------------------------------------------------------------------
+
 mgmt_item = data_bag_item('consul', 'management') rescue nil
 raise 'consul/management data bag missing' unless mgmt_item
 

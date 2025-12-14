@@ -1,4 +1,11 @@
-# Create policy file: infra/vault-policy/traefik-read.hcl
+# -------------------------------------------------------------------------------
+# Traefik Policy - Vault ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Grants Traefik read access to its secrets and Vault metrics endpoint.
+# -------------------------------------------------------------------------------
+
 path "kv/data/traefik" {
   capabilities = ["read"]
 }

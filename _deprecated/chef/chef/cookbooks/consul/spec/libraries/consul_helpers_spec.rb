@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  consul_helpers_spec.rb — RSpec tests for ConsulCookbook helper methods
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Helpers Spec
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# RSpec tests for ConsulCookbook helper methods.
+# -------------------------------------------------------------------------------
 
 require 'spec_helper'
 require_relative '../../libraries/consul_helpers'

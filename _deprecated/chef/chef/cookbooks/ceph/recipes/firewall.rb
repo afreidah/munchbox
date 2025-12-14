@@ -1,15 +1,14 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Recipe:: firewall
-#
-# Configures firewall rules for Ceph cluster communication.
-# Adds rules to existing firewall without replacing other rules.
-# --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Ensure Firewall Resource Exists
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - Firewall Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures firewall rules for Ceph cluster communication ports.
+# -------------------------------------------------------------------------------
+
+# --- Ensure Firewall Resource Exists ---
 
 firewall 'default' do
   action :nothing

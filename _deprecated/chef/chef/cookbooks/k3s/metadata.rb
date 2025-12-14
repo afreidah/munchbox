@@ -1,11 +1,10 @@
-# --------------------------------------------------------------------
-# Cookbook:: k3s
-# Metadata
+# -------------------------------------------------------------------------------
+# K3s Cookbook - Metadata
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
-# Cookbook:: metadata for k3s installation and configuration.
-# --------------------------------------------------------------------
+# Cookbook metadata for k3s installation and configuration.
+# -------------------------------------------------------------------------------
 
 name             'k3s'
 maintainer       'Alex Freidah'

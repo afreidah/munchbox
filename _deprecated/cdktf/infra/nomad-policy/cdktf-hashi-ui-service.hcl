@@ -1,15 +1,11 @@
-# --------------------------------------------------------------------------------
-#  Hashi-UI — Nomad Read-Only Policy
+# -------------------------------------------------------------------------------
+# Hashi-UI Service Policy - Nomad ACL
 #
-#  Purpose:
-#    Allow Hashi-UI to *read* cluster-wide Nomad state so the UI can render
-#    Servers, Nodes, Jobs, Allocations, etc., without any write privileges.
+# Project: Munchbox / Author: Alex Freidah
 #
-#  Notes:
-#    - The previous version only granted namespace read, which is insufficient
-#      for endpoints like /v1/operator/raft/peers and /v1/nodes.
-#    - This version adds read for operator, node, agent, and other useful scopes.
-# --------------------------------------------------------------------------------
+# Grants Hashi-UI read access to cluster state for rendering servers, nodes, jobs,
+# and allocations in the web UI.
+# -------------------------------------------------------------------------------
 
 # --- Cluster/infra access needed by the UI ---
 namespace "*" { policy = "write" }   # was "read"

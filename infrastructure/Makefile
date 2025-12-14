@@ -27,6 +27,20 @@ help:
 	@echo "Munchbox Infrastructure Management"
 	@echo "==============================================================================="
 	@echo ""
+	@echo "Quick Start (adding a new node):"
+	@echo "  1. Edit nodes.yml to add your new VM/host"
+	@echo "  2. make generate              - Regenerate inventory and tfvars"
+	@echo "  3. make tf-apply              - Provision new VMs (skip for bare-metal)"
+	@echo "  4. make add-node VM=hostname  - Configure and join the cluster"
+	@echo ""
+	@echo "Configuration Generation (from nodes.yml):"
+	@echo "  make generate      - Generate Ansible inventory and Terraform vars"
+	@echo "  make show-nodes    - Display current node configuration"
+	@echo ""
+	@echo "Node Management:"
+	@echo "  make add-node VM=name    - Provision a new node (VM or bare-metal)"
+	@echo "  make add-vm VM=name      - Add VM: generate + tf-apply + add-node"
+	@echo ""
 	@echo "Proxmox VM Provisioning:"
 	@echo "  make tf-init       - Initialize Proxmox Terraform"
 	@echo "  make tf-plan       - Preview VM changes"
@@ -47,17 +61,6 @@ help:
 	@echo "  make vault-config-init  - Initialize Vault config Terraform"
 	@echo "  make vault-config-plan  - Preview Vault changes"
 	@echo "  make vault-config-apply - Apply Vault configuration"
-	@echo ""
-	@echo "Utility Commands:"
-	@echo "  make ssh-server-<n>     - SSH to nomad-server-03 (n=0)"
-	@echo "  make ssh-client-<n>     - SSH to nomad-client-0[1-3] (n=1-3)"
-	@echo ""
-	@echo "Typical Workflow:"
-	@echo "  1. Provision VMs:        make tf-apply"
-	@echo "  2. Setup ACL prereqs:    make consul-prereqs"
-	@echo "  3. Bootstrap ACLs:       cd terraform/consul-acls && ./bootstrap-acls.sh"
-	@echo "  4. Setup environment:    cd terraform/consul-acls && source ./setup-env.sh"
-	@echo "  5. Apply ACLs:           make consul-acl-apply"
 	@echo "==============================================================================="
 
 # -------------------------------------------------------------------------
@@ -179,8 +182,60 @@ vault-config-destroy:
 # Utility Commands
 # -------------------------------------------------------------------------
 
-ssh-server-%:
-	@ssh root@192.168.68.$(shell expr 69 + $*)
+# -------------------------------------------------------------------------
+# Configuration Generation (from nodes.yml)
+# -------------------------------------------------------------------------
 
-ssh-client-%:
-	@ssh root@192.168.68.$(shell expr 69 + $*)
+.PHONY: generate show-nodes
+
+generate:
+	@echo "==> Generating configuration from nodes.yml..."
+	@python3 scripts/generate-inventory.py
+	@python3 scripts/generate-tfvars.py
+	@echo ""
+	@echo "==> Configuration generated successfully!"
+	@echo "    - Ansible inventory: ansible/inventory/hosts.yml"
+	@echo "    - Terraform vars: terraform/proxmox/vms.auto.tfvars"
+
+show-nodes:
+	@echo "==> Current Node Configuration (from nodes.yml):"
+	@echo ""
+	@python3 -c "import yaml; d=yaml.safe_load(open('nodes.yml')); \
+		print('Proxmox Hosts:'); \
+		[print(f'  {k}: {v[\"ip\"]}') for k,v in d.get('proxmox_hosts',{}).items()]; \
+		print('\nBare-Metal Nodes:'); \
+		[print(f'  {k}: {v[\"ip\"]} ({v.get(\"arch\",\"amd64\")})') for k,v in d.get('bare_metal',{}).items()]; \
+		print('\nVMs:'); \
+		[print(f'  {k}: {v[\"ip\"]} on {v[\"proxmox_host\"]} (vmid={v[\"vmid\"]})') for k,v in d.get('vms',{}).items()]"
+
+# -------------------------------------------------------------------------
+# Node Management
+# -------------------------------------------------------------------------
+
+.PHONY: add-node add-vm
+
+add-node:
+ifndef VM
+	$(error VM is not set. Usage: make add-node VM=nomad-client-04)
+endif
+	@echo "==> Provisioning node: $(VM)"
+	cd ansible && ansible-playbook playbooks/add-node.yml -e target_host=$(VM)
+
+add-vm:
+ifndef VM
+	$(error VM is not set. Usage: make add-vm VM=nomad-client-04)
+endif
+	@echo "==> Adding new VM: $(VM)"
+	@echo "==> Step 1/3: Generating configuration..."
+	$(MAKE) generate
+	@echo ""
+	@echo "==> Step 2/3: Provisioning VM in Proxmox..."
+	$(TERRAFORM_PROXMOX) apply -auto-approve
+	@echo ""
+	@echo "==> Waiting 60s for VM to boot..."
+	@sleep 60
+	@echo ""
+	@echo "==> Step 3/3: Configuring node..."
+	cd ansible && ansible-playbook playbooks/add-node.yml -e target_host=$(VM)
+	@echo ""
+	@echo "==> VM $(VM) added successfully!"

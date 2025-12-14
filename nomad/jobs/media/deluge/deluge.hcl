@@ -2,6 +2,9 @@
 # Deluge — BitTorrent Client
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Lightweight BitTorrent client with web UI for remote management. Handles
+# downloads from Sonarr, Radarr, and Lidarr with category-based organization.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---

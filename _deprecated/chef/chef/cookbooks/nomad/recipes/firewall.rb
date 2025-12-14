@@ -1,16 +1,14 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: nomad
-# Recipe:: firewall
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - Firewall Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
 #
 # Configures firewall rules for Nomad cluster communication and services.
-# Uses UFW via the firewall cookbook.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Include & Install Firewall
-# --------------------------------------------------------------------
+# --- Include & Install Firewall ---
 
 include_recipe 'firewall'
 
@@ -18,16 +16,12 @@ firewall 'default' do
   action :install
 end
 
-# --------------------------------------------------------------------
-# Inputs / Defaults
-# --------------------------------------------------------------------
+# --- Inputs / Defaults ---
 
 allowed_cidrs = Array(node['nomad']['allowed_cidrs'])
 server_node   = node.dig('nomad', 'server', 'enabled') ? true : false
 
-# --------------------------------------------------------------------
-# Nomad HTTP API & Web UI (4646/tcp)
-# --------------------------------------------------------------------
+# --- Nomad HTTP API & Web UI (4646/tcp) ---
 
 allowed_cidrs.each do |cidr|
   firewall_rule "nomad-ui-#{cidr}" do
@@ -38,9 +32,7 @@ allowed_cidrs.each do |cidr|
   end
 end
 
-# --------------------------------------------------------------------
-# Nomad gRPC/RPC (Clients ↔ Servers) (4647/tcp)
-# --------------------------------------------------------------------
+# --- Nomad gRPC/RPC (Clients <-> Servers) (4647/tcp) ---
 
 allowed_cidrs.each do |cidr|
   firewall_rule "nomad-rpc-#{cidr}" do
@@ -51,9 +43,7 @@ allowed_cidrs.each do |cidr|
   end
 end
 
-# --------------------------------------------------------------------
-# Nomad Serf Gossip (Servers only) (4648/tcp, 4648/udp)
-# --------------------------------------------------------------------
+# --- Nomad Serf Gossip (Servers only) (4648/tcp, 4648/udp) ---
 
 if server_node
   %w(tcp udp).each do |proto|
@@ -68,9 +58,7 @@ if server_node
   end
 end
 
-# --------------------------------------------------------------------
-# Nomad port 80 for traefik
-# --------------------------------------------------------------------
+# --- Nomad port 80 for traefik ---
 
 if server_node
   %w(tcp udp).each do |proto|
@@ -85,9 +73,7 @@ if server_node
   end
 end
 
-# --------------------------------------------------------------------
-# Nomad port 8112 for deluge
-# --------------------------------------------------------------------
+# --- Nomad port 8112 for deluge ---
 
 if server_node
   %w(tcp udp).each do |proto|

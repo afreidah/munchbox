@@ -1,5 +1,12 @@
 #!/bin/bash
-# Generate all Ansible roles
+# -------------------------------------------------------------------------------
+# Generate Ansible Roles - Directory Scaffold Generator
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Creates the standard Ansible role directory structure for all infrastructure
+# roles. Run once during initial setup to scaffold the role hierarchy.
+# -------------------------------------------------------------------------------
 
 ROLES_DIR="ansible/roles"
 

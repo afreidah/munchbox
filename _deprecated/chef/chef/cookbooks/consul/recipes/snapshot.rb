@@ -1,10 +1,10 @@
-# --------------------------------------------------------------------
-# Cookbook:: consul
-# Recipe:: snapshot
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Snapshot Recipe
 #
-# Sets up a daily cron job to run `consul snapshot save`.
-# The snapshot is saved to /var/backups/consul/consul.snap.
-# --------------------------------------------------------------------
+# Project: Munchbox / Author: Alex Freidah
+#
+# Sets up daily cron job to save Consul cluster snapshots for backup purposes.
+# -------------------------------------------------------------------------------
 
 # Ensure backup directory exists
 directory '/mnt/gdrive/nomad-snapshots' do

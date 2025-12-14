@@ -2,6 +2,9 @@
 # Sonarr — TV Show Management
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Monitors RSS feeds and interfaces with indexers to automatically grab TV show
+# episodes. Integrates with Deluge for downloads and manages library organization.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---

@@ -1,12 +1,12 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Metadata
+
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - Metadata
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
-# Cookbook:: metadata for Ceph distributed storage installation.
-# --------------------------------------------------------------------
+# Cookbook metadata for Ceph distributed storage cluster installation.
+# -------------------------------------------------------------------------------
 
 name             'ceph'
 maintainer       'Alex Freidah'

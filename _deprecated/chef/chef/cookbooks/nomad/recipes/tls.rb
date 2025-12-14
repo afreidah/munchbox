@@ -1,4 +1,11 @@
-# recipes/tls.rb
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - TLS Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures TLS certificates for secure Nomad cluster communication.
+# -------------------------------------------------------------------------------
+
 dc        = node['nomad']['dc']      || 'dc1'
 is_server = node['nomad']['server']  || false
 tls_dir  = '/opt/nomad/tls'

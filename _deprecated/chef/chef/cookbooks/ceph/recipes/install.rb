@@ -1,15 +1,14 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Recipe:: install
-#
-# Installs Ceph prerequisites, cephadm, and configures system
-# requirements for Ceph distributed storage.
-# --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Install Required Packages
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - Install Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs Ceph prerequisites, cephadm, and configures system requirements.
+# -------------------------------------------------------------------------------
+
+# --- Install Required Packages ---
 
 package %w(curl python3 python3-pip docker.io chrony gnupg wget lvm2)
 

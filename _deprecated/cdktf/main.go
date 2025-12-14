@@ -1,14 +1,11 @@
-// --------------------------------------------------------------------
-// Program: Nomad CDKTF Stack
-// File: main.go
+// -------------------------------------------------------------------------------
+// Nomad CDKTF Stack - Main Entry Point
 //
-// UPDATES:
-//   - Uses enhanced RegisterNomadJobs with automatic metadata injection
-//   - No changes required - common functions handle all the work
+// Project: Munchbox / Author: Alex Freidah
 //
-// Registers Nomad jobs, policies, and tokens from HCL files using the
-// Terraform CDK for Go. Uses shared library for common logic.
-// --------------------------------------------------------------------
+// Registers Nomad jobs, policies, and tokens from HCL files using Terraform CDK
+// for Go. Uses shared library functions with automatic metadata injection.
+// -------------------------------------------------------------------------------
 
 package main
 

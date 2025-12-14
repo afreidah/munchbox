@@ -1,16 +1,14 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Recipe:: bootstrap
-#
-# Bootstraps Ceph cluster on the designated bootstrap node.
-# Configures monitors, managers, and adds additional nodes.
-# Assumes SSH keys are already configured between nodes.
-# --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Inputs / Defaults
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - Bootstrap Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Bootstraps Ceph cluster on the designated node, configures monitors and managers.
+# -------------------------------------------------------------------------------
+
+# --- Inputs / Defaults ---
 
 bootstrap_node = node['ceph']['bootstrap_node']
 current_node   = node['hostname']

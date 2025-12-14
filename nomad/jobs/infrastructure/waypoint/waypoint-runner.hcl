@@ -29,7 +29,7 @@ resource_tier = "small"
 # --- Network configuration ---
 network_preset = "host"
 
-dns_servers  = ["192.168.68.62", "192.168.68.64"]
+dns_servers  = ["192.168.68.64", "192.168.68.62"]
 dns_searches = ["service.consul"]
 dns_options  = ["timeout:2", "attempts:3", "ndots:1"]
 

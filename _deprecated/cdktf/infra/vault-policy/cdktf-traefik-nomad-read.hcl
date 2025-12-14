@@ -1,4 +1,11 @@
-# Create policy file: infra/vault-policy/traefik-read.hcl
+# -------------------------------------------------------------------------------
+# Traefik Nomad Read Policy - Vault ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Grants Traefik read access to secrets and Vault metrics for Nomad integration.
+# -------------------------------------------------------------------------------
+
 path "kv/data/traefik" {
   capabilities = ["read"]
 }

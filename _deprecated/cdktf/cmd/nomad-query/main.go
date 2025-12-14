@@ -1,18 +1,11 @@
-// --------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // Nomad Job Metadata Query Tool
-// File: cmd/nomad-query/main.go
 //
-// Purpose:
-//   Query and display Nomad job metadata across the cluster.
-//   Useful for understanding what's deployed, tracking versions,
-//   and filtering jobs by category or tier.
+// Project: Munchbox / Author: Alex Freidah
 //
-// Features:
-//   - Lists all jobs with metadata in tabular format
-//   - Filter by category (monitoring, infrastructure, etc.)
-//   - Filter by tier (tier-0, tier-1, tier-2, tier-3)
-//   - Shows version, update date, and owner information
-//   - Connects to Nomad cluster via standard environment variables
+// Queries and displays Nomad job metadata across the cluster with filtering by
+// category and tier, showing versions, update dates, and owner information.
+// -------------------------------------------------------------------------------
 //
 // Environment Variables:
 //   NOMAD_ADDR    - Nomad server address (default: http://localhost:4646)

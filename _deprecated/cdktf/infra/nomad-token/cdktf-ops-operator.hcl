@@ -1,6 +1,9 @@
 # -------------------------------------------------------------------------------
-# cdktf-ops-operator.token.hcl
-# SRE/operator token for on-call and routine ops
+# Ops Operator Token - Nomad ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# SRE/operator token for on-call duties and routine operations.
 # -------------------------------------------------------------------------------
 Name     = "ops-operator"
 Type     = "client"

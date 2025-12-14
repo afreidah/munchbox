@@ -1,7 +1,10 @@
-# ------------------------------------------------------------
-# Sets up Nomad data directories with appropriate permissions
-#  - Creates directories defined in node['nomad']['data_dirs']
-# ------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - Data Directories Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Sets up Nomad data directories with appropriate permissions.
+# -------------------------------------------------------------------------------
 
 node['nomad']['client']['host_volumes'].each do |volume|
   directory volume['path'] do

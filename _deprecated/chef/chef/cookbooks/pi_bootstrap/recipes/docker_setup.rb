@@ -1,4 +1,10 @@
-# Ensure Docker is configured to allow insecure registry for mccoy:5000
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - Docker Setup Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Ensures Docker is configured to allow insecure registry for mccoy:5000.
+# -------------------------------------------------------------------------------
 
 docker_daemon_config = '/etc/docker/daemon.json'
 

@@ -1,5 +1,10 @@
-# cdktf-grafana-read.hcl
-# KV v2: allow reads of grafana secrets and listing the prefix
+# -------------------------------------------------------------------------------
+# Grafana Read Policy - Vault ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Grants Grafana read access to its secrets in KV v2 for datasource credentials.
+# -------------------------------------------------------------------------------
 
 # Read the actual secret data
 path "kv/data/grafana" {

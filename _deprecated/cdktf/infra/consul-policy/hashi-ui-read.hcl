@@ -1,16 +1,10 @@
-# --------------------------------------------------------------------------------
-#  Hashi-UI — Consul Read-Only Policy
+# -------------------------------------------------------------------------------
+# Hashi-UI Read Policy - Consul ACL
 #
-#  Purpose:
-#    Allow Hashi-UI to read Consul catalog/health information so the Consul
-#    sections of the UI can render. This mirrors your existing read policies
-#    (e.g., prometheus-sd-read, traefik-catalog-read).
+# Project: Munchbox / Author: Alex Freidah
 #
-#  Notes:
-#    - DO NOT add an `operator {}` block here; Consul policy syntax does not
-#      support that (previous parser error came from that).
-#    - Uncomment key_prefix if you want the UI to browse Consul KV, too.
-# --------------------------------------------------------------------------------
+# Grants Hashi-UI read access to Consul catalog, health, and KV for UI rendering.
+# -------------------------------------------------------------------------------
 
 # Single-agent read stanza (consistent with your style in other policies)
 agent {

@@ -1,16 +1,11 @@
-// filepath: /path/to/your/file.go
-// --------------------------------------------------------------------
-// Vault provider utilities for CDKTF
-// File: common/vault.go
+// -------------------------------------------------------------------------------
+// Vault Provider Utilities for CDKTF
 //
-// Functions:
-//   - SetupVaultProvider(): Configure Vault provider for Terraform
-//   - RegisterVaultPolicies(): Register Vault policies
-//   - RegisterVaultKvMount(): Create KV v2 secrets engine mount
-//   - RegisterVaultJwtAuth(): Configure JWT auth for Nomad workloads
-// --------------------------------------------------------------------
-
-// Package common
+// Project: Munchbox / Author: Alex Freidah
+//
+// Provides Vault provider setup and resource registration functions including
+// policies, KV v2 secrets engine mounts, and JWT auth for Nomad workloads.
+// -------------------------------------------------------------------------------
 package common
 
 import (

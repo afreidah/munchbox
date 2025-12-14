@@ -15,7 +15,7 @@ image        = "quay.io/prometheus/node-exporter:v1.10.2"
 port         = 9100
 static_port  = 9100
 host_network = true
-size         = "tiny"
+size         = "small"
 
 # --- Traefik routing ---
 traefik = true
