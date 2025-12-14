@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: pi_bootstrap
-# Recipe:: docker_insecure_registry
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - Docker Config Recipe
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
 # Ensures Docker is configured to allow insecure registry for goren:5000.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 # --- Ensure the Docker config directory exists
 directory '/etc/docker' do

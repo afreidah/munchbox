@@ -1,9 +1,9 @@
 # -------------------------------------------------------------------------------
-#  cdktf/infra/vault-policy/cdktf-waypoint-runner-read.hcl
+# Waypoint Runner Policy - Vault ACL
 #
-#  Purpose:
-#    Allow waypoint tasks (runner and bootstrap) to read/write the server token
-#    stored at secret/system-services/waypoint_server_token (KV v2 path)
+# Project: Munchbox / Author: Alex Freidah
+#
+# Allows Waypoint runner and bootstrap tasks to read/write the server token.
 # -------------------------------------------------------------------------------
 
 path "secret/data/system-services/waypoint_server_token" {

@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  Library: consul_helpers.rb — Helper methods for Consul installation
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Helpers Library
 #
-#  Provides architecture mapping and archive URL construction for Consul
-#  binary installation.
-# ------------------------------------------------------------------------------
+# Project: Munchbox / Author: Alex Freidah
+#
+# Helper methods for Consul installation. Provides architecture mapping and
+# archive URL construction for Consul binary installation.
+# -------------------------------------------------------------------------------
 
 module ConsulCookbook
   # --- Map kernel machine to HashiCorp archive label ---

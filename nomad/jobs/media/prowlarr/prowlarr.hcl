@@ -2,6 +2,9 @@
 # Prowlarr — Indexer Management
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Centralized indexer manager for the *arr stack. Syncs indexer configurations
+# to Sonarr, Radarr, and Lidarr. Uses FlareSolverr for Cloudflare bypass.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---

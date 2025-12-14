@@ -4,8 +4,15 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Provisions Nomad server and client VMs on Proxmox by cloning a Debian base
-# template. Two additional Nomad servers run bare metal on Pi5s (stabler, goren).
-# Optimized for hardware constraints: fontana/mccoy 16GB, cabot 8GB.
+# template. VM definitions come from nodes.yml via generated vms.auto.tfvars.
+#
+# Two additional Nomad servers run bare metal on Pi5s (stabler, goren) and are
+# NOT managed by this Terraform - only by Ansible.
+#
+# Usage:
+#   1. Edit infrastructure/nodes.yml to add/modify VMs
+#   2. Run: make generate (creates vms.auto.tfvars)
+#   3. Run: make tf-apply (provisions VMs)
 # -------------------------------------------------------------------------------
 
 terraform {
@@ -41,21 +48,23 @@ locals {
 }
 
 # -------------------------------------------------------------------------------
-# Nomad Server VM (1x on fontana)
+# VMs (Dynamic - from nodes.yml via vms.auto.tfvars)
 # -------------------------------------------------------------------------------
 
-resource "proxmox_vm_qemu" "nomad_server" {
-  name        = "nomad-server-03"
-  target_node = "fontana"
-  vmid        = 172
+resource "proxmox_vm_qemu" "vm" {
+  for_each = var.vms
+
+  name        = each.key
+  target_node = each.value.target_node
+  vmid        = each.value.vmid
 
   clone      = local.template_name
   full_clone = true
 
-  memory = 2048
+  memory = each.value.memory
 
   cpu {
-    cores   = 2
+    cores   = each.value.cores
     sockets = 1
     type    = "host"
   }
@@ -66,7 +75,7 @@ resource "proxmox_vm_qemu" "nomad_server" {
     slot    = "scsi0"
     type    = "disk"
     storage = local.disk_storage
-    size    = "40G"
+    size    = each.value.disk_size
   }
 
   network {
@@ -77,119 +86,36 @@ resource "proxmox_vm_qemu" "nomad_server" {
 
   onboot = true
   agent  = 1
+
+  # GPU passthrough support (for future ThinkStation)
+  # Note: Requires PCI passthrough configured on Proxmox host
+  # dynamic "hostpci" {
+  #   for_each = each.value.gpu_passthrough ? [1] : []
+  #   content {
+  #     host   = "0000:01:00"  # PCI address of GPU - will vary
+  #     pcie   = true
+  #     rombar = true
+  #   }
+  # }
 }
 
 # -------------------------------------------------------------------------------
-# Nomad Client VMs (x86_64)
+# Outputs
 # -------------------------------------------------------------------------------
 
-# --- Client 01 (fontana) ---
-
-resource "proxmox_vm_qemu" "nomad_client_01" {
-  name        = "nomad-client-01"
-  target_node = "fontana"
-  vmid        = 180
-
-  clone      = local.template_name
-  full_clone = true
-
-  memory = 13312
-
-  cpu {
-    cores   = 4
-    sockets = 1
-    type    = "host"
-  }
-
-  scsihw = "virtio-scsi-pci"
-
-  disk {
-    slot    = "scsi0"
-    type    = "disk"
-    storage = local.disk_storage
-    size    = "40G"
-  }
-
-  network {
-    id     = 0
-    model  = "virtio"
-    bridge = local.net_bridge
-  }
-
-  onboot = true
-  agent  = 1
+output "vm_names" {
+  description = "Names of provisioned VMs"
+  value       = [for vm in proxmox_vm_qemu.vm : vm.name]
 }
 
-# --- Client 02 (mccoy) ---
-
-resource "proxmox_vm_qemu" "nomad_client_02" {
-  name        = "nomad-client-02"
-  target_node = "mccoy"
-  vmid        = 181
-
-  clone      = local.template_name
-  full_clone = true
-
-  memory = 15360
-
-  cpu {
-    cores   = 4
-    sockets = 1
-    type    = "host"
+output "vm_details" {
+  description = "VM details (name -> target_node)"
+  value = {
+    for name, vm in proxmox_vm_qemu.vm : name => {
+      target_node = vm.target_node
+      vmid        = vm.vmid
+      memory      = vm.memory
+      cores       = vm.cpu[0].cores
+    }
   }
-
-  scsihw = "virtio-scsi-pci"
-
-  disk {
-    slot    = "scsi0"
-    type    = "disk"
-    storage = local.disk_storage
-    size    = "40G"
-  }
-
-  network {
-    id     = 0
-    model  = "virtio"
-    bridge = local.net_bridge
-  }
-
-  onboot = true
-  agent  = 1
-}
-
-# --- Client 03 (cabot) ---
-
-resource "proxmox_vm_qemu" "nomad_client_03" {
-  name        = "nomad-client-03"
-  target_node = "cabot"
-  vmid        = 182
-
-  clone      = local.template_name
-  full_clone = true
-
-  memory = 7168
-
-  cpu {
-    cores   = 4
-    sockets = 1
-    type    = "host"
-  }
-
-  scsihw = "virtio-scsi-pci"
-
-  disk {
-    slot    = "scsi0"
-    type    = "disk"
-    storage = local.disk_storage
-    size    = "40G"
-  }
-
-  network {
-    id     = 0
-    model  = "virtio"
-    bridge = local.net_bridge
-  }
-
-  onboot = true
-  agent  = 1
 }

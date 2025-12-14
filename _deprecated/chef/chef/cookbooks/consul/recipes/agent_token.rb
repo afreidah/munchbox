@@ -1,18 +1,10 @@
-# cookbooks/consul/recipes/agent_token.rb
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Agent Token Recipe
 #
-# Ensures a Consul *agent token* exists, is set on the running agent,
-# and is persisted in Consul's config so it survives restarts.
+# Project: Munchbox / Author: Alex Freidah
 #
-# Assumptions:
-# - Management token is already written to /opt/consul/consul_mgmt.token
-#   (e.g., by consul::management_token)
-# - The Consul policy the agent token should use already exists
-#   (defaults to "nomad-client", created by consul::acl_nomad)
-#
-# Idempotency:
-# - Reuses /opt/consul/acl-tokens.json if present
-# - Creates the token only once and then reuses it
-# - Always (re)sets the agent token on the local agent with the mgmt token
+# Creates and persists Consul agent token for local agent authentication.
+# -------------------------------------------------------------------------------
 
 require 'json'
 

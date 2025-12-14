@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  firewall.rb — Configures Consul network access via firewall rules
+# -------------------------------------------------------------------------------
+# OpenBao Cookbook - Firewall Recipe
 #
-#  Defines and applies all required Consul TCP/UDP ports using the firewall cookbook.
-# ------------------------------------------------------------------------------
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures OpenBao network access via firewall rules.
+# -------------------------------------------------------------------------------
 
 include_recipe 'firewall'
 

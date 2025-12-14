@@ -1,15 +1,14 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: nomad
-# Attributes:: default
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - Default Attributes
+#
+# Project: Munchbox / Author: Alex Freidah
 #
 # Default attributes for Nomad installation, configuration, and clustering.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Nomad General
-# --------------------------------------------------------------------
+# --- Nomad General ---
 
 default['nomad']['client_tags'] = {}
 default['nomad']['group']       = 'root'
@@ -43,9 +42,7 @@ default['nomad']['checksums'] = {
   },
 }
 
-# --------------------------------------------------------------------
-# Security: TLS (Nomad HTTP/RPC)
-# --------------------------------------------------------------------
+# --- Security: TLS (Nomad HTTP/RPC) ---
 # Enable HTTPS for API/UI and mTLS for RPC. Provide per-node certs with correct SANs.
 default['nomad']['tls']['enabled']              = true
 default['nomad']['tls']['ca_file']              = '/opt/nomad/tls/nomad-agent-ca.pem'
@@ -54,9 +51,7 @@ default['nomad']['tls']['key_file']             = '/opt/nomad/tls/global-server-
 # Optional: require client certs for HTTP API access
 default['nomad']['tls']['verify_https_client']  = false
 
-# --------------------------------------------------------------------
-# Server Role
-# --------------------------------------------------------------------
+# --- Server Role ---
 
 default['nomad']['server']['enabled']         = true
 default['nomad']['server']['raft_multiplier'] = 2
@@ -70,9 +65,7 @@ default['nomad']['server']['servers'] = %w(
   192.168.68.63
 )
 
-# --------------------------------------------------------------------
-# Client Role
-# --------------------------------------------------------------------
+# --- Client Role ---
 
 default['nomad']['client']['enabled']    = true
 default['nomad']['client']['node_class'] = ''
@@ -97,9 +90,7 @@ default['nomad']['client']['host_volumes'] = [
   { 'name' => 'gitlab', 'path' => '/opt/nomad/data/gitlab', 'read_only' => false }
 ]
 
-# --------------------------------------------------------------------
-# Docker Task Driver
-# --------------------------------------------------------------------
+# --- Docker Task Driver ---
 
 default['nomad']['docker']['allow_privileged']   = true
 default['nomad']['docker']['volumes']['enabled'] = true
@@ -109,9 +100,7 @@ default['nomad']['docker']['caps']               = %w(
 )
 default['nomad']['docker']['socket']             = '/var/run/docker.sock'
 
-# --------------------------------------------------------------------
-# Telemetry
-# --------------------------------------------------------------------
+# --- Telemetry ---
 
 default['nomad']['telemetry']['enabled']                     = true
 default['nomad']['telemetry']['collection_interval']         = '1s'
@@ -120,9 +109,7 @@ default['nomad']['telemetry']['prometheus_metrics']          = true
 default['nomad']['telemetry']['publish_allocation_metrics']  = true
 default['nomad']['telemetry']['publish_node_metrics']        = true
 
-# --------------------------------------------------------------------
-# Consul Integration
-# --------------------------------------------------------------------
+# --- Consul Integration ---
 
 default['nomad']['consul']['auto_advertise'] = true
 default['nomad']['consul']['auto_join']      = true
@@ -130,33 +117,25 @@ default['nomad']['consul']['enabled']        = true
 default['nomad']['consul']['address']        = "#{node['ipaddress']}:8500"
 default['nomad']['consul']['required']       = true # Cluster resource will wait for Consul if true
 
-# --------------------------------------------------------------------
-# CNI Plugins
-# --------------------------------------------------------------------
+# --- CNI Plugins ---
 
 default['nomad']['cni']['version']  = 'v1.6.2'
 default['nomad']['cni']['path']     = '/opt/cni/bin'
 default['nomad']['cni']['url']      = 'https://github.com/containernetworking/plugins/releases/download'
 default['nomad']['cni']['enable']   = true
 
-# --------------------------------------------------------------------
-# Vault Integration
-# --------------------------------------------------------------------
+# --- Vault Integration ---
 
 default['nomad']['vault']['enabled']         = true
 default['nomad']['vault']['tls_skip_verify'] = true
 default['nomad']['vault']['address']         = 'https://mccoy:8200'
 
-# --------------------------------------------------------------------
-# ACL / Cluster Bootstrap
-# --------------------------------------------------------------------
+# --- ACL / Cluster Bootstrap ---
 
 default['nomad']['acl']['enabled']             = true
 default['nomad']['acl']['bootstrap_this_node'] = false
 default['nomad']['acl']['token_ttl']           = '72h'
 
-# --------------------------------------------------------------------
-# Network / Firewall (optional consumers)
-# --------------------------------------------------------------------
+# --- Network / Firewall (optional consumers) ---
 
 default['nomad']['allowed_cidrs'] = ['192.168.68.0/24'] # If you wire a firewall recipe to use this

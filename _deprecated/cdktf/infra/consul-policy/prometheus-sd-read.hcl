@@ -1,4 +1,11 @@
-# Read access to agents, nodes, services
+# -------------------------------------------------------------------------------
+# Prometheus Service Discovery Policy - Consul ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Grants Prometheus read access for service discovery and scrape target enumeration.
+# -------------------------------------------------------------------------------
+
 agent {
   policy = "read"
 }

@@ -3,7 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Emby media server with GPU transcoding and library management
+# Emby media server with Intel GPU transcoding for smooth playback on any device.
+# Manages media library with automatic metadata and provides Live TV via ErsatzTV.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---

@@ -24,10 +24,12 @@
 
   vars:
     dnsmasq_listen_address: "127.0.0.53"
+    # Also listen on the host's primary IP for Docker containers
+    dnsmasq_host_ip: "{{ ansible_default_ipv4.address }}"
     consul_dns_port: 8600
     upstream_dns_servers:
-      - "192.168.68.62"  # pihole-01
-      - "192.168.68.64"  # pihole-02
+      - "192.168.68.64"  # pihole-02 (logan - more capable)
+      - "192.168.68.62"  # pihole-01 (green - older Pi)
 
   tasks:
     - name: Install dnsmasq
@@ -52,8 +54,10 @@
           # Forward .consul queries to local Consul agent
           server=/consul/127.0.0.1#{{ consul_dns_port }}
 
-          # Listen only on localhost to avoid conflicts
+          # Listen on localhost for host processes
           listen-address={{ dnsmasq_listen_address }}
+          # Also listen on host IP so Docker containers can use it
+          listen-address={{ dnsmasq_host_ip }}
           bind-interfaces
 
           # Don't use /etc/resolv.conf for upstream (we manage it below)
@@ -63,6 +67,11 @@
           {% for server in upstream_dns_servers %}
           server={{ server }}
           {% endfor %}
+
+          # Query ALL upstream servers in parallel and use fastest response
+          # This provides load balancing and failover - if one PiHole is slow/down,
+          # the other will respond first and be used
+          all-servers
 
           # Cache settings
           cache-size=1000
@@ -118,6 +127,64 @@
     - name: Restart NetworkManager
       ansible.builtin.systemd:
         name: NetworkManager
+        state: restarted
+
+    - name: Restart Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted
+
+- name: Configure Docker to use local dnsmasq
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    dnsmasq_host_ip: "{{ ansible_default_ipv4.address }}"
+
+  tasks:
+    - name: Ensure /etc/docker directory exists
+      ansible.builtin.file:
+        path: /etc/docker
+        state: directory
+        mode: '0755'
+
+    - name: Check if daemon.json exists
+      ansible.builtin.stat:
+        path: /etc/docker/daemon.json
+      register: daemon_json_stat
+
+    - name: Read existing daemon.json
+      ansible.builtin.slurp:
+        src: /etc/docker/daemon.json
+      register: daemon_json_content
+      when: daemon_json_stat.stat.exists
+
+    - name: Parse existing daemon.json
+      ansible.builtin.set_fact:
+        docker_config: "{{ daemon_json_content.content | b64decode | from_json }}"
+      when: daemon_json_stat.stat.exists and daemon_json_content.content | b64decode | trim != ""
+
+    - name: Initialize docker_config if not exists
+      ansible.builtin.set_fact:
+        docker_config: {}
+      when: not daemon_json_stat.stat.exists or docker_config is not defined
+
+    - name: Update DNS in docker config
+      ansible.builtin.set_fact:
+        docker_config: "{{ docker_config | combine({'dns': [dnsmasq_host_ip]}) }}"
+
+    - name: Write updated daemon.json
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: "{{ docker_config | to_nice_json }}"
+        mode: '0644'
+      notify: Restart Docker
+
+  handlers:
+    - name: Restart Docker
+      ansible.builtin.systemd:
+        name: docker
         state: restarted
 
 - name: Verify Consul DNS resolution

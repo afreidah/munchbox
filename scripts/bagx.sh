@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# scripts/bagx.sh — encrypt/decrypt Chef Encrypted Data Bag items
-# Run from repo root. Secret is hardcoded to ./chef/encrypted_data_bag_secret
+# -------------------------------------------------------------------------------
+# Bagx - Chef Encrypted Data Bag Tool
 #
-# usage:
-#   ./scripts/bagx.sh decrypt path/to/item.json   # prints plaintext to stdout
-#   ./scripts/bagx.sh encrypt path/to/item.json   # encrypts file in-place
+# Project: Munchbox / Author: Alex Freidah
+#
+# Encrypts and decrypts Chef data bag items using the repository secret key.
+# Run from repo root. Deprecated in favor of Vault secrets.
+#
+# Usage:
+#   ./scripts/bagx.sh decrypt path/to/item.json
+#   ./scripts/bagx.sh encrypt path/to/item.json
+# -------------------------------------------------------------------------------
 
 set -euo pipefail
 

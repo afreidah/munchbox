@@ -2,6 +2,9 @@
 # FlareSolverr — Cloudflare Bypass Proxy
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Headless browser proxy that solves Cloudflare challenges for indexers. Used by
+# Prowlarr to access sites protected by anti-bot measures.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---

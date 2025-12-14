@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-# ---------------------------------------------------------------------------------
-# metadata.rb
+# -------------------------------------------------------------------------------
+# OpenBao Cookbook - Metadata
 #
-#  This file contains metadata for the openbao Chef cookbook.
+# Project: Munchbox / Author: Alex Freidah
 #
-#  Defines cookbook name, maintainer, license, description, version, supported
-#  platforms, and dependencies.
-# ---------------------------------------------------------------------------------
+# Cookbook metadata for OpenBao installation and configuration.
+# -------------------------------------------------------------------------------
 
 name             'openbao'
 maintainer       'Alex Freidah'

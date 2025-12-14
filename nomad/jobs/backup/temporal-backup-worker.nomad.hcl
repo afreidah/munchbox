@@ -1,7 +1,10 @@
 # -------------------------------------------------------------------------------
-# temporal-backup-worker — Munchbox Deployment
+# Temporal Backup Worker — Distributed Backup Execution Engine
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Temporal worker that executes backup workflows for cluster services. Handles
+# PostgreSQL dumps, registry snapshots, and uploads to Google Drive storage.
 # -------------------------------------------------------------------------------
 
 job "temporal-backup-worker" {
@@ -117,36 +120,40 @@ job "temporal-backup-worker" {
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/vault-ca.pem:ro"
         ]
-        dns_servers        = ["192.168.68.62", "192.168.68.64"]
+        dns_servers        = ["192.168.68.64", "192.168.68.62"]
+      }
+
+      secret "backup_worker" {
+        provider = "vault"
+        path     = "secret/data/backup-worker"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
+      secret "postgres" {
+        provider = "vault"
+        path     = "secret/data/postgres-shared/root"
+        config {
+          engine = "kv_v2"
+        }
       }
 
       env {
-        TEMPORAL_ADDRESS = "temporal-server.service.consul:7233"
-        NOMAD_ADDR       = "https://nomad.service.consul:4646"
-        NOMAD_CACERT     = "/etc/ssl/certs/nomad-ca.pem"
-        VAULT_CACERT     = "/etc/ssl/certs/vault-ca.pem"
-      }
-
-      template {
-        data = <<EOH
-{{ with secret "secret/data/backup-worker" }}
-NOMAD_TOKEN={{ .Data.data.nomad_token }}
-CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
-{{ end }}
-{{ with secret "secret/data/postgres-shared/root" }}
-PGPASSWORD={{ .Data.data.password }}
-{{ end }}
-EOH
-
-        destination = "secrets/backup.env.tpl"
-        env         = true
-        change_mode = "restart"
+        TEMPORAL_ADDRESS  = "temporal-server.service.consul:7233"
+        NOMAD_ADDR        = "https://nomad.service.consul:4646"
+        NOMAD_CACERT      = "/etc/ssl/certs/nomad-ca.pem"
+        VAULT_CACERT      = "/etc/ssl/certs/vault-ca.pem"
+        NOMAD_TOKEN       = "${secret.backup_worker.nomad_token}"
+        CONSUL_HTTP_TOKEN = "${secret.backup_worker.consul_token}"
+        PGPASSWORD        = "${secret.postgres.password}"
       }
 
       # --- Resources ---
+      # Note: Registry backup tars ~600MB of data, needs adequate memory for gzip
       resources {
-        cpu    = 100
-        memory = 128
+        cpu    = 200
+        memory = 512
       }
 
       # --- Termination ---

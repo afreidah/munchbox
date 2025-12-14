@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Enable Consul TLS All - Cluster-Wide TLS Activation
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Enables TLS on all Consul nodes simultaneously using previously generated
+# certificates. Updates config to use mTLS and restarts services.
+# -------------------------------------------------------------------------------
 ---
 - name: Enable TLS on all Consul nodes
   hosts: nomad_cluster

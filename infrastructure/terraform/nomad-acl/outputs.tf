@@ -1,7 +1,10 @@
 # -------------------------------------------------------------------------------
-# Outputs
+# Nomad ACL Configuration - Outputs
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Exposes policy names, token accessor IDs, and Vault secret paths. Accessor IDs
+# are safe to log. Actual token secrets are stored only in Vault.
 # -------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------

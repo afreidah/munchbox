@@ -2,6 +2,9 @@
 # Vault Configuration - Variables
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Variable definitions for Vault secrets engines and auth backends. The Consul
+# bootstrap token is required for configuring the Consul secrets engine.
 # -------------------------------------------------------------------------------
 
 variable "consul_bootstrap_token" {

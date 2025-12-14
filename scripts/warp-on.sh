@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# -------------------------------------------------------------------------------
+# WARP On - Enable Cloudflare WARP VPN
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Enables Cloudflare WARP VPN tunnel for private network access. Handles both
+# warp-svc and cloudflare-warp service names across package versions.
+# -------------------------------------------------------------------------------
 set -euo pipefail
 
 # Find the service name (varies by package)

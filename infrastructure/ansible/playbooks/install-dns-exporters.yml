@@ -1,4 +1,11 @@
-# playbooks/install-dns-exporters.yml
+# -------------------------------------------------------------------------------
+# Install DNS Exporters - Prometheus Metrics for Pi-hole Servers
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs node_exporter and pihole_exporter on DNS server nodes for Prometheus
+# monitoring. Retrieves Pi-hole admin passwords from Vault for exporter config.
+# -------------------------------------------------------------------------------
 ---
 - name: Install Prometheus exporters on DNS servers
   hosts: dns_servers

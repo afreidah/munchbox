@@ -1,5 +1,10 @@
 # -------------------------------------------------------------------------------
 # Consul ACL Configuration - Outputs
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Exposes created policy names and Vault paths for verification. Token secrets
+# are stored in Vault KV and never exposed in outputs.
 # -------------------------------------------------------------------------------
 
 output "policies_created" {

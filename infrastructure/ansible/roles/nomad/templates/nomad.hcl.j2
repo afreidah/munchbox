@@ -22,8 +22,11 @@ advertise {
 server {
   enabled = true
   bootstrap_expect = {{ nomad_bootstrap_expect }}
-{% if nomad_retry_join | length > 0 %}
-  retry_join = {{ nomad_retry_join | to_json }}
+
+{% if nomad_server_join | length > 0 %}
+  server_join {
+    retry_join = {{ nomad_server_join | to_json }}
+  }
 {% endif %}
 }
 {% endif %}

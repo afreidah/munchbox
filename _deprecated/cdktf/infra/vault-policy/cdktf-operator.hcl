@@ -1,4 +1,11 @@
-# Read and list all secrets, but no write or admin actions
+# -------------------------------------------------------------------------------
+# Operator Policy - Vault ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Read-only operator access to secrets and policies without write capabilities.
+# -------------------------------------------------------------------------------
+
 path "secret/data/*" {
   capabilities = ["read", "list"]
 }

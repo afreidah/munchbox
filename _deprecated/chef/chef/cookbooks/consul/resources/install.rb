@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  Resource: consul_install — Installs Consul binary or package, user, group, dirs
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Install Resource
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs Consul binary or package, creates user, group, and directories.
+# -------------------------------------------------------------------------------
 
 unified_mode true
 property :version,        String, name_property: true
@@ -15,11 +19,8 @@ property :config_dir,     String, required: true
 property :install_dir,    String, required: true
 property :install_method, String, required: true
 
-# ------------------------------------------------------------------------------
-#  ACTION: :install
-#
-#    Installs Consul binary or package, creates user, group, and required dirs.
-# ------------------------------------------------------------------------------
+# --- ACTION: :install ---
+# Installs Consul binary or package, creates user, group, and required dirs.
 
 action :install do
   # --- Map kernel arch to HashiCorp archive label using helper ---
@@ -75,9 +76,7 @@ action :install do
     Chef::Log.error("Unknown consul install_method '#{new_resource.install_method}'")
   end
 
-  # ----------------------------------------------------------------------------
-  #  Create Consul User & Group
-  # ----------------------------------------------------------------------------
+  # --- Create Consul user and group ---
 
   group new_resource.group do
     system true
@@ -95,9 +94,7 @@ action :install do
     not_if { new_resource.user == 'root' }
   end
 
-  # ----------------------------------------------------------------------------
-  #  Create Consul Directories
-  # ----------------------------------------------------------------------------
+  # --- Create Consul directories ---
 
   [new_resource.data_dir, new_resource.config_dir].each do |dir|
     directory dir do
@@ -109,11 +106,8 @@ action :install do
   end
 end
 
-# ------------------------------------------------------------------------------
-#  ACTION: :delete
-#
-#    Removes Consul binary, user, group, and all managed directories.
-# ------------------------------------------------------------------------------
+# --- ACTION: :delete ---
+# Removes Consul binary, user, group, and all managed directories.
 
 action :delete do
   consul_binary = ::File.join(new_resource.install_dir, 'consul')

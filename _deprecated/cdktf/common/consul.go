@@ -1,12 +1,11 @@
-// --------------------------------------------------------------------
-// Consul provider utilities for CDKTF
-// File: common/consul.go
+// -------------------------------------------------------------------------------
+// Consul Provider Utilities for CDKTF
 //
-// Functions:
-//   - SetupConsulProvider(): Configure Consul provider for Terraform
-//   - RegisterConsulPolicies(): Register Consul ACL policies
-//   - RegisterConsulTokens(): Register Consul ACL tokens with KV sync
-// --------------------------------------------------------------------
+// Project: Munchbox / Author: Alex Freidah
+//
+// Provides Consul provider setup and resource registration functions including
+// ACL policies and tokens with KV synchronization support.
+// -------------------------------------------------------------------------------
 
 package common
 

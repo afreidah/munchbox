@@ -1,27 +1,20 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  install.rb — Install, Configure, and Cluster OpenBao (bare-metal)
+# -------------------------------------------------------------------------------
+# OpenBao Cookbook - Default Recipe
 #
-#  This recipe:
-#    1) Installs prerequisite packages and shell env
-#    2) Installs OpenBao
-#    3) Installs TLS certs/keys/CA from data bag via certificate_installer
-#    4) Writes openbao.hcl from template
-#    5) Starts service
-#    6) Initializes, unseals, and (optionally) joins peers
-# ------------------------------------------------------------------------------
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs, configures, and clusters OpenBao (bare-metal). Installs packages,
+# TLS certs from data bag, writes config, and handles init/unseal/join.
+# -------------------------------------------------------------------------------
 
 require 'json'
 
-# ------------------------------------------------------------------------------
-# Bootstrap/Firewall (keep as you had it)
-# ------------------------------------------------------------------------------
+# --- Bootstrap/Firewall ---
 include_recipe 'openbao::firewall'
 
-# ------------------------------------------------------------------------------
-# Package and Environment Setup
-# ------------------------------------------------------------------------------
+# --- Package and Environment Setup ---
 cookbook_file '/etc/profile.d/bao_env.sh' do
   owner  'root'
   group  'root'
@@ -35,9 +28,7 @@ node[cookbook_name]['install_packages'].each do |pkg|
   end
 end
 
-# ------------------------------------------------------------------------------
-# Variables
-# ------------------------------------------------------------------------------
+# --- Variables ---
 service_name  = (node[cookbook_name]['service_name'] rescue nil) || 'openbao'
 hostname_val  = node['fqdn'] || node['hostname']
 
@@ -51,17 +42,13 @@ tls_ca_path   = ::File.join(tls_dir, 'ca.crt')
 
 api_addr      = "https://#{hostname_val}:8200"
 
-# ------------------------------------------------------------------------------
-# Install OpenBao
-# ------------------------------------------------------------------------------
+# --- Install OpenBao ---
 openbao_install service_name do
   action  :install
   version node[cookbook_name]['openbao_version']
 end
 
-# ------------------------------------------------------------------------------
-# TLS Certificates (from data bag) — certificate_installer you provided
-# ------------------------------------------------------------------------------
+# --- TLS Certificates (from data bag) ---
 directory tls_dir do
   owner node[cookbook_name]['user']
   group node[cookbook_name]['group']
@@ -80,9 +67,7 @@ certificate_installer 'install openbao certs' do
   action      :install
 end
 
-# ------------------------------------------------------------------------------
-# Configure OpenBao (writes openbao.hcl from template)
-# ------------------------------------------------------------------------------
+# --- Configure OpenBao (writes openbao.hcl from template) ---
 openbao_configure "configure #{service_name}" do
   service_user    node[cookbook_name]['user']
   service_group   node[cookbook_name]['group']
@@ -102,16 +87,12 @@ openbao_configure "configure #{service_name}" do
   action :create
 end
 
-# ------------------------------------------------------------------------------
-# Service (ensure running before cluster ops)
-# ------------------------------------------------------------------------------
+# --- Service (ensure running before cluster ops) ---
 service service_name do
   action [:enable, :start]
 end
 
-# ------------------------------------------------------------------------------
-# Cluster: INIT + UNSEAL + JOIN (no AWS/KMS; uses local sentinel or provided keys)
-# ------------------------------------------------------------------------------
+# --- Cluster: INIT + UNSEAL + JOIN ---
 openbao_cluster "#{service_name}_cluster" do
   service_name service_name
   api_addr     api_addr

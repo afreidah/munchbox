@@ -59,15 +59,6 @@ groups:
           summary: "Prometheus cannot scrape any Nomad server"
           description: "All Nomad scrape targets are down or unauthorized."
 
-      - alert: NomadJobRunningShrank
-        expr: sum by (job_id) (nomad_nomad_job_status_running) < sum by (job_id) (max_over_time(nomad_nomad_job_status_running[5m]))
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Nomad job running count decreased: {{"{{"}} $labels.job_id {{"}}"}}"
-          description: "Running allocation count is below recent maximum for {{"{{"}} $labels.job_id {{"}}"}}"
-
       - alert: NomadJobFailed
         expr: (max without(instance, __address__) (nomad_nomad_job_summary_failed{namespace!="__internal"} + nomad_nomad_job_summary_lost{namespace!="__internal"})) > 0 and on (job_id, namespace) max by (job_id, namespace) (nomad_nomad_job_status_running + nomad_nomad_job_status_pending) > 0
         for: 2m

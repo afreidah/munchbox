@@ -1,7 +1,10 @@
 # -------------------------------------------------------------------------------
-# temporal-backup-trigger — Munchbox Deployment
+# Temporal Backup Trigger — Scheduled Workflow Initiator
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Periodic batch job that triggers the Temporal backup workflow daily at 2 AM.
+# Runs as a simple trigger that submits workflow execution to Temporal server.
 # -------------------------------------------------------------------------------
 
 job "temporal-backup-trigger" {
@@ -71,7 +74,7 @@ job "temporal-backup-trigger" {
         image_pull_timeout = "10m"
         args               = ["trigger"]
         network_mode       = "host"
-        dns_servers        = ["192.168.68.62", "192.168.68.64"]
+        dns_servers        = ["192.168.68.64", "192.168.68.62"]
       }
 
       env {

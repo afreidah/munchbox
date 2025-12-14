@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  dns_shim.rb — Ensures node's FQDN is resolvable via /etc/hosts for OpenBao
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# OpenBao Cookbook - DNS Shim Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Ensures node's FQDN is resolvable via /etc/hosts for OpenBao.
+# -------------------------------------------------------------------------------
 
 ruby_block 'ensure_self_fqdn_in_hosts' do
   block do

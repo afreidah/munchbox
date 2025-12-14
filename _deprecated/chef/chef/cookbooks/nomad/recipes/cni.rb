@@ -1,17 +1,14 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: nomad
-# Recipe:: cni
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - CNI Recipe
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
 # Installs the CNI plugins required for Nomad networking.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Determine Platform Architecture
-# --------------------------------------------------------------------
+# --- Determine Platform Architecture ---
 
 arch = node['kernel']['machine']
 
@@ -26,16 +23,12 @@ platform_arch = case arch
                   arch
                 end
 
-# --------------------------------------------------------------------
-# Build CNI Plugin Download URL
-# --------------------------------------------------------------------
+# --- Build CNI Plugin Download URL ---
 
 base_url = "#{node['nomad']['cni']['url']}/cni-plugin-linux"
 full_url = "#{base_url}-#{platform_arch}-#{node['nomad']['cni']['version']}.tgz"
 
-# --------------------------------------------------------------------
-# Ensure CNI Directory Exists
-# --------------------------------------------------------------------
+# --- Ensure CNI Directory Exists ---
 
 directory node['nomad']['cni']['path'] do
   owner 'root'
@@ -44,9 +37,7 @@ directory node['nomad']['cni']['path'] do
   action :create
 end
 
-# --------------------------------------------------------------------
-# Download and Extract CNI Plugins
-# --------------------------------------------------------------------
+# --- Download and Extract CNI Plugins ---
 
 cni_tgz   = ::File.join(Chef::Config[:file_cache_path], 'cni-plugins.tgz')
 cni_bin   = ::File.join(node['nomad']['cni']['path'], 'bridge') # any plugin as sentinel
@@ -66,9 +57,7 @@ archive_file cni_tgz do
   action :nothing
 end
 
-# --------------------------------------------------------------------
-# Configure Kernel Bridge Settings for CNI Networking
-# --------------------------------------------------------------------
+# --- Configure Kernel Bridge Settings for CNI Networking ---
 
 template '/etc/sysctl.d/bridge.conf' do
   source 'bridge.conf.erb'

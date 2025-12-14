@@ -1,0 +1,151 @@
+# -------------------------------------------------------------------------------
+# Nomad Rolling Upgrade
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Upgrades Nomad one node at a time to minimize cluster disruption.
+# Servers first (non-leader, then leader), then clients.
+#
+# Usage:
+#   ansible-playbook playbooks/nomad-upgrade.yml -e nomad_version=1.11.1
+# -------------------------------------------------------------------------------
+---
+- name: Upgrade Nomad servers (non-leader first)
+  hosts: nomad_servers
+  become: true
+  serial: 1
+  vars:
+    nomad_version: "1.11.1"
+
+  tasks:
+    - name: Set architecture
+      ansible.builtin.set_fact:
+        nomad_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+    - name: Check current Nomad version
+      ansible.builtin.command: nomad version
+      register: current_version
+      changed_when: false
+
+    - name: Display current version
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ current_version.stdout_lines[0] }}"
+
+    - name: Download Nomad {{ nomad_version }}
+      ansible.builtin.get_url:
+        url: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/nomad_{{ nomad_version }}_linux_{{ nomad_arch }}.zip"
+        dest: /tmp/nomad.zip
+        mode: '0644'
+      when: nomad_version not in current_version.stdout
+
+    - name: Stop Nomad
+      ansible.builtin.systemd:
+        name: nomad
+        state: stopped
+      when: nomad_version not in current_version.stdout
+
+    - name: Extract Nomad binary
+      ansible.builtin.unarchive:
+        src: /tmp/nomad.zip
+        dest: /usr/local/bin
+        remote_src: true
+        mode: '0755'
+      when: nomad_version not in current_version.stdout
+
+    - name: Start Nomad
+      ansible.builtin.systemd:
+        name: nomad
+        state: started
+      when: nomad_version not in current_version.stdout
+
+    - name: Wait for Nomad to be healthy
+      ansible.builtin.uri:
+        url: "https://127.0.0.1:4646/v1/status/leader"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      register: nomad_health
+      retries: 30
+      delay: 2
+      until: nomad_health.status == 200
+
+    - name: Clean up
+      ansible.builtin.file:
+        path: /tmp/nomad.zip
+        state: absent
+
+    - name: Verify new version
+      ansible.builtin.command: nomad version
+      register: new_version
+      changed_when: false
+
+    - name: Display upgraded version
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} upgraded: {{ new_version.stdout_lines[0] }}"
+
+- name: Upgrade Nomad clients
+  hosts: nomad_clients:!nomad_servers
+  become: true
+  serial: 1
+  vars:
+    nomad_version: "1.11.1"
+
+  tasks:
+    - name: Set architecture
+      ansible.builtin.set_fact:
+        nomad_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+    - name: Check current Nomad version
+      ansible.builtin.command: nomad version
+      register: current_version
+      changed_when: false
+
+    - name: Display current version
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ current_version.stdout_lines[0] }}"
+
+    - name: Download Nomad {{ nomad_version }}
+      ansible.builtin.get_url:
+        url: "https://releases.hashicorp.com/nomad/{{ nomad_version }}/nomad_{{ nomad_version }}_linux_{{ nomad_arch }}.zip"
+        dest: /tmp/nomad.zip
+        mode: '0644'
+      when: nomad_version not in current_version.stdout
+
+    - name: Stop Nomad
+      ansible.builtin.systemd:
+        name: nomad
+        state: stopped
+      when: nomad_version not in current_version.stdout
+
+    - name: Extract Nomad binary
+      ansible.builtin.unarchive:
+        src: /tmp/nomad.zip
+        dest: /usr/local/bin
+        remote_src: true
+        mode: '0755'
+      when: nomad_version not in current_version.stdout
+
+    - name: Start Nomad
+      ansible.builtin.systemd:
+        name: nomad
+        state: started
+      when: nomad_version not in current_version.stdout
+
+    - name: Wait for Nomad client to register
+      ansible.builtin.pause:
+        seconds: 10
+      when: nomad_version not in current_version.stdout
+
+    - name: Clean up
+      ansible.builtin.file:
+        path: /tmp/nomad.zip
+        state: absent
+
+    - name: Verify new version
+      ansible.builtin.command: nomad version
+      register: new_version
+      changed_when: false
+
+    - name: Display upgraded version
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} upgraded: {{ new_version.stdout_lines[0] }}"

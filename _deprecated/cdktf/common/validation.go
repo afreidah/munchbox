@@ -1,20 +1,11 @@
-// --------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // Metadata Validation for Nomad Jobs
-// File: common/validation.go
 //
-// Purpose:
-//   - Validates that all Nomad job files contain required metadata
-//   - Ensures metadata fields are properly formatted
-//   - Provides clear error messages for missing or invalid metadata
+// Project: Munchbox / Author: Alex Freidah
 //
-// Validation Rules:
-//   Required fields:
-//     - version: Must be present and non-empty
-//     - owner: Must be present and non-empty
-//     - category: Must be present and non-empty
-//     - tier: Must be present and match tier-0, tier-1, tier-2, or tier-3
-//     - description: Must be present and non-empty
-// --------------------------------------------------------------------
+// Validates that all Nomad job files contain required metadata fields (version,
+// owner, category, tier) and ensures proper formatting with clear error messages.
+// -------------------------------------------------------------------------------
 
 package common
 

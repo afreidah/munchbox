@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  install.rb — Installs Consul using official HashiCorp binaries or packages
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Install Recipe
 #
-#  This recipe installs Consul, creates required users, directories, and
-#  systemd service units, and ensures the service is enabled and started.
-# ------------------------------------------------------------------------------
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs Consul using official HashiCorp binaries, creates required users,
+# directories, and systemd service units.
+# -------------------------------------------------------------------------------
 
-# ------------------------------------------------------------------------------
-#  Include Firewall Recipe
-# ------------------------------------------------------------------------------
+# --- Include Firewall Recipe ---
 
 include_recipe 'consul::firewall'
 

@@ -56,4 +56,4 @@ cpu = 300      # Reduced from 1000 - actual usage <1%
 memory = 256   # Reduced from 1024 - actual usage 81MB
 
 # --- DNS configuration ---
-dns = ["192.168.68.62", "192.168.68.64"]
+dns = ["192.168.68.64", "192.168.68.62"]

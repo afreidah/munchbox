@@ -1,6 +1,14 @@
 #!/bin/bash
+# -------------------------------------------------------------------------------
+# Shutdown Cluster - Graceful Cluster Shutdown
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Performs graceful shutdown of the entire Munchbox cluster. Stops Nomad first,
+# then Vault, then Consul to maintain proper dependency ordering.
+# -------------------------------------------------------------------------------
 
-# Define your cluster nodes and service names
+# Define cluster nodes and service names
 CONSUL_NODES=("cabot" "mccoy" "goren" "stabler")
 VAULT_NODES=("mccoy")
 NOMAD_NODES=("cabot" "mccoy" "goren" "stabler")

@@ -1,11 +1,11 @@
-# --------------------------------------------------------------------
-# Cookbook:: nomad
-# Recipe:: nomad
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - Snapshot Recipe
 #
-# Sets up a daily cron job to run `nomad snapshot save` using the
-# management token from the encrypted data bag `nomad/management`.
-# The snapshot is saved to /var/backups/nomad/nomad.snap.
-# --------------------------------------------------------------------
+# Project: Munchbox / Author: Alex Freidah
+#
+# Sets up a daily cron job to run `nomad snapshot save` using the management
+# token from the encrypted data bag.
+# -------------------------------------------------------------------------------
 
 # Ensure backup directory exists
 directory '/mnt/gdrive/nomad-snapshots' do

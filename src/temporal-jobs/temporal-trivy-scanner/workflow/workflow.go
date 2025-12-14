@@ -1,3 +1,13 @@
+// -------------------------------------------------------------------------------
+// Trivy Scan Workflow - Vulnerability Scanning Logic
+//
+// Project: Munchbox / Author: Alex Freidah
+//
+// Defines the Temporal workflow and activities for scanning container images.
+// Includes image discovery from Nomad allocations, Trivy execution, and result
+// aggregation with vulnerability severity counts.
+// -------------------------------------------------------------------------------
+
 package workflow
 
 import (

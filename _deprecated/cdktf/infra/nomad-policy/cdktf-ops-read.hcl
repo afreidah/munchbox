@@ -1,5 +1,10 @@
-# cdktf-ops-read.hcl
-# Nomad policy granting read-only access to jobs, allocations, evaluations, and nodes.
+# -------------------------------------------------------------------------------
+# Ops Read Policy - Nomad ACL
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Read-only access to jobs, allocations, evaluations, and nodes for monitoring.
+# -------------------------------------------------------------------------------
 
 namespace "*" {
   policy = "read"

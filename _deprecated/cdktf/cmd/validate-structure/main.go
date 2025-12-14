@@ -1,18 +1,11 @@
-// --------------------------------------------------------------------
+// -------------------------------------------------------------------------------
 // Job Structure Validation Tool
-// File: cmd/validate-structure/main.go
 //
-// Purpose:
-//   Validates that Nomad jobs are properly organized into category
-//   directories and reports on the structure.
+// Project: Munchbox / Author: Alex Freidah
 //
-// Features:
-//   - Scans directory structure for job files
-//   - Groups jobs by category
-//   - Reports job counts per category
-//   - Warns about jobs in root directory
-//   - Shows inferred tier for each category
-//
+// Validates Nomad job organization into category directories, scanning structure
+// and reporting job counts per category with tier inference and root warnings.
+// -------------------------------------------------------------------------------
 // Usage:
 //   go run cmd/validate-structure/main.go
 //   go run cmd/validate-structure/main.go -dir path/to/nomad-jobs

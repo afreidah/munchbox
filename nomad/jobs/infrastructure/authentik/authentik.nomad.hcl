@@ -134,33 +134,42 @@ job "authentik" {
         ]
       }
 
-      # --- Static Environment Variables ---
-      env {
-        AUTHENTIK_REDIS__HOST               = "redis-shared.service.consul"
-        AUTHENTIK_REDIS__DB                 = "1"
-        AUTHENTIK_ERROR_REPORTING__ENABLED  = "false"
-        AUTHENTIK_DISABLE_UPDATE_CHECK      = "true"
-        AUTHENTIK_DISABLE_STARTUP_ANALYTICS = "true"
-        # Trust proxy headers for HTTPS detection behind reverse proxy
-        AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS = "172.26.64.0/18,192.168.68.0/24,127.0.0.1/32"
+      # --- Vault Secrets (Nomad 1.11 secret block) ---
+      secret "authentik" {
+        provider = "vault"
+        path     = "secret/data/authentik"
+        config {
+          engine = "kv_v2"
+        }
       }
 
-      # --- Dynamic Secrets from Vault ---
-      template {
-        data = <<EOH
-AUTHENTIK_SECRET_KEY={{ with secret "secret/data/authentik" }}{{ .Data.data.secret_key }}{{ end }}
-AUTHENTIK_POSTGRESQL__HOST={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_host }}{{ end }}
-AUTHENTIK_POSTGRESQL__PORT={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_port }}{{ end }}
-AUTHENTIK_POSTGRESQL__NAME={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_db }}{{ end }}
-AUTHENTIK_POSTGRESQL__USER={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_user }}{{ end }}
-AUTHENTIK_POSTGRESQL__PASSWORD={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_password }}{{ end }}
-AUTHENTIK_REDIS__PASSWORD={{ with secret "secret/data/redis-shared" }}{{ .Data.data.password }}{{ end }}
-AUTHENTIK_HOST=https://auth.munchbox.cc
-AUTHENTIK_HOST_BROWSER=https://auth.munchbox.cc
-EOH
-        destination = "secrets/env"
-        env         = true
-        change_mode = "restart"
+      secret "redis_shared" {
+        provider = "vault"
+        path     = "secret/data/redis-shared"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
+      # --- Environment Variables (static + dynamic from Vault) ---
+      env {
+        # Static config
+        AUTHENTIK_REDIS__HOST                 = "redis-shared.service.consul"
+        AUTHENTIK_REDIS__DB                   = "1"
+        AUTHENTIK_ERROR_REPORTING__ENABLED    = "false"
+        AUTHENTIK_DISABLE_UPDATE_CHECK        = "true"
+        AUTHENTIK_DISABLE_STARTUP_ANALYTICS   = "true"
+        AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS = "172.26.64.0/18,192.168.68.0/24,127.0.0.1/32"
+        AUTHENTIK_HOST                        = "https://auth.munchbox.cc"
+        AUTHENTIK_HOST_BROWSER                = "https://auth.munchbox.cc"
+        # Dynamic secrets from Vault
+        AUTHENTIK_SECRET_KEY                  = "${secret.authentik.secret_key}"
+        AUTHENTIK_POSTGRESQL__HOST            = "${secret.authentik.postgres_host}"
+        AUTHENTIK_POSTGRESQL__PORT            = "${secret.authentik.postgres_port}"
+        AUTHENTIK_POSTGRESQL__NAME            = "${secret.authentik.postgres_db}"
+        AUTHENTIK_POSTGRESQL__USER            = "${secret.authentik.postgres_user}"
+        AUTHENTIK_POSTGRESQL__PASSWORD        = "${secret.authentik.postgres_password}"
+        AUTHENTIK_REDIS__PASSWORD             = "${secret.redis_shared.password}"
       }
 
       # --- Resources ---
@@ -247,29 +256,39 @@ EOH
         ]
       }
 
-      # --- Static Environment Variables ---
+      # --- Vault Secrets (Nomad 1.11 secret block) ---
+      secret "authentik" {
+        provider = "vault"
+        path     = "secret/data/authentik"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
+      secret "redis_shared" {
+        provider = "vault"
+        path     = "secret/data/redis-shared"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
+      # --- Environment Variables (static + dynamic from Vault) ---
       env {
+        # Static config
         AUTHENTIK_REDIS__HOST               = "redis-shared.service.consul"
         AUTHENTIK_REDIS__DB                 = "1"
         AUTHENTIK_ERROR_REPORTING__ENABLED  = "false"
         AUTHENTIK_DISABLE_UPDATE_CHECK      = "true"
         AUTHENTIK_DISABLE_STARTUP_ANALYTICS = "true"
-      }
-
-      # --- Dynamic Secrets from Vault ---
-      template {
-        data = <<EOH
-AUTHENTIK_SECRET_KEY={{ with secret "secret/data/authentik" }}{{ .Data.data.secret_key }}{{ end }}
-AUTHENTIK_POSTGRESQL__HOST={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_host }}{{ end }}
-AUTHENTIK_POSTGRESQL__PORT={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_port }}{{ end }}
-AUTHENTIK_POSTGRESQL__NAME={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_db }}{{ end }}
-AUTHENTIK_POSTGRESQL__USER={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_user }}{{ end }}
-AUTHENTIK_POSTGRESQL__PASSWORD={{ with secret "secret/data/authentik" }}{{ .Data.data.postgres_password }}{{ end }}
-AUTHENTIK_REDIS__PASSWORD={{ with secret "secret/data/redis-shared" }}{{ .Data.data.password }}{{ end }}
-EOH
-        destination = "secrets/env"
-        env         = true
-        change_mode = "restart"
+        # Dynamic secrets from Vault
+        AUTHENTIK_SECRET_KEY                = "${secret.authentik.secret_key}"
+        AUTHENTIK_POSTGRESQL__HOST          = "${secret.authentik.postgres_host}"
+        AUTHENTIK_POSTGRESQL__PORT          = "${secret.authentik.postgres_port}"
+        AUTHENTIK_POSTGRESQL__NAME          = "${secret.authentik.postgres_db}"
+        AUTHENTIK_POSTGRESQL__USER          = "${secret.authentik.postgres_user}"
+        AUTHENTIK_POSTGRESQL__PASSWORD      = "${secret.authentik.postgres_password}"
+        AUTHENTIK_REDIS__PASSWORD           = "${secret.redis_shared.password}"
       }
 
       # --- Resources ---

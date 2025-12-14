@@ -1,7 +1,10 @@
 # -------------------------------------------------------------------------------
-# Variables
+# Nomad ACL Configuration - Variables
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Variable definitions for Nomad ACL provisioning. Requires a management token
+# with full ACL permissions and a Vault token for secret storage.
 # -------------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------

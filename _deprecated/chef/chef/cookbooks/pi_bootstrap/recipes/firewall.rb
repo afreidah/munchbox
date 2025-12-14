@@ -1,23 +1,18 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: pi_bootstrap
-# Recipe:: firewall
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - Firewall Recipe
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
 # Configures basic firewall rules for Raspberry Pi bootstrap.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Include Firewall Cookbook
-# --------------------------------------------------------------------
+# --- Include Firewall Cookbook ---
 
 include_recipe 'firewall'
 
-# --------------------------------------------------------------------
-# Allow Loopback Traffic
-# --------------------------------------------------------------------
+# --- Allow Loopback Traffic ---
 
 firewall_rule 'loopback' do
   protocol :tcp
@@ -25,9 +20,7 @@ firewall_rule 'loopback' do
   command  :allow
 end
 
-# --------------------------------------------------------------------
-# Allow SSH from Local Network
-# --------------------------------------------------------------------
+# --- Allow SSH from Local Network ---
 
 firewall_rule 'ssh' do
   port    22

@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  Resource: consul_service — Manages Consul systemd unit and service
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Service Resource
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Manages Consul systemd unit and service lifecycle.
+# -------------------------------------------------------------------------------
 
 unified_mode true
 
@@ -12,9 +16,8 @@ property :data_dir,    String, required: true
 property :config_dir,  String, required: true
 property :install_dir, String, required: true
 
-# ------------------------------------------------------------------------------
-#  Action: :create — Renders and enables Consul systemd unit
-# ------------------------------------------------------------------------------
+# --- ACTION: :create ---
+# Renders and enables Consul systemd unit.
 
 action :create do
   consul_binary = ::File.join(new_resource.install_dir, 'consul')
@@ -79,9 +82,8 @@ action :create do
   end
 end
 
-# ------------------------------------------------------------------------------
-#  Action: :delete — Removes Consul systemd unit
-# ------------------------------------------------------------------------------
+# --- ACTION: :delete ---
+# Removes Consul systemd unit.
 
 action :delete do
   systemd_unit 'consul.service' do

@@ -1,11 +1,11 @@
-// --------------------------------------------------------------------
-// Program: Cloudflare CDKTF Stack
-// File: main.go
+// -------------------------------------------------------------------------------
+// Cloudflare CDKTF Stack
 //
-// Copyright: 2024, Alex Freidah, All Rights Reserved.
+// Project: Munchbox / Author: Alex Freidah
 //
-// Configures Cloudflare provider, creates a DNS zone, and adds a subdomain A record.
-// --------------------------------------------------------------------
+// Configures Cloudflare provider, creates DNS zone, and manages subdomain records
+// using Terraform CDK for Go.
+// -------------------------------------------------------------------------------
 
 package main
 

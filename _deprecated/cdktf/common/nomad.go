@@ -1,13 +1,11 @@
-// --------------------------------------------------------------------
-// Nomad provider utilities for CDKTF
-// File: common/nomad.go
+// -------------------------------------------------------------------------------
+// Nomad Provider Utilities for CDKTF
 //
-// Functions:
-//   - SetupNomadProvider(): Configure Nomad provider for Terraform
-//   - RegisterNomadJobs(): Register jobs with auto metadata injection
-//   - RegisterNomadPolicies(): Register ACL policies
-//   - RegisterNomadTokens(): Register ACL tokens
-// --------------------------------------------------------------------
+// Project: Munchbox / Author: Alex Freidah
+//
+// Provides Nomad provider setup and resource registration functions including
+// job registration with auto metadata injection, ACL policies, and tokens.
+// -------------------------------------------------------------------------------
 
 package common
 

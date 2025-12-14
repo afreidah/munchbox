@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  firewall_spec.rb — ChefSpec tests for consul::firewall recipe
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Firewall Recipe Spec
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# ChefSpec tests for consul::firewall recipe.
+# -------------------------------------------------------------------------------
 
 require 'spec_helper'
 

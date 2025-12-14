@@ -1,8 +1,11 @@
-# ------------------------------------------------------------
-***REMOVED*** → Nomad agent (env file + systemd drop-in)
-# - Loads role-appropriate token from encrypted data bag
-# - Keeps token out of HCL; stores with 0600 perms
-# ------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - Consul Token Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures Consul token for Nomad agent via env file and systemd drop-in.
+# Loads role-appropriate token from encrypted data bag.
+# -------------------------------------------------------------------------------
 
 # Decide which Consul token item to use based on node role
 bag_item = node.dig('nomad', 'server', 'enabled') ? 'nomad_server' : 'nomad_client'

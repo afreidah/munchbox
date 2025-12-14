@@ -2,6 +2,9 @@
 # Google OAuth Configuration - Outputs
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Exposes OAuth client ID and Vault path. Client secret is stored in Vault only.
+# Redirect URI must be manually configured in Google Cloud Console.
 # -------------------------------------------------------------------------------
 
 output "oauth_client_id" {

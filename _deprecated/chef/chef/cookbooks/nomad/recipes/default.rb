@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: nomad
-# Recipe:: default
-# Purpose:: Call install, configure, cluster resources with attributes.
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - Default Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Calls install, configure, and cluster resources with attributes.
+# -------------------------------------------------------------------------------
 
 include_recipe 'nomad::firewall'
 

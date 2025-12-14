@@ -1,14 +1,14 @@
 # frozen_string_literal: true
-# --------------------------------------------------------------------
-# Cookbook:: ceph
-# Attributes:: default
-#
-# Default attributes for Ceph distributed storage cluster.
-# --------------------------------------------------------------------
 
-# --------------------------------------------------------------------
-# Ceph Version
-# --------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Ceph Cookbook - Default Attributes
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Default attributes for Ceph distributed storage cluster configuration.
+# -------------------------------------------------------------------------------
+
+# --- Ceph Version ---
 
 default['ceph']['release'] = 'reef'
 

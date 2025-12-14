@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: nomad
-# Metadata
+# -------------------------------------------------------------------------------
+# Nomad Cookbook - Metadata
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
-# Cookbook:: metadata for Nomad installation and configuration.
-# --------------------------------------------------------------------
+# Cookbook metadata for Nomad installation and configuration.
+# -------------------------------------------------------------------------------
 
 name             'nomad'
 maintainer       'Alex Freidah'

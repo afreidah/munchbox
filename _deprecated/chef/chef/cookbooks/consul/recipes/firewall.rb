@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  firewall.rb — Configures Consul network access via firewall rules
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Firewall Recipe
 #
-#  Defines and applies all required Consul TCP/UDP ports using the firewall cookbook.
-# ------------------------------------------------------------------------------
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures Consul network access via firewall rules for all required ports.
+# -------------------------------------------------------------------------------
 
 include_recipe 'firewall'
 

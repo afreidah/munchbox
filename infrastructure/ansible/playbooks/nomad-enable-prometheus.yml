@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Enable Nomad Prometheus Metrics - Telemetry Configuration
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Adds telemetry block to Nomad configuration to enable Prometheus metrics
+# endpoint. Exposes allocation and node metrics for cluster monitoring.
+# -------------------------------------------------------------------------------
 ---
 - name: Enable Prometheus metrics on Nomad servers and clients
   hosts: nomad_servers:nomad_clients

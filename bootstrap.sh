@@ -1,6 +1,14 @@
 #!/bin/bash
+# -------------------------------------------------------------------------------
+# Bootstrap Chef - Legacy Chef Solo Deployment
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Deploys Chef Solo configuration to a remote node. Installs Chef omnibus and
+# runs chef-solo with node-specific configuration. Deprecated in favor of Ansible.
+# -------------------------------------------------------------------------------
 
-# shitty hack because I don't feel like focusning on  proper deployment right now
+# Legacy deployment script - use Ansible playbooks instead
 if [ "$2" != "skip" ]; then
 ssh afreidah@$1 "curl -L https://omnitruck.chef.io/install.sh | sudo bash"
 ssh afreidah@$1 "sudo rm -rf /tmp/chef/"

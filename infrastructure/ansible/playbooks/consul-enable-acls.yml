@@ -1,3 +1,12 @@
+# -------------------------------------------------------------------------------
+# Enable Consul ACLs - Access Control List Activation
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Enables ACL system on all Consul nodes with deny-by-default policy. Requires
+# bootstrap token generation after activation. Use consul-disable-acls.yml to
+# temporarily disable for troubleshooting.
+# -------------------------------------------------------------------------------
 ---
 - name: Enable ACLs on all Consul nodes
   hosts: nomad_cluster

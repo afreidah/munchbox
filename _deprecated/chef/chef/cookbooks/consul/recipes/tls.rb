@@ -1,4 +1,11 @@
-# recipes/tls.rb
+# -------------------------------------------------------------------------------
+# Consul Cookbook - TLS Recipe
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures TLS certificates for secure Consul cluster communication.
+# -------------------------------------------------------------------------------
+
 tls_dir   = '/opt/consul/tls'
 dc        = node['consul']['dc']      || 'dc1'
 domain    = node['consul']['domain']  || 'consul'

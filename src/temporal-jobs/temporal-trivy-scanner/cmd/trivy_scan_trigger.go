@@ -1,3 +1,12 @@
+// -------------------------------------------------------------------------------
+// Trivy Scan Trigger - Main Entry Point
+//
+// Project: Munchbox / Author: Alex Freidah
+//
+// Initiates Trivy vulnerability scan workflow execution. Connects to Temporal
+// server and starts the TrivyScanWorkflow to scan all running container images.
+// -------------------------------------------------------------------------------
+
 package main
 
 import (

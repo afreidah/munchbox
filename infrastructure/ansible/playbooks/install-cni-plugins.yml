@@ -1,4 +1,11 @@
-# playbooks/install-cni-plugins.yml
+# -------------------------------------------------------------------------------
+# Install CNI Plugins - Container Network Interface Binaries
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs CNI plugins required for Nomad bridge networking and Consul Connect
+# service mesh. Supports both amd64 (VMs) and arm64 (Pi5s) architectures.
+# -------------------------------------------------------------------------------
 ---
 - name: Install CNI plugins for Consul Connect
   hosts: nomad_servers:nomad_clients

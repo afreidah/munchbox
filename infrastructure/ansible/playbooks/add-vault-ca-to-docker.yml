@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Add Vault CA to Docker - Trust Private Registry Certificates
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs Vault PKI CA certificate as trusted root on Docker hosts. Enables
+# Docker to pull images from the private registry using Vault-issued TLS certs.
+# -------------------------------------------------------------------------------
 ---
 - name: Add Vault PKI CA to Docker trusted certificates
   hosts: nomad_servers:nomad_clients

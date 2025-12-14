@@ -1,3 +1,11 @@
+# -------------------------------------------------------------------------------
+# Fix Nomad TLS - Add Missing Verification Settings
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Adds missing TLS verification settings to Nomad configuration. Ensures
+# verify_server_hostname and verify_https_client are configured correctly.
+# -------------------------------------------------------------------------------
 ---
 - hosts: nomad_cluster
   become: true

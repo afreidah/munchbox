@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+# -------------------------------------------------------------------------------
+# WARP Off - Disable Cloudflare WARP VPN
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Disables Cloudflare WARP VPN tunnel and stops the daemon. Handles both
+# warp-svc and cloudflare-warp service names across package versions.
+# -------------------------------------------------------------------------------
 set -euo pipefail
 
 # Find the service name (varies by package)

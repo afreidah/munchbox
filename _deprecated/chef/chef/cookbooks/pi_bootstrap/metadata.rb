@@ -1,13 +1,12 @@
 # frozen_string_literal: true
 
-# --------------------------------------------------------------------
-# Cookbook:: pi_bootstrap
-# Metadata
+# -------------------------------------------------------------------------------
+# Pi Bootstrap Cookbook - Metadata
 #
-# Copyright:: 2024, Alex Freidah, All Rights Reserved.
+# Project: Munchbox / Author: Alex Freidah
 #
-# Cookbook:: metadata for Raspberry Pi bootstrap configuration.
-# --------------------------------------------------------------------
+# Cookbook metadata for Raspberry Pi bootstrap configuration.
+# -------------------------------------------------------------------------------
 
 name             'pi_bootstrap'
 maintainer       'Alex Freidah'

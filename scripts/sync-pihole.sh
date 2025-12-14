@@ -1,22 +1,18 @@
 #!/usr/bin/env bash
-# =============================================================================
-# Pi-hole Sync Runner (nebula-sync) — NO PREP, NO PROMPTS
-# -----------------------------------------------------------------------------
-# Usage:
-#   export PIHOLE_PASSWORD_GREEN=...   # required
-#   export PIHOLE_PASSWORD_LOGAN=...   # required
-#   # optional:
-#   # export PRIMARY_HOST="http://green.munchbox"
-#   # export REPLICA_LOGAN_HOST="http://logan.munchbox"
-#   ./sync-pihole.sh
+# -------------------------------------------------------------------------------
+# Sync Pi-hole - Nebula-Sync Configuration Replication
 #
-# Behavior:
-#   - If Docker needs root, re-execs with sudo and **preserves the needed env**.
-#   - Never prompts. If env vars are missing, exits with a clear error.
-#   - Creates temp secrets (URL|password) for nebula-sync *_FILE inputs.
-#   - Cleans temp files/dir on exit (shreds if available).
-#   - Runs container as root so strict file perms are readable in-container.
-# =============================================================================
+# Project: Munchbox / Author: Alex Freidah
+#
+# Synchronizes Pi-hole configuration from primary (green) to replica (logan)
+# using nebula-sync. Requires PIHOLE_PASSWORD_GREEN and PIHOLE_PASSWORD_LOGAN
+# environment variables. Automatically handles Docker privilege escalation.
+#
+# Usage:
+#   export PIHOLE_PASSWORD_GREEN=...
+#   export PIHOLE_PASSWORD_LOGAN=...
+#   ./sync-pihole.sh
+# -------------------------------------------------------------------------------
 set -euo pipefail
 
 # ---- Defaults (override via env if needed) -----------------------------------

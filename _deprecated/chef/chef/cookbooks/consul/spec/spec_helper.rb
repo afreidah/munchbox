@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
-# ------------------------------------------------------------------------------
-#  spec_helper.rb — ChefSpec Configuration for Consul Cookbook
-#  Loads ChefSpec, sets up coverage, and configures RSpec for cookbook testing.
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+# Consul Cookbook - Spec Helper
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# ChefSpec configuration for Consul cookbook testing. Loads ChefSpec, sets up
+# coverage, and configures RSpec for cookbook testing.
+# -------------------------------------------------------------------------------
 
 require 'chefspec'
 require 'chefspec/berkshelf'
@@ -13,11 +17,8 @@ SimpleCov.start do
   add_filter '/spec/'
 end
 
-# ------------------------------------------------------------------------------
-#  ChefSpec Runner Configuration
-# ------------------------------------------------------------------------------
-#  Ensures ChefSpec can find this cookbook and its dependencies.
-# ------------------------------------------------------------------------------
+# --- ChefSpec runner configuration ---
+# Ensures ChefSpec can find this cookbook and its dependencies.
 
 RSpec.configure do |config|
   config.cookbook_path = [
@@ -29,8 +30,5 @@ RSpec.configure do |config|
   config.formatter = :documentation
 end
 
-# ------------------------------------------------------------------------------
-#  ChefSpec Coverage
-# ------------------------------------------------------------------------------
-
+# --- ChefSpec coverage ---
 ChefSpec::Coverage.start!
