@@ -1,0 +1,108 @@
+# -------------------------------------------------------------------------------
+# Verify Consul ACLs - Check ACL enforcement on all nodes
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Verifies that Consul ACLs are properly enabled and enforced on all cluster
+# nodes. Fails if any node has ACLs disabled or misconfigured.
+# -------------------------------------------------------------------------------
+---
+- name: Verify Consul ACLs are enabled on all nodes
+  hosts: consul_servers:consul_clients
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check Consul ACL status via API
+      uri:
+        url: "http://127.0.0.1:8500/v1/agent/self"
+        method: GET
+        headers:
+          X-Consul-Token: "{{ lookup('env', 'CONSUL_HTTP_TOKEN') }}"
+        return_content: true
+      register: consul_self
+      failed_when: false
+
+    - name: Extract ACL configuration
+      set_fact:
+        acl_enabled: "{{ consul_self.json.DebugConfig.ACLsEnabled | default(false) }}"
+        acl_default_policy: "{{ consul_self.json.DebugConfig.ACLDefaultPolicy | default('allow') }}"
+        node_name: "{{ consul_self.json.Config.NodeName | default(inventory_hostname) }}"
+
+    - name: Verify ACLs are enabled
+      assert:
+        that:
+          - acl_enabled | bool == true
+        fail_msg: "SECURITY RISK: ACLs are DISABLED on {{ node_name }}"
+        success_msg: "ACLs are enabled on {{ node_name }}"
+
+    - name: Verify default policy is deny
+      assert:
+        that:
+          - acl_default_policy == "deny"
+        fail_msg: "SECURITY RISK: Default ACL policy is '{{ acl_default_policy }}' on {{ node_name }} (should be 'deny')"
+        success_msg: "Default ACL policy is 'deny' on {{ node_name }}"
+
+    - name: Check for token persistence
+      stat:
+        path: /opt/consul/data/acl-tokens.json
+      register: token_file
+
+    - name: Verify agent token is configured
+      shell: |
+        grep -q "agent_token" /etc/consul.d/consul.hcl 2>/dev/null || \
+        test -f /opt/consul/data/acl-tokens.json
+      register: agent_token_check
+      failed_when: false
+      changed_when: false
+
+    - name: Warn if no agent token found
+      debug:
+        msg: "WARNING: No agent token configuration found on {{ node_name }}. Agent may have limited permissions."
+      when: agent_token_check.rc != 0
+
+- name: Verify ACL policies exist
+  hosts: consul_servers[0]
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Check required ACL policies exist
+      uri:
+        url: "http://127.0.0.1:8500/v1/acl/policies"
+        method: GET
+        headers:
+          X-Consul-Token: "{{ lookup('env', 'CONSUL_HTTP_TOKEN') }}"
+        return_content: true
+      register: acl_policies
+
+    - name: Parse policy list
+      set_fact:
+        policy_names: "{{ acl_policies.json | map(attribute='Name') | list }}"
+
+    - name: Verify required policies exist
+      assert:
+        that:
+          - "'nomad-server' in policy_names"
+          - "'nomad-client' in policy_names"
+          - "'consul-agent' in policy_names"
+        fail_msg: "Missing required ACL policies. Found: {{ policy_names }}"
+        success_msg: "All required ACL policies exist"
+
+- name: Summary
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Print verification summary
+      debug:
+        msg: |
+
+          ============================================================
+          CONSUL ACL VERIFICATION COMPLETE
+          ============================================================
+
+          All nodes have:
+          - ACLs enabled
+          - Default policy set to 'deny'
+          - Required policies configured
+
+          Run this playbook regularly or after adding new nodes.
+          ============================================================

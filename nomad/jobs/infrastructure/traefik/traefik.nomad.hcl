@@ -201,9 +201,42 @@ EOH
   filename = "/etc/traefik/traefik_dynamic.toml"
 
 [accessLog]
+  format = "json"
+  [accessLog.fields]
+    [accessLog.fields.names]
+      StartUTC         = "keep"
+      Duration         = "keep"
+      RouterName       = "keep"
+      ServiceName      = "keep"
+      ServiceURL       = "keep"
+      ClientHost       = "keep"
+      RequestMethod    = "keep"
+      RequestPath      = "keep"
+      RequestProtocol  = "keep"
+      OriginStatus     = "keep"
+      DownstreamStatus = "keep"
+      RequestCount     = "keep"
+      entryPointName   = "keep"
+    [accessLog.fields.headers]
+      defaultMode = "drop"
+      [accessLog.fields.headers.names]
+        User-Agent       = "keep"
+        X-Forwarded-For  = "keep"
+        CF-Connecting-IP = "keep"
 
 [log]
   level = "INFO"
+
+# -------------------------------------------------------------------------
+# Tracing (Tempo via OpenTelemetry)
+# -------------------------------------------------------------------------
+
+[tracing]
+  serviceName = "traefik"
+  sampleRate = 1.0
+  [tracing.otlp]
+    [tracing.otlp.http]
+      endpoint = "http://tempo.service.consul:4318/v1/traces"
 
 # -------------------------------------------------------------------------
 # ACME (Let's Encrypt) Configuration

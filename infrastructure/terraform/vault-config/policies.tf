@@ -116,6 +116,10 @@ path "secret/data/postgres-shared/root" {
   capabilities = ["read"]
 }
 
+path "secret/data/postgres-shared/replication" {
+  capabilities = ["read"]
+}
+
 path "secret/data/nextcloud" {
   capabilities = ["read"]
 }
@@ -149,6 +153,10 @@ path "secret/data/authentik/*" {
 }
 
 path "sys/metrics" {
+  capabilities = ["read"]
+}
+
+path "secret/data/trivy-dashboard" {
   capabilities = ["read"]
 }
 

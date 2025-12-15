@@ -47,25 +47,28 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-// runTrigger initiates a backup workflow execution and waits for completion.
+// runTrigger initiates a workflow execution and waits for completion.
 //
 // Creates a unique workflow ID using the current timestamp to ensure each
-// backup run is independently tracked in the Temporal UI. The function blocks
+// run is independently tracked in the Temporal UI. The function blocks
 // until the workflow completes (successfully or with error) and logs the results.
 //
-// Workflow execution steps:
-//  1. Connect to Temporal cluster
-//  2. Start BackupWorkflow on backup-task-queue
-//  3. Block waiting for workflow completion
-//  4. Log snapshot file paths or error details
+// Supported workflows (via WORKFLOW_NAME env var):
+//   - "backup" (default): BackupWorkflow for infrastructure backups
+//   - "trivy": TrivyScanWorkflow for vulnerability scanning
 //
 // Exit codes:
-//   - 0: Backup completed successfully
+//   - 0: Workflow completed successfully
 //   - 1: Failed to connect to Temporal or workflow execution failed
 func runTrigger() {
 	temporalAddr := os.Getenv("TEMPORAL_ADDRESS")
 	if temporalAddr == "" {
 		temporalAddr = "localhost:7233"
+	}
+
+	workflowName := os.Getenv("WORKFLOW_NAME")
+	if workflowName == "" {
+		workflowName = "backup"
 	}
 
 	c, err := client.Dial(client.Options{
@@ -76,20 +79,32 @@ func runTrigger() {
 	}
 	defer c.Close()
 
-	workflowID := "backup-" + time.Now().Format("2006-01-02-15-04-05")
+	workflowID := workflowName + "-" + time.Now().Format("2006-01-02-15-04-05")
 
 	workflowOptions := client.StartWorkflowOptions{
 		ID:        workflowID,
 		TaskQueue: "backup-task-queue",
 	}
 
-	we, err := c.ExecuteWorkflow(context.Background(), workflowOptions, BackupWorkflow)
+	switch workflowName {
+	case "backup":
+		runBackupWorkflow(c, workflowOptions)
+	case "trivy":
+		runTrivyWorkflow(c, workflowOptions)
+	default:
+		log.Fatalf("Unknown workflow: %s (supported: backup, trivy)\n", workflowName)
+	}
+}
+
+// runBackupWorkflow executes the backup workflow and logs results.
+func runBackupWorkflow(c client.Client, opts client.StartWorkflowOptions) {
+	we, err := c.ExecuteWorkflow(context.Background(), opts, BackupWorkflow)
 	if err != nil {
 		log.Fatalln("Unable to start workflow", err)
 	}
 
-	log.Printf("Started workflow: %s (RunID: %s)\n", we.GetID(), we.GetRunID())
-	log.Printf("View in UI: http://192.168.68.61:8080/namespaces/default/workflows/%s/%s\n",
+	log.Printf("Started backup workflow: %s (RunID: %s)\n", we.GetID(), we.GetRunID())
+	log.Printf("View in UI: http://temporal.service.consul:8080/namespaces/default/workflows/%s/%s\n",
 		we.GetID(), we.GetRunID())
 
 	log.Println("Waiting for result...")
@@ -99,9 +114,29 @@ func runTrigger() {
 		log.Fatalf("Workflow failed: %v\n", err)
 	}
 
-	log.Println("✓ Backup complete!")
+	log.Println("Backup complete!")
 	log.Printf("  Nomad snapshot: %s", result.NomadSnapshot)
 	log.Printf("  Consul snapshot: %s", result.ConsulSnapshot)
 	log.Printf("  PostgreSQL backup: %s", result.PostgresBackup)
 	log.Printf("  Registry backup: %s", result.RegistryBackup)
+}
+
+// runTrivyWorkflow executes the trivy scan workflow and logs results.
+func runTrivyWorkflow(c client.Client, opts client.StartWorkflowOptions) {
+	we, err := c.ExecuteWorkflow(context.Background(), opts, TrivyScanWorkflow)
+	if err != nil {
+		log.Fatalln("Unable to start workflow", err)
+	}
+
+	log.Printf("Started trivy scan workflow: %s (RunID: %s)\n", we.GetID(), we.GetRunID())
+	log.Printf("View in UI: http://temporal.service.consul:8080/namespaces/default/workflows/%s/%s\n",
+		we.GetID(), we.GetRunID())
+
+	log.Println("Waiting for result...")
+	err = we.Get(context.Background(), nil)
+	if err != nil {
+		log.Fatalf("Workflow failed: %v\n", err)
+	}
+
+	log.Println("Trivy scan complete! Check /mnt/gdrive/trivy-reports for results.")
 }

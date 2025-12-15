@@ -19,6 +19,7 @@ alerting:
       consul_sd_configs:
         - server: "192.168.68.61:8500"
           services: ["alertmanager"]
+          token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
       relabel_configs:
         # Combine service address and port into __address__
         - source_labels:
@@ -54,6 +55,7 @@ scrape_configs:
         scheme: "http"
         services: ["nomad"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_address"]
         target_label: "__address__"
@@ -84,6 +86,7 @@ scrape_configs:
         scheme: "http"
         services: ["nomad-client"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_address"]
         target_label: "__address__"
@@ -107,12 +110,13 @@ scrape_configs:
     scheme: "https"
     tls_config:
       ca_file: "/etc/prometheus/certs/ca-chain.crt"
-    bearer_token_file: "/secrets/vault_token"
+    bearer_token_file: "/etc/prometheus/secrets/vault_token"
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
         services: ["vault"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_address"]
         target_label: "__address__"
@@ -135,6 +139,7 @@ scrape_configs:
         scheme: "http"
         services: ["node-exporter"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       # First, set address from node address (fallback)
       - source_labels: ["__meta_consul_address", "__meta_consul_service_port"]
@@ -163,6 +168,7 @@ scrape_configs:
         scheme: "http"
         services: ["cloudflared-tunnel"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_service_address"]
         regex: "(.+)"
@@ -186,12 +192,13 @@ scrape_configs:
       format: ["prometheus"]
     scheme: "http"
     authorization:
-      credentials_file: "/secrets/consul_token"
+      credentials_file: "/etc/prometheus/secrets/consul_token"
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
         services: ["consul"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_address"]
         target_label: "__address__"
@@ -213,6 +220,7 @@ scrape_configs:
         scheme: "http"
         services: ["traefik"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_service_address"]
         regex: "(.+)"
@@ -233,6 +241,7 @@ scrape_configs:
         scheme: "http"
         services: ["blackbox-exporter"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_service"]
         target_label: "job"
@@ -240,7 +249,7 @@ scrape_configs:
         target_label: "instance"
 
   # -----------------------------------------------------------------------
-  # PostgreSQL Exporter - Database metrics via Consul service discovery
+  # PostgreSQL Exporter (Primary) - Database metrics via Consul SD
   # -----------------------------------------------------------------------
   - job_name: "postgres-exporter"
     metrics_path: "/metrics"
@@ -249,6 +258,7 @@ scrape_configs:
         scheme: "http"
         services: ["postgres-exporter"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
         separator: ":"
@@ -257,6 +267,30 @@ scrape_configs:
         target_label: "instance"
       - target_label: "database"
         replacement: "postgres-shared"
+      - target_label: "role"
+        replacement: "primary"
+
+  # -----------------------------------------------------------------------
+  # PostgreSQL Replica Exporter - Replica metrics via Consul SD
+  # -----------------------------------------------------------------------
+  - job_name: "postgres-replica-exporter"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["postgres-replica-exporter"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "database"
+        replacement: "postgres-shared"
+      - target_label: "role"
+        replacement: "replica"
 
   # -----------------------------------------------------------------------
   # Redis Exporter - Cache metrics via Consul service discovery
@@ -268,6 +302,7 @@ scrape_configs:
         scheme: "http"
         services: ["redis-exporter"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
         separator: ":"
@@ -289,6 +324,7 @@ scrape_configs:
         scheme: "http"
         services: ["nextcloud-exporter"]
         datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
       - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
         separator: ":"
@@ -319,3 +355,41 @@ scrape_configs:
         target_label: "instance"
       - target_label: "__address__"
         replacement: "blackbox-exporter.service.consul:9115"
+
+  # -----------------------------------------------------------------------
+  # Alertmanager - Self-monitoring for alerting system health
+  # -----------------------------------------------------------------------
+  - job_name: "alertmanager"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["alertmanager"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+
+  # -----------------------------------------------------------------------
+  # Trivy Dashboard - Vulnerability scan metrics
+  # -----------------------------------------------------------------------
+  - job_name: "trivy-dashboard"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["trivy-dashboard"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "trivy-dashboard"

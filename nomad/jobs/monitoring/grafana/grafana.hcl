@@ -26,8 +26,11 @@ health_path = "/api/health"
 
 # --- Environment ---
 env = {
-  GF_SERVER_SERVE_FROM_SUB_PATH = "false"
-  GF_SERVER_ROOT_URL            = "https://grafana.munchbox.cc/"
+  GF_SERVER_SERVE_FROM_SUB_PATH              = "false"
+  GF_SERVER_ROOT_URL                         = "https://grafana.munchbox.cc/"
+  # OpenTelemetry tracing to Tempo
+  GF_TRACING_OPENTELEMETRY_OTLP_ADDRESS      = "tempo.service.consul:4317"
+  GF_TRACING_OPENTELEMETRY_OTLP_PROPAGATION  = "w3c"
 }
 
 # --- Host volume mounts ---
@@ -37,7 +40,11 @@ volumes = [
 
 # --- Configuration templates ---
 templates = [
-  { src = "grafana.env.tpl", dest = "/secrets/grafana.env", env = true, vault = true }
+  { src = "grafana.env.tpl", dest = "/secrets/grafana.env", env = true, vault = true },
+  { src = "datasources.yml", dest = "/etc/grafana/provisioning/datasources/datasources.yml", vault = false },
+  { src = "dashboards.yml", dest = "/etc/grafana/provisioning/dashboards/dashboards.yml", vault = false },
+  { src = "dashboards/infrastructure-services.json", dest = "/etc/grafana/provisioning/dashboards/json/infrastructure-services.json", vault = false },
+  { src = "dashboards/nomad-cluster-overview.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-cluster-overview.json", vault = false }
 ]
 
 # --- Service tags ---

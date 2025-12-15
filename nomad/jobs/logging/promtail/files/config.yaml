@@ -102,8 +102,20 @@ scrape_configs:
             level: level
             msg: msg
             message: message
+            # Traefik access log fields
+            RouterName: RouterName
+            ServiceName: ServiceName
+            RequestMethod: RequestMethod
+            RequestPath: RequestPath
+            DownstreamStatus: DownstreamStatus
+            ClientHost: ClientHost
+            entryPointName: entryPointName
       - labels:
           level:
+          RouterName:
+          ServiceName:
+          RequestMethod:
+          entryPointName:
       # Drop empty lines
       - drop:
           expression: '^\s*$'

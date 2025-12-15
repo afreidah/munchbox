@@ -123,7 +123,7 @@ job "authentik" {
 
       # --- Container Configuration ---
       config {
-        image              = "ghcr.io/goauthentik/server:2024.10"
+        image              = "ghcr.io/goauthentik/server:2025.10.2"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["http", "https"]
@@ -162,6 +162,12 @@ job "authentik" {
         AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS = "172.26.64.0/18,192.168.68.0/24,127.0.0.1/32"
         AUTHENTIK_HOST                        = "https://auth.munchbox.cc"
         AUTHENTIK_HOST_BROWSER                = "https://auth.munchbox.cc"
+        # OpenTelemetry tracing to Tempo
+        AUTHENTIK_TRACING__ENABLED            = "true"
+        AUTHENTIK_TRACING__TYPE               = "otel"
+        OTEL_EXPORTER_OTLP_ENDPOINT           = "http://tempo.service.consul:4318"
+        OTEL_EXPORTER_OTLP_PROTOCOL           = "http/protobuf"
+        OTEL_SERVICE_NAME                     = "authentik"
         # Dynamic secrets from Vault
         AUTHENTIK_SECRET_KEY                  = "${secret.authentik.secret_key}"
         AUTHENTIK_POSTGRESQL__HOST            = "${secret.authentik.postgres_host}"
@@ -245,7 +251,7 @@ job "authentik" {
 
       # --- Container Configuration ---
       config {
-        image              = "ghcr.io/goauthentik/server:2024.10"
+        image              = "ghcr.io/goauthentik/server:2025.10.2"
         image_pull_timeout = "10m"
         network_mode       = "host"
         args               = ["worker"]
@@ -281,6 +287,12 @@ job "authentik" {
         AUTHENTIK_ERROR_REPORTING__ENABLED  = "false"
         AUTHENTIK_DISABLE_UPDATE_CHECK      = "true"
         AUTHENTIK_DISABLE_STARTUP_ANALYTICS = "true"
+        # OpenTelemetry tracing to Tempo
+        AUTHENTIK_TRACING__ENABLED          = "true"
+        AUTHENTIK_TRACING__TYPE             = "otel"
+        OTEL_EXPORTER_OTLP_ENDPOINT         = "http://tempo.service.consul:4318"
+        OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
+        OTEL_SERVICE_NAME                   = "authentik-worker"
         # Dynamic secrets from Vault
         AUTHENTIK_SECRET_KEY                = "${secret.authentik.secret_key}"
         AUTHENTIK_POSTGRESQL__HOST          = "${secret.authentik.postgres_host}"
