@@ -196,3 +196,26 @@ resource "vault_kv_secret_v2" "prometheus" {
     consul_token = consul_acl_token.prometheus.id
   })
 }
+
+# -------------------------------------------------------------------------------
+# Anonymous Token Management
+#
+# The anonymous token is a built-in Consul token that's used when no token is
+# provided. By default it has no policies, but it was manually given the
+# health-checks policy which effectively bypasses default_policy=deny.
+#
+# This resource imports and manages the anonymous token to ensure it has NO
+# policies attached, enforcing proper ACL security.
+# -------------------------------------------------------------------------------
+
+resource "consul_acl_token" "anonymous" {
+  accessor_id = "00000000-0000-0000-0000-000000000002"
+  description = "Anonymous Token - intentionally has no policies for security"
+  policies    = []
+  local       = false
+
+  lifecycle {
+    # Prevent accidental deletion of the built-in anonymous token
+    prevent_destroy = true
+  }
+}

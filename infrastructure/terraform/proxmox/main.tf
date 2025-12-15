@@ -24,6 +24,12 @@ terraform {
       version = "3.0.2-rc05"
     }
   }
+
+  backend "consul" {
+    address = "stabler:8500"
+    scheme  = "http"
+    path    = "terraform/proxmox"
+  }
 }
 
 # -------------------------------------------------------------------------------
@@ -52,38 +58,32 @@ locals {
 # -------------------------------------------------------------------------------
 
 resource "proxmox_vm_qemu" "vm" {
-  for_each = var.vms
-
+  for_each    = var.vms
   name        = each.key
   target_node = each.value.target_node
   vmid        = each.value.vmid
 
-  clone      = local.template_name
-  full_clone = true
+  clone      = each.value.existing == true ? null : local.template_name
+  full_clone = each.value.existing == true ? false : true
 
   memory = each.value.memory
-
   cpu {
     cores   = each.value.cores
     sockets = 1
     type    = "host"
   }
-
   scsihw = "virtio-scsi-pci"
-
   disk {
     slot    = "scsi0"
     type    = "disk"
     storage = local.disk_storage
     size    = each.value.disk_size
   }
-
   network {
     id     = 0
     model  = "virtio"
     bridge = local.net_bridge
   }
-
   onboot = true
   agent  = 1
 

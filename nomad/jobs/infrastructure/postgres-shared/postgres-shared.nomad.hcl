@@ -1,11 +1,11 @@
 # -------------------------------------------------------------------------------
-# postgres-shared — Multi-tenant PostgreSQL Server
+# postgres-shared — Multi-tenant PostgreSQL Server (Primary)
 #
 # Project: Munchbox / Author: Alex Freidah
 #
 # Shared PostgreSQL 16 instance for multiple services. Vault templates database
 # credentials for each tenant into init scripts. Pinned to nomad-client-03 with
-# local storage persistence.
+# local storage persistence. Configured for streaming replication to replica.
 # -------------------------------------------------------------------------------
 
 job "postgres-shared" {
@@ -122,8 +122,8 @@ job "postgres-shared" {
       }
 
       resources {
-        cpu    = 50
-        memory = 32
+        cpu    = 200
+        memory = 1024
       }
     }
 
@@ -153,7 +153,17 @@ job "postgres-shared" {
         volumes      = [
           "/opt/nomad/data/postgres-shared:/var/lib/postgresql/data",
           "local/init-nextcloud.sql:/docker-entrypoint-initdb.d/10-nextcloud.sql:ro",
-          "local/init-temporal.sql:/docker-entrypoint-initdb.d/20-temporal.sql:ro"
+          "local/init-temporal.sql:/docker-entrypoint-initdb.d/20-temporal.sql:ro",
+          "local/init-trivy.sql:/docker-entrypoint-initdb.d/30-trivy.sql:ro"
+        ]
+
+        # PostgreSQL replication settings (enable streaming replication)
+        args = [
+          "-c", "wal_level=replica",
+          "-c", "max_wal_senders=3",
+          "-c", "max_replication_slots=3",
+          "-c", "hot_standby=on",
+          "-c", "wal_keep_size=256MB"
         ]
       }
 
@@ -199,6 +209,51 @@ CREATE DATABASE temporal_visibility OWNER {{ .Data.data.db_username }};
 GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
 \c temporal_visibility
 GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
+{{ end }}
+EOH
+      }
+
+      # --- Trivy Dashboard Database Init ---
+      template {
+        destination = "local/init-trivy.sql"
+        change_mode = "noop"
+        data        = <<EOH
+{{ with secret "secret/data/trivy-dashboard" }}
+CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+CREATE DATABASE trivy OWNER {{ .Data.data.db_username }};
+\c trivy
+GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
+
+-- Scan results table
+CREATE TABLE scans (
+    id SERIAL PRIMARY KEY,
+    image TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error TEXT,
+    scanned_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Vulnerabilities table
+CREATE TABLE vulnerabilities (
+    id SERIAL PRIMARY KEY,
+    scan_id INTEGER REFERENCES scans(id) ON DELETE CASCADE,
+    vuln_id TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    pkg_name TEXT,
+    installed_version TEXT,
+    fixed_version TEXT,
+    title TEXT,
+    description TEXT
+);
+
+-- Indexes for common queries
+CREATE INDEX idx_scans_image ON scans(image);
+CREATE INDEX idx_scans_scanned_at ON scans(scanned_at DESC);
+CREATE INDEX idx_vulns_scan_id ON vulnerabilities(scan_id);
+CREATE INDEX idx_vulns_severity ON vulnerabilities(severity);
+
+GRANT ALL ON ALL TABLES IN SCHEMA public TO {{ .Data.data.db_username }};
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO {{ .Data.data.db_username }};
 {{ end }}
 EOH
       }

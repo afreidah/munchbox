@@ -15,8 +15,8 @@ port  = 8096
 static_port = 8096
 host_network = true
 node = "nomad-client-01"
-cpu    = 2000
-memory = 1000
+cpu    = 4000
+memory = 2500
 
 # --- Additional ports ---
 extra_ports = [

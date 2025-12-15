@@ -33,6 +33,10 @@ health_path = "/ready"
 # --- Environment ---
 env = {
   TZ = "America/Los_Angeles"
+  # OpenTelemetry tracing to Tempo
+  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
+  OTEL_SERVICE_NAME           = "loki"
 }
 
 # --- Container arguments ---
@@ -40,7 +44,8 @@ args = ["-config.file=/etc/loki/config.yaml"]
 
 # --- Configuration templates ---
 templates = [
-  { src = "config.yaml", dest = "/etc/loki/config.yaml" }
+  { src = "config.yaml", dest = "/etc/loki/config.yaml" },
+  { src = "alert_rules.yaml", dest = "/loki/rules/fake/alert_rules.yaml" }
 ]
 
 # --- Service tags ---

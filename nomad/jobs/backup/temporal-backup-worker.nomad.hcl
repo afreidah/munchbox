@@ -89,15 +89,15 @@ job "temporal-backup-worker" {
         args     = ["-c", "pgrep -f temporal-backup-worker"]
         interval = "30s"
         timeout  = "5s"
-        task     = "worker"
+        task     = "backup-worker"
       }
     }
 
     # -------------------------------------------------------------------------
-    # Task: worker
+    # Task: backup-worker
     # -------------------------------------------------------------------------
 
-    task "worker" {
+    task "backup-worker" {
       driver = "docker"
 
       vault {
@@ -139,6 +139,14 @@ job "temporal-backup-worker" {
         }
       }
 
+      secret "trivy_db" {
+        provider = "vault"
+        path     = "secret/data/trivy-dashboard"
+        config {
+          engine = "kv_v2"
+        }
+      }
+
       env {
         TEMPORAL_ADDRESS  = "temporal-server.service.consul:7233"
         NOMAD_ADDR        = "https://nomad.service.consul:4646"
@@ -147,6 +155,11 @@ job "temporal-backup-worker" {
         NOMAD_TOKEN       = "${secret.backup_worker.nomad_token}"
         CONSUL_HTTP_TOKEN = "${secret.backup_worker.consul_token}"
         PGPASSWORD        = "${secret.postgres.password}"
+        TRIVY_DB_HOST     = "postgres-shared.service.consul"
+        TRIVY_DB_PORT     = "5432"
+        TRIVY_DB_USER     = "${secret.trivy_db.db_username}"
+        TRIVY_DB_PASSWORD = "${secret.trivy_db.db_password}"
+        TRIVY_DB_NAME     = "trivy"
       }
 
       # --- Resources ---

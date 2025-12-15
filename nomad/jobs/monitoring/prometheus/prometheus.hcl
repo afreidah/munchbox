@@ -46,6 +46,7 @@ args = [
   "--web.listen-address=0.0.0.0:9090",
   "--web.enable-lifecycle",
   "--web.enable-admin-api",
+  "--web.enable-remote-write-receiver",
   "--storage.tsdb.retention.time=30d",
   "--storage.tsdb.wal-compression",
   "--web.page-title=Munchbox Prometheus"
@@ -53,7 +54,7 @@ args = [
 
 # --- Configuration templates ---
 templates = [
-  { src = "prometheus.yml", dest = "/etc/prometheus/config/prometheus.yml", vault = false },
+  { src = "prometheus.yml.tpl", dest = "/etc/prometheus/config/prometheus.yml", vault = true },
   { src = "alert_rules.yml", dest = "/etc/prometheus/config/alert_rules.yml", vault = false, change_mode = "signal" },
   { src = "consul_token.tpl", dest = "/etc/prometheus/secrets/consul_token", vault = true },
   { src = "vault_token.tpl", dest = "/etc/prometheus/secrets/vault_token", vault = true },

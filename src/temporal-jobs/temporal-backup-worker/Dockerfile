@@ -13,7 +13,7 @@
 # STAGE 1: Build Go Binaries
 # -------------------------------------------------------------------------
 
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 WORKDIR /build
 
@@ -83,15 +83,24 @@ RUN curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAU
     && rm -f vault.zip LICENSE.txt \
     && chmod +x /usr/local/bin/vault
 
+# Install Trivy vulnerability scanner
+ARG TRIVY_VERSION=0.58.0
+RUN curl -fsSL https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-$(uname -m | sed 's/aarch64/ARM64/' | sed 's/x86_64/64bit/').tar.gz -o trivy.tar.gz \
+    && tar -xzf trivy.tar.gz \
+    && mv trivy /usr/local/bin/ \
+    && rm -rf trivy.tar.gz LICENSE README.md contrib \
+    && chmod +x /usr/local/bin/trivy
+
 # Copy binaries from builder
 COPY --from=builder /build/temporal-backup-worker /usr/local/bin/
 COPY --from=builder /build/temporal-backup-trigger /usr/local/bin/
 
-# Create backup directories (will be mounted as volumes)
+# Create backup and report directories (will be mounted as volumes)
 RUN mkdir -p /mnt/gdrive/nomad-snapshots \
     && mkdir -p /mnt/gdrive/consul-snapshots \
     && mkdir -p /mnt/gdrive/postgres-backups \
-    && mkdir -p /mnt/gdrive/registry-backups
+    && mkdir -p /mnt/gdrive/registry-backups \
+    && mkdir -p /mnt/gdrive/trivy-reports
 
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh

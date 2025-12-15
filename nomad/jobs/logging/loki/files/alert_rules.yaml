@@ -1,0 +1,270 @@
+# Loki Log-Based Alert Rules
+# These rules query logs and fire alerts based on log patterns
+groups:
+  # ---------------------------------------------------------------------------
+  # Application Error Detection
+  # ---------------------------------------------------------------------------
+  - name: log-errors
+    interval: 1m
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum by (job_name) (
+            count_over_time({level="error"}[5m])
+          ) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in {{"{{"}} $labels.job_name {{"}}"}}"
+          description: "{{"{{"}} $labels.job_name {{"}}"}} has logged {{"{{"}} $value {{"}}"}} errors in the last 5 minutes."
+
+      - alert: CriticalLogPattern
+        expr: |
+          count_over_time({level=~"fatal|panic|critical"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical log entry detected"
+          description: "A fatal/panic/critical log entry was detected in {{"{{"}} $labels.job_name {{"}}"}}."
+
+      - alert: PostgresLogError
+        expr: |
+          count_over_time({job_name="postgres-shared"} |~ "(?i)(error|fatal|panic)"[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL errors in logs"
+          description: "PostgreSQL has logged {{"{{"}} $value {{"}}"}} errors in the last 5 minutes."
+
+      - alert: AuthentikAuthFailures
+        expr: |
+          count_over_time({job_name="authentik"} |~ "(?i)(authentication failed|invalid credentials|login failed)"[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentik has {{"{{"}} $value {{"}}"}} authentication failures in the last 5 minutes. Possible brute force attack."
+
+  # ---------------------------------------------------------------------------
+  # Container/Job Crash Detection
+  # ---------------------------------------------------------------------------
+  - name: log-crashes
+    interval: 1m
+    rules:
+      - alert: OOMKilled
+        expr: |
+          count_over_time({source="stderr"} |~ "(?i)(out of memory|oom|killed process|memory allocation failed)"[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OOM kill detected"
+          description: "A process was killed due to out of memory in {{"{{"}} $labels.job_name {{"}}"}}."
+
+      - alert: SegfaultDetected
+        expr: |
+          count_over_time({source="stderr"} |~ "(?i)(segfault|segmentation fault|sigsegv)"[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Segmentation fault detected"
+          description: "A segmentation fault was detected in {{"{{"}} $labels.job_name {{"}}"}}."
+
+  # ---------------------------------------------------------------------------
+  # Backup and Workflow Failures
+  # ---------------------------------------------------------------------------
+  - name: log-backups
+    interval: 2m
+    rules:
+      - alert: BackupFailed
+        expr: |
+          count_over_time({task_name="backup-worker"} |~ "(?i)(backup failed|upload failed|error|workflow failed)"[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backup workflow failed"
+          description: "Temporal backup worker reported a failure."
+
+      - alert: BackupNoActivity
+        expr: |
+          count_over_time({task_name="backup-worker"}[24h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "No backup activity in 24 hours"
+          description: "No logs from temporal-backup-worker in the last 24 hours."
+
+  # ---------------------------------------------------------------------------
+  # Security and Access Patterns
+  # ---------------------------------------------------------------------------
+  - name: log-security
+    interval: 1m
+    rules:
+      - alert: SuspiciousAccessPattern
+        expr: |
+          count_over_time({job_name="traefik"} |~ "(?i)(sql injection|xss|../|etc/passwd|<script)"[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Suspicious access pattern detected"
+          description: "Potential attack pattern detected in Traefik access logs."
+
+      - alert: High4xxErrors
+        expr: |
+          sum(count_over_time({job_name="traefik"} |~ "\" 4[0-9]{2} "[5m])) > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 4xx error rate in access logs"
+          description: "{{"{{"}} $value {{"}}"}} 4xx errors in Traefik access logs in the last 5 minutes."
+
+      - alert: High5xxErrors
+        expr: |
+          sum(count_over_time({job_name="traefik"} |~ "\" 5[0-9]{2} "[5m])) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate in access logs"
+          description: "{{"{{"}} $value {{"}}"}} 5xx errors in Traefik access logs in the last 5 minutes."
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure Component Errors
+  # ---------------------------------------------------------------------------
+  - name: log-infrastructure
+    interval: 1m
+    rules:
+      - alert: ConsulLogErrors
+        expr: |
+          count_over_time({unit="consul.service"} |~ "(?i)(error|failed|unable)"[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consul errors in logs"
+          description: "Consul has logged {{"{{"}} $value {{"}}"}} errors in the last 5 minutes."
+
+      - alert: NomadLogErrors
+        expr: |
+          count_over_time({unit=~"nomad.*"} |~ "(?i)(error|failed|unable to)"[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nomad errors in logs"
+          description: "Nomad has logged {{"{{"}} $value {{"}}"}} errors in the last 5 minutes."
+
+      - alert: VaultLogErrors
+        expr: |
+          count_over_time({unit="vault.service"} |~ "(?i)(error|failed|permission denied)"[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vault errors in logs"
+          description: "Vault has logged {{"{{"}} $value {{"}}"}} errors in the last 5 minutes."
+
+      - alert: DockerDaemonErrors
+        expr: |
+          count_over_time({unit="docker.service"} |~ "(?i)(error|failed|cannot)"[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Docker daemon errors"
+          description: "Docker daemon has logged {{"{{"}} $value {{"}}"}} errors in the last 5 minutes."
+
+  # ---------------------------------------------------------------------------
+  # Security and ACL Monitoring
+  # ---------------------------------------------------------------------------
+  - name: log-security-acl
+    interval: 1m
+    rules:
+      - alert: ConsulACLDenied
+        expr: |
+          count_over_time({unit="consul.service"} |~ "(?i)(permission denied|ACL not found|ACL token not found|anonymous token)"[5m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consul ACL denials detected"
+          description: "{{"{{"}} $value {{"}}"}} Consul ACL denials in the last 5 minutes. Possible misconfiguration or unauthorized access attempt."
+
+      - alert: ConsulACLBruteForce
+        expr: |
+          count_over_time({unit="consul.service"} |~ "(?i)(permission denied|ACL not found)"[5m]) > 20
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Possible Consul ACL brute force attack"
+          description: "{{"{{"}} $value {{"}}"}} Consul ACL denials in 5 minutes. Investigate immediately for potential attack."
+
+      - alert: NomadACLDenied
+        expr: |
+          count_over_time({unit=~"nomad.*"} |~ "(?i)(permission denied|ACL token not found|missing ACL token)"[5m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nomad ACL denials detected"
+          description: "{{"{{"}} $value {{"}}"}} Nomad ACL denials in the last 5 minutes. Check for misconfigured tokens or unauthorized access."
+
+      - alert: VaultAuthFailures
+        expr: |
+          count_over_time({unit="vault.service"} |~ "(?i)(permission denied|invalid token|authentication failed|403)"[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vault authentication failures detected"
+          description: "{{"{{"}} $value {{"}}"}} Vault auth failures in the last 5 minutes. Possible credential issues or attack."
+
+      - alert: VaultAuthBruteForce
+        expr: |
+          count_over_time({unit="vault.service"} |~ "(?i)(permission denied|invalid token|authentication failed)"[5m]) > 30
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Possible Vault authentication brute force"
+          description: "{{"{{"}} $value {{"}}"}} Vault auth failures in 5 minutes. Investigate immediately."
+
+      - alert: SSHAuthFailures
+        expr: |
+          count_over_time({unit="sshd.service"} |~ "(?i)(failed password|invalid user|authentication failure)"[10m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSH authentication failures on {{"{{"}} $labels.host {{"}}"}}"
+          description: "{{"{{"}} $value {{"}}"}} SSH authentication failures in the last 10 minutes."
+
+      - alert: SSHBruteForceDetected
+        expr: |
+          count_over_time({unit="sshd.service"} |~ "(?i)(failed password|invalid user)"[5m]) > 30
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SSH brute force attack on {{"{{"}} $labels.host {{"}}"}}"
+          description: "{{"{{"}} $value {{"}}"}} failed SSH attempts in 5 minutes. Consider blocking the source IP."
+
+      - alert: TLSHandshakeErrors
+        expr: |
+          count_over_time({job_name=~"traefik|consul|nomad|vault"} |~ "(?i)(tls handshake|certificate verify failed|x509)"[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS handshake errors detected"
+          description: "{{"{{"}} $value {{"}}"}} TLS errors in {{"{{"}} $labels.job_name {{"}}"}}. Check certificate validity."

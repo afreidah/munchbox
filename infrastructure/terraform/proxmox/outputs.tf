@@ -12,39 +12,39 @@
 # Nomad Server
 # -------------------------------------------------------------------------------
 
-output "nomad_server" {
-  description = "Nomad server VM metadata"
-  value = {
-    vmid   = proxmox_vm_qemu.nomad_server.vmid
-    node   = proxmox_vm_qemu.nomad_server.target_node
-    memory = proxmox_vm_qemu.nomad_server.memory
-  }
-}
-
-# -------------------------------------------------------------------------------
-# Nomad Clients
-# -------------------------------------------------------------------------------
-
-output "nomad_clients" {
-  description = "Nomad client VM metadata"
-  value = {
-    "nomad-client-01" = {
-      vmid   = proxmox_vm_qemu.nomad_client_01.vmid
-      node   = proxmox_vm_qemu.nomad_client_01.target_node
-      memory = proxmox_vm_qemu.nomad_client_01.memory
-    }
-    "nomad-client-02" = {
-      vmid   = proxmox_vm_qemu.nomad_client_02.vmid
-      node   = proxmox_vm_qemu.nomad_client_02.target_node
-      memory = proxmox_vm_qemu.nomad_client_02.memory
-    }
-    "nomad-client-03" = {
-      vmid   = proxmox_vm_qemu.nomad_client_03.vmid
-      node   = proxmox_vm_qemu.nomad_client_03.target_node
-      memory = proxmox_vm_qemu.nomad_client_03.memory
-    }
-  }
-}
+#output "nomad_server" {
+#  description = "Nomad server VM metadata"
+#  value = {
+#    vmid   = proxmox_vm_qemu.nomad_server.vmid
+#    node   = proxmox_vm_qemu.nomad_server.target_node
+#    memory = proxmox_vm_qemu.nomad_server.memory
+#  }
+#}
+#
+## -------------------------------------------------------------------------------
+## Nomad Clients
+## -------------------------------------------------------------------------------
+#
+#output "nomad_clients" {
+#  description = "Nomad client VM metadata"
+#  value = {
+#    "nomad-client-01" = {
+#      vmid   = proxmox_vm_qemu.nomad_client_01.vmid
+#      node   = proxmox_vm_qemu.nomad_client_01.target_node
+#      memory = proxmox_vm_qemu.nomad_client_01.memory
+#    }
+#    "nomad-client-02" = {
+#      vmid   = proxmox_vm_qemu.nomad_client_02.vmid
+#      node   = proxmox_vm_qemu.nomad_client_02.target_node
+#      memory = proxmox_vm_qemu.nomad_client_02.memory
+#    }
+#    "nomad-client-03" = {
+#      vmid   = proxmox_vm_qemu.nomad_client_03.vmid
+#      node   = proxmox_vm_qemu.nomad_client_03.target_node
+#      memory = proxmox_vm_qemu.nomad_client_03.memory
+#    }
+#  }
+#}
 
 # -------------------------------------------------------------------------------
 # Ansible Inventory

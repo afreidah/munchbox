@@ -70,7 +70,7 @@ func runWorker() {
 
 	w := worker.New(c, "backup-task-queue", worker.Options{})
 
-	// Register workflow and activities
+	// Register backup workflow and activities
 	w.RegisterWorkflow(BackupWorkflow)
 	w.RegisterActivity(TakeNomadSnapshot)
 	w.RegisterActivity(TakeConsulSnapshot)
@@ -78,7 +78,14 @@ func runWorker() {
 	w.RegisterActivity(TakeRegistryBackup)
 	w.RegisterActivity(CleanupOldBackups)
 
-	log.Println("Backup worker starting...")
+	// Register trivy scanner workflow and activities
+	w.RegisterWorkflow(TrivyScanWorkflow)
+	w.RegisterActivity(DownloadTrivyDB)
+	w.RegisterActivity(GetRunningImages)
+	w.RegisterActivity(ScanImage)
+	w.RegisterActivity(SaveScanToPostgres)
+
+	log.Println("Temporal worker starting...")
 	log.Printf("Connected to Temporal at %s", temporalAddr)
 	log.Println("Listening on task queue: backup-task-queue")
 

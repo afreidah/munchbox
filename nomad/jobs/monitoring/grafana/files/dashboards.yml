@@ -1,0 +1,22 @@
+# -------------------------------------------------------------------------------
+# Grafana Dashboard Provisioning Config
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures Grafana to automatically load dashboards from the provisioned
+# directory. Dashboards are read-only and managed via version control.
+# -------------------------------------------------------------------------------
+
+apiVersion: 1
+
+providers:
+  - name: 'munchbox'
+    orgId: 1
+    folder: 'Munchbox'
+    folderUid: 'munchbox-folder'
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

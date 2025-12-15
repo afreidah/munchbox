@@ -1,7 +1,7 @@
 .PHONY: build push clean test help
 
 REGISTRY ?= registry.munchbox.cc
-IMAGE_NAME = temporal-backup-worker
+IMAGE_NAME = trivy-dashboard
 IMAGE_TAG ?= latest
 IMAGE = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
@@ -12,7 +12,6 @@ push:
 	docker buildx build --platform linux/amd64,linux/arm64 -t $(IMAGE) --push .
 
 clean:
-	rm -rf bin/
 	go clean
 
 test:

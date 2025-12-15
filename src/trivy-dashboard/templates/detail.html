@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Scan.Image}} - Trivy Scan</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            line-height: 1.5;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 8px;
+            font-size: 18px;
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            word-break: break-all;
+        }
+        .back {
+            color: #8b949e;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+        .back:hover { color: #58a6ff; }
+        .meta { color: #8b949e; font-size: 14px; margin-bottom: 24px; }
+        .error {
+            background: #3d1f1f;
+            border: 1px solid #f85149;
+            color: #f85149;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        .card .value {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .card .label { color: #8b949e; font-size: 12px; }
+        .card.critical { border-color: #f85149; }
+        .card.critical .value { color: #f85149; }
+        .card.high { border-color: #db6d28; }
+        .card.high .value { color: #db6d28; }
+        .card.medium { border-color: #d29922; }
+        .card.medium .value { color: #d29922; }
+        .card.low { border-color: #58a6ff; }
+        .card.low .value { color: #58a6ff; }
+        .vuln-list { margin-top: 16px; }
+        .vuln {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .vuln-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .vuln-id {
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-weight: 600;
+        }
+        .vuln-id a {
+            color: #58a6ff;
+            text-decoration: none;
+        }
+        .vuln-id a:hover { text-decoration: underline; }
+        .severity {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .severity.CRITICAL { background: #f8514922; color: #f85149; }
+        .severity.HIGH { background: #db6d2822; color: #db6d28; }
+        .severity.MEDIUM { background: #d2992222; color: #d29922; }
+        .severity.LOW { background: #58a6ff22; color: #58a6ff; }
+        .vuln-title {
+            color: #c9d1d9;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .vuln-pkg {
+            font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+        .vuln-pkg strong { color: #c9d1d9; }
+        .vuln-fix {
+            font-size: 12px;
+            color: #3fb950;
+        }
+        .vuln-desc {
+            font-size: 13px;
+            color: #8b949e;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+        .filter-bar {
+            margin-bottom: 16px;
+            display: flex;
+            gap: 8px;
+        }
+        .filter-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .filter-btn:hover { background: #30363d; }
+        .filter-btn.active { background: #388bfd22; border-color: #58a6ff; color: #58a6ff; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back">&larr; Back to Dashboard</a>
+        {{if .Error}}
+            <div class="error">{{.Error}}</div>
+        {{else}}
+            <h1>{{.Scan.Image}}</h1>
+            <p class="meta">Scanned: {{.Scan.ScannedAt.Format "Jan 02, 2006 15:04:05 MST"}}</p>
+
+            <div class="summary">
+                <div class="card critical">
+                    <div class="value">{{.Scan.Critical}}</div>
+                    <div class="label">Critical</div>
+                </div>
+                <div class="card high">
+                    <div class="value">{{.Scan.High}}</div>
+                    <div class="label">High</div>
+                </div>
+                <div class="card medium">
+                    <div class="value">{{.Scan.Medium}}</div>
+                    <div class="label">Medium</div>
+                </div>
+                <div class="card low">
+                    <div class="value">{{.Scan.Low}}</div>
+                    <div class="label">Low</div>
+                </div>
+            </div>
+
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterVulns('all')">All</button>
+                <button class="filter-btn" onclick="filterVulns('CRITICAL')">Critical</button>
+                <button class="filter-btn" onclick="filterVulns('HIGH')">High</button>
+                <button class="filter-btn" onclick="filterVulns('MEDIUM')">Medium</button>
+                <button class="filter-btn" onclick="filterVulns('LOW')">Low</button>
+            </div>
+
+            <div class="vuln-list">
+                {{range .Vulnerabilities}}
+                <div class="vuln" data-severity="{{.Severity}}">
+                    <div class="vuln-header">
+                        <span class="severity {{.Severity}}">{{.Severity}}</span>
+                        <span class="vuln-id">
+                            <a href="https://nvd.nist.gov/vuln/detail/{{.VulnID}}" target="_blank">{{.VulnID}}</a>
+                        </span>
+                    </div>
+                    {{if .Title.Valid}}
+                        <div class="vuln-title">{{.Title.String}}</div>
+                    {{end}}
+                    <div class="vuln-pkg">
+                        <strong>{{.PkgName}}</strong> {{.InstalledVersion}}
+                        {{if .FixedVersion.Valid}}
+                            <span class="vuln-fix">&rarr; Fixed in {{.FixedVersion.String}}</span>
+                        {{end}}
+                    </div>
+                    {{if .Description.Valid}}
+                        <div class="vuln-desc">{{.Description.String}}</div>
+                    {{end}}
+                </div>
+                {{else}}
+                <p style="color: #8b949e;">No vulnerabilities found.</p>
+                {{end}}
+            </div>
+        {{end}}
+    </div>
+
+    <script>
+        function filterVulns(severity) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.vuln').forEach(vuln => {
+                if (severity === 'all' || vuln.dataset.severity === severity) {
+                    vuln.classList.remove('hidden');
+                } else {
+                    vuln.classList.add('hidden');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

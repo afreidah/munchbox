@@ -28,6 +28,10 @@ env = {
   SKIP_SCHEMA_SETUP               = "true"
   SKIP_DEFAULT_NAMESPACE_CREATION = "true"
   BIND_ON_IP                      = "0.0.0.0"
+  # OpenTelemetry tracing to Tempo
+  OTEL_EXPORTER_OTLP_ENDPOINT     = "http://tempo.service.consul:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL     = "http/protobuf"
+  OTEL_SERVICE_NAME               = "temporal"
 }
 
 # --- Vault integration ---

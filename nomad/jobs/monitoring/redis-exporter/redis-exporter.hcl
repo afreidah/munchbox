@@ -12,7 +12,7 @@ name        = "redis-exporter"
 image       = "oliver006/redis_exporter:v1.67.0"
 port        = 9121
 static_port = 9121
-size        = "tiny"
+size        = "small"
 vault       = true
 
 # --- Traefik routing ---

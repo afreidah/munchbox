@@ -1,0 +1,100 @@
+# -------------------------------------------------------------------------------
+# Enable Vault Audit Logging
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Enables file-based audit logging for Vault with logrotate to prevent
+# unbounded growth. Audit logs capture all Vault API requests/responses.
+# -------------------------------------------------------------------------------
+---
+- name: Enable Vault audit logging
+  hosts: vault_servers[0]
+  become: true
+  gather_facts: false
+  vars:
+    vault_addr: "https://192.168.68.61:8200"
+    vault_audit_path: "/var/log/vault/audit.log"
+    vault_log_dir: "/var/log/vault"
+
+  tasks:
+    - name: Ensure vault log directory exists
+      file:
+        path: "{{ vault_log_dir }}"
+        state: directory
+        owner: vault
+        group: vault
+        mode: "0750"
+
+    - name: Check if audit device already enabled
+      uri:
+        url: "{{ vault_addr }}/v1/sys/audit"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+        validate_certs: false
+        return_content: true
+      register: audit_list
+      failed_when: false
+
+    - name: Enable file audit device
+      uri:
+        url: "{{ vault_addr }}/v1/sys/audit/file"
+        method: PUT
+        headers:
+          X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+        body_format: json
+        body:
+          type: file
+          options:
+            file_path: "{{ vault_audit_path }}"
+            log_raw: "false"
+        validate_certs: false
+        status_code: [200, 204]
+      when: "'file/' not in (audit_list.json | default({}))"
+      register: audit_enabled
+
+    - name: Create logrotate configuration for vault audit
+      copy:
+        dest: /etc/logrotate.d/vault-audit
+        content: |
+          /var/log/vault/audit.log {
+              daily
+              rotate 14
+              compress
+              delaycompress
+              missingok
+              notifempty
+              create 0640 vault vault
+              postrotate
+                  # Send SIGHUP to vault to reopen log file
+                  systemctl kill -s HUP vault.service 2>/dev/null || true
+              endscript
+          }
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Verify audit device is enabled
+      uri:
+        url: "{{ vault_addr }}/v1/sys/audit"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+        validate_certs: false
+        return_content: true
+      register: audit_verify
+
+    - name: Display audit status
+      debug:
+        msg: |
+          Vault Audit Logging Status:
+          ============================
+          Enabled devices: {{ audit_verify.json.keys() | list }}
+          Log path: {{ vault_audit_path }}
+          Rotation: Daily, 14 days retained, compressed
+
+          Logs capture all API requests including:
+          - Secret reads/writes
+          - Authentication attempts
+          - Policy changes
+          - Token operations

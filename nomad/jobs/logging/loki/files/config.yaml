@@ -75,6 +75,24 @@ table_manager:
   retention_deletes_enabled: true
   retention_period: 120h
 
+# Ruler configuration for log-based alerting
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /loki/rules
+  rule_path: /loki/rules-temp
+  alertmanager_url: http://alertmanager.service.consul:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true
+  enable_alertmanager_v2: true
+
 # Telemetry
 analytics:
   reporting_enabled: false
+
+# Tracing (enabled - use OTEL_* env vars for export config)
+tracing:
+  enabled: true

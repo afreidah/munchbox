@@ -1,6 +1,14 @@
 version: 0.1
 log:
   level: info
+# OpenTelemetry tracing to Tempo
+otel:
+  enabled: true
+  servicename: registry
+  exporter:
+    otlp:
+      endpoint: tempo.service.consul:4318
+      insecure: true
 storage:
   filesystem:
     rootdirectory: /var/lib/registry

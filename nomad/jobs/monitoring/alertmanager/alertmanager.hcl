@@ -31,6 +31,10 @@ health_path = "/-/ready"
 # --- Environment ---
 env = {
   TZ = "America/Los_Angeles"
+  # OpenTelemetry tracing to Tempo
+  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4318"
+  OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+  OTEL_SERVICE_NAME           = "alertmanager"
 }
 
 # --- Container arguments ---
