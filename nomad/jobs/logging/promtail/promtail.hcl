@@ -11,7 +11,7 @@
 # --- Core job configuration ---
 name         = "promtail"
 type         = "system"
-image        = "grafana/promtail:3.5"
+image        = "grafana/promtail:3.6.3"
 port         = 9080
 static_port  = 9080
 host_network = true
@@ -27,6 +27,10 @@ health_path = "/ready"
 # --- Environment ---
 env = {
   TZ = "America/Los_Angeles"
+  # OpenTelemetry tracing to Tempo
+  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
+  OTEL_SERVICE_NAME           = "promtail"
 }
 
 # --- Container arguments ---

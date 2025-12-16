@@ -12,6 +12,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,6 +30,9 @@ import (
 
 //go:embed templates/*
 var templateFS embed.FS
+
+//go:embed static/*
+var staticFS embed.FS
 
 var tracer trace.Tracer
 var db *sql.DB
@@ -145,6 +149,9 @@ func main() {
 	tmpl := template.Must(template.ParseFS(templateFS, "templates/*.html"))
 
 	mux := http.NewServeMux()
+
+	// Serve static files (favicon, etc.)
+	mux.Handle("/static/", http.FileServer(http.FS(staticFS)))
 
 	// Dashboard - shows latest scan for each image
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -329,9 +336,21 @@ func initDB() error {
 	}
 
 	var err error
-	db, err = sql.Open("postgres", connStr)
+	db, err = otelsql.Open("postgres", connStr,
+		otelsql.WithAttributes(
+			semconv.DBSystemPostgreSQL,
+			attribute.String("db.name", dbName),
+		),
+	)
 	if err != nil {
 		return err
+	}
+
+	// Register stats to allow otel to report DB connection metrics
+	if err := otelsql.RegisterDBStatsMetrics(db, otelsql.WithAttributes(
+		semconv.DBSystemPostgreSQL,
+	)); err != nil {
+		log.Printf("Warning: Failed to register DB stats metrics: %v", err)
 	}
 
 	db.SetMaxOpenConns(10)
@@ -397,12 +416,13 @@ func loadDashboard(ctx context.Context, selectedBatch string) (DashboardData, er
 	data := DashboardData{SelectedBatch: selectedBatch}
 
 	// Get available scan batches (grouped by scan runs within 30 min windows)
+	// Count unique images per batch (same image may be scanned multiple times if used in multiple jobs)
 	batchRows, err := db.QueryContext(ctx, `
 		SELECT
 			to_char(date_trunc('hour', scanned_at) +
 				INTERVAL '30 min' * FLOOR(EXTRACT(MINUTE FROM scanned_at) / 30), 'YYYY-MM-DD"T"HH24:MI') as batch_id,
 			MIN(scanned_at) as batch_time,
-			COUNT(*) as scan_count
+			COUNT(DISTINCT image) as scan_count
 		FROM scans
 		GROUP BY batch_id
 		ORDER BY batch_time DESC
@@ -429,12 +449,14 @@ func loadDashboard(ctx context.Context, selectedBatch string) (DashboardData, er
 	}
 
 	// Get scans for selected batch with vulnerability counts
+	// Deduplicate by image (same image may appear multiple times if used in different Nomad jobs)
 	rows, err := db.QueryContext(ctx, `
 		WITH batch_scans AS (
-			SELECT id, image, status, error, scanned_at
+			SELECT DISTINCT ON (image) id, image, status, error, scanned_at
 			FROM scans
 			WHERE to_char(date_trunc('hour', scanned_at) +
 				INTERVAL '30 min' * FLOOR(EXTRACT(MINUTE FROM scanned_at) / 30), 'YYYY-MM-DD"T"HH24:MI') = $1
+			ORDER BY image, scanned_at DESC
 		)
 		SELECT
 			s.id, s.image, s.status, s.error, s.scanned_at,

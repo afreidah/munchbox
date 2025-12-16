@@ -1,0 +1,353 @@
+/*
+ * Catppuccin Mocha theme for Radarr
+ * Custom CSS with proper contrast and readability
+ */
+@import url('/css/catppuccin-mocha.css');
+
+/* Base body and background */
+body {
+  background-color: var(--ctp-base) !important;
+  color: var(--ctp-text) !important;
+}
+
+/* Main page wrapper */
+.Page,
+.PageContent,
+.PageContentBody {
+  background-color: var(--ctp-base) !important;
+}
+
+/* Navigation / Sidebar */
+.PageSidebar {
+  background-color: var(--ctp-mantle) !important;
+  border-right: 1px solid var(--ctp-surface0) !important;
+}
+
+.PageSidebarItem,
+.PageSidebarItem a {
+  color: var(--ctp-text) !important;
+}
+
+.PageSidebarItem:hover,
+.PageSidebarItem a:hover {
+  background-color: var(--ctp-surface0) !important;
+  color: var(--ctp-blue) !important;
+}
+
+.PageSidebarItem.isActive,
+.PageSidebarItem.isActive a {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-mauve) !important;
+  border-left: 3px solid var(--ctp-mauve) !important;
+}
+
+/* Toolbar / Header */
+.PageToolbar,
+.PageHeader {
+  background-color: var(--ctp-mantle) !important;
+  border-bottom: 1px solid var(--ctp-surface0) !important;
+}
+
+.PageToolbarButton,
+.ToolbarButton {
+  color: var(--ctp-text) !important;
+}
+
+.PageToolbarButton:hover,
+.ToolbarButton:hover {
+  color: var(--ctp-blue) !important;
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Cards and Panels */
+.Card,
+.Panel,
+.Widget,
+.Queue,
+.MovieDetails,
+.MovieDetails {
+  background-color: var(--ctp-mantle) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+}
+
+/* Tables */
+table,
+.Table {
+  background-color: var(--ctp-mantle) !important;
+}
+
+th,
+.TableHeader,
+.TableHeaderCell {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-subtext0) !important;
+  border-bottom: 1px solid var(--ctp-surface0) !important;
+}
+
+td,
+.TableCell,
+.TableRow {
+  background-color: var(--ctp-mantle) !important;
+  color: var(--ctp-text) !important;
+  border-bottom: 1px solid var(--ctp-surface0) !important;
+}
+
+tr:hover,
+.TableRow:hover {
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Form elements */
+input,
+textarea,
+select,
+.Input,
+.Select,
+.FormInput {
+  background-color: var(--ctp-surface0) !important;
+  border: 1px solid var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.Input:focus,
+.Select:focus {
+  border-color: var(--ctp-blue) !important;
+  outline: none !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ctp-overlay0) !important;
+}
+
+/* Buttons */
+.Button,
+button {
+  background-color: var(--ctp-surface1) !important;
+  border: 1px solid var(--ctp-surface2) !important;
+  color: var(--ctp-text) !important;
+}
+
+.Button:hover,
+button:hover {
+  background-color: var(--ctp-surface2) !important;
+  border-color: var(--ctp-blue) !important;
+}
+
+.Button--primary,
+.Button.isPrimary {
+  background-color: var(--ctp-blue) !important;
+  border-color: var(--ctp-blue) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.Button--primary:hover,
+.Button.isPrimary:hover {
+  background-color: var(--ctp-sapphire) !important;
+  border-color: var(--ctp-sapphire) !important;
+}
+
+.Button--danger,
+.Button.isDanger {
+  background-color: var(--ctp-red) !important;
+  border-color: var(--ctp-red) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.Button--success,
+.Button.isSuccess {
+  background-color: var(--ctp-green) !important;
+  border-color: var(--ctp-green) !important;
+  color: var(--ctp-crust) !important;
+}
+
+/* Links */
+a {
+  color: var(--ctp-blue) !important;
+}
+
+a:hover {
+  color: var(--ctp-sapphire) !important;
+}
+
+/* Labels and badges */
+.Label,
+.Badge {
+  color: var(--ctp-text) !important;
+}
+
+.Label--success,
+.Badge--success {
+  background-color: var(--ctp-green) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.Label--warning,
+.Badge--warning {
+  background-color: var(--ctp-yellow) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.Label--danger,
+.Badge--danger {
+  background-color: var(--ctp-red) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.Label--info,
+.Badge--info {
+  background-color: var(--ctp-blue) !important;
+  color: var(--ctp-crust) !important;
+}
+
+/* Modals */
+.Modal,
+.ModalContent,
+.ModalBody {
+  background-color: var(--ctp-base) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+}
+
+.ModalHeader {
+  background-color: var(--ctp-mantle) !important;
+  border-bottom: 1px solid var(--ctp-surface0) !important;
+}
+
+.ModalFooter {
+  background-color: var(--ctp-mantle) !important;
+  border-top: 1px solid var(--ctp-surface0) !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ctp-mantle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ctp-surface2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ctp-overlay0);
+}
+
+/* Quality profiles */
+.QualityProfile {
+  background-color: var(--ctp-surface0) !important;
+  border: 1px solid var(--ctp-surface1) !important;
+}
+
+/* Calendar */
+.Calendar {
+  background-color: var(--ctp-mantle) !important;
+}
+
+.CalendarDay {
+  background-color: var(--ctp-base) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+}
+
+.CalendarDay:hover {
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Progress bars */
+.ProgressBar {
+  background-color: var(--ctp-surface0) !important;
+}
+
+.ProgressBar-progress {
+  background-color: var(--ctp-blue) !important;
+}
+
+/* Posters and images */
+.MoviePoster,
+.MoviePoster,
+.Poster {
+  border: 1px solid var(--ctp-surface0) !important;
+}
+
+/* Text colors */
+h1, h2, h3, h4, h5, h6,
+.Title,
+.Heading {
+  color: var(--ctp-text) !important;
+}
+
+.Text--muted,
+.text-muted {
+  color: var(--ctp-subtext0) !important;
+}
+
+/* Dropdown menus */
+.Dropdown,
+.DropdownMenu,
+.Menu {
+  background-color: var(--ctp-surface0) !important;
+  border: 1px solid var(--ctp-surface1) !important;
+}
+
+.DropdownItem,
+.MenuItem {
+  color: var(--ctp-text) !important;
+}
+
+.DropdownItem:hover,
+.MenuItem:hover {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Alerts and notifications */
+.Alert {
+  border: 1px solid var(--ctp-surface1) !important;
+}
+
+.Alert--success {
+  background-color: rgba(166, 227, 161, 0.15) !important;
+  border-color: var(--ctp-green) !important;
+  color: var(--ctp-green) !important;
+}
+
+.Alert--warning {
+  background-color: rgba(249, 226, 175, 0.15) !important;
+  border-color: var(--ctp-yellow) !important;
+  color: var(--ctp-yellow) !important;
+}
+
+.Alert--danger,
+.Alert--error {
+  background-color: rgba(243, 139, 168, 0.15) !important;
+  border-color: var(--ctp-red) !important;
+  color: var(--ctp-red) !important;
+}
+
+.Alert--info {
+  background-color: rgba(137, 180, 250, 0.15) !important;
+  border-color: var(--ctp-blue) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Tooltips */
+.Tooltip {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+  border: 1px solid var(--ctp-surface2) !important;
+}
+
+/* Loading indicators */
+.Loading,
+.Spinner {
+  color: var(--ctp-blue) !important;
+}

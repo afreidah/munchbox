@@ -9,7 +9,7 @@
 
 # --- Core job configuration ---
 name        = "redis-exporter"
-image       = "oliver006/redis_exporter:v1.67.0"
+image       = "oliver006/redis_exporter:v1.80.1"
 port        = 9121
 static_port = 9121
 size        = "small"

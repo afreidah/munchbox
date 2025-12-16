@@ -9,7 +9,7 @@
 
 # --- Core job configuration ---
 name        = "nextcloud-exporter"
-image       = "xperimental/nextcloud-exporter:0.7.0"
+image       = "xperimental/nextcloud-exporter:0.9.0"
 port        = 9205
 static_port = 9205
 size        = "tiny"

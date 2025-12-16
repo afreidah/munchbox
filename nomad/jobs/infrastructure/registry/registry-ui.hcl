@@ -12,7 +12,6 @@ name  = "registry-ui"
 type  = "service"
 image = "joxit/docker-registry-ui:latest"
 port  = 80
-host_network = true
 size = "small"
 
 # --- Storage ---

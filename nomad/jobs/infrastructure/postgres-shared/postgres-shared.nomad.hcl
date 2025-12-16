@@ -154,7 +154,8 @@ job "postgres-shared" {
           "/opt/nomad/data/postgres-shared:/var/lib/postgresql/data",
           "local/init-nextcloud.sql:/docker-entrypoint-initdb.d/10-nextcloud.sql:ro",
           "local/init-temporal.sql:/docker-entrypoint-initdb.d/20-temporal.sql:ro",
-          "local/init-trivy.sql:/docker-entrypoint-initdb.d/30-trivy.sql:ro"
+          "local/init-trivy.sql:/docker-entrypoint-initdb.d/30-trivy.sql:ro",
+          "local/init-woodpecker.sql:/docker-entrypoint-initdb.d/40-woodpecker.sql:ro"
         ]
 
         # PostgreSQL replication settings (enable streaming replication)
@@ -254,6 +255,20 @@ CREATE INDEX idx_vulns_severity ON vulnerabilities(severity);
 
 GRANT ALL ON ALL TABLES IN SCHEMA public TO {{ .Data.data.db_username }};
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO {{ .Data.data.db_username }};
+{{ end }}
+EOH
+      }
+
+      # --- Woodpecker CI Database Init ---
+      template {
+        destination = "local/init-woodpecker.sql"
+        change_mode = "noop"
+        data        = <<EOH
+{{ with secret "secret/data/woodpecker" }}
+CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+CREATE DATABASE woodpecker OWNER {{ .Data.data.db_username }};
+\c woodpecker
+GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
 {{ end }}
 EOH
       }

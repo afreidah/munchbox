@@ -34,12 +34,50 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 )
+
+// initTracer initializes OpenTelemetry tracing with OTLP HTTP exporter.
+// Reads OTEL_EXPORTER_OTLP_ENDPOINT from environment (defaults to localhost:4318).
+// Returns a shutdown function that should be deferred.
+func initTracer(ctx context.Context) func(context.Context) error {
+	exporter, err := otlptracehttp.New(ctx)
+	if err != nil {
+		log.Printf("Warning: failed to create OTLP exporter: %v (tracing disabled)", err)
+		return func(context.Context) error { return nil }
+	}
+
+	res, err := resource.New(ctx,
+		resource.WithAttributes(
+			semconv.ServiceName("temporal-backup-worker"),
+		),
+	)
+	if err != nil {
+		log.Printf("Warning: failed to create resource: %v", err)
+		res = resource.Default()
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
+	)
+	otel.SetTracerProvider(tp)
+
+	log.Println("OpenTelemetry tracing initialized")
+	return tp.Shutdown
+}
 
 // runWorker initializes and starts the Temporal worker process.
 //
@@ -55,14 +93,31 @@ import (
 //   - TakeRegistryBackup: Activity to backup container registry data
 //   - CleanupOldBackups: Activity to remove snapshots older than retention period
 func runWorker() {
+	ctx := context.Background()
+
+	// Initialize OpenTelemetry tracing
+	shutdownTracer := initTracer(ctx)
+	defer shutdownTracer(ctx)
+
 	temporalAddr := os.Getenv("TEMPORAL_ADDRESS")
 	if temporalAddr == "" {
 		temporalAddr = "localhost:7233"
 	}
 
-	c, err := client.Dial(client.Options{
+	// Create tracing interceptor for Temporal
+	tracingInterceptor, err := opentelemetry.NewTracingInterceptor(opentelemetry.TracerOptions{})
+	if err != nil {
+		log.Printf("Warning: failed to create tracing interceptor: %v", err)
+	}
+
+	clientOpts := client.Options{
 		HostPort: temporalAddr,
-	})
+	}
+	if tracingInterceptor != nil {
+		clientOpts.Interceptors = []interceptor.ClientInterceptor{tracingInterceptor}
+	}
+
+	c, err := client.Dial(clientOpts)
 	if err != nil {
 		log.Fatalln("Unable to create Temporal client", err)
 	}

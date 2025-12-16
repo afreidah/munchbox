@@ -13,7 +13,7 @@
 # STAGE 1: Build Go Binaries
 # -------------------------------------------------------------------------
 
-FROM golang:1.23-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /build
 
@@ -45,7 +45,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 # STAGE 2: Runtime Image with CLI Tools
 # -------------------------------------------------------------------------
 
-FROM alpine:3.19
+FROM alpine:3.21
 
 # Install runtime dependencies (gcompat for HashiCorp binaries)
 RUN apk add --no-cache \
@@ -59,7 +59,7 @@ RUN apk add --no-cache \
     gzip
 
 # Install Nomad CLI
-ARG NOMAD_VERSION=1.7.2
+ARG NOMAD_VERSION=1.11.1
 ARG TARGETARCH
 RUN curl -fsSL https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_${TARGETARCH}.zip -o nomad.zip \
     && unzip -o nomad.zip \
@@ -68,7 +68,7 @@ RUN curl -fsSL https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOM
     && chmod +x /usr/local/bin/nomad
 
 # Install Consul CLI
-ARG CONSUL_VERSION=1.17.1
+ARG CONSUL_VERSION=1.22.1
 RUN curl -fsSL https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${TARGETARCH}.zip -o consul.zip \
     && unzip -o consul.zip \
     && mv consul /usr/local/bin/ \
@@ -76,7 +76,7 @@ RUN curl -fsSL https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${
     && chmod +x /usr/local/bin/consul
 
 # Install Vault CLI
-ARG VAULT_VERSION=1.15.4
+ARG VAULT_VERSION=1.21.1
 RUN curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${TARGETARCH}.zip -o vault.zip \
     && unzip -o vault.zip \
     && mv vault /usr/local/bin/ \
@@ -84,7 +84,7 @@ RUN curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAU
     && chmod +x /usr/local/bin/vault
 
 # Install Trivy vulnerability scanner
-ARG TRIVY_VERSION=0.58.0
+ARG TRIVY_VERSION=0.67.0
 RUN curl -fsSL https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-$(uname -m | sed 's/aarch64/ARM64/' | sed 's/x86_64/64bit/').tar.gz -o trivy.tar.gz \
     && tar -xzf trivy.tar.gz \
     && mv trivy /usr/local/bin/ \

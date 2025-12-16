@@ -27,6 +27,9 @@ env = {
   SERVICE  = "cron"
   PORT     = "8080"
   INTERVAL = "10"
+  # OpenTelemetry tracing to Tempo
+  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4318"
+  OTEL_SERVICE_NAME           = "health-checker"
 }
 
 # --- Vault integration ---

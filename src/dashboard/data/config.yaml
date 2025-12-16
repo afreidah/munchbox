@@ -74,17 +74,29 @@ services:
         tag: alerts
         icon: alertmanager.png
 
+      - name: Trivy Scanner
+        subtitle: Container vulnerability scans
+        url: https://trivy-dashboard.munchbox.cc
+        tag: security
+        icon: trivy.png
+
   # -------------------------------------------------------------------------
   # Media
   # -------------------------------------------------------------------------
   - name: Media
     icon: fa-solid fa-film
     items:
-      - name: Emby
+      - name: Jellyfin
         subtitle: Media server
-        url: https://emby.munchbox.cc
+        url: https://jellyfin.munchbox.cc
         tag: media
-        icon: emby.png
+        icon: jellyfin.svg
+
+      - name: Deluge
+        subtitle: Torrent client
+        url: https://deluge.munchbox.cc
+        tag: download
+        icon: deluge.png
 
       - name: Sonarr
         subtitle: TV management
@@ -109,12 +121,6 @@ services:
         url: https://prowlarr.munchbox.cc
         tag: media
         icon: prowlarr.svg
-
-      - name: Deluge
-        subtitle: Torrent client
-        url: https://deluge.munchbox.cc
-        tag: download
-        icon: deluge.png
 
       - name: Ersatz
         subtitle: Backup media
@@ -169,6 +175,12 @@ services:
         url: https://registry-ui.munchbox.cc
         tag: containers
         icon: registry-ui.png
+
+      - name: Woodpecker
+        subtitle: CI/CD pipelines
+        url: https://woodpecker.munchbox.cc
+        tag: ci
+        icon: woodpecker.svg
 
       - name: Cloudflare
         subtitle: CDN, DNS, and tunnels

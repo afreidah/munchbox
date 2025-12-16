@@ -1,0 +1,569 @@
+/*
+ * Catppuccin Mocha theme for Pi-hole Admin
+ * Custom CSS with proper contrast and readability
+ */
+@import url('/css/catppuccin-mocha.css');
+
+/* Base body and background */
+body,
+html {
+  background-color: var(--ctp-base) !important;
+  color: var(--ctp-text) !important;
+}
+
+/* Navbar */
+.navbar,
+.main-header,
+.main-header .navbar {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+.navbar-nav > li > a,
+.navbar .nav > li > a {
+  color: var(--ctp-text) !important;
+}
+
+.navbar-nav > li > a:hover,
+.navbar .nav > li > a:hover {
+  color: var(--ctp-blue) !important;
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Sidebar */
+.main-sidebar,
+.sidebar,
+.left-side {
+  background-color: var(--ctp-mantle) !important;
+}
+
+.sidebar-menu > li > a,
+.sidebar a {
+  color: var(--ctp-text) !important;
+  border-left: 3px solid transparent !important;
+}
+
+.sidebar-menu > li > a:hover,
+.sidebar a:hover {
+  color: var(--ctp-blue) !important;
+  background-color: var(--ctp-surface0) !important;
+}
+
+.sidebar-menu > li.active > a,
+.sidebar-menu > li.menu-open > a {
+  color: var(--ctp-mauve) !important;
+  background-color: var(--ctp-surface1) !important;
+  border-left: 3px solid var(--ctp-mauve) !important;
+}
+
+.sidebar-menu .treeview-menu > li > a {
+  color: var(--ctp-subtext0) !important;
+}
+
+.sidebar-menu .treeview-menu > li.active > a,
+.sidebar-menu .treeview-menu > li > a:hover {
+  color: var(--ctp-blue) !important;
+}
+
+/* Content wrapper */
+.content-wrapper,
+.right-side,
+.main-footer {
+  background-color: var(--ctp-base) !important;
+}
+
+.main-footer {
+  border-top: 1px solid var(--ctp-surface0) !important;
+  color: var(--ctp-subtext0) !important;
+}
+
+/* Boxes / Cards */
+.box,
+.card {
+  background-color: var(--ctp-mantle) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+  border-radius: 6px !important;
+}
+
+.box-header,
+.card-header {
+  background-color: var(--ctp-surface0) !important;
+  border-bottom: 1px solid var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+.box-header .box-title,
+.card-header .card-title {
+  color: var(--ctp-text) !important;
+}
+
+.box-body,
+.card-body {
+  color: var(--ctp-text) !important;
+}
+
+.box-footer,
+.card-footer {
+  background-color: var(--ctp-surface0) !important;
+  border-top: 1px solid var(--ctp-surface1) !important;
+}
+
+/* Info boxes */
+.info-box {
+  background-color: var(--ctp-mantle) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+}
+
+.info-box-icon {
+  background-color: var(--ctp-surface1) !important;
+}
+
+.info-box-content {
+  color: var(--ctp-text) !important;
+}
+
+.info-box-number {
+  color: var(--ctp-text) !important;
+}
+
+/* Small boxes */
+.small-box {
+  border-radius: 6px !important;
+}
+
+.small-box > .inner {
+  color: var(--ctp-crust) !important;
+}
+
+.small-box h3,
+.small-box p {
+  color: var(--ctp-crust) !important;
+}
+
+.small-box .icon {
+  color: rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Color variants for boxes */
+.bg-aqua,
+.bg-info {
+  background-color: var(--ctp-sapphire) !important;
+}
+
+.bg-green,
+.bg-success {
+  background-color: var(--ctp-green) !important;
+}
+
+.bg-yellow,
+.bg-warning {
+  background-color: var(--ctp-yellow) !important;
+}
+
+.bg-red,
+.bg-danger {
+  background-color: var(--ctp-red) !important;
+}
+
+.bg-blue,
+.bg-primary {
+  background-color: var(--ctp-blue) !important;
+}
+
+.bg-purple {
+  background-color: var(--ctp-mauve) !important;
+}
+
+.bg-orange {
+  background-color: var(--ctp-peach) !important;
+}
+
+/* Tables */
+.table,
+table {
+  background-color: var(--ctp-mantle) !important;
+  color: var(--ctp-text) !important;
+}
+
+.table > thead > tr > th,
+.table > thead > tr > td,
+table > thead > tr > th {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-subtext0) !important;
+  border-bottom: 1px solid var(--ctp-surface0) !important;
+}
+
+.table > tbody > tr > td,
+.table > tbody > tr > th,
+table > tbody > tr > td {
+  border-top: 1px solid var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+}
+
+.table > tbody > tr:hover,
+.table-hover > tbody > tr:hover {
+  background-color: var(--ctp-surface0) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(--ctp-base) !important;
+}
+
+/* DataTables */
+.dataTables_wrapper {
+  color: var(--ctp-text) !important;
+}
+
+.dataTables_filter input,
+.dataTables_length select {
+  background-color: var(--ctp-surface0) !important;
+  border: 1px solid var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+.dataTables_info,
+.dataTables_paginate {
+  color: var(--ctp-subtext0) !important;
+}
+
+.paginate_button {
+  background-color: var(--ctp-surface1) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+}
+
+.paginate_button:hover,
+.paginate_button.current {
+  background-color: var(--ctp-blue) !important;
+  color: var(--ctp-crust) !important;
+}
+
+/* Forms */
+input,
+textarea,
+select,
+.form-control {
+  background-color: var(--ctp-surface0) !important;
+  border: 1px solid var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.form-control:focus {
+  border-color: var(--ctp-blue) !important;
+  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.25) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ctp-overlay0) !important;
+}
+
+label {
+  color: var(--ctp-text) !important;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 4px !important;
+}
+
+.btn-default {
+  background-color: var(--ctp-surface1) !important;
+  border-color: var(--ctp-surface2) !important;
+  color: var(--ctp-text) !important;
+}
+
+.btn-default:hover {
+  background-color: var(--ctp-surface2) !important;
+  border-color: var(--ctp-overlay0) !important;
+}
+
+.btn-primary {
+  background-color: var(--ctp-blue) !important;
+  border-color: var(--ctp-blue) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--ctp-sapphire) !important;
+  border-color: var(--ctp-sapphire) !important;
+}
+
+.btn-success {
+  background-color: var(--ctp-green) !important;
+  border-color: var(--ctp-green) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.btn-warning {
+  background-color: var(--ctp-yellow) !important;
+  border-color: var(--ctp-yellow) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.btn-danger {
+  background-color: var(--ctp-red) !important;
+  border-color: var(--ctp-red) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.btn-info {
+  background-color: var(--ctp-sapphire) !important;
+  border-color: var(--ctp-sapphire) !important;
+  color: var(--ctp-crust) !important;
+}
+
+/* Alerts */
+.alert {
+  border-radius: 4px !important;
+}
+
+.alert-success {
+  background-color: rgba(166, 227, 161, 0.15) !important;
+  border-color: var(--ctp-green) !important;
+  color: var(--ctp-green) !important;
+}
+
+.alert-warning {
+  background-color: rgba(249, 226, 175, 0.15) !important;
+  border-color: var(--ctp-yellow) !important;
+  color: var(--ctp-yellow) !important;
+}
+
+.alert-danger,
+.alert-error {
+  background-color: rgba(243, 139, 168, 0.15) !important;
+  border-color: var(--ctp-red) !important;
+  color: var(--ctp-red) !important;
+}
+
+.alert-info {
+  background-color: rgba(137, 180, 250, 0.15) !important;
+  border-color: var(--ctp-blue) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Labels and badges */
+.label,
+.badge {
+  font-weight: 600 !important;
+}
+
+.label-success,
+.badge-success {
+  background-color: var(--ctp-green) !important;
+}
+
+.label-warning,
+.badge-warning {
+  background-color: var(--ctp-yellow) !important;
+  color: var(--ctp-crust) !important;
+}
+
+.label-danger,
+.badge-danger {
+  background-color: var(--ctp-red) !important;
+}
+
+.label-info,
+.badge-info {
+  background-color: var(--ctp-blue) !important;
+}
+
+.label-primary,
+.badge-primary {
+  background-color: var(--ctp-mauve) !important;
+}
+
+/* Progress bars */
+.progress {
+  background-color: var(--ctp-surface0) !important;
+  border-radius: 4px !important;
+}
+
+.progress-bar {
+  background-color: var(--ctp-blue) !important;
+}
+
+.progress-bar-success {
+  background-color: var(--ctp-green) !important;
+}
+
+.progress-bar-warning {
+  background-color: var(--ctp-yellow) !important;
+}
+
+.progress-bar-danger {
+  background-color: var(--ctp-red) !important;
+}
+
+/* Panels */
+.panel {
+  background-color: var(--ctp-mantle) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+}
+
+.panel-heading {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+.panel-body {
+  color: var(--ctp-text) !important;
+}
+
+/* Wells */
+.well {
+  background-color: var(--ctp-surface0) !important;
+  border: 1px solid var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+/* Modals */
+.modal-content {
+  background-color: var(--ctp-base) !important;
+  border: 1px solid var(--ctp-surface0) !important;
+}
+
+.modal-header {
+  background-color: var(--ctp-mantle) !important;
+  border-bottom: 1px solid var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+}
+
+.modal-header .close {
+  color: var(--ctp-text) !important;
+}
+
+.modal-body {
+  color: var(--ctp-text) !important;
+}
+
+.modal-footer {
+  background-color: var(--ctp-mantle) !important;
+  border-top: 1px solid var(--ctp-surface0) !important;
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+  background-color: var(--ctp-surface0) !important;
+  border: 1px solid var(--ctp-surface1) !important;
+}
+
+.dropdown-menu > li > a {
+  color: var(--ctp-text) !important;
+}
+
+.dropdown-menu > li > a:hover,
+.dropdown-menu > li > a:focus {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Tabs */
+.nav-tabs {
+  border-bottom: 1px solid var(--ctp-surface0) !important;
+}
+
+.nav-tabs > li > a {
+  color: var(--ctp-text) !important;
+}
+
+.nav-tabs > li > a:hover {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+  border-bottom-color: var(--ctp-mantle) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Links */
+a {
+  color: var(--ctp-blue) !important;
+}
+
+a:hover {
+  color: var(--ctp-sapphire) !important;
+}
+
+/* Text colors */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ctp-text) !important;
+}
+
+.text-muted {
+  color: var(--ctp-subtext0) !important;
+}
+
+.text-success {
+  color: var(--ctp-green) !important;
+}
+
+.text-warning {
+  color: var(--ctp-yellow) !important;
+}
+
+.text-danger {
+  color: var(--ctp-red) !important;
+}
+
+.text-info {
+  color: var(--ctp-blue) !important;
+}
+
+/* Pi-hole specific */
+#queries-blocked,
+#percent-blocked {
+  color: var(--ctp-red) !important;
+}
+
+#queries-total {
+  color: var(--ctp-green) !important;
+}
+
+#domains-blocked {
+  color: var(--ctp-peach) !important;
+}
+
+/* Query log colors */
+.queries-permitted {
+  color: var(--ctp-green) !important;
+}
+
+.queries-blocked {
+  color: var(--ctp-red) !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ctp-mantle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ctp-surface2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ctp-overlay0);
+}
+
+/* Chart.js overrides */
+.chartjs-render-monitor {
+  background-color: transparent !important;
+}

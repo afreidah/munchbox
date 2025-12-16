@@ -35,6 +35,11 @@ env = {
   PUID = "1001"
   PGID = "1001"
   TZ   = "America/Los_Angeles"
+  # Custom Catppuccin Mocha theme via theme-server
+  DOCKER_MODS   = "ghcr.io/themepark-dev/theme.park:prowlarr"
+  TP_COMMUNITY_THEME = "true"
+  TP_THEME      = "catppuccin-mocha"
+  TP_CUSTOM_CSS = "http://themes.munchbox.cc/css/prowlarr.css"
 }
 
 # --- Service tags ---
