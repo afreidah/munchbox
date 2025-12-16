@@ -10,13 +10,13 @@
 
 # --- Core job configuration ---
 name         = "loki"
-image        = "grafana/loki:3.5.8"
+image        = "grafana/loki:3.6.3"
 port         = 3100
 static_port  = 3100
 host_network = true
-node         = "nomad-client-02"  # Changed from nomad-client-03
+node         = "nomad-client-02"
 size         = "medium"
-memory       = 384    # Reduced from 512 - actual usage 301MB
+memory       = 384
 
 # --- Storage (manual pre-creation, no init task) ---
 volumes = [

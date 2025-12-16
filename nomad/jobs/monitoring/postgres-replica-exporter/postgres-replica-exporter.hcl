@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name        = "postgres-replica-exporter"
-image       = "quay.io/prometheuscommunity/postgres-exporter:v0.16.0"
+image       = "quay.io/prometheuscommunity/postgres-exporter:v0.18.1"
 port        = 9188
 static_port = 9188
 size        = "tiny"

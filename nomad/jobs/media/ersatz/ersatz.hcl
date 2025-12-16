@@ -15,8 +15,8 @@ port  = 8409
 static_port = 8409
 host_network = true
 node = "nomad-client-02"
-cpu    = 500   # Reduced from 2000 - actual usage ~1%
-memory = 800   # Keep memory - actual usage 658MB
+cpu    = 3000
+memory = 3000
 
 # --- Storage ---
 storage = "ephemeral"

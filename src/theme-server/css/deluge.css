@@ -1,0 +1,281 @@
+/*
+ * Catppuccin Mocha theme for Deluge Web UI
+ * Custom CSS with proper contrast and readability
+ */
+@import url('/css/catppuccin-mocha.css');
+
+/* Base body */
+body,
+html {
+  background-color: var(--ctp-base) !important;
+  color: var(--ctp-text) !important;
+}
+
+/* Main panels */
+.x-panel,
+.x-panel-body {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+.x-panel-header {
+  background-color: var(--ctp-surface1) !important;
+  border-color: var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+}
+
+.x-panel-header-text {
+  color: var(--ctp-text) !important;
+}
+
+/* Toolbar */
+.x-toolbar {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+/* Buttons */
+.x-btn,
+.x-btn-text {
+  background-color: var(--ctp-surface1) !important;
+  border-color: var(--ctp-surface2) !important;
+  color: var(--ctp-text) !important;
+}
+
+.x-btn-over {
+  background-color: var(--ctp-surface2) !important;
+  border-color: var(--ctp-blue) !important;
+}
+
+.x-btn-click,
+.x-btn-pressed {
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Grid / Table */
+.x-grid3,
+.x-grid-panel {
+  background-color: var(--ctp-mantle) !important;
+}
+
+.x-grid3-header {
+  background-color: var(--ctp-surface1) !important;
+}
+
+.x-grid3-hd-inner,
+.x-grid3-hd {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-subtext0) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+.x-grid3-row {
+  background-color: var(--ctp-mantle) !important;
+  color: var(--ctp-text) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+.x-grid3-row-alt {
+  background-color: var(--ctp-base) !important;
+}
+
+.x-grid3-row-over {
+  background-color: var(--ctp-surface0) !important;
+}
+
+.x-grid3-row-selected {
+  background-color: var(--ctp-surface1) !important;
+  border-color: var(--ctp-blue) !important;
+}
+
+.x-grid3-cell,
+.x-grid3-cell-inner {
+  color: var(--ctp-text) !important;
+}
+
+/* Tabs */
+.x-tab-strip {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+.x-tab-strip-active {
+  background-color: var(--ctp-surface1) !important;
+}
+
+.x-tab-strip span.x-tab-strip-text {
+  color: var(--ctp-text) !important;
+}
+
+.x-tab-strip-active span.x-tab-strip-text {
+  color: var(--ctp-blue) !important;
+}
+
+/* Forms */
+.x-form-text,
+input,
+textarea,
+select {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+.x-form-text:focus,
+input:focus,
+textarea:focus {
+  border-color: var(--ctp-blue) !important;
+}
+
+.x-form-field-wrap {
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Combo boxes / dropdowns */
+.x-combo-list {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+}
+
+.x-combo-list-item {
+  color: var(--ctp-text) !important;
+}
+
+.x-combo-list-item:hover,
+.x-combo-selected {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Menu */
+.x-menu {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+}
+
+.x-menu-item {
+  color: var(--ctp-text) !important;
+}
+
+.x-menu-item-active {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Windows / Dialogs */
+.x-window {
+  background-color: var(--ctp-base) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+.x-window-header {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+}
+
+.x-window-body {
+  background-color: var(--ctp-base) !important;
+}
+
+/* Progress bars */
+.x-progress-wrap {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+}
+
+.x-progress-inner {
+  background-color: var(--ctp-blue) !important;
+}
+
+.x-progress-bar {
+  background-color: var(--ctp-blue) !important;
+}
+
+/* Status bar */
+.x-statusbar {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+  color: var(--ctp-subtext0) !important;
+}
+
+/* Tree */
+.x-tree-node {
+  color: var(--ctp-text) !important;
+}
+
+.x-tree-selected {
+  background-color: var(--ctp-surface1) !important;
+}
+
+.x-tree-node-over {
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ctp-mantle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ctp-surface2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ctp-overlay0);
+}
+
+/* Torrent status colors */
+.torrent-downloading {
+  color: var(--ctp-blue) !important;
+}
+
+.torrent-seeding {
+  color: var(--ctp-green) !important;
+}
+
+.torrent-paused {
+  color: var(--ctp-overlay0) !important;
+}
+
+.torrent-error {
+  color: var(--ctp-red) !important;
+}
+
+.torrent-queued {
+  color: var(--ctp-yellow) !important;
+}
+
+/* Links */
+a {
+  color: var(--ctp-blue) !important;
+}
+
+a:hover {
+  color: var(--ctp-sapphire) !important;
+}
+
+/* Tooltips */
+.x-tip {
+  background-color: var(--ctp-surface1) !important;
+  border-color: var(--ctp-surface2) !important;
+}
+
+.x-tip-body {
+  color: var(--ctp-text) !important;
+}
+
+/* Slider */
+.x-slider-thumb {
+  background-color: var(--ctp-blue) !important;
+}
+
+.x-slider-inner {
+  background-color: var(--ctp-surface0) !important;
+}

@@ -28,6 +28,8 @@ health_path = "/api/health"
 env = {
   GF_SERVER_SERVE_FROM_SUB_PATH              = "false"
   GF_SERVER_ROOT_URL                         = "https://grafana.munchbox.cc/"
+  # Dark theme by default (closest to Catppuccin Mocha without custom CSS)
+  GF_USERS_DEFAULT_THEME                     = "dark"
   # OpenTelemetry tracing to Tempo
   GF_TRACING_OPENTELEMETRY_OTLP_ADDRESS      = "tempo.service.consul:4317"
   GF_TRACING_OPENTELEMETRY_OTLP_PROPAGATION  = "w3c"

@@ -2,49 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Catppuccin Mocha - Dark theme */
 .page-layout {
   @apply min-h-screen transition-all overflow-hidden
-  bg-secondary-200 text-black 
-  dark:text-white dark:bg-secondary-700;
+  bg-secondary-700 text-ctp-text;
 }
 
 .headline {
-  @apply flex flex-wrap items-center justify-between p-6 mx-auto shadow-xl 
-  from-primary-400 to-primary-200
-  dark:from-primary-900 dark:to-primary-600 bg-gradient-to-r;
+  @apply flex flex-wrap items-center justify-between p-6 mx-auto shadow-xl
+  bg-gradient-to-r from-secondary-800 to-secondary-600;
 }
 
 .nav-bar {
-  @apply self-center space-y-4 
+  @apply self-center space-y-4
   md:flex md:flex-row md:space-x-4 md:space-y-0;
 }
 .nav-item {
-  @apply flex justify-between px-2 py-2 rounded-lg transition-all space-x-1
-  hover:bg-primary-500 hover:text-white focus:bg-primary-500 focus:text-white focus:outline-none;
+  @apply flex justify-between px-2 py-2 rounded-lg transition-all space-x-1 text-ctp-text
+  hover:bg-primary-500 hover:text-ctp-crust focus:bg-primary-500 focus:text-ctp-crust focus:outline-none;
 }
 
 .dark-mode-button {
   @apply justify-between px-2 py-2 rounded-lg transition-all space-x-1
-  hover:bg-primary-500 hover:text-white focus:outline-none;
+  hover:bg-primary-500 hover:text-ctp-crust focus:outline-none;
 }
 
 .dark-mode-button-dark {
-  @apply dark-mode-button flex dark:hidden;
+  @apply dark-mode-button hidden;
 }
 
 .dark-mode-button-light {
-  @apply dark-mode-button hidden dark:flex;
+  @apply dark-mode-button flex;
 }
 .dropdown-menu {
   @apply absolute p-4 shadow-xl right-4 top-20 transition-all scale-0
-  bg-primary-300 ring-2 ring-primary-200 rounded-lg 
-  dark:bg-primary-800 dark:ring-primary-700;
+  bg-secondary-600 ring-2 ring-secondary-500 rounded-lg;
 }
 
 .footline {
-  @apply fixed inset-x-0 bottom-0 p-2 text-center 
-  bg-opacity-50 bg-secondary-50 text-black 
-dark:bg-secondary-800 dark:bg-opacity-50 dark:text-white;
+  @apply fixed inset-x-0 bottom-0 p-2 text-center
+  bg-opacity-80 bg-secondary-800 text-ctp-subtext1;
 }
 
 .card-layout {
@@ -56,19 +53,18 @@ dark:bg-secondary-800 dark:bg-opacity-50 dark:text-white;
 }
 
 .card-group-text {
-  @apply flex p-4 space-x-4;
+  @apply flex p-4 space-x-4 text-ctp-text;
 }
 
 .link-card {
-  @apply relative flex items-center h-20 max-w-sm p-3 m-2 space-x-4 transition-all rounded-lg shadow-xl border 
-  bg-secondary-100 border-secondary-400
-  hover:bg-primary-500 focus:bg-primary-500 focus:text-white hover:text-white focus:outline-none w-80 hover:-translate-y-1  
-  dark:hover:bg-primary-500 dark:bg-secondary-600 dark:border-secondary-800;
+  @apply relative flex items-center h-20 max-w-sm p-3 m-2 space-x-4 transition-all rounded-lg shadow-xl border
+  bg-secondary-600 border-secondary-500 text-ctp-text
+  hover:bg-primary-500 focus:bg-primary-500 hover:text-ctp-crust focus:text-ctp-crust focus:outline-none w-80 hover:-translate-y-1;
 }
 .card-tag {
   @apply absolute -right-1 w-1 h-7 bottom-2 transition-all text-center justify-center rounded-lg text-sm
-  group-hover:w-16 
-  bg-highlight-400 text-white;
+  group-hover:w-16
+  bg-highlight-400 text-ctp-crust;
 }
 .fa-icon {
   @apply fill-current;

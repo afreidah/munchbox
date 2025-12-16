@@ -236,7 +236,7 @@ EOH
   sampleRate = 1.0
   [tracing.otlp]
     [tracing.otlp.http]
-      endpoint = "http://tempo.service.consul:4318/v1/traces"
+      endpoint = "http://tempo.service.consul:4318"
 
 # -------------------------------------------------------------------------
 # ACME (Let's Encrypt) Configuration
@@ -372,7 +372,7 @@ EOH
   # --- Authentik Forward Auth (domain-level SSO) ---
   # Using direct IP since system DNS doesn't resolve .service.consul properly
   [http.middlewares.authentik.forwardAuth]
-    address              = "http://192.168.68.72:9000/outpost.goauthentik.io/auth/traefik"
+    address              = "http://192.168.68.61:9000/outpost.goauthentik.io/auth/traefik"
     trustForwardHeader   = true
     authResponseHeaders  = [
       "X-authentik-username",

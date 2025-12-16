@@ -14,16 +14,6 @@ job "authentik" {
   datacenters = ["munchbox"]
   type        = "service"
 
-  # -------------------------------------------------------------------------
-  # Placement
-  # -------------------------------------------------------------------------
-
-  constraint {
-    attribute = "${node.unique.name}"
-    operator  = "="
-    value     = "nomad-client-02"
-  }
-
   # ---------------------------------------------------------------------------
   # Update Strategy
   # ---------------------------------------------------------------------------
@@ -42,6 +32,13 @@ job "authentik" {
 
   group "server" {
     count = 1
+
+    # --- Placement: Pin to stabler ---
+    constraint {
+      attribute = "${node.unique.name}"
+      operator  = "="
+      value     = "stabler.munchbox.cc"
+    }
 
     # --- Network Configuration ---
     network {
@@ -162,12 +159,7 @@ job "authentik" {
         AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS = "172.26.64.0/18,192.168.68.0/24,127.0.0.1/32"
         AUTHENTIK_HOST                        = "https://auth.munchbox.cc"
         AUTHENTIK_HOST_BROWSER                = "https://auth.munchbox.cc"
-        # OpenTelemetry tracing to Tempo
-        AUTHENTIK_TRACING__ENABLED            = "true"
-        AUTHENTIK_TRACING__TYPE               = "otel"
-        OTEL_EXPORTER_OTLP_ENDPOINT           = "http://tempo.service.consul:4318"
-        OTEL_EXPORTER_OTLP_PROTOCOL           = "http/protobuf"
-        OTEL_SERVICE_NAME                     = "authentik"
+        # Note: Authentik does not yet support OTEL tracing (GitHub #12854)
         # Dynamic secrets from Vault
         AUTHENTIK_SECRET_KEY                  = "${secret.authentik.secret_key}"
         AUTHENTIK_POSTGRESQL__HOST            = "${secret.authentik.postgres_host}"
@@ -180,7 +172,7 @@ job "authentik" {
 
       # --- Resources ---
       resources {
-        cpu    = 1500
+        cpu    = 2048
         memory = 2048
       }
 
@@ -196,6 +188,13 @@ job "authentik" {
 
   group "worker" {
     count = 1
+
+    # --- Placement: Pin to nomad-client-03 ---
+    constraint {
+      attribute = "${node.unique.name}"
+      operator  = "="
+      value     = "nomad-client-03"
+    }
 
     # --- Network Configuration ---
     network {
@@ -255,11 +254,6 @@ job "authentik" {
         image_pull_timeout = "10m"
         network_mode       = "host"
         args               = ["worker"]
-        volumes            = [
-          "/mnt/gdrive-secondary/authentik/media:/media",
-          "/mnt/gdrive-secondary/authentik/templates:/templates",
-          "/mnt/gdrive-secondary/authentik/certs:/certs",
-        ]
       }
 
       # --- Vault Secrets (Nomad 1.11 secret block) ---
@@ -287,12 +281,7 @@ job "authentik" {
         AUTHENTIK_ERROR_REPORTING__ENABLED  = "false"
         AUTHENTIK_DISABLE_UPDATE_CHECK      = "true"
         AUTHENTIK_DISABLE_STARTUP_ANALYTICS = "true"
-        # OpenTelemetry tracing to Tempo
-        AUTHENTIK_TRACING__ENABLED          = "true"
-        AUTHENTIK_TRACING__TYPE             = "otel"
-        OTEL_EXPORTER_OTLP_ENDPOINT         = "http://tempo.service.consul:4318"
-        OTEL_EXPORTER_OTLP_PROTOCOL         = "http/protobuf"
-        OTEL_SERVICE_NAME                   = "authentik-worker"
+        # Note: Authentik does not yet support OTEL tracing (GitHub #12854)
         # Dynamic secrets from Vault
         AUTHENTIK_SECRET_KEY                = "${secret.authentik.secret_key}"
         AUTHENTIK_POSTGRESQL__HOST          = "${secret.authentik.postgres_host}"
@@ -305,8 +294,8 @@ job "authentik" {
 
       # --- Resources ---
       resources {
-        cpu    = 300    # Reduced from 500 - actual usage <0.2%
-        memory = 512    # Reduced from 1024 - actual usage 351MB
+        cpu    = 1000
+        memory = 1024
       }
 
       # --- Termination ---

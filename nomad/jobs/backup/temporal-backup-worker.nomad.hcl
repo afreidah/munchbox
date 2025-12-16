@@ -160,6 +160,9 @@ job "temporal-backup-worker" {
         TRIVY_DB_USER     = "${secret.trivy_db.db_username}"
         TRIVY_DB_PASSWORD = "${secret.trivy_db.db_password}"
         TRIVY_DB_NAME     = "trivy"
+        # OpenTelemetry tracing to Tempo
+        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4318"
+        OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
       }
 
       # --- Resources ---

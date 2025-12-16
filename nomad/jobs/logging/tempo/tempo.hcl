@@ -47,8 +47,9 @@ templates = [
 # --- Service tags ---
 tags = ["logging", "tempo", "tracing", "observability"]
 
-# --- Additional ports for OTLP ingestion ---
+# --- Additional ports for trace ingestion ---
 extra_ports = [
   { name = "otlp-grpc", port = "4317", static = "true" },
-  { name = "otlp-http", port = "4318", static = "true" }
+  { name = "otlp-http", port = "4318", static = "true" },
+  { name = "zipkin",    port = "9411", static = "true" }
 ]

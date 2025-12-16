@@ -4,6 +4,10 @@ server:
   log_level: info
   log_format: json
 
+# Tracing configuration (exports to Tempo via OTEL env vars)
+tracing:
+  enabled: true
+
 clients:
   - url: http://loki.service.consul:3100/loki/api/v1/push
 
