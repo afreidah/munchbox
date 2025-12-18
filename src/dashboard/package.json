@@ -1,0 +1,14 @@
+{
+  "name": "dashboard",
+  "version": "1.0.0",
+  "description": "Munchbox dashboard - Catppuccin-themed service links",
+  "author": "Alex Freidah",
+  "license": "ISC",
+  "scripts": {
+    "build": "tailwindcss -i tailwind.css -o assets/style.css --minify",
+    "watch": "tailwindcss -i tailwind.css -o assets/style.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  }
+}

@@ -29,6 +29,16 @@ job "trivy-dashboard" {
     auto_promote      = true
   }
 
+  # -------------------------------------------------------------------------
+  # Placement 
+  # -------------------------------------------------------------------------
+
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "="
+    value     = "oraclenode2"
+  }
+
   # ---------------------------------------------------------------------------
   # Task Group: dashboard
   # ---------------------------------------------------------------------------
@@ -68,6 +78,8 @@ job "trivy-dashboard" {
         interval = "15s"
         timeout  = "5s"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     task "dashboard" {
@@ -105,7 +117,9 @@ job "trivy-dashboard" {
         TRIVY_DB_PASSWORD           = "${secret.trivy_db.db_password}"
         TRIVY_DB_NAME               = "trivy"
         TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
-        OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4318"
+        # OpenTelemetry tracing to Tempo (gRPC)
+        OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
+        OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
       }
 
       resources {

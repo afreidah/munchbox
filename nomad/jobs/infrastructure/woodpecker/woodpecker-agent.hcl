@@ -30,7 +30,8 @@ templates = [
 
 # --- Environment variables ---
 env = {
-  WOODPECKER_SERVER             = "woodpecker-server.service.consul:9000"
+  # Using direct IP since server is pinned to oraclenode1 and gRPC port isn't in Consul
+  WOODPECKER_SERVER             = "10.200.0.11:9000"
   WOODPECKER_BACKEND            = "docker"
   WOODPECKER_LOG_LEVEL          = "info"
   WOODPECKER_HEALTHCHECK        = "false"

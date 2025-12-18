@@ -1,0 +1,144 @@
+# -------------------------------------------------------------------------------
+# Oracle Cloud Nodes Group Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configuration for Oracle Cloud Free Tier nodes connected via WireGuard.
+# These nodes have limited resources (1GB RAM) and use WireGuard IPs for
+# cluster communication instead of their public IPs.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# Base System Configuration
+# (Duplicated from all.yml due to inventory merge issues)
+# -------------------------------------------------------------------------------
+
+timezone: "America/Los_Angeles"
+
+common_packages:
+  - curl
+  - wget
+  - vim
+  - git
+  - htop
+  - iotop
+  - net-tools
+  - dnsutils
+  - tmux
+  - jq
+  - unzip
+  - rsync
+  - sysstat
+
+# -------------------------------------------------------------------------------
+# Network Configuration
+#
+# Oracle nodes connect via WireGuard tunnel. Use static_ip (WireGuard IP) for
+# all cluster communication. Public IPs are only used for SSH access.
+# -------------------------------------------------------------------------------
+
+# Override default bind addresses to use WireGuard IP
+consul_bind_addr: "{{ static_ip }}"
+nomad_bind_addr: "{{ static_ip }}"
+
+# Use WireGuard interface for bridge networking so services register with WireGuard IP
+nomad_network_interface: "wg0"
+
+# Note: nomad_advertise_* addresses are now computed automatically from static_ip
+# in roles/nomad/defaults/main.yml using nomad_advertise_ip variable
+
+# Consul/Nomad servers to join (home network IPs reachable via WireGuard)
+consul_retry_join:
+  - "192.168.68.60"   # goren
+  - "192.168.68.61"   # stabler
+  - "192.168.68.58"   # nomad-server-03
+
+nomad_servers:
+  - "192.168.68.60:4647"
+  - "192.168.68.61:4647"
+  - "192.168.68.58:4647"
+
+# -------------------------------------------------------------------------------
+# Datacenter Configuration
+#
+# Oracle nodes are in a separate datacenter for multi-DC practice.
+# Set to "munchbox" if you want single-datacenter instead.
+# -------------------------------------------------------------------------------
+
+consul_datacenter: "munchbox"
+nomad_datacenter: "munchbox"
+
+# Consul on Oracle nodes connects to home datacenter servers
+nomad_consul_datacenter: "munchbox"
+
+# -------------------------------------------------------------------------------
+# Role Configuration
+# -------------------------------------------------------------------------------
+
+nomad_server_enabled: false
+nomad_client_enabled: true
+consul_server_enabled: false
+consul_client_enabled: true
+
+# -------------------------------------------------------------------------------
+# Resource Limits
+#
+# Oracle Free Tier micro instances have only 1GB RAM and 1/8 OCPU.
+# Reserve minimal resources to leave room for actual workloads.
+# -------------------------------------------------------------------------------
+
+nomad_reserved_cpu: 100        # Reserve 100MHz for system
+nomad_reserved_memory: 256     # Reserve 256MB for system (leaves ~700MB for jobs)
+
+# -------------------------------------------------------------------------------
+# Feature Flags
+#
+# Disable features that don't work or aren't needed on cloud nodes.
+# -------------------------------------------------------------------------------
+
+# Skip NFS mounts - can't reach home NFS server
+oracle_skip_nfs: true
+
+# Skip local Consul DNS setup
+oracle_skip_local_dns: true
+
+# -------------------------------------------------------------------------------
+# Docker Configuration
+#
+# Oracle nodes run Ubuntu, not Debian.
+# -------------------------------------------------------------------------------
+
+docker_distro: "ubuntu"
+
+# -------------------------------------------------------------------------------
+# TLS Configuration
+#
+# Oracle nodes must use TLS to communicate with Nomad servers (which have mTLS).
+# Certificates are issued from Vault PKI using the nomad-client role.
+# -------------------------------------------------------------------------------
+
+nomad_tls_http: true
+nomad_tls_rpc: true
+
+# -------------------------------------------------------------------------------
+# Nomad Service Configuration
+#
+# Nomad must run as root for bridge networking (iptables management).
+# -------------------------------------------------------------------------------
+
+nomad_user: root
+nomad_group: root
+
+# -------------------------------------------------------------------------------
+# DNS Configuration
+#
+# Use home Pi-hole DNS servers (reachable via WireGuard) for .munchbox.cc and
+# .consul domains. This allows Oracle nodes to resolve internal services.
+# -------------------------------------------------------------------------------
+
+dns_servers:
+  - "192.168.68.62"  # green (Pi-hole)
+  - "192.168.68.64"  # logan (Pi-hole)
+dns_search_domains:
+  - "~munchbox.cc"
+  - "~consul"

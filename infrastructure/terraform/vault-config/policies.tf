@@ -160,6 +160,10 @@ path "secret/data/trivy-dashboard" {
   capabilities = ["read"]
 }
 
+path "secret/data/forgejo" {
+  capabilities = ["read"]
+}
+
 path "secret/data/woodpecker" {
   capabilities = ["read"]
 }

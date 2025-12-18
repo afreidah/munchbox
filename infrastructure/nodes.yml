@@ -153,6 +153,39 @@ vms:
     notes: "General workload client - on cabot (less reliable)"
 
 # -------------------------------------------------------------------------------
+# Cloud Nodes (Oracle Cloud Free Tier)
+#
+# External cloud instances connected via WireGuard tunnel.
+# NOT managed by Terraform - provisioned manually in OCI console/terraform.
+# Use WireGuard IPs for cluster communication, public IPs for SSH.
+# -------------------------------------------------------------------------------
+
+cloud_nodes:
+  oracle-node-1:
+    wireguard_ip: 10.200.0.2
+    public_ip: 141.148.136.142
+    arch: amd64
+    memory_mb: 1024
+    cpu_cores: 1
+    roles:
+      - nomad_client
+      - consul_client
+    datacenter: oracle  # Separate datacenter for multi-DC practice
+    notes: "Oracle Cloud Free Tier AMD micro instance"
+
+  oracle-node-2:
+    wireguard_ip: 10.200.0.3
+    public_ip: 129.146.94.109
+    arch: amd64
+    memory_mb: 1024
+    cpu_cores: 1
+    roles:
+      - nomad_client
+      - consul_client
+    datacenter: oracle
+    notes: "Oracle Cloud Free Tier AMD micro instance"
+
+# -------------------------------------------------------------------------------
 # Other Infrastructure (DNS, Storage, etc.)
 #
 # Non-Nomad infrastructure that may need to be referenced.

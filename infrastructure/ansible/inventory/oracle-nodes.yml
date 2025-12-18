@@ -1,0 +1,42 @@
+# -----------------------------------------------------------------------------
+# Oracle Cloud Nodes Inventory
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Oracle Free Tier nodes deployed via Terragrunt. These connect via WireGuard
+# to the homelab cluster.
+#
+# Usage: ansible-playbook -i inventory/oracle-nodes.yml playbooks/wireguard-setup.yml
+# -----------------------------------------------------------------------------
+
+all:
+  children:
+    oracle_nodes:
+      hosts:
+        oracle-node-1:
+          ansible_host: 132.226.87.58
+          ansible_user: ubuntu
+          static_ip: 10.200.0.11
+          wireguard_client_address: "10.200.0.11/24"
+        oracle-node-2:
+          ansible_host: 158.101.33.133
+          ansible_user: ubuntu
+          static_ip: 10.200.0.12
+          wireguard_client_address: "10.200.0.12/24"
+
+    wireguard_clients:
+      hosts:
+        oracle-node-1:
+        oracle-node-2:
+
+    wireguard_server:
+      hosts:
+        stabler:
+          ansible_host: 192.168.68.61
+          ansible_user: root
+
+    # Combined group for playbook targeting
+    wireguard_nodes:
+      children:
+        wireguard_server:
+        wireguard_clients:

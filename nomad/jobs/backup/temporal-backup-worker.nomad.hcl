@@ -123,28 +123,25 @@ job "temporal-backup-worker" {
         dns_servers        = ["192.168.68.64", "192.168.68.62"]
       }
 
-      secret "backup_worker" {
-        provider = "vault"
-        path     = "secret/data/backup-worker"
-        config {
-          engine = "kv_v2"
-        }
-      }
-
-      secret "postgres" {
-        provider = "vault"
-        path     = "secret/data/postgres-shared/root"
-        config {
-          engine = "kv_v2"
-        }
-      }
-
-      secret "trivy_db" {
-        provider = "vault"
-        path     = "secret/data/trivy-dashboard"
-        config {
-          engine = "kv_v2"
-        }
+      template {
+        data = <<-EOF
+        {{ with secret "secret/data/backup-worker" }}
+        NOMAD_TOKEN={{ .Data.data.nomad_token }}
+        CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
+        {{ end }}
+        {{ with secret "secret/data/postgres-shared/root" }}
+        PGPASSWORD={{ .Data.data.password }}
+        {{ end }}
+        {{ with secret "secret/data/trivy-dashboard" }}
+        TRIVY_DB_USER={{ .Data.data.db_username }}
+        TRIVY_DB_PASSWORD={{ .Data.data.db_password }}
+        {{ end }}
+        {{ with secret "secret/data/redis-shared" }}
+        REDIS_PASSWORD={{ .Data.data.password }}
+        {{ end }}
+        EOF
+        destination = "secrets/secrets.env"
+        env         = true
       }
 
       env {
@@ -152,23 +149,18 @@ job "temporal-backup-worker" {
         NOMAD_ADDR        = "https://nomad.service.consul:4646"
         NOMAD_CACERT      = "/etc/ssl/certs/nomad-ca.pem"
         VAULT_CACERT      = "/etc/ssl/certs/vault-ca.pem"
-        NOMAD_TOKEN       = "${secret.backup_worker.nomad_token}"
-        CONSUL_HTTP_TOKEN = "${secret.backup_worker.consul_token}"
-        PGPASSWORD        = "${secret.postgres.password}"
         TRIVY_DB_HOST     = "postgres-shared.service.consul"
         TRIVY_DB_PORT     = "5432"
-        TRIVY_DB_USER     = "${secret.trivy_db.db_username}"
-        TRIVY_DB_PASSWORD = "${secret.trivy_db.db_password}"
         TRIVY_DB_NAME     = "trivy"
-        # OpenTelemetry tracing to Tempo
-        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4318"
-        OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+        # OpenTelemetry tracing to Tempo (gRPC)
+        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+        OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
       }
 
       # --- Resources ---
       # Note: Registry backup tars ~600MB of data, needs adequate memory for gzip
       resources {
-        cpu    = 200
+        cpu    = 2000
         memory = 512
       }
 

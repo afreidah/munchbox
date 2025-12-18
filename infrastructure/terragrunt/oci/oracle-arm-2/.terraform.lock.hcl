@@ -1,0 +1,92 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/hashicorp/aws" {
+  version     = "5.100.0"
+  constraints = "~> 5.0"
+  hashes = [
+    "h1:edXOJWE4ORX8Fm+dpVpICzMZJat4AX0VRCAy/xkcOc0=",
+    "zh:054b8dd49f0549c9a7cc27d159e45327b7b65cf404da5e5a20da154b90b8a644",
+    "zh:0b97bf8d5e03d15d83cc40b0530a1f84b459354939ba6f135a0086c20ebbe6b2",
+    "zh:1589a2266af699cbd5d80737a0fe02e54ec9cf2ca54e7e00ac51c7359056f274",
+    "zh:6330766f1d85f01ae6ea90d1b214b8b74cc8c1badc4696b165b36ddd4cc15f7b",
+    "zh:7c8c2e30d8e55291b86fcb64bdf6c25489d538688545eb48fd74ad622e5d3862",
+    "zh:99b1003bd9bd32ee323544da897148f46a527f622dc3971af63ea3e251596342",
+    "zh:9b12af85486a96aedd8d7984b0ff811a4b42e3d88dad1a3fb4c0b580d04fa425",
+    "zh:9f8b909d3ec50ade83c8062290378b1ec553edef6a447c56dadc01a99f4eaa93",
+    "zh:aaef921ff9aabaf8b1869a86d692ebd24fbd4e12c21205034bb679b9caf883a2",
+    "zh:ac882313207aba00dd5a76dbd572a0ddc818bb9cbf5c9d61b28fe30efaec951e",
+    "zh:bb64e8aff37becab373a1a0cc1080990785304141af42ed6aa3dd4913b000421",
+    "zh:dfe495f6621df5540d9c92ad40b8067376350b005c637ea6efac5dc15028add4",
+    "zh:f0ddf0eaf052766cfe09dea8200a946519f653c384ab4336e2a4a64fdd6310e9",
+    "zh:f1b7e684f4c7ae1eed272b6de7d2049bb87a0275cb04dbb7cda6636f600699c9",
+    "zh:ff461571e3f233699bf690db319dfe46aec75e58726636a0d97dd9ac6e32fb70",
+  ]
+}
+
+provider "registry.terraform.io/hashicorp/oci" {
+  version = "7.29.0"
+  hashes = [
+    "h1:C+1q2NT1LkIVmFZoJpSkGWxzI3eI8gD4eansd4fYRF4=",
+    "zh:229294efb3df230817d06e9220fc1e6fb70c165080bd180baf9973301364b24c",
+    "zh:290fddc784d437675451f1d277c9b91b587d0ef13cd963410ea18079bc65a553",
+    "zh:3f457a1178630b800ffea9bbbc85f17bce4c2427f76a9d7fb08e324ca33b603d",
+    "zh:4f2c4e27b3f2ee5cf21563f4615e09ab66d79ceb2222456e247d968f18fbf328",
+    "zh:7377612a286c5a4e4263da135341053a49253bbf17706c9cf006db265586bacf",
+    "zh:7ce8b36b5502f10ab21256ebe1f15b3046ce3e74a6cd51939bbc94d4c4c617c3",
+    "zh:833f08075ed47ceb09de111e970b07378b401aff36fe11dac64114d26233525e",
+    "zh:9b12af85486a96aedd8d7984b0ff811a4b42e3d88dad1a3fb4c0b580d04fa425",
+    "zh:9f20bd529b4f27057e54949f0b56acddbcc65ebe0b841d353aa147da07ead707",
+    "zh:9f8d0c0c9dfc5fb43fe484b5b1392fa61d7af287ca0ecad288302682e5ee541d",
+    "zh:a9dc9ac0bbf017b5166533a239ad4611f2af3d62a83cebd15d5da8663b5b7ee2",
+    "zh:b1ea90a1c7fdf8c4e1e8be6b8dcd424625698af5737de05e552f3fce8253f3ba",
+    "zh:b694f93735102fb52a68271b9646ba2b722c3475665ab0ae86fe7254178a1b0d",
+    "zh:de1c9145810991ead86bb29fcd26933df9a7c5bba0ce1bed3d0879d80679e988",
+    "zh:e787ba5ce5137e4ba893c8e1bca8b1fbc57d0d7ca42768d772ab3203cc88b255",
+  ]
+}
+
+provider "registry.terraform.io/oracle/oci" {
+  version     = "5.47.0"
+  constraints = "~> 5.0"
+  hashes = [
+    "h1:XuD7rQMenwvCdmbRA20FcROuRux+5c3s6+eX3FX8ZsA=",
+    "zh:1989a7d68753329c25e1175cdae0ecfb917e86a1b7687366888a69727cfdf383",
+    "zh:4b497dd634896c78f05c6000f51cc295adffa4d77edaf4e8cec889ee24751754",
+    "zh:4f50ed77d982eac118bf1e00b5cf90f12eb09acb1aa3be5b3f71601935093675",
+    "zh:50dc6e13843ab8b13439cb9029d9893f55debeb20541a63aef62e20bb85ece91",
+    "zh:6332a8ec1a5e80030b80dd0d37f20e6755bd1225a308fe512c083e65ca66ce83",
+    "zh:83bbb9f06ff4d7a09a13dcb145db9b8298b5c679ea681a753d6fbaf2fdc40d20",
+    "zh:9173587be16322072947be951834ce4bd7be1fd0f846b527ff478b6dd4e8a91b",
+    "zh:9b12af85486a96aedd8d7984b0ff811a4b42e3d88dad1a3fb4c0b580d04fa425",
+    "zh:a4331ca1d66848414857b4c5c0f9b2fe49aa4f72e283fb1df6edefbac1f76474",
+    "zh:a7d7bd1bd421ee94d72772f0c71f012ce538cbe48f8a646baf00c07755738122",
+    "zh:d0738787cae2842d6f13ac1d5d9cea6d5ec6acfe78ca25f1f992c1f2ed55eb5f",
+    "zh:d6e47352cc460bab26a04b45bf00f9ffd3fb01bdc254df2209e3af8c640e28d2",
+    "zh:e12ec25cba44489dac966ecb5ea89b63e88aefad6c0d28b54bde3af79f1389d7",
+    "zh:fe6aa72e82f9912b6c9893025bd58d967fad0f5864ea1151acc2d804ddbf7d70",
+    "zh:ff703d90bb3afab257c660732c23269cc7f58167fe85d163b3fa29cd70010d3a",
+  ]
+}
+
+provider "registry.terraform.io/telmate/proxmox" {
+  version     = "3.0.2-rc05"
+  constraints = "3.0.2-rc05"
+  hashes = [
+    "h1:QfHovHn8h9uJXdJ+urOuiD7R46OXmdZQiRcCBaV6AD4=",
+    "zh:042d748367f33aaf440698644be4f2a2875f9db31915c1ef84616f176fc6174f",
+    "zh:1488781da1920d60d933c8ce926c34b5e989ffae58e3fbe437973d2b1d2faafc",
+    "zh:283dd6f74627f1d1d75d616b31f8ced3f97fd5277a07c9535e85cfa765d7a321",
+    "zh:378f1c2da21aeea083ac2e632db274a02c7a01e2486a40d3c813d05a21142db3",
+    "zh:38d63d0961f8c32273392caaace30f50cff8ab06e5dda17f67a8827ebffeba98",
+    "zh:52159782df101ec98f20faff81e8f2d9d92cb4ec903314fcddcc57ec16cdaacb",
+    "zh:6ca47b90c66b1d2706cb3cbb05da8b3f90a202c4865010202b2962e2b64d217e",
+    "zh:6e7b85cb2380e4dc0be694dd0e4a24927f7f66df41960eca3cfe907443d4f0b9",
+    "zh:758775f733673ab5c196db6a33648458037746f94d4bef7ce148cb01474efe2d",
+    "zh:7c31a3ca6d52db39da2bdd60be37af71d59d808fc206de50fe661535ea436da3",
+    "zh:af16984350a2f4d77c21f66a479007801e2527543310567c99cd82eb421e249e",
+    "zh:c1f965d3f96cf3f87af2c12ab9d4bde42f8ef660f8dc34ba3cfc9b20435a7269",
+    "zh:c2b9022a31103919a5ffbac6ee8d7feb6c4f5f580c1766f769569c2e8e4ce7f1",
+    "zh:e90162c42f1237323291e3d0de0c62701b3f89350fae18246da06702f41a6123",
+  ]
+}

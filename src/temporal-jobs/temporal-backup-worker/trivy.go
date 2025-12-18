@@ -62,12 +62,12 @@ type TrivyScanResult struct {
 }
 
 // TrivyScanWorkflow orchestrates image vulnerability scanning across the cluster.
-// Scans are executed in small batches to avoid OOM issues.
+// Scans are executed in parallel batches using Trivy server mode for concurrency.
 func TrivyScanWorkflow(ctx workflow.Context) error {
 	logger := workflow.GetLogger(ctx)
 	logger.Info("Starting Trivy vulnerability scan workflow")
 
-	const batchSize = 5 // Number of concurrent scans to limit memory usage
+	const batchSize = 10 // Concurrent scans via Trivy server (handles DB locking internally)
 
 	activityOpts := workflow.ActivityOptions{
 		StartToCloseTimeout: 30 * time.Minute,
@@ -80,15 +80,9 @@ func TrivyScanWorkflow(ctx workflow.Context) error {
 	}
 	ctx = workflow.WithActivityOptions(ctx, activityOpts)
 
-	// Activity 0: Download Trivy DB once before scanning
-	err := workflow.ExecuteActivity(ctx, DownloadTrivyDB).Get(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("failed to download trivy db: %w", err)
-	}
-
 	// Activity 1: Get all running images from Nomad
 	var images []string
-	err = workflow.ExecuteActivity(ctx, GetRunningImages).Get(ctx, &images)
+	err := workflow.ExecuteActivity(ctx, GetRunningImages).Get(ctx, &images)
 	if err != nil {
 		return fmt.Errorf("failed to get running images: %w", err)
 	}
@@ -177,22 +171,6 @@ func TrivyScanWorkflow(ctx workflow.Context) error {
 	return nil
 }
 
-// DownloadTrivyDB downloads the vulnerability database before scanning.
-func DownloadTrivyDB(ctx context.Context) error {
-	logger := activity.GetLogger(ctx)
-	logger.Info("Downloading Trivy vulnerability database")
-
-	cmd := exec.CommandContext(ctx, "trivy", "image", "--download-db-only")
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to download trivy db: %v: %s", err, stderr.String())
-	}
-
-	logger.Info("Trivy database downloaded successfully")
-	return nil
-}
 
 // GetRunningImages queries Nomad for all unique Docker images in running allocations.
 func GetRunningImages(ctx context.Context) ([]string, error) {
@@ -263,6 +241,7 @@ func GetRunningImages(ctx context.Context) ([]string, error) {
 }
 
 // ScanImage runs Trivy vulnerability scanner against a single container image.
+// Uses Trivy server mode for concurrent scanning without DB lock contention.
 func ScanImage(ctx context.Context, image string) (TrivyScanResult, error) {
 	logger := activity.GetLogger(ctx)
 	logger.Info("Scanning image", "image", image)
@@ -273,12 +252,18 @@ func ScanImage(ctx context.Context, image string) (TrivyScanResult, error) {
 		ScannedAt: time.Now(),
 	}
 
-	// Run trivy scan with JSON output, skip DB download (already done)
+	// Get Trivy server address from environment or use Consul service discovery
+	trivyServer := os.Getenv("TRIVY_SERVER_ADDR")
+	if trivyServer == "" {
+		trivyServer = "http://trivy-server.service.consul:4954"
+	}
+
+	// Run trivy in client mode, connecting to the server
 	cmd := exec.CommandContext(ctx, "trivy", "image",
+		"--server", trivyServer,
 		"--format", "json",
 		"--timeout", "10m",
 		"--scanners", "vuln",
-		"--skip-db-update",
 		image)
 
 	var stdout, stderr bytes.Buffer

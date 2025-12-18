@@ -1,0 +1,40 @@
+# -----------------------------------------------------------------------------
+# OCI NODE CONFIGURATION
+# -----------------------------------------------------------------------------
+# Node: oracle-node-1
+# Provider: Oracle Cloud Infrastructure (free tier AMD)
+# Purpose: Internal dashboards
+# -----------------------------------------------------------------------------
+
+name: oracle-node-1
+
+# Compute resources (Oracle free tier AMD: 1 OCPU, 1GB RAM)
+cpu: 1
+memory_gb: 1
+disk_gb: 50
+
+# WireGuard
+wireguard_address: "10.200.0.11"
+
+# Node classification
+node_class: cloud
+node_pool: ""
+node_meta:
+  provider: oci
+  shape: amd
+  purpose: dashboards
+
+# OCI-specific config
+oci_config:
+  compartment_id: "ocid1.tenancy.oc1..aaaaaaaaeyhaous2t76u676i73cr4wi2turtytmu2j2muyiyvrboqpsp5z7a"
+  availability_domain: "AD-1"
+  shape: "VM.Standard.E2.1.Micro"
+
+# Network - this node creates the VCN
+create_network: true
+vpc_cidr: "10.100.0.0/16"
+
+# Additional tags
+tags:
+  Environment: production
+  Purpose: dashboards

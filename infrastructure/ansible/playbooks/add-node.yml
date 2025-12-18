@@ -29,6 +29,22 @@
     # Vault AppRole credentials for cert issuance
     vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
     vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
+    # Default common packages (can be overridden in group_vars)
+    default_common_packages:
+      - curl
+      - wget
+      - vim
+      - git
+      - htop
+      - iotop
+      - net-tools
+      - dnsutils
+      - tmux
+      - jq
+      - unzip
+      - rsync
+      - sysstat
+    default_timezone: "America/Los_Angeles"
 
   pre_tasks:
     - name: Validate target_host is specified
@@ -64,13 +80,13 @@
 
     - name: Install common packages
       ansible.builtin.apt:
-        name: "{{ common_packages }}"
+        name: "{{ common_packages | default(default_common_packages) }}"
         state: present
       tags: [base]
 
     - name: Set timezone
       community.general.timezone:
-        name: "{{ timezone }}"
+        name: "{{ timezone | default(default_timezone) }}"
       tags: [base]
 
     # -------------------------------------------------------------------------
@@ -99,16 +115,21 @@
         mode: '0755'
       tags: [docker]
 
+    - name: Set Docker distro
+      ansible.builtin.set_fact:
+        docker_distro: "{{ docker_distro | default('debian' if ansible_distribution == 'Debian' else 'ubuntu') }}"
+      tags: [docker]
+
     - name: Add Docker GPG key
       ansible.builtin.get_url:
-        url: https://download.docker.com/linux/debian/gpg
+        url: "https://download.docker.com/linux/{{ docker_distro }}/gpg"
         dest: /etc/apt/keyrings/docker.asc
         mode: '0644'
       tags: [docker]
 
     - name: Add Docker repository
       ansible.builtin.apt_repository:
-        repo: "deb [arch={{ docker_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+        repo: "deb [arch={{ docker_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/{{ docker_distro }} {{ ansible_distribution_release }} stable"
         state: present
         filename: docker
       tags: [docker]
@@ -167,13 +188,16 @@
       tags: [cni]
 
     # -------------------------------------------------------------------------
-    # NFS Mounts (skip on NFS server itself)
+    # NFS Mounts (skip on NFS server itself and Oracle cloud nodes)
     # -------------------------------------------------------------------------
     - name: Install nfs-common
       ansible.builtin.apt:
         name: nfs-common
         state: present
-      when: inventory_hostname != 'mccoy'
+      when:
+        - inventory_hostname != 'mccoy'
+        - not (oracle_skip_nfs | default(false) | bool)
+        - "'oracle_nodes' not in group_names"
       tags: [nfs]
 
     - name: Create NFS mount points
@@ -183,7 +207,10 @@
       loop:
         - /mnt/gdrive
         - /mnt/gdrive-secondary
-      when: inventory_hostname != 'mccoy'
+      when:
+        - inventory_hostname != 'mccoy'
+        - not (oracle_skip_nfs | default(false) | bool)
+        - "'oracle_nodes' not in group_names"
       tags: [nfs]
 
     - name: Add NFS mounts to fstab
@@ -196,18 +223,30 @@
       loop:
         - { path: /mnt/gdrive, src: "mccoy:/mnt/gdrive" }
         - { path: /mnt/gdrive-secondary, src: "mccoy:/mnt/gdrive-secondary" }
-      when: inventory_hostname != 'mccoy'
+      when:
+        - inventory_hostname != 'mccoy'
+        - not (oracle_skip_nfs | default(false) | bool)
+        - "'oracle_nodes' not in group_names"
       tags: [nfs]
 
     # -------------------------------------------------------------------------
     # Vault CA Distribution (required for TLS)
     # -------------------------------------------------------------------------
-    - name: Fetch Vault intermediate CA from existing node
-      ansible.builtin.shell: |
-        ssh -o StrictHostKeyChecking=no root@stabler 'VAULT_ADDR=https://127.0.0.1:8200 VAULT_SKIP_VERIFY=true vault read -format=json pki_int/cert/ca 2>/dev/null | jq -r ".data.certificate"'
-      register: vault_ca_result
+    - name: Fetch Vault intermediate CA from Vault API
+      ansible.builtin.uri:
+        url: "https://192.168.68.61:8200/v1/pki_int/cert/ca"
+        method: GET
+        validate_certs: false
+        return_content: true
+      register: vault_ca_response
       delegate_to: localhost
       become: false
+      tags: [tls, vault-ca]
+
+    - name: Set Vault CA fact
+      ansible.builtin.set_fact:
+        vault_ca_result:
+          stdout: "{{ vault_ca_response.json.data.certificate }}"
       tags: [tls, vault-ca]
 
     - name: Create Nomad TLS directory
@@ -263,6 +302,11 @@
         consul_cert_cn: "{{ 'server' if 'nomad_servers' in group_names else 'client' }}.{{ consul_datacenter }}.consul"
       tags: [tls, consul-tls]
 
+    - name: Set node IP for TLS certs
+      ansible.builtin.set_fact:
+        node_ip: "{{ static_ip | default(ansible_default_ipv4.address) }}"
+      tags: [tls, consul-tls]
+
     - name: Generate Consul TLS certificate from Vault
       ansible.builtin.include_role:
         name: vault-cert
@@ -270,7 +314,7 @@
         vault_cert_role: "{{ consul_cert_role }}"
         vault_cert_common_name: "{{ consul_cert_cn }}"
         vault_cert_alt_names: "localhost,{{ inventory_hostname }},{{ ansible_hostname }},{{ inventory_hostname }}.munchbox.cc,{{ consul_cert_cn }}"
-        vault_cert_ip_sans: "{{ ansible_default_ipv4.address }},127.0.0.1"
+        vault_cert_ip_sans: "{{ node_ip }},127.0.0.1"
         vault_cert_dest: "/etc/consul.d/tls"
         vault_cert_name: "consul"
         vault_cert_owner: "consul"
@@ -346,6 +390,24 @@
         groups: docker
         append: true
       tags: [nomad, docker]
+
+    # -------------------------------------------------------------------------
+    # Nomad TLS Certificates (for nodes that require mTLS)
+    # -------------------------------------------------------------------------
+    - name: Generate Nomad TLS certificate from Vault
+      ansible.builtin.include_role:
+        name: vault-cert
+      vars:
+        vault_cert_role: "nomad-client"
+        vault_cert_common_name: "client.global.nomad"
+        vault_cert_ip_sans: "{{ static_ip | default(ansible_default_ipv4.address) }},127.0.0.1"
+        vault_cert_ttl: "8760h"
+        vault_cert_dest: "/etc/nomad.d/tls"
+        vault_cert_name: "nomad"
+        vault_cert_owner: "nomad"
+        vault_cert_group: "nomad"
+      when: nomad_tls_http | default(false) | bool or nomad_tls_rpc | default(false) | bool
+      tags: [nomad, tls, nomad-tls]
 
     # -------------------------------------------------------------------------
     # Nomad Consul ACL Token
@@ -437,7 +499,7 @@
 
     - name: Wait for Nomad to be responsive
       ansible.builtin.uri:
-        url: "https://{{ ansible_default_ipv4.address }}:4646/v1/status/leader"
+        url: "https://{{ static_ip | default(ansible_default_ipv4.address) }}:4646/v1/status/leader"
         method: GET
         validate_certs: false
         status_code: [200]

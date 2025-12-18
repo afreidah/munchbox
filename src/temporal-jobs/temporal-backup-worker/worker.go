@@ -39,7 +39,7 @@ import (
 	"os"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
@@ -49,11 +49,11 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
-// initTracer initializes OpenTelemetry tracing with OTLP HTTP exporter.
-// Reads OTEL_EXPORTER_OTLP_ENDPOINT from environment (defaults to localhost:4318).
+// initTracer initializes OpenTelemetry tracing with OTLP gRPC exporter.
+// Reads OTEL_EXPORTER_OTLP_ENDPOINT from environment (defaults to localhost:4317).
 // Returns a shutdown function that should be deferred.
 func initTracer(ctx context.Context) func(context.Context) error {
-	exporter, err := otlptracehttp.New(ctx)
+	exporter, err := otlptracegrpc.New(ctx)
 	if err != nil {
 		log.Printf("Warning: failed to create OTLP exporter: %v (tracing disabled)", err)
 		return func(context.Context) error { return nil }
@@ -135,7 +135,6 @@ func runWorker() {
 
 	// Register trivy scanner workflow and activities
 	w.RegisterWorkflow(TrivyScanWorkflow)
-	w.RegisterActivity(DownloadTrivyDB)
 	w.RegisterActivity(GetRunningImages)
 	w.RegisterActivity(ScanImage)
 	w.RegisterActivity(SaveScanToPostgres)

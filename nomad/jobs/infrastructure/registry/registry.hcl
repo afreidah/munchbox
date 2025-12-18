@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name  = "registry"
 type  = "service"
-image = "registry:2"
+image = "registry:3"
 port  = 5000
 static_port = 5000
 host_network = true

@@ -15,9 +15,9 @@ icon: munchbox
 
 services:
   # -------------------------------------------------------------------------
-  # Cloud Apps
+  # Apps
   # -------------------------------------------------------------------------
-  - name: Cloud Apps
+  - name: Apps
     icon: fa-solid fa-cloud
     items:
       - name: Nextcloud
@@ -26,59 +26,17 @@ services:
         tag: cloud
         icon: nextcloud.png
 
+      - name: Jellyfin
+        subtitle: Media server
+        url: https://jellyfin.munchbox.cc
+        tag: media
+        icon: jellyfin.svg
+
       - name: Vaultwarden
         subtitle: Password manager
         url: https://vaultwarden.munchbox.cc
         tag: security
-        icon: vaultwarden.svg
-
-  # -------------------------------------------------------------------------
-  # DNS
-  # -------------------------------------------------------------------------
-  - name: DNS
-    icon: fa-solid fa-globe
-    items:
-      - name: Green
-        subtitle: Pi-hole DNS server 1
-        url: http://green/admin
-        tag: dns
-        icon: pi-hole-unbound.svg
-
-      - name: Logan
-        subtitle: Pi-hole DNS server 2
-        url: http://logan/admin
-        tag: dns
-        icon: pi-hole-unbound.svg
-
-  # -------------------------------------------------------------------------
-  # Monitoring
-  # -------------------------------------------------------------------------
-  - name: Monitoring
-    icon: fa-solid fa-chart-line
-    items:
-      - name: Grafana
-        subtitle: Dashboards and visualization
-        url: https://grafana.munchbox.cc
-        tag: monitoring
-        icon: grafana.png
-
-      - name: Prometheus
-        subtitle: Metrics collection
-        url: https://prometheus.munchbox.cc
-        tag: metrics
-        icon: prometheus.png
-
-      - name: Alertmanager
-        subtitle: Alert routing
-        url: https://alertmanager.munchbox.cc
-        tag: alerts
-        icon: alertmanager.png
-
-      - name: Trivy Scanner
-        subtitle: Container vulnerability scans
-        url: https://trivy-dashboard.munchbox.cc
-        tag: security
-        icon: trivy.png
+        icon: vaultwarden.png
 
   # -------------------------------------------------------------------------
   # Media
@@ -86,29 +44,17 @@ services:
   - name: Media
     icon: fa-solid fa-film
     items:
-      - name: Jellyfin
-        subtitle: Media server
-        url: https://jellyfin.munchbox.cc
-        tag: media
-        icon: jellyfin.svg
-
       - name: Deluge
         subtitle: Torrent client
         url: https://deluge.munchbox.cc
         tag: download
         icon: deluge.png
 
-      - name: Sonarr
-        subtitle: TV management
-        url: https://sonarr.munchbox.cc
-        tag: media
-        icon: sonarr.svg
-
       - name: Radarr
         subtitle: Movie management
         url: https://radarr.munchbox.cc
         tag: media
-        icon: radarr.svg
+        icon: radarr.png
 
       - name: Lidarr
         subtitle: Music management
@@ -116,11 +62,17 @@ services:
         tag: media
         icon: lidarr.svg
 
+      - name: Sonarr
+        subtitle: TV management
+        url: https://sonarr.munchbox.cc
+        tag: media
+        icon: sonarr.png
+
       - name: Prowlarr
         subtitle: Indexer management
         url: https://prowlarr.munchbox.cc
         tag: media
-        icon: prowlarr.svg
+        icon: prowlarr.png
 
       - name: Ersatz
         subtitle: Backup media
@@ -129,17 +81,11 @@ services:
         icon: ersatz.png
 
   # -------------------------------------------------------------------------
-  # Infrastructure
+  # Platform and Developer Tools
   # -------------------------------------------------------------------------
-  - name: Infrastructure
+  - name: Platform and Developer Tools
     icon: fa-solid fa-server
     items:
-      - name: Proxmox
-        subtitle: Virtualization cluster
-        url: https://proxmox.munchbox.cc:8006
-        tag: virtualization
-        icon: proxmox.png
-
       - name: Nomad
         subtitle: Workload orchestration
         url: https://nomad.munchbox.cc
@@ -152,17 +98,24 @@ services:
         tag: infra
         icon: consul.png
 
-      - name: Traefik
-        subtitle: Reverse proxy and load balancer
-        url: https://traefik.munchbox.cc
-        tag: infra
-        icon: traefik.png
-
-      - name: Authentik
-        subtitle: SSO and identity provider
-        url: https://auth.munchbox.cc
+      - name: Vault
+        subtitle: Secrets management
+        url: https://vault.munchbox.cc
         tag: security
-        icon: authentik.png
+        icon: vault.svg
+        bg: bg-ctp-yellow
+
+      - name: Proxmox
+        subtitle: Virtualization cluster
+        url: https://proxmox.munchbox.cc:8006
+        tag: virtualization
+        icon: proxmox.png
+
+      - name: Oracle Cloud
+        subtitle: OCI console
+        url: https://cloud.oracle.com
+        tag: external
+        icon: oracle.png
 
       - name: Temporal
         subtitle: Workflow orchestration
@@ -182,26 +135,68 @@ services:
         tag: ci
         icon: woodpecker.svg
 
+      - name: Forgejo
+        subtitle: Git repository hosting
+        url: https://git.munchbox.cc
+        tag: git
+        icon: forgejo.png
+
+  # -------------------------------------------------------------------------
+  # Routing and Monitoring
+  # -------------------------------------------------------------------------
+  - name: Routing and Monitoring
+    icon: fa-solid fa-chart-line
+    items:
+      - name: Traefik
+        subtitle: Reverse proxy and load balancer
+        url: https://traefik.munchbox.cc
+        tag: infra
+        icon: traefik.png
+
+      - name: Green
+        subtitle: Pi-hole DNS server 1
+        url: http://green/admin
+        tag: dns
+        icon: pi-hole-unbound.svg
+
+      - name: Logan
+        subtitle: Pi-hole DNS server 2
+        url: http://logan/admin
+        tag: dns
+        icon: pi-hole-unbound.svg
+
       - name: Cloudflare
         subtitle: CDN, DNS, and tunnels
         url: https://dash.cloudflare.com
         tag: external
-        icon: cloudflare.svg
+        icon: cloudflare.png
 
-  # -------------------------------------------------------------------------
-  # Public Sites
-  # -------------------------------------------------------------------------
-  - name: Public Sites
-    icon: fa-solid fa-arrow-up-right-from-square
-    items:
-      - name: Resume
-        subtitle: alexfreidah.com
-        url: https://resume.alexfreidah.com
-        tag: public
-        icon: resume-site.png
+      - name: Authentik
+        subtitle: SSO and identity provider
+        url: https://auth.munchbox.cc
+        tag: security
+        icon: authentik.png
 
-      - name: k3s Status
-        subtitle: Cluster health checker
-        url: https://k3s-status.alexfreidah.com
-        tag: public
-        icon: k3s-health-checker.svg
+      - name: Trivy Scanner
+        subtitle: Container vulnerability scans
+        url: https://trivy-dashboard.munchbox.cc
+        tag: security
+        icon: trivy.png
+
+      - name: Prometheus
+        subtitle: Metrics collection
+        url: https://prometheus.munchbox.cc
+        tag: metrics
+        icon: prometheus.png
+
+      - name: Alertmanager
+        subtitle: Alert routing
+        url: https://alertmanager.munchbox.cc
+        tag: alerts
+        icon: alertmanager.png
+
+      - name: Grafana
+        subtitle: Dashboards and visualization
+        url: https://grafana.munchbox.cc
+        tag: monitoring
+        icon: grafana.png

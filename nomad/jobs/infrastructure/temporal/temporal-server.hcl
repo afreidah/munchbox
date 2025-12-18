@@ -28,9 +28,9 @@ env = {
   SKIP_SCHEMA_SETUP               = "false"  # Temporarily enabled to run migration from 1.14 to 1.18
   SKIP_DEFAULT_NAMESPACE_CREATION = "true"
   BIND_ON_IP                      = "0.0.0.0"
-  # OpenTelemetry tracing to Tempo
-  OTEL_EXPORTER_OTLP_ENDPOINT     = "http://tempo.service.consul:4318"
-  OTEL_EXPORTER_OTLP_PROTOCOL     = "http/protobuf"
+  # OpenTelemetry tracing to Tempo (gRPC)
+  OTEL_EXPORTER_OTLP_ENDPOINT     = "http://tempo.service.consul:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL     = "grpc"
   OTEL_SERVICE_NAME               = "temporal"
 }
 

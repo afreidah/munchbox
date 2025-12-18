@@ -1,14 +1,14 @@
 {{ define "main" }}
-<main class="min-h-screen bg-slate-950 text-slate-100">
+<main class="min-h-screen bg-ctp-crust text-ctp-text">
   <div class="mx-auto max-w-6xl px-4 py-10">
 
     <!-- Page header -->
     <header class="mb-8">
-      <h1 class="text-2xl font-semibold text-slate-100">
+      <h1 class="text-2xl font-semibold text-ctp-blue">
         {{ with .Site.Data.config.title }}{{ . }}{{ else }}Munchbox Dashboard{{ end }}
       </h1>
       {{ with .Site.Data.config.subtitle }}
-        <p class="mt-1 text-sm text-slate-400">
+        <p class="mt-1 text-sm text-ctp-subtext0">
           {{ . }}
         </p>
       {{ end }}
@@ -20,7 +20,7 @@
         id="service-search"
         type="text"
         placeholder="Filter services by name or tag"
-        class="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        class="w-full rounded-md border border-ctp-surface0 bg-ctp-base px-3 py-2 text-sm text-ctp-text placeholder-ctp-overlay0 focus:outline-none focus:ring-2 focus:ring-ctp-blue focus:border-ctp-blue"
       >
     </div>
 
@@ -30,10 +30,10 @@
         <section>
           <!-- Group header -->
           <div class="mb-3 flex items-center gap-2">
-            <div class="h-6 w-6 text-slate-400">
+            <div class="h-6 w-6 text-ctp-subtext0">
               {{ partial "fa" (dict "icon" .icon ) }}
             </div>
-            <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-ctp-subtext0">
               {{ .name }}
             </h2>
           </div>
@@ -45,23 +45,23 @@
                 href="{{ .url }}"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="service-tile block rounded-xl border border-slate-800 bg-slate-900/80 p-4 shadow-sm transition-transform transition-shadow hover:-translate-y-0.5 hover:shadow-lg hover:border-slate-500/60"
+                class="service-tile block rounded-xl border border-ctp-surface0 bg-ctp-base p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:border-ctp-blue hover:bg-ctp-surface0"
                 data-name="{{ .name }}"
                 data-subtitle="{{ with .subtitle }}{{ . }}{{ end }}"
                 data-tag="{{ with .tag }}{{ . }}{{ end }}"
               >
                 <div class="flex items-center gap-3">
-                  <!-- UPDATED: larger icon container -->
-                  <div class="h-12 w-12 flex items-center justify-center">
-                    {{ partial "fa" (dict "icon" .icon ) }}
+                  <!-- Icon container -->
+                  <div class="h-12 w-12 flex items-center justify-center rounded-lg {{ with .bg }}{{ . }} p-2{{ end }}">
+                    {{ partial "fa" (dict "icon" .icon "hasBg" .bg ) }}
                   </div>
 
                   <div class="min-w-0">
-                    <div class="mb-1 text-sm font-semibold text-slate-100 truncate">
+                    <div class="mb-1 text-sm font-semibold text-ctp-text truncate">
                       {{ .name }}
                     </div>
                     {{ with .subtitle }}
-                      <div class="text-xs text-slate-400 leading-snug">
+                      <div class="text-xs text-ctp-subtext0 leading-snug">
                         {{ . }}
                       </div>
                     {{ end }}
@@ -103,4 +103,3 @@
   </script>
 </main>
 {{ end }}
-

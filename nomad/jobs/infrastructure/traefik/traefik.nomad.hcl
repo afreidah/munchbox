@@ -228,6 +228,14 @@ EOH
   level = "INFO"
 
 # -------------------------------------------------------------------------
+# Plugins (for CSS injection)
+# -------------------------------------------------------------------------
+
+[experimental.plugins.rewritebody]
+  modulename = "github.com/traefik/plugin-rewritebody"
+  version = "v0.3.1"
+
+# -------------------------------------------------------------------------
 # Tracing (Tempo via OpenTelemetry)
 # -------------------------------------------------------------------------
 
@@ -235,8 +243,9 @@ EOH
   serviceName = "traefik"
   sampleRate = 1.0
   [tracing.otlp]
-    [tracing.otlp.http]
-      endpoint = "http://tempo.service.consul:4318"
+    [tracing.otlp.grpc]
+      endpoint = "tempo.service.consul:4317"
+      insecure = true
 
 # -------------------------------------------------------------------------
 # ACME (Let's Encrypt) Configuration
@@ -355,6 +364,36 @@ EOH
     service     = "proxmox-ui"
     middlewares = ["cf-tunnel-https", "authentik"]
 
+  # --- Vault UI (HTTPS, LAN-only) ---
+  [http.routers.vault]
+    rule        = "Host(`vault.munchbox.cc`)"
+    entryPoints = ["websecure"]
+    service     = "vault-ui"
+    middlewares = ["authentik", "dashboard-allowlan", "vault-theme"]
+    [http.routers.vault.tls]
+      certResolver = "letsencrypt"
+
+  # --- Vault UI (HTTP, for CF tunnel) ---
+  [http.routers.vault-http]
+    rule        = "Host(`vault.munchbox.cc`)"
+    entryPoints = ["web"]
+    service     = "vault-ui"
+    middlewares = ["cf-tunnel-https", "authentik", "vault-theme"]
+
+  # --- Theme Server (HTTPS, internal CSS files) ---
+  [http.routers.themes]
+    rule        = "Host(`themes.munchbox.cc`)"
+    entryPoints = ["websecure"]
+    service     = "theme-server"
+    [http.routers.themes.tls]
+      certResolver = "letsencrypt"
+
+  # --- Theme Server (HTTP, internal) ---
+  [http.routers.themes-http]
+    rule        = "Host(`themes.munchbox.cc`)"
+    entryPoints = ["web"]
+    service     = "theme-server"
+
   # --- Health check endpoint (no auth) ---
   [http.routers.ping]
     rule        = "Host(`traefik.munchbox.cc`) && Path(`/ping`)"
@@ -389,7 +428,7 @@ EOH
 
   # --- LAN-only access ---
   [http.middlewares.dashboard-allowlan.ipAllowList]
-    sourceRange = ["192.168.68.0/24", "127.0.0.1/32"]
+    sourceRange = ["192.168.68.0/24", "10.200.0.0/24", "127.0.0.1/32"]
 
   # --- Dashboard root redirect ---
   [http.middlewares.dashboard-redirect.redirectRegex]
@@ -496,6 +535,13 @@ EOH
     [http.middlewares.cf-tunnel-https.headers.customRequestHeaders]
       X-Forwarded-Proto = "https"
 
+  # --- Vault CSS injection (Catppuccin Mocha theme) ---
+  [http.middlewares.vault-theme.plugin.rewritebody]
+    lastModified = true
+    [[http.middlewares.vault-theme.plugin.rewritebody.rewrites]]
+      regex = "</head>"
+      replacement = "<link rel=\"stylesheet\" href=\"http://themes.munchbox.cc/css/vault.css\"></head>"
+
 # -------------------------------------------------------------------------
 # HTTP Services (non-Consul backends)
 # -------------------------------------------------------------------------
@@ -522,6 +568,17 @@ EOH
     serversTransport = "insecure"
     [[http.services.proxmox-ui.loadBalancer.servers]]
       url = "https://192.168.68.59:8006"
+
+  # --- Vault UI ---
+  [http.services.vault-ui.loadBalancer]
+    serversTransport = "insecure"
+    [[http.services.vault-ui.loadBalancer.servers]]
+      url = "https://192.168.68.61:8200"
+
+  # --- Theme Server (CSS files via WireGuard) ---
+  [http.services.theme-server.loadBalancer]
+    [[http.services.theme-server.loadBalancer.servers]]
+      url = "http://10.200.0.12:8078"
 
 # -------------------------------------------------------------------------
 # Server Transports
@@ -553,6 +610,8 @@ EOH
           interval = "10s"
           timeout  = "2s"
         }
+
+        deregister_critical_service_after = "1m"
       }
 
       # --- Service Registration (Dashboard) ---
@@ -569,6 +628,8 @@ EOH
           interval = "10s"
           timeout  = "2s"
         }
+
+        deregister_critical_service_after = "1m"
       }
 
       # --- Resources ---

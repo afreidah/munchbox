@@ -1,0 +1,33 @@
+# -------------------------------------------------------------------------------
+# S3 Proxy Configuration
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# OCI Object Storage backend configuration for Phase 0 testing.
+# -------------------------------------------------------------------------------
+
+server:
+  listen_addr: "0.0.0.0:9000"
+  virtual_bucket: "unified"
+
+auth:
+  # Leave empty for local testing, set for production
+  token: ""
+
+telemetry:
+  metrics:
+    enabled: true
+    path: "/metrics"
+  tracing:
+    enabled: true
+    endpoint: "tempo.service.consul:4317"
+    sample_rate: 1.0
+
+backend:
+  name: "oci"
+  endpoint: "https://axlubepkixee.compat.objectstorage.us-phoenix-1.oraclecloud.com"
+  region: "us-phoenix-1"
+  bucket: "munchbox-s3-proxy"
+  access_key_id: "db173c23ccecadf86b2690c23911c619aebacefe"
+  secret_access_key: "LXB++wigmLRf4pe/tq1v5AW+aHGOyYzThNKUzjrML7Q="
+  force_path_style: true

@@ -67,8 +67,12 @@ job "temporal-trivy-trigger" {
       }
 
       env {
-        TEMPORAL_ADDRESS = "temporal-server.service.consul:7233"
-        WORKFLOW_NAME    = "trivy"
+        TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
+        WORKFLOW_NAME               = "trivy"
+        # OpenTelemetry tracing to Tempo (gRPC)
+        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+        OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
+        OTEL_SERVICE_NAME           = "temporal-trivy-trigger"
       }
 
       # --- Resources ---
