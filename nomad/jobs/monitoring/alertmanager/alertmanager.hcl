@@ -12,6 +12,7 @@
 name  = "alertmanager"
 image = "prom/alertmanager:v0.29.0"
 port  = 9093
+node  = "oraclenode2"
 size  = "tiny"
 host_network = true
 vault = true
@@ -31,9 +32,9 @@ health_path = "/-/ready"
 # --- Environment ---
 env = {
   TZ = "America/Los_Angeles"
-  # OpenTelemetry tracing to Tempo
-  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4318"
-  OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
+  # OpenTelemetry tracing to Tempo (gRPC)
+  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
   OTEL_SERVICE_NAME           = "alertmanager"
 }
 

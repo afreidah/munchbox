@@ -6,7 +6,7 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20251215191037-bdf5b2741059
 	github.com/lib/pq v1.10.9
 	go.opentelemetry.io/otel v1.39.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.39.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.39.0
 	go.opentelemetry.io/otel/sdk v1.39.0
 	go.temporal.io/sdk v1.38.0
 	go.temporal.io/sdk/contrib/opentelemetry v0.6.0

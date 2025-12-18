@@ -1,0 +1,117 @@
+# -------------------------------------------------------------------------------
+# WireGuard Network Routes for Home Network Nodes
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Adds static route to WireGuard network (10.200.0.0/24) via stabler for all
+# home network Consul nodes. Required for bidirectional gossip with Oracle nodes.
+#
+# Usage: ansible-playbook -i inventory/bare-metal.ini playbooks/wireguard-routes.yml
+# -------------------------------------------------------------------------------
+---
+- name: Configure WireGuard network routes
+  hosts: consul_servers,consul_clients,proxmox_hosts
+  gather_facts: true
+  vars:
+    wireguard_network: "10.200.0.0/24"
+    wireguard_gateway: "192.168.68.61"  # stabler
+
+  tasks:
+    - name: Skip if this is the WireGuard gateway
+      ansible.builtin.meta: end_host
+      when: ansible_host == wireguard_gateway
+
+    - name: Add route immediately (if not present)
+      ansible.builtin.command:
+        cmd: ip route add {{ wireguard_network }} via {{ wireguard_gateway }}
+      register: route_add
+      changed_when: route_add.rc == 0
+      failed_when: false
+
+    - name: Check if using netplan
+      ansible.builtin.stat:
+        path: /etc/netplan
+      register: netplan_dir
+
+    - name: Configure persistent route via netplan
+      when: netplan_dir.stat.exists
+      block:
+        - name: Find primary netplan config
+          ansible.builtin.find:
+            paths: /etc/netplan
+            patterns: "*.yaml"
+          register: netplan_files
+
+        - name: Read existing netplan config
+          ansible.builtin.slurp:
+            src: "{{ netplan_files.files[0].path }}"
+          register: netplan_content
+          when: netplan_files.files | length > 0
+
+        - name: Create wireguard routes netplan config
+          ansible.builtin.copy:
+            dest: /etc/netplan/99-wireguard-routes.yaml
+            mode: "0600"
+            content: |
+              # WireGuard network route - managed by Ansible
+              network:
+                version: 2
+                ethernets:
+                  {{ ansible_default_ipv4.interface }}:
+                    routes:
+                      - to: {{ wireguard_network }}
+                        via: {{ wireguard_gateway }}
+          notify: Apply netplan
+
+    - name: Check if interfaces.d exists
+      when: not netplan_dir.stat.exists
+      ansible.builtin.stat:
+        path: /etc/network/interfaces.d
+      register: interfaces_d
+
+    - name: Configure persistent route via interfaces.d (Debian without netplan)
+      when: not netplan_dir.stat.exists and interfaces_d.stat.exists
+      ansible.builtin.copy:
+        dest: /etc/network/interfaces.d/wireguard-route
+        mode: "0644"
+        content: |
+          # WireGuard network route - managed by Ansible
+          auto {{ ansible_default_ipv4.interface }}
+          iface {{ ansible_default_ipv4.interface }} inet static
+              up ip route add {{ wireguard_network }} via {{ wireguard_gateway }} || true
+              down ip route del {{ wireguard_network }} via {{ wireguard_gateway }} || true
+
+    - name: Configure persistent route via systemd (fallback for Pi5/other)
+      when: not netplan_dir.stat.exists and not interfaces_d.stat.exists
+      block:
+        - name: Create systemd service for WireGuard route
+          ansible.builtin.copy:
+            dest: /etc/systemd/system/wireguard-route.service
+            mode: "0644"
+            content: |
+              # WireGuard network route - managed by Ansible
+              [Unit]
+              Description=Add route to WireGuard network
+              After=network-online.target
+              Wants=network-online.target
+
+              [Service]
+              Type=oneshot
+              ExecStart=/sbin/ip route add {{ wireguard_network }} via {{ wireguard_gateway }}
+              ExecStop=/sbin/ip route del {{ wireguard_network }} via {{ wireguard_gateway }}
+              RemainAfterExit=yes
+
+              [Install]
+              WantedBy=multi-user.target
+          notify: Enable wireguard-route service
+
+  handlers:
+    - name: Enable wireguard-route service
+      ansible.builtin.systemd:
+        name: wireguard-route
+        enabled: true
+        daemon_reload: true
+    - name: Apply netplan
+      ansible.builtin.command:
+        cmd: netplan apply
+      changed_when: true

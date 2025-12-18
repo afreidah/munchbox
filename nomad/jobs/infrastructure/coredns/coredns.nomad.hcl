@@ -99,7 +99,10 @@ job "coredns" {
         port     = "dns"
         interval = "10s"
         timeout  = "2s"
+        on_update = "require_healthy"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # --- Metrics Service ---
@@ -119,7 +122,10 @@ job "coredns" {
         path     = "/metrics"
         interval = "30s"
         timeout  = "5s"
+        on_update = "require_healthy"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------

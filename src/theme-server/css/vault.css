@@ -1,0 +1,357 @@
+/*
+ * Catppuccin Mocha theme for HashiCorp Vault UI
+ * Custom CSS overrides for consistent theming
+ */
+@import url('/css/catppuccin-mocha.css');
+
+/* Force dark mode and override Vault's color scheme */
+:root {
+  color-scheme: dark !important;
+}
+
+/* Main background and text */
+body,
+html {
+  background-color: var(--ctp-base) !important;
+  color: var(--ctp-text) !important;
+}
+
+/* Vault page wrapper */
+.page-container,
+.vault-logo-container,
+.main-content {
+  background-color: var(--ctp-base) !important;
+}
+
+/* Sidebar / Navigation */
+.sidebar,
+.nav-sidebar,
+aside,
+[class*="sidebar"] {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+/* Navigation links */
+.sidebar a,
+.nav-sidebar a,
+aside a,
+[class*="sidebar"] a {
+  color: var(--ctp-text) !important;
+}
+
+.sidebar a:hover,
+.nav-sidebar a:hover,
+aside a:hover,
+[class*="sidebar"] a:hover {
+  background-color: var(--ctp-surface0) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Active nav item */
+.sidebar .active,
+.nav-sidebar .active,
+[class*="sidebar"] .active,
+[class*="sidebar"] [aria-current="page"] {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-mauve) !important;
+  border-left: 3px solid var(--ctp-mauve) !important;
+}
+
+/* Header / Toolbar */
+header,
+.toolbar,
+[class*="toolbar"],
+[class*="header"] {
+  background-color: var(--ctp-mantle) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+/* Cards and panels */
+.box,
+.panel,
+.card,
+[class*="box"],
+[class*="panel"],
+[class*="card"],
+.ember-basic-dropdown-content {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+/* Tables */
+table,
+.table,
+[class*="table"] {
+  background-color: var(--ctp-base) !important;
+  color: var(--ctp-text) !important;
+}
+
+table th,
+.table th,
+[class*="table"] th {
+  background-color: var(--ctp-mantle) !important;
+  color: var(--ctp-subtext1) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+table td,
+.table td,
+[class*="table"] td,
+table tr,
+.table tr {
+  border-color: var(--ctp-surface0) !important;
+}
+
+table tr:hover,
+.table tr:hover {
+  background-color: var(--ctp-surface0) !important;
+}
+
+/* Buttons - Primary */
+button,
+.button,
+[class*="button"],
+input[type="submit"] {
+  background-color: var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+  border-color: var(--ctp-surface2) !important;
+}
+
+button:hover,
+.button:hover,
+[class*="button"]:hover {
+  background-color: var(--ctp-surface2) !important;
+  color: var(--ctp-blue) !important;
+}
+
+/* Primary/Action buttons */
+.is-primary,
+[class*="primary"],
+.button.is-primary {
+  background-color: var(--ctp-blue) !important;
+  color: var(--ctp-crust) !important;
+  border-color: var(--ctp-blue) !important;
+}
+
+.is-primary:hover,
+[class*="primary"]:hover {
+  background-color: var(--ctp-sapphire) !important;
+}
+
+/* Danger buttons */
+.is-danger,
+[class*="danger"],
+.button.is-danger {
+  background-color: var(--ctp-red) !important;
+  color: var(--ctp-crust) !important;
+}
+
+/* Form inputs */
+input,
+textarea,
+select,
+.input,
+[class*="input"] {
+  background-color: var(--ctp-surface0) !important;
+  color: var(--ctp-text) !important;
+  border-color: var(--ctp-surface1) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+.input:focus {
+  border-color: var(--ctp-blue) !important;
+  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ctp-overlay0) !important;
+}
+
+/* Links */
+a {
+  color: var(--ctp-blue) !important;
+}
+
+a:hover {
+  color: var(--ctp-sapphire) !important;
+}
+
+/* Code blocks */
+code,
+pre,
+.code,
+[class*="code"] {
+  background-color: var(--ctp-mantle) !important;
+  color: var(--ctp-text) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+/* JSON editor */
+.CodeMirror,
+.cm-s-default {
+  background-color: var(--ctp-mantle) !important;
+  color: var(--ctp-text) !important;
+}
+
+.CodeMirror-gutters {
+  background-color: var(--ctp-crust) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+/* Alerts and notifications */
+.alert,
+.notification,
+[class*="alert"],
+[class*="notification"] {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+.alert.is-success,
+.notification.is-success,
+[class*="success"] {
+  background-color: rgba(166, 227, 161, 0.15) !important;
+  border-color: var(--ctp-green) !important;
+  color: var(--ctp-green) !important;
+}
+
+.alert.is-warning,
+.notification.is-warning,
+[class*="warning"] {
+  background-color: rgba(249, 226, 175, 0.15) !important;
+  border-color: var(--ctp-yellow) !important;
+  color: var(--ctp-yellow) !important;
+}
+
+.alert.is-danger,
+.notification.is-danger,
+[class*="error"] {
+  background-color: rgba(243, 139, 168, 0.15) !important;
+  border-color: var(--ctp-red) !important;
+  color: var(--ctp-red) !important;
+}
+
+/* Tabs */
+.tabs,
+[class*="tabs"] {
+  border-color: var(--ctp-surface0) !important;
+}
+
+.tabs a,
+[class*="tabs"] a {
+  color: var(--ctp-subtext1) !important;
+  border-color: transparent !important;
+}
+
+.tabs a:hover,
+[class*="tabs"] a:hover {
+  color: var(--ctp-text) !important;
+  border-color: var(--ctp-surface1) !important;
+}
+
+.tabs .is-active a,
+[class*="tabs"] .is-active a {
+  color: var(--ctp-blue) !important;
+  border-color: var(--ctp-blue) !important;
+}
+
+/* Breadcrumbs */
+.breadcrumb,
+[class*="breadcrumb"] {
+  color: var(--ctp-subtext0) !important;
+}
+
+.breadcrumb a,
+[class*="breadcrumb"] a {
+  color: var(--ctp-subtext1) !important;
+}
+
+/* Modal / Dialog */
+.modal,
+.dialog,
+[class*="modal"],
+[class*="dialog"] {
+  background-color: var(--ctp-base) !important;
+}
+
+.modal-background,
+[class*="modal-background"] {
+  background-color: rgba(17, 17, 27, 0.8) !important;
+}
+
+.modal-content,
+.modal-card,
+[class*="modal-content"],
+[class*="modal-card"] {
+  background-color: var(--ctp-base) !important;
+  border-color: var(--ctp-surface0) !important;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ctp-crust);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ctp-surface1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ctp-surface2);
+}
+
+/* Icons */
+svg,
+[class*="icon"] {
+  fill: currentColor;
+}
+
+/* Vault-specific: Logo and branding */
+.vault-logo svg,
+[class*="vault-logo"] svg {
+  fill: var(--ctp-text) !important;
+}
+
+/* Vault-specific: Secret list */
+.secret-list,
+[class*="secret-list"] {
+  background-color: var(--ctp-base) !important;
+}
+
+/* Vault-specific: Key-value display */
+.key-value-row,
+[class*="key-value"] {
+  border-color: var(--ctp-surface0) !important;
+}
+
+/* Ember Power Select (dropdowns) */
+.ember-power-select-trigger {
+  background-color: var(--ctp-surface0) !important;
+  border-color: var(--ctp-surface1) !important;
+  color: var(--ctp-text) !important;
+}
+
+.ember-power-select-options {
+  background-color: var(--ctp-surface0) !important;
+}
+
+.ember-power-select-option {
+  color: var(--ctp-text) !important;
+}
+
+.ember-power-select-option:hover,
+.ember-power-select-option--highlighted {
+  background-color: var(--ctp-surface1) !important;
+}

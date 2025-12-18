@@ -2,29 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Catppuccin Mocha - Dark theme */
+/* -------------------------------------------------------------------------------
+ * Catppuccin Mocha Theme Components
+ *
+ * Project: Munchbox / Author: Alex Freidah
+ *
+ * Shared component styles using Catppuccin Mocha color palette.
+ * ------------------------------------------------------------------------------- */
+
+/* Page layout */
 .page-layout {
   @apply min-h-screen transition-all overflow-hidden
-  bg-secondary-700 text-ctp-text;
+  bg-ctp-base text-ctp-text;
 }
 
+/* Header gradient */
 .headline {
   @apply flex flex-wrap items-center justify-between p-6 mx-auto shadow-xl
-  bg-gradient-to-r from-secondary-800 to-secondary-600;
+  bg-gradient-to-r from-ctp-mantle to-ctp-surface1;
 }
 
+/* Navigation */
 .nav-bar {
   @apply self-center space-y-4
   md:flex md:flex-row md:space-x-4 md:space-y-0;
 }
+
 .nav-item {
   @apply flex justify-between px-2 py-2 rounded-lg transition-all space-x-1 text-ctp-text
-  hover:bg-primary-500 hover:text-ctp-crust focus:bg-primary-500 focus:text-ctp-crust focus:outline-none;
+  hover:bg-ctp-mauve hover:text-ctp-crust focus:bg-ctp-mauve focus:text-ctp-crust focus:outline-none;
 }
 
 .dark-mode-button {
   @apply justify-between px-2 py-2 rounded-lg transition-all space-x-1
-  hover:bg-primary-500 hover:text-ctp-crust focus:outline-none;
+  hover:bg-ctp-mauve hover:text-ctp-crust focus:outline-none;
 }
 
 .dark-mode-button-dark {
@@ -34,16 +45,19 @@
 .dark-mode-button-light {
   @apply dark-mode-button flex;
 }
+
 .dropdown-menu {
   @apply absolute p-4 shadow-xl right-4 top-20 transition-all scale-0
-  bg-secondary-600 ring-2 ring-secondary-500 rounded-lg;
+  bg-ctp-surface1 ring-2 ring-ctp-surface2 rounded-lg;
 }
 
+/* Footer */
 .footline {
   @apply fixed inset-x-0 bottom-0 p-2 text-center
-  bg-opacity-80 bg-secondary-800 text-ctp-subtext1;
+  bg-opacity-80 bg-ctp-mantle text-ctp-subtext1;
 }
 
+/* Card layouts */
 .card-layout {
   @apply flex justify-center flex-wrap;
 }
@@ -58,17 +72,21 @@
 
 .link-card {
   @apply relative flex items-center h-20 max-w-sm p-3 m-2 space-x-4 transition-all rounded-lg shadow-xl border
-  bg-secondary-600 border-secondary-500 text-ctp-text
-  hover:bg-primary-500 focus:bg-primary-500 hover:text-ctp-crust focus:text-ctp-crust focus:outline-none w-80 hover:-translate-y-1;
+  bg-ctp-surface1 border-ctp-surface2 text-ctp-text
+  hover:bg-ctp-mauve focus:bg-ctp-mauve hover:text-ctp-crust focus:text-ctp-crust focus:outline-none w-80 hover:-translate-y-1;
 }
+
 .card-tag {
   @apply absolute -right-1 w-1 h-7 bottom-2 transition-all text-center justify-center rounded-lg text-sm
   group-hover:w-16
-  bg-highlight-400 text-ctp-crust;
+  bg-ctp-peach text-ctp-crust;
 }
+
+/* Icons */
 .fa-icon {
   @apply fill-current;
 }
+
 svg {
   @apply w-auto h-auto aspect-square;
 }

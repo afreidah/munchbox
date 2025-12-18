@@ -27,8 +27,9 @@ env = {
   SERVICE  = "cron"
   PORT     = "8080"
   INTERVAL = "10"
-  # OpenTelemetry tracing to Tempo
-  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4318"
+  # OpenTelemetry tracing to Tempo (gRPC)
+  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
   OTEL_SERVICE_NAME           = "health-checker"
 }
 

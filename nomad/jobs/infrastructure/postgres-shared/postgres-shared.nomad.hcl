@@ -100,6 +100,8 @@ job "postgres-shared" {
         interval = "10s"
         timeout  = "3s"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------
@@ -155,7 +157,8 @@ job "postgres-shared" {
           "local/init-nextcloud.sql:/docker-entrypoint-initdb.d/10-nextcloud.sql:ro",
           "local/init-temporal.sql:/docker-entrypoint-initdb.d/20-temporal.sql:ro",
           "local/init-trivy.sql:/docker-entrypoint-initdb.d/30-trivy.sql:ro",
-          "local/init-woodpecker.sql:/docker-entrypoint-initdb.d/40-woodpecker.sql:ro"
+          "local/init-woodpecker.sql:/docker-entrypoint-initdb.d/40-woodpecker.sql:ro",
+          "local/init-forgejo.sql:/docker-entrypoint-initdb.d/50-forgejo.sql:ro"
         ]
 
         # PostgreSQL replication settings (enable streaming replication)
@@ -268,6 +271,20 @@ EOH
 CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
 CREATE DATABASE woodpecker OWNER {{ .Data.data.db_username }};
 \c woodpecker
+GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
+{{ end }}
+EOH
+      }
+
+      # --- Forgejo Database Init ---
+      template {
+        destination = "local/init-forgejo.sql"
+        change_mode = "noop"
+        data        = <<EOH
+{{ with secret "secret/data/forgejo" }}
+CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+CREATE DATABASE forgejo OWNER {{ .Data.data.db_username }};
+\c forgejo
 GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
 {{ end }}
 EOH

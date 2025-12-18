@@ -8,10 +8,10 @@
 # -------------------------------------------------------------------------------
 ---
 - name: Set Consul agent tokens on VM clients
-  hosts: consul_vm_clients
+  hosts: consul_vm_clients,oracle_nodes
   gather_facts: false
   vars:
-    vault_addr: "http://192.168.68.61:8200"
+    vault_addr: "https://192.168.68.61:8200"
 
   tasks:
     - name: Get Consul agent token from Vault
@@ -33,11 +33,15 @@
     - name: Set agent token
       ansible.builtin.command:
         cmd: consul acl set-agent-token agent "{{ consul_agent_token }}"
+      environment:
+        CONSUL_HTTP_TOKEN: "{{ consul_agent_token }}"
       changed_when: true
 
     - name: Set default token
       ansible.builtin.command:
         cmd: consul acl set-agent-token default "{{ consul_agent_token }}"
+      environment:
+        CONSUL_HTTP_TOKEN: "{{ consul_agent_token }}"
       changed_when: true
 
     - name: Verify Consul agent status

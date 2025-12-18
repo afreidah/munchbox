@@ -1,0 +1,18 @@
+# -------------------------------------------------------------------------------
+# WireGuard Clients Group Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+# -------------------------------------------------------------------------------
+
+wireguard_role: client
+
+# Server endpoint - your home public IP or DDNS hostname
+wireguard_server_endpoint: "172.119.0.229"
+
+# Server public key (stabler)
+wireguard_server_public_key: "cUn1CNonnDVBMWg6jFop2htQ2GWu8jaepTt8/yPPcjI="
+
+# Networks to route through the tunnel
+wireguard_server_allowed_networks:
+  - "10.200.0.0/24"      # WireGuard network
+  - "192.168.68.0/24"    # Home network

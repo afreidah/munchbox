@@ -1,0 +1,10 @@
+# -------------------------------------------------------------------------------
+# WireGuard Role - Handlers
+#
+# Project: Munchbox / Author: Alex Freidah
+# -------------------------------------------------------------------------------
+
+- name: Restart WireGuard
+  systemd:
+    name: "wg-quick@{{ wireguard_interface }}"
+    state: restarted

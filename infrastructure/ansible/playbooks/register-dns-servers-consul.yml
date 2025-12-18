@@ -104,10 +104,13 @@
                 "traefik.http.routers.pihole-{{ inventory_hostname }}.entrypoints=websecure",
                 "traefik.http.routers.pihole-{{ inventory_hostname }}.tls=true",
                 "traefik.http.routers.pihole-{{ inventory_hostname }}.tls.certresolver=letsencrypt",
-                "traefik.http.routers.pihole-{{ inventory_hostname }}.middlewares=authentik@file",
+                "traefik.http.routers.pihole-{{ inventory_hostname }}.middlewares=pihole-redirect-admin@consulcatalog,authentik@file",
                 "traefik.http.routers.pihole-{{ inventory_hostname }}-http.rule=Host(`pihole.{{ inventory_hostname }}.munchbox.cc`)",
                 "traefik.http.routers.pihole-{{ inventory_hostname }}-http.entrypoints=web",
                 "traefik.http.routers.pihole-{{ inventory_hostname }}-http.middlewares=cf-tunnel-https@file,authentik@file",
+                "traefik.http.middlewares.pihole-redirect-admin.redirectregex.regex=^https://pihole\\\\.(green|logan)\\\\.munchbox\\\\.cc/?$$",
+                "traefik.http.middlewares.pihole-redirect-admin.redirectregex.replacement=https://pihole.{{ inventory_hostname }}.munchbox.cc/admin/",
+                "traefik.http.middlewares.pihole-redirect-admin.redirectregex.permanent=false",
                 "traefik.http.services.pihole-{{ inventory_hostname }}.loadbalancer.server.port=80",
                 "external",
                 "dns",
@@ -120,6 +123,18 @@
                 "role": "dns-server",
                 "host": "{{ inventory_hostname }}"
               }
+            },
+            "Check": {
+              "Node": "{{ inventory_hostname }}",
+              "CheckID": "pihole-webui-{{ inventory_hostname }}-health",
+              "Name": "Pi-hole Web UI Health",
+              "Status": "passing",
+              "ServiceID": "pihole-webui-{{ inventory_hostname }}",
+              "Definition": {
+                "HTTP": "http://{{ ansible_default_ipv4.address }}/admin/",
+                "Interval": "30s",
+                "Timeout": "5s"
+              }
             }
           }
         dest: /etc/consul-register/pihole-webui.json
@@ -127,11 +142,12 @@
 
     - name: Install Catppuccin Mocha theme for Pi-hole
       get_url:
-        url: "http://themes.munchbox.cc/css/pihole.css"
+        url: "https://themes.munchbox.cc/css/pihole.css"
         dest: /var/www/html/admin/style/custom.css
         mode: '0644'
         owner: www-data
         group: www-data
+        validate_certs: false
       ignore_errors: true
 
     - name: Deploy pihole-lb service registration JSON (for load-balanced access)
@@ -155,10 +171,13 @@
                 "traefik.http.routers.pihole.entrypoints=websecure",
                 "traefik.http.routers.pihole.tls=true",
                 "traefik.http.routers.pihole.tls.certresolver=letsencrypt",
-                "traefik.http.routers.pihole.middlewares=authentik@file",
+                "traefik.http.routers.pihole.middlewares=pihole-lb-redirect-admin@consulcatalog,authentik@file",
                 "traefik.http.routers.pihole-http.rule=Host(`pihole.munchbox.cc`)",
                 "traefik.http.routers.pihole-http.entrypoints=web",
                 "traefik.http.routers.pihole-http.middlewares=cf-tunnel-https@file,authentik@file",
+                "traefik.http.middlewares.pihole-lb-redirect-admin.redirectregex.regex=^https://pihole\\\\.munchbox\\\\.cc/?$$",
+                "traefik.http.middlewares.pihole-lb-redirect-admin.redirectregex.replacement=https://pihole.munchbox.cc/admin/",
+                "traefik.http.middlewares.pihole-lb-redirect-admin.redirectregex.permanent=false",
                 "traefik.http.services.pihole-lb.loadbalancer.server.port=80",
                 "external",
                 "dns",
@@ -170,6 +189,18 @@
                 "node_type": "raspberry-pi-zero",
                 "role": "dns-server",
                 "host": "{{ inventory_hostname }}"
+              }
+            },
+            "Check": {
+              "Node": "{{ inventory_hostname }}",
+              "CheckID": "pihole-lb-{{ inventory_hostname }}-health",
+              "Name": "Pi-hole LB Health",
+              "Status": "passing",
+              "ServiceID": "pihole-lb-{{ inventory_hostname }}",
+              "Definition": {
+                "HTTP": "http://{{ ansible_default_ipv4.address }}/admin/",
+                "Interval": "30s",
+                "Timeout": "5s"
               }
             }
           }

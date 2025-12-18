@@ -38,6 +38,9 @@ client {
 {% if nomad_servers | length > 0 %}
   servers = {{ nomad_servers | to_json }}
 {% endif %}
+{% if nomad_network_interface %}
+  network_interface = "{{ nomad_network_interface }}"
+{% endif %}
 }
 # -------------------------------------------------------------------------------
 # Consul Integration
@@ -45,6 +48,12 @@ client {
 consul {
   address = "{{ nomad_consul_address }}"
   datacenter = "{{ nomad_consul_datacenter }}"
+{% if nomad_consul_ssl | default(false) | bool %}
+  ssl = true
+  ca_file = "{{ nomad_consul_ca_file }}"
+  cert_file = "{{ nomad_consul_cert_file }}"
+  key_file = "{{ nomad_consul_key_file }}"
+{% endif %}
 }
 # -------------------------------------------------------------------------------
 # ACL Configuration
@@ -58,6 +67,22 @@ acl {
 tls {
   http = {{ nomad_tls_http | lower }}
   rpc  = {{ nomad_tls_rpc | lower }}
+{% if nomad_tls_http | bool or nomad_tls_rpc | bool %}
+
+  ca_file   = "{{ nomad_tls_ca_file }}"
+  cert_file = "{{ nomad_tls_cert_file }}"
+  key_file  = "{{ nomad_tls_key_file }}"
+
+  verify_server_hostname = {{ nomad_tls_verify_server_hostname | lower }}
+  verify_https_client    = {{ nomad_tls_verify_https_client | lower }}
+{% endif %}
+}
+# -------------------------------------------------------------------------------
+# Vault Integration
+# -------------------------------------------------------------------------------
+vault {
+  enabled = true
+  address = "{{ vault_api_addr }}"
 }
 # -------------------------------------------------------------------------------
 # Docker Plugin Configuration
@@ -69,6 +94,17 @@ plugin "docker" {
                   "sys_chroot", "net_admin", "net_raw"]
     volumes {
       enabled = true
+    }
+    gc {
+      image       = true
+      image_delay = "3m"
+      container   = true
+      dangling_containers {
+        enabled        = true
+        dry_run        = false
+        period         = "5m"
+        creation_grace = "5m"
+      }
     }
   }
 }

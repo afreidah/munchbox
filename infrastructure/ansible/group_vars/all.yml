@@ -57,7 +57,7 @@ vault_version: 1.15.4
 
 # Dynamic Vault address - uses first vault_server from inventory
 # Falls back to stabler (192.168.68.61) if vault_servers group doesn't exist
-vault_api_addr: "http://{{ (groups['vault_servers'] | default(['stabler'])) | first | extract(hostvars, 'ansible_host') | default('192.168.68.61') }}:8200"
+vault_api_addr: "https://{{ (groups['vault_servers'] | default(['stabler'])) | first | extract(hostvars, 'ansible_host') | default('192.168.68.61') }}:8200"
 
 # -------------------------------------------------------------------------------
 # Munchbox Infrastructure

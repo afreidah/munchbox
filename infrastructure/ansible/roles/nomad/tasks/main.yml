@@ -17,6 +17,7 @@
     name: "{{ nomad_group }}"
     system: true
     state: present
+  when: nomad_group != 'root'
 
 - name: Create Nomad system user
   user:
@@ -27,6 +28,7 @@
     home: "{{ nomad_data_dir }}"
     create_home: false
     state: present
+  when: nomad_user != 'root'
 
 # -------------------------------------------------------------------------------
 # Directory Structure
@@ -43,6 +45,32 @@
     - "{{ nomad_config_dir }}"
     - "{{ nomad_data_dir }}"
     - "{{ nomad_log_dir }}"
+
+- name: Create Nomad alloc_mounts directory
+  file:
+    path: /var/lib/alloc_mounts
+    state: directory
+    owner: "{{ nomad_user }}"
+    group: "{{ nomad_group }}"
+    mode: "0750"
+  when: nomad_client_enabled | bool
+
+- name: Create Nomad TLS directory
+  file:
+    path: "{{ nomad_tls_dir }}"
+    state: directory
+    owner: "{{ nomad_user }}"
+    group: "{{ nomad_group }}"
+    mode: "0750"
+  when: nomad_tls_http | bool or nomad_tls_rpc | bool
+
+- name: Add Nomad user to docker group
+  user:
+    name: "{{ nomad_user }}"
+    groups: docker
+    append: true
+  when: nomad_client_enabled | bool
+  ignore_errors: true
 
 # -------------------------------------------------------------------------------
 # Installation

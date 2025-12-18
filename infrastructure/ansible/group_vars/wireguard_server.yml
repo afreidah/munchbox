@@ -1,0 +1,22 @@
+# -------------------------------------------------------------------------------
+# WireGuard Server Group Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+# -------------------------------------------------------------------------------
+
+wireguard_role: server
+wireguard_server_address: "10.200.0.1/24"
+
+# Network interface for NAT (check with `ip route` on stabler)
+wireguard_nat_interface: "eth0"
+
+# Oracle Cloud client peers
+wireguard_peers:
+  - name: oracle-node-1
+    public_key: "ikphBrH+hLuYIqpMpoZOAPoPHaXXrMy5d3LSKjLVcnE="
+    allowed_ips: "10.200.0.11/32"
+    persistent_keepalive: true
+  - name: oracle-node-2
+    public_key: "ox0qRomZZlhl9yHpYgzhWvh+taXGIeUhc+MYSSnLmx4="
+    allowed_ips: "10.200.0.12/32"
+    persistent_keepalive: true

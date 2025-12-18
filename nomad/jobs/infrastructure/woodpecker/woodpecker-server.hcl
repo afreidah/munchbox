@@ -13,6 +13,7 @@ name  = "woodpecker-server"
 type  = "service"
 image = "woodpeckerci/woodpecker-server:v3.12.0"
 port  = 8000
+node  = "oraclenode1"
 static_port = 8000
 size  = "small"
 host_network = true
@@ -58,9 +59,16 @@ tags = [
   "woodpecker",
   "ci",
   "infrastructure",
+  # Main UI router - protected by Authentik
+  "traefik.http.routers.woodpecker-server.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`)",
   "traefik.http.routers.woodpecker-server.middlewares=authentik@file",
-  # HTTP router for CF tunnel
-  "traefik.http.routers.woodpecker-server-http.rule=Host(`woodpecker.munchbox.cc`)",
+  # API/webhook router - no auth (agents, GitHub webhooks need direct access)
+  "traefik.http.routers.woodpecker-api.rule=Host(`woodpecker.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/hook`))",
+  "traefik.http.routers.woodpecker-api.entrypoints=websecure",
+  "traefik.http.routers.woodpecker-api.tls.certresolver=letsencrypt",
+  "traefik.http.routers.woodpecker-api.service=woodpecker-server",
+  # HTTP router for CF tunnel (UI only)
+  "traefik.http.routers.woodpecker-server-http.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`)",
   "traefik.http.routers.woodpecker-server-http.entrypoints=web",
   "traefik.http.routers.woodpecker-server-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]

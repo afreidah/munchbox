@@ -45,18 +45,27 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 # STAGE 2: Runtime Image with CLI Tools
 # -------------------------------------------------------------------------
 
-FROM alpine:3.21
+FROM debian:bookworm-slim
 
-# Install runtime dependencies (gcompat for HashiCorp binaries)
-RUN apk add --no-cache \
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     bash \
     unzip \
-    gcompat \
-    postgresql16-client \
+    procps \
     tar \
-    gzip
+    gzip \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install PostgreSQL 16 client (matches server version)
+RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-16 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Nomad CLI
 ARG NOMAD_VERSION=1.11.1
@@ -85,7 +94,9 @@ RUN curl -fsSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAU
 
 # Install Trivy vulnerability scanner
 ARG TRIVY_VERSION=0.67.0
-RUN curl -fsSL https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-$(uname -m | sed 's/aarch64/ARM64/' | sed 's/x86_64/64bit/').tar.gz -o trivy.tar.gz \
+RUN ARCH=$(dpkg --print-architecture) \
+    && if [ "$ARCH" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="64bit"; fi \
+    && curl -fsSL https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz -o trivy.tar.gz \
     && tar -xzf trivy.tar.gz \
     && mv trivy /usr/local/bin/ \
     && rm -rf trivy.tar.gz LICENSE README.md contrib \

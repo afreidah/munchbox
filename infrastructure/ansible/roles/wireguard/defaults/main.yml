@@ -1,0 +1,31 @@
+# -------------------------------------------------------------------------------
+# WireGuard Role - Default Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+# -------------------------------------------------------------------------------
+
+# WireGuard network configuration
+wireguard_interface: wg0
+wireguard_port: 51820
+wireguard_network: "10.200.0.0/24"
+
+# Role: 'server' (hub at home) or 'client' (Oracle nodes connecting in)
+wireguard_role: client
+
+# Server configuration (only used when wireguard_role == 'server')
+wireguard_server_address: "10.200.0.1/24"
+
+# Client configuration (only used when wireguard_role == 'client')
+# wireguard_client_address: set per-host in inventory
+# wireguard_server_endpoint: set in group_vars
+
+# Enable IP forwarding (needed for routing between networks)
+wireguard_ip_forward: true
+
+# Allowed IPs for clients connecting to server (server pushes routes for these)
+wireguard_server_allowed_networks:
+  - "10.200.0.0/24"      # WireGuard network
+  - "192.168.68.0/24"    # Home network
+
+# PostUp/PostDown scripts for NAT (server only)
+wireguard_nat_interface: "eth0"

@@ -9,18 +9,19 @@
 # -------------------------------------------------------------------------------
 
 # --- General Settings ---
-name  = "dashboard"
-type  = "service"
-image = "registry.munchbox.cc/dash:latest"
-port  = 80
+name         = "dashboard"
+type         = "service"
+image        = "registry.munchbox.cc/dash:latest"
+port         = 80
 host_network = false
-size = "tiny"
-storage = "ephemeral"
+node         = "oraclenode1"
+size         = "tiny"
+storage      = "ephemeral"
 
 # --- Traefik integration ---
-traefik = true
+traefik      = true
 traefik_host = "dashboard.munchbox.cc"
-health_path = "/"
+health_path  = "/"
 
 # --- Service tags ---
 tags = [
@@ -30,9 +31,8 @@ tags = [
   "hugo",
   "traefik.http.routers.dashboard.tls=true",
   "traefik.http.routers.dashboard.tls.certresolver=letsencrypt",
-  "traefik.http.routers.dashboard.middlewares=authentik@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.dashboard-http.rule=Host(`dashboard.munchbox.cc`)",
   "traefik.http.routers.dashboard-http.entrypoints=web",
-  "traefik.http.routers.dashboard-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.dashboard-http.middlewares=cf-tunnel-https@file",
 ]

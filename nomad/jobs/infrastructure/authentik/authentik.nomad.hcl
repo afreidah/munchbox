@@ -97,6 +97,8 @@ job "authentik" {
         timeout  = "10s"
         failures_before_critical = 3
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------

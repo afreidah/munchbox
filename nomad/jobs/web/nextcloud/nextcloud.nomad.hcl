@@ -117,6 +117,7 @@ job "nextcloud" {
         timeout  = "10s"
       }
 
+      deregister_critical_service_after = "1m"
     }
 
     # -----------------------------------------------------------------------
@@ -137,7 +138,7 @@ job "nextcloud" {
       }
 
       config {
-        image              = "nextcloud:apache"
+        image              = "nextcloud:32.0-apache"
         image_pull_timeout = "10m"
         volumes            = [
           "/mnt/gdrive/nextcloud/data:/var/www/html/data",

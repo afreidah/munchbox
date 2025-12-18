@@ -224,6 +224,48 @@ Is this explaining a specific line?
 # -------------------------------------------------------------------------------
 ```
 
+### Go Files
+
+```go
+// -------------------------------------------------------------------------------
+// Package or File Name
+//
+// Project: Munchbox / Author: Alex Freidah
+//
+// Description of what this file or package does. Include key types, functions,
+// and any important architectural decisions or dependencies.
+// -------------------------------------------------------------------------------
+package main
+```
+
+**Go-Specific Rules:**
+- Use `//` comments (not `/* */` blocks)
+- File headers use 79-char dividers with `//`
+- Major sections use 73-char dividers with `//`
+- Single-line markers: `// --- description ---`
+- Standard Go doc comments for exported types/functions (placed directly above)
+- 1 tab indentation (Go standard)
+
+**Major Section Example:**
+```go
+// -------------------------------------------------------------------------
+// HTTP HANDLERS
+// -------------------------------------------------------------------------
+
+func (s *Server) handlePut(ctx context.Context, w http.ResponseWriter) {
+    // ...
+}
+```
+
+**Single-Line Marker Example:**
+```go
+// --- Parse request path ---
+bucket, key, ok := parsePath(r.URL.Path)
+if !ok {
+    return errInvalidPath
+}
+```
+
 ---
 
 ## Nomad Job Structure

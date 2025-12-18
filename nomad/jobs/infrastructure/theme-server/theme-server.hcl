@@ -13,6 +13,7 @@ name         = "theme-server"
 type         = "service"
 image        = "registry.munchbox.cc/theme-server:latest"
 port         = 8078
+node         = "oraclenode2"
 static_port  = 8078
 host_network = true
 size         = "tiny"

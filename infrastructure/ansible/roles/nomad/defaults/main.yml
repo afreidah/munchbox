@@ -27,9 +27,12 @@ nomad_service_state: "started"
 nomad_datacenter: "munchbox"
 nomad_region: "global"
 nomad_bind_addr: "0.0.0.0"
-nomad_advertise_http: "{{ ansible_default_ipv4.address }}:4646"
-nomad_advertise_rpc: "{{ ansible_default_ipv4.address }}:4647"
-nomad_advertise_serf: "{{ ansible_default_ipv4.address }}:4648"
+
+# Advertise addresses - use static_ip (WireGuard) if defined, otherwise default IP
+nomad_advertise_ip: "{{ static_ip | default(ansible_default_ipv4.address) }}"
+nomad_advertise_http: "{{ nomad_advertise_ip }}:4646"
+nomad_advertise_rpc: "{{ nomad_advertise_ip }}:4647"
+nomad_advertise_serf: "{{ nomad_advertise_ip }}:4648"
 
 nomad_server_enabled: "{{ 'nomad_servers' in group_names }}"
 nomad_bootstrap_expect: "{{ groups['nomad_servers'] | length }}"
@@ -41,13 +44,28 @@ nomad_server_join: "{{ groups['nomad_servers'] | map('extract', hostvars, 'ansib
 
 nomad_client_enabled: "{{ 'nomad_clients' in group_names }}"
 
+# Network interface for bridge networking (empty = auto-detect)
+# Set to "wg0" for nodes that should use WireGuard for service registration
+nomad_network_interface: ""
+
 # For clients to connect to servers
 nomad_servers: "{{ groups['nomad_servers'] | map('extract', hostvars, 'ansible_host') | map('regex_replace', '$', ':4647') | list }}"
 
-nomad_consul_address: "127.0.0.1:8500"
+nomad_consul_address: "127.0.0.1:8501"
 nomad_consul_datacenter: "munchbox"
+nomad_consul_ssl: true
+nomad_consul_ca_file: "/etc/consul.d/tls/ca.crt"
+nomad_consul_cert_file: "/etc/consul.d/tls/consul.crt"
+nomad_consul_key_file: "/etc/consul.d/tls/consul.key"
 
 nomad_acl_enabled: true
 
+# TLS Configuration
 nomad_tls_http: false
 nomad_tls_rpc: false
+nomad_tls_dir: "{{ nomad_config_dir }}/tls"
+nomad_tls_ca_file: "{{ nomad_tls_dir }}/ca.crt"
+nomad_tls_cert_file: "{{ nomad_tls_dir }}/nomad.crt"
+nomad_tls_key_file: "{{ nomad_tls_dir }}/nomad.key"
+nomad_tls_verify_server_hostname: true
+nomad_tls_verify_https_client: false

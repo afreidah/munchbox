@@ -76,7 +76,10 @@ job "redis-shared" {
         port     = "redis"
         interval = "10s"
         timeout  = "2s"
+        on_update = "require_healthy"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------
@@ -99,7 +102,7 @@ job "redis-shared" {
 
       # --- Container Configuration ---
       config {
-        image              = "redis:7-alpine"
+        image              = "redis:8-alpine"
         image_pull_timeout = "10m"
         ports              = ["redis"]
         args               = [
