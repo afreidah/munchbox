@@ -8,21 +8,23 @@
 # -------------------------------------------------------------------------------
 
 when:
-  path:
-    include:
-      - src/**
-
-# -------------------------------------------------------------------------
-# Dashboard (Hugo static site)
-# -------------------------------------------------------------------------
+  - event: [push, pull_request]
+    path:
+      include:
+        - src/**
 
 steps:
+  # -------------------------------------------------------------------------
+  # Dashboard (Hugo static site)
+  # -------------------------------------------------------------------------
+
   - name: dashboard-push
     image: docker:cli
     when:
-      path:
-        include:
-          - src/dashboard/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/dashboard/**
     environment:
       REGISTRY: registry.munchbox.cc
       IMAGE: dash
@@ -41,9 +43,10 @@ steps:
   - name: trivy-dashboard-test
     image: golang:1.23-alpine
     when:
-      path:
-        include:
-          - src/trivy-dashboard/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/trivy-dashboard/**
     commands:
       - cd src/trivy-dashboard
       - go mod download
@@ -52,9 +55,10 @@ steps:
   - name: trivy-dashboard-push
     image: docker:cli
     when:
-      path:
-        include:
-          - src/trivy-dashboard/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/trivy-dashboard/**
     environment:
       REGISTRY: registry.munchbox.cc
       IMAGE: trivy-dashboard
@@ -75,9 +79,10 @@ steps:
   - name: theme-server-push
     image: docker:cli
     when:
-      path:
-        include:
-          - src/theme-server/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/theme-server/**
     environment:
       REGISTRY: registry.munchbox.cc
       IMAGE: theme-server
@@ -96,9 +101,10 @@ steps:
   - name: temporal-backup-worker-test
     image: golang:1.23-alpine
     when:
-      path:
-        include:
-          - src/temporal-jobs/temporal-backup-worker/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/temporal-jobs/temporal-backup-worker/**
     commands:
       - cd src/temporal-jobs/temporal-backup-worker
       - go mod download
@@ -107,9 +113,10 @@ steps:
   - name: temporal-backup-worker-push
     image: docker:cli
     when:
-      path:
-        include:
-          - src/temporal-jobs/temporal-backup-worker/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/temporal-jobs/temporal-backup-worker/**
     environment:
       REGISTRY: registry.munchbox.cc
       IMAGE: temporal-backup-worker
@@ -130,9 +137,10 @@ steps:
   - name: s3-proxy-test
     image: golang:1.23-alpine
     when:
-      path:
-        include:
-          - src/s3-proxy/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/s3-proxy/**
     commands:
       - cd src/s3-proxy
       - go mod download
@@ -141,9 +149,10 @@ steps:
   - name: s3-proxy-push
     image: docker:cli
     when:
-      path:
-        include:
-          - src/s3-proxy/**
+      - event: [push, pull_request]
+        path:
+          include:
+            - src/s3-proxy/**
     environment:
       REGISTRY: registry.munchbox.cc
       IMAGE: s3-proxy
