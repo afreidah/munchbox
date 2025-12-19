@@ -4,7 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Builds and pushes container images for applications in src/. Each app only
-# rebuilds when its source files change. Go apps run tests before building.
+# rebuilds when its source files change. Go apps run tests on PRs, images only
+# push on merge to main.
 # -------------------------------------------------------------------------------
 
 when:
@@ -21,7 +22,8 @@ steps:
   - name: dashboard-push
     image: docker:cli
     when:
-      - event: [push, pull_request]
+      - event: push
+        branch: main
         path:
           include:
             - src/dashboard/**
@@ -55,7 +57,8 @@ steps:
   - name: trivy-dashboard-push
     image: docker:cli
     when:
-      - event: [push, pull_request]
+      - event: push
+        branch: main
         path:
           include:
             - src/trivy-dashboard/**
@@ -79,7 +82,8 @@ steps:
   - name: theme-server-push
     image: docker:cli
     when:
-      - event: [push, pull_request]
+      - event: push
+        branch: main
         path:
           include:
             - src/theme-server/**
@@ -113,7 +117,8 @@ steps:
   - name: temporal-backup-worker-push
     image: docker:cli
     when:
-      - event: [push, pull_request]
+      - event: push
+        branch: main
         path:
           include:
             - src/temporal-jobs/temporal-backup-worker/**
@@ -149,7 +154,8 @@ steps:
   - name: s3-proxy-push
     image: docker:cli
     when:
-      - event: [push, pull_request]
+      - event: push
+        branch: main
         path:
           include:
             - src/s3-proxy/**
