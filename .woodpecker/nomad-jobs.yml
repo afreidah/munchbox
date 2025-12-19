@@ -42,7 +42,7 @@ steps:
         fi
 
   - name: validate-jobs
-    image: hashicorp/nomad:latest
+    image: registry.service.consul:5000/ops-build-image:latest
     commands:
       - |
         cd nomad
@@ -56,7 +56,7 @@ steps:
         fi
 
   - name: plan-jobs
-    image: hashicorp/nomad:latest
+    image: registry.service.consul:5000/ops-build-image:latest
     when:
       - event: [push, pull_request]
     environment:
@@ -77,7 +77,7 @@ steps:
         fi
 
   - name: deploy-jobs
-    image: hashicorp/nomad:latest
+    image: registry.service.consul:5000/ops-build-image:latest
     when:
       - event: push
         branch: main

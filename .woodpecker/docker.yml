@@ -1,0 +1,55 @@
+# -------------------------------------------------------------------------------
+# Docker Images Pipeline
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Builds and tests Docker images on PRs. Pushes to registry on merge to main.
+# -------------------------------------------------------------------------------
+
+when:
+  - event: [push, pull_request]
+    path:
+      include:
+        - docker/**
+
+steps:
+  # ---------------------------------------------------------------------------
+  # ops-build-image
+  # ---------------------------------------------------------------------------
+
+  - name: build-ops-build-image
+    image: docker:cli
+    commands:
+      - apk add --no-cache make
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use --driver-opt network=host
+      - docker buildx inspect --bootstrap
+      - cd docker/ops-build-image
+      - |
+        echo "Building ops-build-image for validation"
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          -t registry.service.consul:5000/ops-build-image:latest \
+          --output type=image,push=false \
+          .
+    when:
+      - event: pull_request
+        path: docker/ops-build-image/**
+
+  - name: push-ops-build-image
+    image: docker:cli
+    commands:
+      - apk add --no-cache make
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use --driver-opt network=host
+      - docker buildx inspect --bootstrap
+      - cd docker/ops-build-image
+      - |
+        echo "Building and pushing ops-build-image"
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          -t registry.service.consul:5000/ops-build-image:latest \
+          --output type=image,push=true,registry.insecure=true \
+          .
+    when:
+      - event: push
+        branch: main
+        path: docker/ops-build-image/**
