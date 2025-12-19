@@ -27,32 +27,28 @@ steps:
         path:
           include:
             - src/dashboard/**
-    environment:
-      REGISTRY: registry.service.consul:5000
-      IMAGE: dash
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
-      - docker buildx inspect --bootstrap
+      - apk add --no-cache make
       - cd src/dashboard
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --output type=image,push=true,registry.insecure=true .
+      - make push
 
   # -------------------------------------------------------------------------
   # Trivy Dashboard (Go web app)
   # -------------------------------------------------------------------------
 
   - name: trivy-dashboard-test
-    image: golang:1.25-alpine
+    image: golang:1.23-alpine
     when:
       - event: [push, pull_request]
         path:
           include:
             - src/trivy-dashboard/**
     commands:
+      - apk add --no-cache make
       - cd src/trivy-dashboard
-      - go mod download
-      - go test -v ./...
+      - make test
 
   - name: trivy-dashboard-push
     image: docker:cli
@@ -62,18 +58,14 @@ steps:
         path:
           include:
             - src/trivy-dashboard/**
-    environment:
-      REGISTRY: registry.service.consul:5000
-      IMAGE: trivy-dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - trivy-dashboard-test
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
-      - docker buildx inspect --bootstrap
+      - apk add --no-cache make
       - cd src/trivy-dashboard
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --output type=image,push=true,registry.insecure=true .
+      - make push
 
   # -------------------------------------------------------------------------
   # Theme Server (static CSS)
@@ -87,32 +79,28 @@ steps:
         path:
           include:
             - src/theme-server/**
-    environment:
-      REGISTRY: registry.service.consul:5000
-      IMAGE: theme-server
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
-      - docker buildx inspect --bootstrap
+      - apk add --no-cache make
       - cd src/theme-server
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --output type=image,push=true,registry.insecure=true .
+      - make push
 
   # -------------------------------------------------------------------------
   # Temporal Backup Worker (Go Temporal worker)
   # -------------------------------------------------------------------------
 
   - name: temporal-backup-worker-test
-    image: golang:1.25-alpine
+    image: golang:1.23-alpine
     when:
       - event: [push, pull_request]
         path:
           include:
             - src/temporal-jobs/temporal-backup-worker/**
     commands:
+      - apk add --no-cache make
       - cd src/temporal-jobs/temporal-backup-worker
-      - go mod download
-      - go test -v ./...
+      - make test
 
   - name: temporal-backup-worker-push
     image: docker:cli
@@ -122,34 +110,30 @@ steps:
         path:
           include:
             - src/temporal-jobs/temporal-backup-worker/**
-    environment:
-      REGISTRY: registry.service.consul:5000
-      IMAGE: temporal-backup-worker
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - temporal-backup-worker-test
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
-      - docker buildx inspect --bootstrap
+      - apk add --no-cache make
       - cd src/temporal-jobs/temporal-backup-worker
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --output type=image,push=true,registry.insecure=true .
+      - make push
 
   # -------------------------------------------------------------------------
   # S3 Proxy (Go S3 proxy service)
   # -------------------------------------------------------------------------
 
   - name: s3-proxy-test
-    image: golang:1.25-alpine
+    image: golang:1.23-alpine
     when:
       - event: [push, pull_request]
         path:
           include:
             - src/s3-proxy/**
     commands:
+      - apk add --no-cache make
       - cd src/s3-proxy
-      - go mod download
-      - go test -v ./...
+      - make test
 
   - name: s3-proxy-push
     image: docker:cli
@@ -159,15 +143,11 @@ steps:
         path:
           include:
             - src/s3-proxy/**
-    environment:
-      REGISTRY: registry.service.consul:5000
-      IMAGE: s3-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - s3-proxy-test
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
-      - docker buildx inspect --bootstrap
+      - apk add --no-cache make
       - cd src/s3-proxy
-      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --output type=image,push=true,registry.insecure=true .
+      - make push

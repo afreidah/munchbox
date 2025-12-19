@@ -12,6 +12,7 @@ IMAGE      := ops-build-image
 VERSION    ?= latest
 
 FULL_TAG   := $(REGISTRY)/$(IMAGE):$(VERSION)
+CACHE_TAG  := $(REGISTRY)/$(IMAGE):cache
 PLATFORMS  := linux/amd64,linux/arm64
 
 .PHONY: help builder build build-multiarch test push clean
@@ -51,6 +52,8 @@ build-multiarch: builder ## Build multi-arch images locally (no push)
 	docker buildx build \
 		--platform $(PLATFORMS) \
 		-t $(FULL_TAG) \
+		--cache-from type=registry,ref=$(CACHE_TAG) \
+		--cache-to type=registry,ref=$(CACHE_TAG),mode=max \
 		.
 
 # -------------------------------------------------------------------------------
@@ -80,6 +83,8 @@ push: builder ## Build and push multi-arch images to registry
 	docker buildx build \
 		--platform $(PLATFORMS) \
 		-t $(FULL_TAG) \
+		--cache-from type=registry,ref=$(CACHE_TAG) \
+		--cache-to type=registry,ref=$(CACHE_TAG),mode=max \
 		--output type=image,push=true,registry.insecure=true \
 		.
 

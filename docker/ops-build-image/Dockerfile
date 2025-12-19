@@ -96,13 +96,17 @@ RUN set -eux; \
   rm -f /tmp/vault /tmp/vault.zip
 
 # --- hclfmt ---
-RUN set -eux; \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    set -eux; \
   GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
   go install github.com/hashicorp/hcl/v2/cmd/hclfmt@latest; \
   install -m0755 /go/bin/hclfmt /tmp/bin/hclfmt
 
 # --- Go linting/testing tools (pre-compiled) ---
-RUN set -eux; \
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    set -eux; \
   GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
   go install honnef.co/go/tools/cmd/staticcheck@latest && \
   go install github.com/rakyll/gotest@latest && \
@@ -153,23 +157,24 @@ RUN set -eux; \
   apt-get -y install --no-install-recommends python3 python3-pip python3-venv pipx; \
   rm -rf /var/lib/apt/lists/*
 ENV PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin
-RUN set -eux; \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/root/.cache/pipx \
+    set -eux; \
   mkdir -p "$PIPX_HOME"; \
-  pipx install checkov; \
-  rm -rf ~/.cache/pip
+  pipx install checkov
 
 # --- Sanity check ---
 RUN set -eux; \
   echo "=== Tool Versions ===" && \
-  terraform version | head -n1 && \
-  tofu version | head -n1 && \
-  nomad version | head -n1 && \
+  terraform --version && \
+  tofu --version && \
+  nomad --version && \
   nomad-pack version && \
-  consul version | head -n1 && \
-  vault version | head -n1 && \
+  consul --version && \
+  vault --version && \
   tflint --version && \
   terragrunt --version && \
-  trivy --version | head -n1 && \
+  trivy --version && \
   golangci-lint version --format short && \
   go version && \
   checkov --version && \

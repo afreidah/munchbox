@@ -23,16 +23,8 @@ steps:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
       - apk add --no-cache make
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use --driver-opt network=host
-      - docker buildx inspect --bootstrap
       - cd docker/ops-build-image
-      - |
-        echo "Building ops-build-image for validation"
-        docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          -t registry.service.consul:5000/ops-build-image:latest \
-          --output type=image,push=false \
-          .
+      - make build-multiarch
     when:
       - event: pull_request
         path: docker/ops-build-image/**
@@ -43,16 +35,8 @@ steps:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
       - apk add --no-cache make
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use --driver-opt network=host
-      - docker buildx inspect --bootstrap
       - cd docker/ops-build-image
-      - |
-        echo "Building and pushing ops-build-image"
-        docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          -t registry.service.consul:5000/ops-build-image:latest \
-          --output type=image,push=true,registry.insecure=true \
-          .
+      - make push
     when:
       - event: push
         branch: main
