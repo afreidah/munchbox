@@ -158,7 +158,8 @@ job "postgres-shared" {
           "local/init-temporal.sql:/docker-entrypoint-initdb.d/20-temporal.sql:ro",
           "local/init-trivy.sql:/docker-entrypoint-initdb.d/30-trivy.sql:ro",
           "local/init-woodpecker.sql:/docker-entrypoint-initdb.d/40-woodpecker.sql:ro",
-          "local/init-forgejo.sql:/docker-entrypoint-initdb.d/50-forgejo.sql:ro"
+          "local/init-forgejo.sql:/docker-entrypoint-initdb.d/50-forgejo.sql:ro",
+          "local/init-umami.sql:/docker-entrypoint-initdb.d/60-umami.sql:ro"
         ]
 
         # PostgreSQL replication settings (enable streaming replication)
@@ -285,6 +286,20 @@ EOH
 CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
 CREATE DATABASE forgejo OWNER {{ .Data.data.db_username }};
 \c forgejo
+GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
+{{ end }}
+EOH
+      }
+
+      # --- Umami Database Init ---
+      template {
+        destination = "local/init-umami.sql"
+        change_mode = "noop"
+        data        = <<EOH
+{{ with secret "secret/data/umami" }}
+CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+CREATE DATABASE umami OWNER {{ .Data.data.db_username }};
+\c umami
 GRANT ALL ON SCHEMA public TO {{ .Data.data.db_username }};
 {{ end }}
 EOH

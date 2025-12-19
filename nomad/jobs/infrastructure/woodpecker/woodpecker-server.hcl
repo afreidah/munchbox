@@ -45,13 +45,18 @@ templates = [
 env = {
   WOODPECKER_HOST            = "https://woodpecker.munchbox.cc"
   WOODPECKER_OPEN            = "false"
-  WOODPECKER_ADMIN           = "afreidah"
-  WOODPECKER_GITHUB          = "true"
-  WOODPECKER_ORGS            = "afreidah"
-  WOODPECKER_DATABASE_DRIVER = "postgres"
-  WOODPECKER_GRPC_ADDR       = "0.0.0.0:9000"
-  WOODPECKER_LOG_LEVEL       = "info"
-  TZ                         = "America/Los_Angeles"
+  WOODPECKER_ADMIN           = "alex"
+  WOODPECKER_GITHUB          = "false"
+  WOODPECKER_FORGEJO         = "true"
+  WOODPECKER_FORGEJO_URL     = "https://git.munchbox.cc"
+  WOODPECKER_DATABASE_DRIVER      = "postgres"
+  WOODPECKER_GRPC_ADDR            = "0.0.0.0:9000"
+  WOODPECKER_LOG_LEVEL            = "info"
+  TZ                              = "America/Los_Angeles"
+  # OpenTelemetry tracing to Tempo
+  OTEL_EXPORTER_OTLP_ENDPOINT     = "http://tempo.service.consul:4317"
+  OTEL_EXPORTER_OTLP_PROTOCOL     = "grpc"
+  OTEL_SERVICE_NAME               = "woodpecker-server"
 }
 
 # --- Service tags ---

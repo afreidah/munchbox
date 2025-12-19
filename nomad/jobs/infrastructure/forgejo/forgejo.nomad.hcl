@@ -261,6 +261,12 @@ ALLOW_LOCALNETWORKS = true
 [mirror]
 ENABLED = true
 DEFAULT_INTERVAL = 8h
+
+[opentelemetry]
+ENABLED = true
+EXPORTER = otlp
+ENDPOINT = tempo.service.consul:4317
+SERVICE_NAME = forgejo
 EOH
       }
 
