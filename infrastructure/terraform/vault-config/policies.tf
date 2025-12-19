@@ -168,6 +168,10 @@ path "secret/data/woodpecker" {
   capabilities = ["read"]
 }
 
+path "secret/data/umami" {
+  capabilities = ["read"]
+}
+
 # KV secrets for workloads
 path "kv/data/traefik" {
   capabilities = ["read"]
