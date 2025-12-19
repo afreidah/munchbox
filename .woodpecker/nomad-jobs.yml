@@ -1,8 +1,18 @@
+# -------------------------------------------------------------------------------
+# Nomad Jobs Pipeline
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Validates and plans Nomad job changes. Detects which jobs changed in the
+# commit and runs validation and planning for each.
+# -------------------------------------------------------------------------------
+
 when:
-  path:
-    include:
-      - nomad/jobs/**
-      - nomad/packs/**
+  - event: [push, pull_request]
+    path:
+      include:
+        - nomad/jobs/**
+        - nomad/packs/**
 
 steps:
   - name: detect-changed-jobs
@@ -46,10 +56,10 @@ steps:
     environment:
       NOMAD_ADDR: https://nomad.service.consul:4646
       NOMAD_SKIP_VERIFY: "true"
-    secrets: [nomad_token]
+      NOMAD_TOKEN:
+        from_secret: nomad_token
     commands:
       - |
-        export NOMAD_TOKEN=$NOMAD_TOKEN
         cd nomad
         if [ -s ../changed_jobs.txt ]; then
           while read job; do
