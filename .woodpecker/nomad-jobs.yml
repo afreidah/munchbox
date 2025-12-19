@@ -3,8 +3,7 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Validates and plans Nomad job changes. Detects which jobs changed in the
-# commit and runs validation and planning for each.
+# Validates and plans Nomad job changes on PRs. Deploys on merge to main.
 # -------------------------------------------------------------------------------
 
 when:
@@ -15,6 +14,11 @@ when:
         - nomad/packs/**
 
 steps:
+  - name: init-submodules
+    image: alpine/git:latest
+    commands:
+      - git submodule update --init --recursive
+
   - name: detect-changed-jobs
     image: alpine:latest
     commands:
@@ -53,8 +57,10 @@ steps:
 
   - name: plan-jobs
     image: hashicorp/nomad:latest
+    when:
+      - event: [push, pull_request]
     environment:
-      NOMAD_ADDR: https://nomad.service.consul:4646
+      NOMAD_ADDR: https://192.168.68.61:4646
       NOMAD_SKIP_VERIFY: "true"
       NOMAD_TOKEN:
         from_secret: nomad_token
@@ -68,4 +74,26 @@ steps:
           done < ../changed_jobs.txt
         else
           echo "No jobs to plan"
+        fi
+
+  - name: deploy-jobs
+    image: hashicorp/nomad:latest
+    when:
+      - event: push
+        branch: main
+    environment:
+      NOMAD_ADDR: https://192.168.68.61:4646
+      NOMAD_SKIP_VERIFY: "true"
+      NOMAD_TOKEN:
+        from_secret: nomad_token
+    commands:
+      - |
+        cd nomad
+        if [ -s ../changed_jobs.txt ]; then
+          while read job; do
+            echo "=== Deploying $job ==="
+            make run JOB="$job" || exit 1
+          done < ../changed_jobs.txt
+        else
+          echo "No jobs to deploy"
         fi
