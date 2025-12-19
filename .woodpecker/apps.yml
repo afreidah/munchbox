@@ -31,7 +31,7 @@ steps:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
       - docker buildx inspect --bootstrap
       - cd src/dashboard
       - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
@@ -67,7 +67,7 @@ steps:
     depends_on:
       - trivy-dashboard-test
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
       - docker buildx inspect --bootstrap
       - cd src/trivy-dashboard
       - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
@@ -89,7 +89,7 @@ steps:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
       - docker buildx inspect --bootstrap
       - cd src/theme-server
       - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
@@ -125,7 +125,7 @@ steps:
     depends_on:
       - temporal-backup-worker-test
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
       - docker buildx inspect --bootstrap
       - cd src/temporal-jobs/temporal-backup-worker
       - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
@@ -161,7 +161,7 @@ steps:
     depends_on:
       - s3-proxy-test
     commands:
-      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --driver-opt network=host --use
       - docker buildx inspect --bootstrap
       - cd src/s3-proxy
       - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
