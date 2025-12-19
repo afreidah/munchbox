@@ -83,8 +83,6 @@ job "cloudflared-tunnel" {
         interval = "10s"
         timeout  = "3s"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------
@@ -148,6 +146,11 @@ ingress:
     originRequest:
       httpHostHeader: k3s-status.alexfreidah.com
 
+  - hostname: "analytics.alexfreidah.com"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: analytics.alexfreidah.com
+
   # --- munchbox.cc domains (Authentik-protected) ---
   - hostname: "dashboard.munchbox.cc"
     service: "http://traefik.service.consul:80"
@@ -208,6 +211,21 @@ ingress:
     service: "http://traefik.service.consul:80"
     originRequest:
       httpHostHeader: jellyfin.munchbox.cc
+
+  - hostname: "analytics.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: analytics.munchbox.cc
+
+  - hostname: "git.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: git.munchbox.cc
+
+  - hostname: "woodpecker.munchbox.cc"
+    service: "http://traefik.service.consul:80"
+    originRequest:
+      httpHostHeader: woodpecker.munchbox.cc
 
   - service: http_status:404
 
