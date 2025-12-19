@@ -50,7 +50,7 @@ build: ## Build the dashboard image for the local architecture
 # BUILD AND PUSH (MULTI-ARCH)
 # -------------------------------------------------------------------------
 
-publish: builder ## Build and push amd64 and arm64 images to the registry
+push: builder ## Build and push amd64 and arm64 images to the registry
 	@echo "Building and pushing $(FULL_TAG) for $(PLATFORMS)"
 	docker buildx build \
 	  --platform $(PLATFORMS) \
@@ -73,3 +73,6 @@ run: ## Run the dashboard container on port 8080
 clean: ## Remove the local dashboard image
 	@echo "Removing local image $(FULL_TAG)"
 	docker rmi $(FULL_TAG) || true
+
+.PHONY: help builder build push run clean
+.DEFAULT_GOAL := help

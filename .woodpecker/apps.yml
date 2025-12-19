@@ -1,0 +1,158 @@
+# -------------------------------------------------------------------------------
+# Source Applications Pipeline
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Builds and pushes container images for applications in src/. Each app only
+# rebuilds when its source files change. Go apps run tests before building.
+# -------------------------------------------------------------------------------
+
+when:
+  path:
+    include:
+      - src/**
+
+# -------------------------------------------------------------------------
+# Dashboard (Hugo static site)
+# -------------------------------------------------------------------------
+
+steps:
+  - name: dashboard-push
+    image: docker:cli
+    when:
+      path:
+        include:
+          - src/dashboard/**
+    environment:
+      REGISTRY: registry.munchbox.cc
+      IMAGE: dash
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect --bootstrap
+      - cd src/dashboard
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
+
+  # -------------------------------------------------------------------------
+  # Trivy Dashboard (Go web app)
+  # -------------------------------------------------------------------------
+
+  - name: trivy-dashboard-test
+    image: golang:1.23-alpine
+    when:
+      path:
+        include:
+          - src/trivy-dashboard/**
+    commands:
+      - cd src/trivy-dashboard
+      - go mod download
+      - go test -v ./...
+
+  - name: trivy-dashboard-push
+    image: docker:cli
+    when:
+      path:
+        include:
+          - src/trivy-dashboard/**
+    environment:
+      REGISTRY: registry.munchbox.cc
+      IMAGE: trivy-dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - trivy-dashboard-test
+    commands:
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect --bootstrap
+      - cd src/trivy-dashboard
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
+
+  # -------------------------------------------------------------------------
+  # Theme Server (static CSS)
+  # -------------------------------------------------------------------------
+
+  - name: theme-server-push
+    image: docker:cli
+    when:
+      path:
+        include:
+          - src/theme-server/**
+    environment:
+      REGISTRY: registry.munchbox.cc
+      IMAGE: theme-server
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect --bootstrap
+      - cd src/theme-server
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
+
+  # -------------------------------------------------------------------------
+  # Temporal Backup Worker (Go Temporal worker)
+  # -------------------------------------------------------------------------
+
+  - name: temporal-backup-worker-test
+    image: golang:1.23-alpine
+    when:
+      path:
+        include:
+          - src/temporal-jobs/temporal-backup-worker/**
+    commands:
+      - cd src/temporal-jobs/temporal-backup-worker
+      - go mod download
+      - go test -v ./...
+
+  - name: temporal-backup-worker-push
+    image: docker:cli
+    when:
+      path:
+        include:
+          - src/temporal-jobs/temporal-backup-worker/**
+    environment:
+      REGISTRY: registry.munchbox.cc
+      IMAGE: temporal-backup-worker
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - temporal-backup-worker-test
+    commands:
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect --bootstrap
+      - cd src/temporal-jobs/temporal-backup-worker
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
+
+  # -------------------------------------------------------------------------
+  # S3 Proxy (Go S3 proxy service)
+  # -------------------------------------------------------------------------
+
+  - name: s3-proxy-test
+    image: golang:1.23-alpine
+    when:
+      path:
+        include:
+          - src/s3-proxy/**
+    commands:
+      - cd src/s3-proxy
+      - go mod download
+      - go test -v ./...
+
+  - name: s3-proxy-push
+    image: docker:cli
+    when:
+      path:
+        include:
+          - src/s3-proxy/**
+    environment:
+      REGISTRY: registry.munchbox.cc
+      IMAGE: s3-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - s3-proxy-test
+    commands:
+      - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use
+      - docker buildx inspect --bootstrap
+      - cd src/s3-proxy
+      - docker buildx build --platform linux/amd64,linux/arm64 -t $REGISTRY/$IMAGE:latest --push .
