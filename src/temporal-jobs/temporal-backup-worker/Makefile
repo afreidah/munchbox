@@ -1,30 +1,79 @@
-.PHONY: build push clean test help
+# -------------------------------------------------------------------------------
+# Temporal Backup Worker - Multi-Architecture Build and Push
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Go Temporal worker for backup operations. Builds multi-arch container images
+# including HashiCorp CLI tools for Nomad, Consul, and Vault snapshots.
+# -------------------------------------------------------------------------------
 
-REGISTRY ?= registry.munchbox.cc
-IMAGE_NAME = temporal-backup-worker
-IMAGE_TAG ?= latest
-IMAGE = $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+REGISTRY   ?= registry.munchbox.cc
+IMAGE      := temporal-backup-worker
+VERSION    ?= latest
 
-build:
-	docker buildx build --platform linux/amd64,linux/arm64 -t $(IMAGE) .
+FULL_TAG   := $(REGISTRY)/$(IMAGE):$(VERSION)
+PLATFORMS  := linux/amd64,linux/arm64
 
-push:
-	docker buildx build --platform linux/amd64,linux/arm64 -t $(IMAGE) --push .
+# -------------------------------------------------------------------------
+# DEFAULT TARGET
+# -------------------------------------------------------------------------
 
-clean:
-	rm -rf bin/
-	go clean
+help: ## Display available Make targets
+	@echo ""
+	@echo "Available targets:"
+	@echo ""
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## ' Makefile | \
+		awk 'BEGIN {FS = ":.*?## "} {printf "  %-15s %s\n", $$1, $$2}'
+	@echo ""
 
-test:
+# -------------------------------------------------------------------------
+# BUILDX SETUP
+# -------------------------------------------------------------------------
+
+builder: ## Ensure the Buildx builder exists
+	@docker buildx inspect munchbox-builder >/dev/null 2>&1 || \
+		docker buildx create --name munchbox-builder --use
+	@docker buildx inspect --bootstrap
+
+# -------------------------------------------------------------------------
+# BUILD (LOCAL)
+# -------------------------------------------------------------------------
+
+build: ## Build for local architecture
+	@echo "Building $(FULL_TAG) for local architecture"
+	docker build -t $(FULL_TAG) .
+
+# -------------------------------------------------------------------------
+# BUILD AND PUSH (MULTI-ARCH)
+# -------------------------------------------------------------------------
+
+push: builder ## Build and push multi-arch images to registry
+	@echo "Building and pushing $(FULL_TAG) for $(PLATFORMS)"
+	docker buildx build \
+	  --platform $(PLATFORMS) \
+	  -t $(FULL_TAG) \
+	  --push \
+	  .
+
+# -------------------------------------------------------------------------
+# DEVELOPMENT
+# -------------------------------------------------------------------------
+
+test: ## Run Go tests
 	go test -v ./...
 
-help:
-	@echo "make build  - Build multi-arch image (amd64 + arm64)"
-	@echo "make push   - Build and push multi-arch image to registry"
-	@echo "make clean  - Remove build artifacts"
-	@echo "make test   - Run tests"
-	@echo ""
-	@echo "Variables:"
-	@echo "  IMAGE_TAG=latest  - Image tag (default: latest)"
+lint: ## Run Go linter
+	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint not installed"; exit 1; }
+	golangci-lint run ./...
 
+# -------------------------------------------------------------------------
+# CLEANUP
+# -------------------------------------------------------------------------
+
+clean: ## Remove build artifacts and local image
+	rm -rf bin/
+	go clean
+	docker rmi $(FULL_TAG) || true
+
+.PHONY: help builder build push test lint clean
 .DEFAULT_GOAL := help
