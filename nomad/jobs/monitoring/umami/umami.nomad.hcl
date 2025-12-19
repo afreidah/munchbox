@@ -78,12 +78,12 @@ job "umami" {
       tags = [
         "traefik.enable=true",
         # HTTPS router (direct LAN access)
-        "traefik.http.routers.umami.rule=Host(`analytics.munchbox.cc`)",
+        "traefik.http.routers.umami.rule=Host(`analytics.munchbox.cc`) || Host(`analytics.alexfreidah.com`)",
         "traefik.http.routers.umami.entrypoints=websecure",
         "traefik.http.routers.umami.tls=true",
         "traefik.http.routers.umami.tls.certresolver=letsencrypt",
         # HTTP router (Cloudflare tunnel)
-        "traefik.http.routers.umami-http.rule=Host(`analytics.munchbox.cc`)",
+        "traefik.http.routers.umami-http.rule=Host(`analytics.munchbox.cc`) || Host(`analytics.alexfreidah.com`)",
         "traefik.http.routers.umami-http.entrypoints=web",
         "traefik.http.routers.umami-http.middlewares=cf-tunnel-https@file",
         "analytics",
@@ -135,6 +135,8 @@ job "umami" {
 DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-shared.service.consul:5432/umami
 APP_SECRET={{ .Data.data.app_secret }}
 {{ end }}
+# App URL for external access
+APP_URL=https://analytics.munchbox.cc
 # OpenTelemetry tracing to Tempo
 OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo.service.consul:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc

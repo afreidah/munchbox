@@ -112,6 +112,15 @@ resource "cloudflare_record" "www" {
   proxied = true
 }
 
+# --- analytics.alexfreidah.com ---
+resource "cloudflare_record" "analytics" {
+  zone_id = local.cloudflare_zone_id
+  name    = "analytics"
+  content = local.tunnel_cname
+  type    = "CNAME"
+  proxied = true
+}
+
 # -------------------------------------------------------------------------
 # Cloudflare - munchbox.cc DNS Records (Wildcard)
 # -------------------------------------------------------------------------
@@ -196,6 +205,14 @@ resource "cloudflare_tunnel_config" "munchbox" {
       service  = "http://traefik.service.consul:80"
       origin_request {
         http_host_header = "k3s-status.alexfreidah.com"
+      }
+    }
+
+    ingress_rule {
+      hostname = "analytics.alexfreidah.com"
+      service  = "http://traefik.service.consul:80"
+      origin_request {
+        http_host_header = "analytics.alexfreidah.com"
       }
     }
 
