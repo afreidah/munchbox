@@ -19,6 +19,8 @@ steps:
 
   - name: build-ops-build-image
     image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     commands:
       - apk add --no-cache make
       - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use --driver-opt network=host
@@ -37,6 +39,8 @@ steps:
 
   - name: push-ops-build-image
     image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     commands:
       - apk add --no-cache make
       - docker buildx inspect munchbox-builder >/dev/null 2>&1 || docker buildx create --name munchbox-builder --use --driver-opt network=host
