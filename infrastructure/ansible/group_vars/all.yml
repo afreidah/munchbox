@@ -75,3 +75,13 @@ nomad_region: global
 
 vault_init_key_shares: 5
 vault_init_key_threshold: 3
+
+# -------------------------------------------------------------------------------
+# Vault AppRole Credentials
+# -------------------------------------------------------------------------------
+# Loaded from local file created by vault-init.yml playbook.
+# File should be at ~/.munchbox/vault/approle.json with format:
+#   {"role_id": "...", "secret_id": "..."}
+
+vault_approle_role_id: "{{ (lookup('file', '~/.munchbox/vault/approle.json') | from_json).role_id }}"
+vault_approle_secret_id: "{{ (lookup('file', '~/.munchbox/vault/approle.json') | from_json).secret_id }}"

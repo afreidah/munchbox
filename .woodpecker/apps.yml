@@ -39,7 +39,7 @@ steps:
   # -------------------------------------------------------------------------
 
   - name: trivy-dashboard-test
-    image: golang:1.25-alpine
+    image: golang:1.25.5-alpine
     when:
       - event: [push, pull_request]
         path:
@@ -91,7 +91,7 @@ steps:
   # -------------------------------------------------------------------------
 
   - name: temporal-backup-worker-test
-    image: golang:1.25-alpine
+    image: golang:1.25.5-alpine
     when:
       - event: [push, pull_request]
         path:
@@ -124,7 +124,7 @@ steps:
   # -------------------------------------------------------------------------
 
   - name: s3-proxy-test
-    image: golang:1.25-alpine
+    image: golang:1.25.5-alpine
     when:
       - event: [push, pull_request]
         path:

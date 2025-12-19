@@ -25,9 +25,9 @@ telemetry:
 
 backend:
   name: "oci"
-  endpoint: "https://axlubepkixee.compat.objectstorage.us-phoenix-1.oraclecloud.com"
-  region: "us-phoenix-1"
-  bucket: "munchbox-s3-proxy"
-  access_key_id: "db173c23ccecadf86b2690c23911c619aebacefe"
-  secret_access_key: "LXB++wigmLRf4pe/tq1v5AW+aHGOyYzThNKUzjrML7Q="
+  endpoint: "${S3_ENDPOINT}"
+  region: "${S3_REGION}"
+  bucket: "${S3_BUCKET}"
+  access_key_id: "${S3_ACCESS_KEY_ID}"
+  secret_access_key: "${S3_SECRET_ACCESS_KEY}"
   force_path_style: true

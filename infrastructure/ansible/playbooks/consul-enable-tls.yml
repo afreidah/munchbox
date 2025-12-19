@@ -9,10 +9,7 @@
 # -------------------------------------------------------------------------------
 
 - name: Generate Consul server certificates
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
-    vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
+  # Vault AppRole credentials loaded from group_vars/all.yml
   hosts: nomad_servers
   become: true
   serial: 1
@@ -69,11 +66,8 @@
         port: 8501
         timeout: 60
 
-- name: Generate Consul client certificates  
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
-    vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
+- name: Generate Consul client certificates
+  # Vault AppRole credentials loaded from group_vars/all.yml
   hosts: nomad_clients
   become: true
   tasks:

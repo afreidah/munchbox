@@ -26,9 +26,7 @@
 
   vars:
     cni_version: "1.4.0"
-    # Vault AppRole credentials for cert issuance
-    vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
-    vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
+    # Vault AppRole credentials loaded from group_vars/all.yml
     # Default common packages (can be overridden in group_vars)
     default_common_packages:
       - curl

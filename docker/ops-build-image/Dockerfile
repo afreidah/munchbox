@@ -28,7 +28,7 @@ RUN mkdir -p /tmp/bin
 
 # --- Go (for building tools) ---
 RUN set -eux; \
-  GO_VERSION="1.23.4"; \
+  GO_VERSION="1.25.5"; \
   curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH_DL}.tar.gz" -o /tmp/go.tgz; \
   tar -C /usr/local -xzf /tmp/go.tgz; rm -f /tmp/go.tgz
 ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go

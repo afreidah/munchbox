@@ -172,6 +172,10 @@ path "secret/data/umami" {
   capabilities = ["read"]
 }
 
+path "secret/data/s3-proxy" {
+  capabilities = ["read"]
+}
+
 # KV secrets for workloads
 path "kv/data/traefik" {
   capabilities = ["read"]

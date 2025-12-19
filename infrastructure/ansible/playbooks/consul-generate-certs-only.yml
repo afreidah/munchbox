@@ -11,11 +11,7 @@
   hosts: nomad_servers
   become: true
   serial: 100%
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
-    vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
-    consul_datacenter: "munchbox"
+  # Vault AppRole credentials loaded from group_vars/all.yml
   tasks:
     - name: Generate server certificate from Vault
       include_role:
@@ -31,11 +27,7 @@
 - name: Generate Consul client certificates (no TLS enablement)
   hosts: nomad_clients
   become: true
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "REDACTED_APPROLE_ROLE_ID"
-    vault_approle_secret_id: "REDACTED_APPROLE_SECRET_ID"
-    consul_datacenter: "munchbox"
+  # Vault AppRole credentials loaded from group_vars/all.yml
   tasks:
     - name: Generate client certificate from Vault
       include_role:
