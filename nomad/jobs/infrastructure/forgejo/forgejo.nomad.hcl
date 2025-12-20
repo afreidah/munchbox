@@ -146,7 +146,7 @@ job "forgejo" {
       }
 
       config {
-        image   = "busybox:latest"
+        image   = "busybox:1.37.0"
         command = "sh"
         args    = ["-c", "mkdir -p /data/gitea/conf && cp /local/app.ini /data/gitea/conf/app.ini && chown -R 1000:1000 /data/gitea"]
         volumes = [

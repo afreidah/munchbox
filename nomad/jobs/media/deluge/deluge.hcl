@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "deluge"
 type         = "service"
-image        = "linuxserver/deluge:latest"
+image        = "linuxserver/deluge:2.2.0"
 port         = 8112
 static_port  = 8112
 host_network = true

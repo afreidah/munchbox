@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name  = "ersatztv"
 type  = "service"
-image = "jasongdove/ersatztv:latest"
+image = "jasongdove/ersatztv:v25.9.0"
 port  = 8409
 static_port = 8409
 host_network = true

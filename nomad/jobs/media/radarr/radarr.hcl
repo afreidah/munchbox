@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "radarr"
 type         = "service"
-image        = "linuxserver/radarr:latest"
+image        = "linuxserver/radarr:6.0.4"
 port         = 7878
 static_port  = 7878
 node         = "nomad-client-01"

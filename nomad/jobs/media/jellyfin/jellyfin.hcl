@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name  = "jellyfin"
 type  = "service"
-image = "jellyfin/jellyfin:latest"
+image = "jellyfin/jellyfin:10.11.5"
 port  = 8096
 static_port = 8096
 host_network = true

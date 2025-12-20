@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "lidarr"
 type         = "service"
-image        = "linuxserver/lidarr:latest"
+image        = "linuxserver/lidarr:3.1.0"
 port         = 8686
 static_port  = 8686
 host_network = true

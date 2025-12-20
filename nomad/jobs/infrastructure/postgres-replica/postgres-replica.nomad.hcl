@@ -118,7 +118,7 @@ job "postgres-replica" {
       driver = "docker"
 
       config {
-        image   = "busybox:latest"
+        image   = "busybox:1.37.0"
         command = "sh"
         args    = ["-c", "mkdir -p /init-data && chown -R 70:70 /init-data && chmod 700 /init-data"]
         volumes = ["/opt/nomad/data/postgres-replica:/init-data"]

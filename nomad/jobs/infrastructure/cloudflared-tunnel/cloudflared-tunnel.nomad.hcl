@@ -101,7 +101,7 @@ job "cloudflared-tunnel" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "cloudflare/cloudflared:latest"
+        image              = "cloudflare/cloudflared:2025.11.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"

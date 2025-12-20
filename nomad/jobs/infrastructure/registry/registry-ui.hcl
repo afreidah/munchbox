@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name  = "registry-ui"
 type  = "service"
-image = "joxit/docker-registry-ui:latest"
+image = "joxit/docker-registry-ui:2.5.7-debian"
 port  = 80
 size = "small"
 
