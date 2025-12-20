@@ -26,9 +26,8 @@ extra_ports = [
 # --- Storage ---
 storage = "ephemeral"
 
-# --- Traefik routing ---
-traefik      = true
-traefik_host = "woodpecker.munchbox.cc"
+# --- Traefik routing (manual - need custom rules for OAuth bypass) ---
+traefik      = false
 
 # --- Health check ---
 health_path = "/healthz"
@@ -64,17 +63,24 @@ tags = [
   "woodpecker",
   "ci",
   "infrastructure",
+  # Enable Traefik and define service
+  "traefik.enable=true",
+  "traefik.http.services.woodpecker-server.loadbalancer.server.port=8000",
   # Main UI router - protected by Authentik
-  "traefik.http.routers.woodpecker-server.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`)",
+  "traefik.http.routers.woodpecker-server.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`) && !PathPrefix(`/authorize`)",
+  "traefik.http.routers.woodpecker-server.entrypoints=websecure",
+  "traefik.http.routers.woodpecker-server.tls.certresolver=letsencrypt",
+  "traefik.http.routers.woodpecker-server.service=woodpecker-server",
   "traefik.http.routers.woodpecker-server.middlewares=authentik@file",
-  # API/webhook router - no auth (agents, GitHub webhooks need direct access)
-  "traefik.http.routers.woodpecker-api.rule=Host(`woodpecker.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/hook`))",
+  # API/webhook/OAuth router - no auth (agents, webhooks, OAuth callbacks need direct access)
+  "traefik.http.routers.woodpecker-api.rule=Host(`woodpecker.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/hook`) || PathPrefix(`/authorize`))",
   "traefik.http.routers.woodpecker-api.entrypoints=websecure",
   "traefik.http.routers.woodpecker-api.tls.certresolver=letsencrypt",
   "traefik.http.routers.woodpecker-api.service=woodpecker-server",
   # HTTP router for CF tunnel (UI only)
-  "traefik.http.routers.woodpecker-server-http.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`)",
+  "traefik.http.routers.woodpecker-server-http.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`) && !PathPrefix(`/authorize`)",
   "traefik.http.routers.woodpecker-server-http.entrypoints=web",
+  "traefik.http.routers.woodpecker-server-http.service=woodpecker-server",
   "traefik.http.routers.woodpecker-server-http.middlewares=cf-tunnel-https@file,authentik@file"
 ]
 
