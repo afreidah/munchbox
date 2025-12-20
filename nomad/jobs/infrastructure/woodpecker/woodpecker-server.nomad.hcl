@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Woodpecker Server — CI/CD Pipeline Orchestrator
+# Woodpecker Server - CI/CD Pipeline Orchestrator
 #
 # Project: Munchbox / Author: Alex Freidah
 #
