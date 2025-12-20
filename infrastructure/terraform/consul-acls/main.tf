@@ -20,6 +20,12 @@ terraform {
       version = "~> 3.25"
     }
   }
+
+  backend "consul" {
+    address = "consul.service.consul:8500"
+    scheme  = "http"
+    path    = "terraform/consul-acls"
+  }
 }
 
 # -------------------------------------------------------------------------------
