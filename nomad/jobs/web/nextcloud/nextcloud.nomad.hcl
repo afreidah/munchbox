@@ -116,8 +116,6 @@ job "nextcloud" {
         interval = "30s"
         timeout  = "10s"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -----------------------------------------------------------------------
@@ -167,9 +165,9 @@ job "nextcloud" {
       # --- Environment Variables (static + dynamic from Vault) ---
       env {
         # Static config
-        POSTGRES_HOST        = "postgres-shared.service.consul"
+        POSTGRES_HOST        = "postgres-primary.service.consul"
         POSTGRES_DB          = "nextcloud"
-        REDIS_HOST           = "redis-shared.service.consul"
+        REDIS_HOST           = "redis-primary.service.consul"
         REDIS_PORT           = "6379"
         REDIS_HOST_PORT      = "6379"
         REDIS_HOST_DB        = "0"
@@ -184,8 +182,8 @@ job "nextcloud" {
 
       # --- Resources ---
       resources {
-        cpu    = 2500
-        memory = 1800
+        cpu    = 3500
+        memory = 2048
       }
 
       # --- Termination ---

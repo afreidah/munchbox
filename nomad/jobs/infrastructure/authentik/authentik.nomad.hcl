@@ -97,8 +97,6 @@ job "authentik" {
         timeout  = "10s"
         failures_before_critical = 3
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------
@@ -153,7 +151,7 @@ job "authentik" {
       # --- Environment Variables (static + dynamic from Vault) ---
       env {
         # Static config
-        AUTHENTIK_REDIS__HOST                 = "redis-shared.service.consul"
+        AUTHENTIK_REDIS__HOST                 = "redis-primary.service.consul"
         AUTHENTIK_REDIS__DB                   = "1"
         AUTHENTIK_ERROR_REPORTING__ENABLED    = "false"
         AUTHENTIK_DISABLE_UPDATE_CHECK        = "true"
@@ -278,7 +276,7 @@ job "authentik" {
       # --- Environment Variables (static + dynamic from Vault) ---
       env {
         # Static config
-        AUTHENTIK_REDIS__HOST               = "redis-shared.service.consul"
+        AUTHENTIK_REDIS__HOST               = "redis-primary.service.consul"
         AUTHENTIK_REDIS__DB                 = "1"
         AUTHENTIK_ERROR_REPORTING__ENABLED  = "false"
         AUTHENTIK_DISABLE_UPDATE_CHECK      = "true"

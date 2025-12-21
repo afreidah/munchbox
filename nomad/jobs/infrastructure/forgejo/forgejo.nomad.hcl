@@ -177,7 +177,7 @@ OFFLINE_MODE = false
 
 [database]
 DB_TYPE = postgres
-HOST = postgres-shared.service.consul:5432
+HOST = postgres-primary.service.consul:5432
 NAME = forgejo
 USER = {{ .db_username }}
 PASSWD = {{ .db_password }}
@@ -196,16 +196,16 @@ JWT_SECRET = {{ .jwt_secret }}
 {{ with .Data.data }}
 [cache]
 ADAPTER = redis
-HOST = redis://default:{{ .password }}@redis-shared.service.consul:6379/2
+HOST = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
 ITEM_TTL = 16h
 
 [session]
 PROVIDER = redis
-PROVIDER_CONFIG = redis://default:{{ .password }}@redis-shared.service.consul:6379/2
+PROVIDER_CONFIG = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
 
 [queue]
 TYPE = redis
-CONN_STR = redis://default:{{ .password }}@redis-shared.service.consul:6379/2
+CONN_STR = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
 {{ end }}{{ end }}
 
 [indexer]

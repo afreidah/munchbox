@@ -101,6 +101,32 @@ job "umami" {
     }
 
     # -------------------------------------------------------------------------
+    # Task: geoip-updater (prestart)
+    # Downloads DB-IP GeoLite City database for city-level geolocation
+    # Uses DB-IP free database - no account or license key required
+    # -------------------------------------------------------------------------
+
+    task "geoip-updater" {
+      driver = "docker"
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      config {
+        image   = "alpine/curl:latest"
+        command = "/bin/sh"
+        args    = ["-c", "mkdir -p /geoip && cd /geoip && curl -sL \"https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz\" | gunzip > dbip-city-lite.mmdb && ls -la"]
+        volumes = ["/mnt/gdrive/geoip:/geoip"]
+      }
+
+      resources {
+        cpu    = 100
+        memory = 64
+      }
+    }
+
+    # -------------------------------------------------------------------------
     # Task: umami
     # -------------------------------------------------------------------------
 
@@ -123,6 +149,7 @@ job "umami" {
         image              = "ghcr.io/umami-software/umami:postgresql-latest"
         image_pull_timeout = "10m"
         ports              = ["http"]
+        volumes            = ["/mnt/gdrive/geoip:/geoip:ro"]
       }
 
       # --- Environment Variables from Vault ---
@@ -132,11 +159,13 @@ job "umami" {
         change_mode = "restart"
         data        = <<EOH
 {{ with secret "secret/data/umami" }}
-DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-shared.service.consul:5432/umami
+DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-primary.service.consul:5432/umami
 APP_SECRET={{ .Data.data.app_secret }}
 {{ end }}
 # App URL for external access
 APP_URL=https://analytics.munchbox.cc
+# GeoIP database for city-level geolocation (DB-IP free database)
+GEOIP_DATABASE_FILE=/geoip/dbip-city-lite.mmdb
 # OpenTelemetry tracing to Tempo
 OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo.service.consul:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc

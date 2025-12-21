@@ -149,7 +149,7 @@ job "temporal-backup-worker" {
         NOMAD_ADDR        = "https://nomad.service.consul:4646"
         NOMAD_CACERT      = "/etc/ssl/certs/nomad-ca.pem"
         VAULT_CACERT      = "/etc/ssl/certs/vault-ca.pem"
-        TRIVY_DB_HOST     = "postgres-shared.service.consul"
+        TRIVY_DB_HOST     = "postgres-primary.service.consul"
         TRIVY_DB_PORT     = "5432"
         TRIVY_DB_NAME     = "trivy"
         # OpenTelemetry tracing to Tempo (gRPC)

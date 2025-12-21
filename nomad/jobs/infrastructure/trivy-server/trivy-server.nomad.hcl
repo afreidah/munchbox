@@ -36,6 +36,7 @@ job "trivy-server" {
   group "server" {
     count = 1
 
+
     network {
       port "http" {
         static = 4954
@@ -68,8 +69,6 @@ job "trivy-server" {
         timeout  = "5s"
         on_update = "require_healthy"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------
@@ -102,7 +101,7 @@ job "trivy-server" {
       template {
         data = <<-EOF
         {{ with secret "secret/data/redis-shared" }}
-        TRIVY_CACHE_BACKEND=redis://:{{ .Data.data.password }}@redis-shared.service.consul:6379
+        TRIVY_CACHE_BACKEND=redis://:{{ .Data.data.password }}@redis-primary.service.consul:6379
         {{ end }}
         EOF
         destination = "secrets/secrets.env"

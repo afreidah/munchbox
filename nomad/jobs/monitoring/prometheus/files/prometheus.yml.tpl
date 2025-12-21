@@ -310,7 +310,7 @@ scrape_configs:
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
       - target_label: "database"
-        replacement: "redis-shared"
+        replacement: "redis-primary"
 
   # -----------------------------------------------------------------------
   # Nextcloud Exporter - Cloud storage metrics via Consul service discovery

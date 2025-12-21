@@ -1,11 +1,10 @@
 # -------------------------------------------------------------------------------
-# PostgreSQL Replica Exporter — Replica Database Metrics Collection
+# PostgreSQL Replica Exporter — Database Metrics Collection
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Exports PostgreSQL replica metrics for Prometheus scraping. Connects to
-# postgres-replica via Consul DNS on port 5433. Used for monitoring replication
-# lag and replica health.
+# Exports PostgreSQL metrics for Prometheus scraping. Connects to postgres-replica
+# via Consul DNS for monitoring the Patroni replica node.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
@@ -15,6 +14,7 @@ port        = 9188
 static_port = 9188
 size        = "tiny"
 vault       = true
+args        = ["--web.listen-address=:9188"]
 
 # --- Traefik routing ---
 traefik = false
@@ -27,13 +27,10 @@ env = {
   TZ = "America/Los_Angeles"
 }
 
-# --- Override default port to avoid conflict with primary exporter ---
-args = ["--web.listen-address=:9188"]
-
 # --- Configuration templates (Vault credentials) ---
 templates = [
   { src = "data_source.env", dest = "secrets/postgres.env", env = true }
 ]
 
 # --- Service tags ---
-tags = ["monitoring", "postgres-exporter", "metrics", "database", "replica"]
+tags = ["monitoring", "postgres-exporter", "postgres-replica-exporter", "metrics", "database", "replica"]

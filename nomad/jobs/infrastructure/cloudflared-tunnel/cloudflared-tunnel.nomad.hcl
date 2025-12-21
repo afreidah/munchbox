@@ -34,12 +34,6 @@ job "cloudflared-tunnel" {
     value     = "ingress"
   }
 
-  constraint {
-    attribute = "${node.unique.name}"
-    operator  = "="
-    value     = "stabler.munchbox.cc"
-  }
-
   # ---------------------------------------------------------------------------
   # Task Group: cloudflared-tunnel
   # ---------------------------------------------------------------------------
@@ -126,104 +120,105 @@ metrics: 0.0.0.0:2000
 
 ingress:
   # --- alexfreidah.com domains ---
+  # Route to local Traefik (127.0.0.1) - each cloudflared routes to its co-located Traefik
   - hostname: "alexfreidah.com"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: alexfreidah.com
 
   - hostname: "www.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: www.alexfreidah.com
 
   - hostname: "resume.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: resume.alexfreidah.com
 
   - hostname: "k3s-status.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: k3s-status.alexfreidah.com
 
   - hostname: "analytics.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: analytics.alexfreidah.com
 
   # --- munchbox.cc domains (Authentik-protected) ---
   - hostname: "dashboard.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: dashboard.munchbox.cc
 
   - hostname: "nomad.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: nomad.munchbox.cc
 
   - hostname: "consul.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: consul.munchbox.cc
 
   - hostname: "traefik.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: traefik.munchbox.cc
 
   - hostname: "auth.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: auth.munchbox.cc
 
   - hostname: "nextcloud.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: nextcloud.munchbox.cc
 
   - hostname: "prometheus.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: prometheus.munchbox.cc
 
   - hostname: "grafana.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: grafana.munchbox.cc
 
   - hostname: "vaultwarden.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: vaultwarden.munchbox.cc
 
   - hostname: "alertmanager.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: alertmanager.munchbox.cc
 
   - hostname: "emby.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: emby.munchbox.cc
 
   - hostname: "jellyfin.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: jellyfin.munchbox.cc
 
   - hostname: "analytics.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: analytics.munchbox.cc
 
   - hostname: "git.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: git.munchbox.cc
 
   - hostname: "woodpecker.munchbox.cc"
-    service: "http://traefik.service.consul:80"
+    service: "http://127.0.0.1:80"
     originRequest:
       httpHostHeader: woodpecker.munchbox.cc
 

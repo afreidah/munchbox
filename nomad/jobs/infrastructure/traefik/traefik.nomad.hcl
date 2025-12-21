@@ -42,19 +42,13 @@ job "traefik" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement — Pin to ingress node
+  # Placement — Pin to ingress nodes
   # -------------------------------------------------------------------------
 
   constraint {
     attribute = "${meta.role}"
     operator  = "="
     value     = "ingress"
-  }
-
-  constraint {
-    attribute = "${node.unique.name}"
-    operator  = "="
-    value     = "stabler.munchbox.cc"
   }
 
   # -------------------------------------------------------------------------
@@ -463,7 +457,7 @@ EOH
     contentTypeNosniff      = true
     customFrameOptionsValue = "SAMEORIGIN"
     referrerPolicy          = "no-referrer"
-    contentSecurityPolicy   = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self'"
+    contentSecurityPolicy   = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://analytics.alexfreidah.com; connect-src 'self' https://analytics.alexfreidah.com; frame-ancestors 'self'"
 
   # --- k3s-status security headers ---
   [http.middlewares.k3s-status-sec.headers]
@@ -542,6 +536,15 @@ EOH
       regex = "</head>"
       replacement = "<link rel=\"stylesheet\" href=\"http://themes.munchbox.cc/css/vault.css\"></head>"
 
+  # --- Umami Analytics Injection ---
+  # Injects Umami tracking script into HTML pages
+  # Add this middleware to services you want to track
+  [http.middlewares.umami-tracking.plugin.rewritebody]
+    lastModified = true
+    [[http.middlewares.umami-tracking.plugin.rewritebody.rewrites]]
+      regex = "</head>"
+      replacement = "<script defer src=\"https://analytics.munchbox.cc/script.js\" data-website-id=\"0ac921bc-72f6-4b31-9cf3-77de04fe6337\"></script></head>"
+
 # -------------------------------------------------------------------------
 # HTTP Services (non-Consul backends)
 # -------------------------------------------------------------------------
@@ -610,8 +613,6 @@ EOH
           interval = "10s"
           timeout  = "2s"
         }
-
-        deregister_critical_service_after = "1m"
       }
 
       # --- Service Registration (Dashboard) ---
@@ -628,8 +629,6 @@ EOH
           interval = "10s"
           timeout  = "2s"
         }
-
-        deregister_critical_service_after = "1m"
       }
 
       # --- Resources ---

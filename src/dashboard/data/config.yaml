@@ -9,7 +9,7 @@
 # groups, each with items that define downstream service URLs.
 # -------------------------------------------------------------------------------
 
-title: Munchbox Dashboard
+title: Munchbox Cloud Dashboard
 subtitle: Central access to Munchbox services
 icon: munchbox
 
@@ -30,7 +30,7 @@ services:
         subtitle: Media server
         url: https://jellyfin.munchbox.cc
         tag: media
-        icon: jellyfin.svg
+        icon: jellyfin.png
 
       - name: Vaultwarden
         subtitle: Password manager
@@ -60,7 +60,7 @@ services:
         subtitle: Music management
         url: https://lidarr.munchbox.cc
         tag: media
-        icon: lidarr.svg
+        icon: lidarr.png
 
       - name: Sonarr
         subtitle: TV management
@@ -102,7 +102,7 @@ services:
         subtitle: Secrets management
         url: https://vault.munchbox.cc
         tag: security
-        icon: vault.svg
+        icon: vault.png
         bg: bg-ctp-yellow
 
       - name: Proxmox
@@ -153,17 +153,17 @@ services:
         tag: infra
         icon: traefik.png
 
-      - name: Green
-        subtitle: Pi-hole DNS server 1
+      - name: Pi-hole (green)
+        subtitle: Primary DNS
         url: http://green/admin
         tag: dns
-        icon: pi-hole-unbound.svg
+        icon: pi-hole.png
 
-      - name: Logan
-        subtitle: Pi-hole DNS server 2
+      - name: Pi-hole (logan)
+        subtitle: Secondary DNS
         url: http://logan/admin
         tag: dns
-        icon: pi-hole-unbound.svg
+        icon: pi-hole.png
 
       - name: Cloudflare
         subtitle: CDN, DNS, and tunnels
@@ -200,3 +200,9 @@ services:
         url: https://grafana.munchbox.cc
         tag: monitoring
         icon: grafana.png
+
+      - name: Umami
+        subtitle: Web analytics
+        url: https://analytics.munchbox.cc
+        tag: analytics
+        icon: umami.png

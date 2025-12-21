@@ -176,6 +176,10 @@ path "secret/data/s3-proxy" {
   capabilities = ["read"]
 }
 
+path "secret/data/patroni" {
+  capabilities = ["read"]
+}
+
 # KV secrets for workloads
 path "kv/data/traefik" {
   capabilities = ["read"]

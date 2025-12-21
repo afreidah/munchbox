@@ -78,8 +78,6 @@ job "trivy-dashboard" {
         interval = "15s"
         timeout  = "5s"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     task "dashboard" {
@@ -111,8 +109,8 @@ job "trivy-dashboard" {
 
       env {
         PORT                        = "8080"
-        TRIVY_DB_HOST               = "postgres-replica.service.consul"
-        TRIVY_DB_PORT               = "5433"
+        TRIVY_DB_HOST               = "postgres-primary.service.consul"
+        TRIVY_DB_PORT               = "5432"
         TRIVY_DB_USER               = "${secret.trivy_db.db_username}"
         TRIVY_DB_PASSWORD           = "${secret.trivy_db.db_password}"
         TRIVY_DB_NAME               = "trivy"

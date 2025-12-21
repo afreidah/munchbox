@@ -41,3 +41,32 @@ steps:
       - event: push
         branch: main
         path: docker/ops-build-image/**
+
+  # ---------------------------------------------------------------------------
+  # patroni (PostgreSQL 18 + Patroni HA)
+  # ---------------------------------------------------------------------------
+
+  - name: build-patroni
+    image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - apk add --no-cache make
+      - cd docker/patroni
+      - make build-multiarch
+    when:
+      - event: [push, pull_request]
+        path: docker/patroni/**
+
+  - name: push-patroni
+    image: docker:cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    commands:
+      - apk add --no-cache make
+      - cd docker/patroni
+      - make push
+    when:
+      - event: push
+        branch: main
+        path: docker/patroni/**

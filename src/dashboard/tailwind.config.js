@@ -35,6 +35,10 @@ const catppuccin = {
 
 module.exports = {
   content: ['content/**/*.md', 'layouts/**/*.html'],
+  safelist: [
+    'text-ctp-mauve',
+    'text-ctp-flamingo',
+  ],
   theme: {
     extend: {
       colors: {

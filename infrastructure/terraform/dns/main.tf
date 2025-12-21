@@ -176,9 +176,10 @@ resource "cloudflare_tunnel_config" "munchbox" {
   tunnel_id  = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
 
   config {
+    # Routes to local Traefik (127.0.0.1) - each cloudflared routes to its co-located Traefik
     ingress_rule {
       hostname = "alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "alexfreidah.com"
       }
@@ -186,7 +187,7 @@ resource "cloudflare_tunnel_config" "munchbox" {
 
     ingress_rule {
       hostname = "www.alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "www.alexfreidah.com"
       }
@@ -194,7 +195,7 @@ resource "cloudflare_tunnel_config" "munchbox" {
 
     ingress_rule {
       hostname = "resume.alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "resume.alexfreidah.com"
       }
@@ -202,7 +203,7 @@ resource "cloudflare_tunnel_config" "munchbox" {
 
     ingress_rule {
       hostname = "k3s-status.alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "k3s-status.alexfreidah.com"
       }
@@ -210,19 +211,19 @@ resource "cloudflare_tunnel_config" "munchbox" {
 
     ingress_rule {
       hostname = "analytics.alexfreidah.com"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
       origin_request {
         http_host_header = "analytics.alexfreidah.com"
       }
     }
 
     # --- munchbox.cc wildcard ---
-    # All *.munchbox.cc subdomains route to Traefik.
+    # All *.munchbox.cc subdomains route to local Traefik.
     # Traefik handles routing based on service tags registered in Consul.
     # To expose a new service: add traefik tags to its Nomad job - no Terraform changes needed.
     ingress_rule {
       hostname = "*.munchbox.cc"
-      service  = "http://traefik.service.consul:80"
+      service  = "http://127.0.0.1:80"
     }
 
     # Required catch-all rule

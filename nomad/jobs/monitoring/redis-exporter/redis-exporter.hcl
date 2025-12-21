@@ -3,7 +3,7 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Exports Redis metrics for Prometheus scraping. Connects to redis-shared
+# Exports Redis metrics for Prometheus scraping. Connects to redis-primary
 # via Consul DNS. Password retrieved from Vault at runtime.
 # -------------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ health_path = "/metrics"
 # --- Environment (static) ---
 env = {
   TZ                   = "America/Los_Angeles"
-  REDIS_ADDR           = "redis-shared.service.consul:6379"
+  REDIS_ADDR           = "redis-primary.service.consul:6379"
 }
 
 # --- Configuration templates (Vault credentials) ---

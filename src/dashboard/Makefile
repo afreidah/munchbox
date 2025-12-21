@@ -8,7 +8,7 @@
 # to ensure consistent scheduling behavior across heterogeneous Nomad clients.
 # -------------------------------------------------------------------------------
 
-REGISTRY   ?= registry.service.consul:5000
+REGISTRY   ?= registry.munchbox.cc
 IMAGE      := dash
 VERSION    ?= latest
 
@@ -44,6 +44,8 @@ builder: ## Ensure the Buildx builder exists and is ready
 # -------------------------------------------------------------------------
 
 build: ## Build the dashboard image for the local architecture
+	@echo "Rebuilding Tailwind CSS"
+	npm run build
 	@echo "Building $(FULL_TAG) for local architecture"
 	docker build -t $(FULL_TAG) .
 
@@ -52,6 +54,8 @@ build: ## Build the dashboard image for the local architecture
 # -------------------------------------------------------------------------
 
 push: builder ## Build and push amd64 and arm64 images to the registry
+	@echo "Rebuilding Tailwind CSS"
+	npm run build
 	@echo "Building and pushing $(FULL_TAG) for $(PLATFORMS)"
 	docker buildx build \
 	  --platform $(PLATFORMS) \
