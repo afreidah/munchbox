@@ -43,6 +43,12 @@ job "forgejo" {
   group "forgejo" {
     count = 1
 
+    # --- Constraint: Require gdrive NFS mount ---
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "stabler.munchbox.cc"
+    }
+
     # --- Network Configuration ---
     network {
       mode = "bridge"
