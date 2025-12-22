@@ -66,6 +66,7 @@ def build_inventory(config):
                 "consul_servers": {"hosts": {}},
                 "consul_clients": {"hosts": {}},
                 "vault_servers": {"hosts": {}},
+                "gpu_nodes": {"hosts": {}},
                 "proxmox_hosts": {"hosts": {}},
             },
             "vars": {
@@ -105,6 +106,9 @@ def build_inventory(config):
 
         if "vault_server" in roles:
             inventory["all"]["children"]["vault_servers"]["hosts"][name] = host_entry.copy()
+
+        if "gpu_node" in roles:
+            inventory["all"]["children"]["gpu_nodes"]["hosts"][name] = host_entry.copy()
 
     # Remove empty groups
     for group in list(inventory["all"]["children"].keys()):

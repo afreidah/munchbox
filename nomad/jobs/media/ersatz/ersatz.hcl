@@ -14,9 +14,9 @@ image = "jasongdove/ersatztv:v25.9.0"
 port  = 8409
 static_port = 8409
 host_network = true
-node = "nomad-client-02"
-cpu    = 3000
-memory = 3000
+node = "nomad-client-04"
+cpu    = 3500
+memory = 4000
 
 # --- Storage ---
 storage = "ephemeral"
@@ -25,6 +25,15 @@ volumes = [
   "/opt/nomad/data/ersatztv/transcode:/transcode",
   "/mnt/gdrive/media/Movies:/media/Movies:ro",
   "/mnt/gdrive/media/TV:/media/TV:ro"
+]
+
+# --- NVIDIA GPU transcoding ---
+runtime = "nvidia"
+devices = [
+  { host = "/dev/nvidia0", container = "/dev/nvidia0" },
+  { host = "/dev/nvidiactl", container = "/dev/nvidiactl" },
+  { host = "/dev/nvidia-uvm", container = "/dev/nvidia-uvm" },
+  { host = "/dev/nvidia-uvm-tools", container = "/dev/nvidia-uvm-tools" }
 ]
 
 # --- Traefik routing ---
@@ -36,7 +45,9 @@ health_path = "/"
 
 # --- Environment variables ---
 env = {
-  TZ = "America/Los_Angeles"
+  TZ                         = "America/Los_Angeles"
+  NVIDIA_VISIBLE_DEVICES     = "all"
+  NVIDIA_DRIVER_CAPABILITIES = "all"
 }
 
 # --- Service tags ---

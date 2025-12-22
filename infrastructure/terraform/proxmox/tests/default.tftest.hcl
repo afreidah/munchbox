@@ -18,20 +18,18 @@ variables {
   vm_network_bridge        = "vmbr0"
   vms = {
     "nomad-server-01" = {
-      target_node     = "stabler"
-      vmid            = 101
-      memory          = 2048
-      cores           = 2
-      disk_size       = "32G"
-      gpu_passthrough = false
+      target_node = "stabler"
+      vmid        = 101
+      memory      = 2048
+      cores       = 2
+      disk_size   = "32G"
     }
     "nomad-client-01" = {
-      target_node     = "goren"
-      vmid            = 102
-      memory          = 2048
-      cores           = 2
-      disk_size       = "32G"
-      gpu_passthrough = false
+      target_node = "goren"
+      vmid        = 102
+      memory      = 2048
+      cores       = 2
+      disk_size   = "32G"
     }
   }
 }

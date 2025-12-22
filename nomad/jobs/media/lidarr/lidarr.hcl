@@ -24,9 +24,7 @@ health_path  = "/ping"
 storage      = "local"
 storage_path = "/config"
 volumes = [
-  "/mnt/gdrive/media/Music:/music",
-  "/mnt/gdrive/nomad_deluge_downloads:/downloads",
-  "/mnt/gdrive/nomad_deluge_completed:/completed"
+  "/mnt/gdrive:/data"
 ]
 
 # --- Traefik routing ---

@@ -432,7 +432,7 @@ echo "Database initialization complete"
       # --- Resources ---
       resources {
         cpu    = 500
-        memory = 768
+        memory = 1024
       }
 
       # --- Termination ---

@@ -22,8 +22,7 @@ cpu          = 1500
 storage      = "local"           # Local, not NFS
 storage_path = "/config"
 volumes = [
-  "/mnt/gdrive/nomad_deluge_downloads:/downloads",
-  "/mnt/gdrive/nomad_deluge_completed:/completed"
+  "/mnt/gdrive:/data"
 ]
 
 # --- Traefik routing ---

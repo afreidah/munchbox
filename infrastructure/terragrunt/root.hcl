@@ -127,6 +127,23 @@ locals {
       disk_size   = "40G"
       existing    = true
     }
+
+    "nomad-client-04" = {
+      target_node     = "rubirosa"
+      vmid            = 183
+      memory          = 28672
+      cores           = 10
+      disk_size       = "40G"
+      gpu_passthrough = { pci_address = "02:00" }
+    }
+
+    "nomad-client-05" = {
+      target_node = "rubirosa"
+      vmid        = 184
+      memory      = 28672
+      cores       = 10
+      disk_size   = "40G"
+    }
   }
 
   # ---------------------------------------------------------------------------
