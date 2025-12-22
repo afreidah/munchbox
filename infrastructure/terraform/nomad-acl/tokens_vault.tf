@@ -60,3 +60,20 @@ resource "vault_kv_secret_v2" "prometheus_nomad" {
     nomad_token = nomad_acl_token.prometheus.secret_id
   })
 }
+
+# -----------------------------------------------------------------------------
+# Woodpecker Secret
+#
+# Path: secret/data/woodpecker
+# Used by: Woodpecker CI pipelines for Nomad job deployment
+# Note: This updates the existing woodpecker secret to add nomad_token
+# -----------------------------------------------------------------------------
+
+resource "vault_kv_secret_v2" "woodpecker_nomad" {
+  mount = "secret"
+  name  = "woodpecker-nomad"
+
+  data_json = jsonencode({
+    nomad_token = nomad_acl_token.woodpecker.secret_id
+  })
+}

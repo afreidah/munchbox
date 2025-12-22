@@ -16,7 +16,7 @@ job "woodpecker-server" {
 
   constraint {
     attribute = "${node.unique.name}"
-    value     = "oraclenode1"
+    value     = "nomad-client-02"
   }
 
   group "woodpecker-server" {
@@ -107,12 +107,11 @@ job "woodpecker-server" {
         WOODPECKER_HOST             = "https://woodpecker.munchbox.cc"
         WOODPECKER_OPEN             = "false"
         WOODPECKER_ADMIN            = "alex"
-        WOODPECKER_GITHUB           = "false"
         WOODPECKER_FORGEJO          = "true"
         WOODPECKER_FORGEJO_URL      = "https://git.munchbox.cc"
         WOODPECKER_DATABASE_DRIVER  = "postgres"
         WOODPECKER_GRPC_ADDR        = "0.0.0.0:9000"
-        WOODPECKER_LOG_LEVEL        = "info"
+        WOODPECKER_LOG_LEVEL        = "debug"
         TZ                          = "America/Los_Angeles"
         OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
         OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"

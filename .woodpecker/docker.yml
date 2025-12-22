@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------------------
 
 when:
-  - event: [push, pull_request]
+  - event: [push, pull_request, manual]
     path:
       include:
         - docker/**

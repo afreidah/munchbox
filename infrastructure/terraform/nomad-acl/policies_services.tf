@@ -89,3 +89,35 @@ resource "nomad_acl_policy" "prometheus" {
     }
   EOT
 }
+
+# -----------------------------------------------------------------------------
+# Woodpecker Policy - CI/CD Job Deployment
+# -----------------------------------------------------------------------------
+
+resource "nomad_acl_policy" "woodpecker" {
+  name        = "woodpecker"
+  description = "Woodpecker CI/CD - job deployment and monitoring"
+
+  rules_hcl = <<-EOT
+    # Write access for job submission and management
+    namespace "default" {
+      policy       = "write"
+      capabilities = ["alloc-exec", "alloc-lifecycle", "read-logs"]
+    }
+
+    # Read node info for placement visibility
+    node {
+      policy = "read"
+    }
+
+    # Read agent info for cluster status
+    agent {
+      policy = "read"
+    }
+
+    # Read host volumes for job specs
+    host_volume "*" {
+      policy = "read"
+    }
+  EOT
+}

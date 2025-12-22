@@ -36,3 +36,13 @@ resource "nomad_acl_token" "prometheus" {
   type     = "client"
   policies = [nomad_acl_policy.prometheus.name]
 }
+
+# -----------------------------------------------------------------------------
+# Woodpecker Token
+# -----------------------------------------------------------------------------
+
+resource "nomad_acl_token" "woodpecker" {
+  name     = "woodpecker"
+  type     = "client"
+  policies = [nomad_acl_policy.woodpecker.name]
+}
