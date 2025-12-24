@@ -25,20 +25,21 @@ steps:
       - apk add --no-cache git
       - |
         echo "Detecting changed jobs..."
-        git diff --name-only HEAD~1 HEAD -- nomad/jobs/ | while read file; do
-          if [ -n "$file" ]; then
-            job=$(basename "$file" .hcl)
-            job=${job%.nomad}
-            echo "$job" >> /tmp/changed_jobs.txt
-          fi
-        done
-        if [ -f /tmp/changed_jobs.txt ]; then
-          sort -u /tmp/changed_jobs.txt > changed_jobs.txt
+        # Fetch main branch for comparison
+        git fetch origin main --depth=1
+        # Get all .hcl files changed in this branch vs main (exclude files/ subdirs)
+        # Extract job names and deduplicate
+        git diff --name-only origin/main...HEAD -- nomad/jobs/ \
+          | grep '\.hcl$' \
+          | grep -v '/files/' \
+          | xargs -I{} basename {} .hcl \
+          | sed 's/\.nomad$//' \
+          | sort -u > changed_jobs.txt
+        if [ -s changed_jobs.txt ]; then
           echo "Changed jobs:"
           cat changed_jobs.txt
         else
           echo "No job changes detected"
-          touch changed_jobs.txt
         fi
 
   - name: validate-jobs

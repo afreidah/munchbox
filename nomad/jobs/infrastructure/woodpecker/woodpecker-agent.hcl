@@ -13,6 +13,7 @@ name  = "woodpecker-agent"
 type  = "service"
 image = "woodpeckerci/woodpecker-agent:v3.12.0"
 size  = "large"
+count = 3
 
 # --- Storage ---
 storage = "ephemeral"

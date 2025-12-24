@@ -47,13 +47,12 @@ build: ## Build for local architecture only
 	@echo "Building $(FULL_TAG) for local architecture"
 	docker build -t $(FULL_TAG) .
 
-build-multiarch: builder ## Build multi-arch images locally (no push)
-	@echo "Building $(FULL_TAG) for $(PLATFORMS)"
+build-multiarch: builder ## Build for current platform (use 'push' for multi-arch)
+	@echo "Building $(FULL_TAG) for current platform"
 	docker buildx build \
-		--platform $(PLATFORMS) \
 		-t $(FULL_TAG) \
 		--cache-from type=registry,ref=$(CACHE_TAG) \
-		--cache-to type=registry,ref=$(CACHE_TAG),mode=max \
+		--load \
 		.
 
 # -------------------------------------------------------------------------------

@@ -26,10 +26,9 @@ help: ## Show this help
 build: ## Build for current architecture
 	docker build -t $(FULL_IMAGE):$(TAG) -t $(FULL_IMAGE):pg$(PG_VERSION) .
 
-build-multiarch: ## Build multi-arch image (amd64 + arm64)
+build-multiarch: ## Build for current platform (use 'push' for multi-arch)
 	docker buildx create --name munchbox-builder --use 2>/dev/null || docker buildx use munchbox-builder
 	docker buildx build \
-		--platform linux/amd64,linux/arm64 \
 		-t $(FULL_IMAGE):$(TAG) \
 		-t $(FULL_IMAGE):pg$(PG_VERSION) \
 		-t $(FULL_IMAGE):pg$(PG_VERSION)-patroni$(PATRONI_VERSION) \

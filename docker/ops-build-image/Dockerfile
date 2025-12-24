@@ -41,14 +41,6 @@ RUN set -eux; \
   install -m0755 /tmp/terraform /tmp/bin/terraform; \
   rm -f /tmp/terraform /tmp/tf.zip
 
-# --- OpenTofu ---
-RUN set -eux; \
-  TOFU_VERSION="1.9.0"; \
-  curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_${ARCH_DL}.tar.gz" -o /tmp/tofu.tgz; \
-  tar -xzf /tmp/tofu.tgz -C /tmp tofu; \
-  install -m0755 /tmp/tofu /tmp/bin/tofu; \
-  rm -f /tmp/tofu /tmp/tofu.tgz
-
 # --- TFLint ---
 RUN set -eux; \
   TFLINT_VERSION="0.54.0"; \
@@ -110,11 +102,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
   GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
   go install honnef.co/go/tools/cmd/staticcheck@latest && \
   go install github.com/rakyll/gotest@latest && \
-  go install gotest.tools/gotestsum@latest && \
   go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
   install -m0755 /go/bin/staticcheck /tmp/bin/staticcheck && \
   install -m0755 /go/bin/gotest /tmp/bin/gotest && \
-  install -m0755 /go/bin/gotestsum /tmp/bin/gotestsum && \
   install -m0755 /go/bin/golangci-lint /tmp/bin/golangci-lint
 
 # --- Trivy ---
@@ -137,11 +127,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETARCH
 ENV ARCH_DL=${TARGETARCH}
 
-# --- Base packages (minimal) ---
+# --- Base packages + Python for Ansible ---
 RUN set -eux; \
   apt-get update; \
   apt-get -y install --no-install-recommends \
-    ca-certificates curl git jq make openssh-client; \
+    ca-certificates curl git jq make openssh-client \
+    python3 python3-pip pipx; \
   rm -rf /var/lib/apt/lists/*
 
 # --- Copy all binaries from builder ---
@@ -151,23 +142,18 @@ COPY --from=builder /tmp/bin/ /usr/local/bin/
 COPY --from=builder /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:/usr/local/bin:$PATH GOPATH=/go
 
-# --- Python + checkov (optional - comment out to save ~300MB) ---
-RUN set -eux; \
-  apt-get update; \
-  apt-get -y install --no-install-recommends python3 python3-pip python3-venv pipx; \
-  rm -rf /var/lib/apt/lists/*
+# --- Ansible ---
 ENV PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cache/pipx \
     set -eux; \
   mkdir -p "$PIPX_HOME"; \
-  pipx install checkov
+  pipx install --include-deps ansible
 
 # --- Sanity check ---
 RUN set -eux; \
   echo "=== Tool Versions ===" && \
   terraform --version && \
-  tofu --version && \
   nomad --version && \
   nomad-pack version && \
   consul --version && \
@@ -177,7 +163,7 @@ RUN set -eux; \
   trivy --version && \
   golangci-lint version --format short && \
   go version && \
-  checkov --version && \
+  ansible --version | head -n1 && \
   echo "==================="
 
 # --- Non-root user ---
