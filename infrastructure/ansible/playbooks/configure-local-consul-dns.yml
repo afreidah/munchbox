@@ -168,9 +168,9 @@
         docker_config: {}
       when: not daemon_json_stat.stat.exists or docker_config is not defined
 
-    - name: Update DNS and insecure registries in docker config
+    - name: Update DNS in docker config
       ansible.builtin.set_fact:
-        docker_config: "{{ docker_config | combine({'dns': [dnsmasq_host_ip], 'insecure-registries': ['registry.service.consul:5000']}) }}"
+        docker_config: "{{ docker_config | combine({'dns': [dnsmasq_host_ip]}) }}"
 
     - name: Write updated daemon.json
       ansible.builtin.copy:

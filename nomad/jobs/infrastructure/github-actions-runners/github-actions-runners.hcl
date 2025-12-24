@@ -73,7 +73,7 @@ task = {
   driver = "docker"
 
   config = {
-    image              = "docker-mirror.service.consul:5000/github-runner-waypoint:latest"
+    image              = "registry.munchbox.cc/github-runner-waypoint:latest"
     image_pull_timeout = "10m"
     privileged         = true
     volumes = [

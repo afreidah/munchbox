@@ -16,6 +16,9 @@ storage:
     enabled: true
 http:
   addr: :5000
+  tls:
+    certificate: /certs/munchbox.crt
+    key: /certs/munchbox.key
   draintimeout: 10m
   readtimeout: 10m
   writetimeout: 10m
