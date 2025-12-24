@@ -20,10 +20,13 @@ job "authentik" {
 
   update {
     max_parallel      = 1
+    canary            = 1
+    health_check      = "checks"
     min_healthy_time  = "30s"
     healthy_deadline  = "10m"
     progress_deadline = "15m"
     auto_revert       = true
+    auto_promote      = true
   }
 
   # ---------------------------------------------------------------------------
@@ -48,6 +51,9 @@ job "authentik" {
       }
       port "https" {
         static = 9443
+      }
+      port "metrics" {
+        static = 9300
       }
     }
 
@@ -96,6 +102,28 @@ job "authentik" {
         interval = "30s"
         timeout  = "10s"
         failures_before_critical = 3
+      }
+    }
+
+    # --- Metrics Service (for Prometheus) ---
+    service {
+      name     = "authentik-metrics"
+      port     = "metrics"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+        "prometheus",
+        "metrics"
+      ]
+
+      check {
+        name     = "authentik-metrics-health"
+        type     = "http"
+        port     = "metrics"
+        path     = "/metrics"
+        interval = "30s"
+        timeout  = "5s"
       }
     }
 

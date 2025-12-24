@@ -7,6 +7,9 @@
 # DNS. Exposes gRPC API (port 7233) for workflow submissions and queries.
 # -------------------------------------------------------------------------------
 
+# --- Job directory (for template files) ---
+job_dir = "/home/afreidah/tools/munchbox/nomad/jobs/infrastructure/temporal"
+
 # --- General Settings ---
 name  = "temporal-server"
 type  = "service"
@@ -28,6 +31,10 @@ env = {
   SKIP_SCHEMA_SETUP               = "false"  # Temporarily enabled to run migration from 1.14 to 1.18
   SKIP_DEFAULT_NAMESPACE_CREATION = "true"
   BIND_ON_IP                      = "0.0.0.0"
+  # PostgreSQL TLS configuration
+  SQL_TLS_ENABLED                 = "true"
+  SQL_TLS_CA_FILE                 = "/secrets/ca.crt"
+  SQL_TLS_DISABLE_HOST_VERIFICATION = "true"  # Using Consul DNS, not cert CN
   # OpenTelemetry tracing to Tempo (gRPC)
   OTEL_EXPORTER_OTLP_ENDPOINT     = "http://tempo.service.consul:4317"
   OTEL_EXPORTER_OTLP_PROTOCOL     = "grpc"
@@ -39,7 +46,8 @@ vault = true
 
 # --- Templates (inject secrets from Vault) ---
 templates = [
-  { src = "temporal.env.tpl", dest = "/secrets/temporal.env", env = true, vault = true }
+  { src = "temporal.env.tpl", dest = "/secrets/temporal.env", env = true, vault = true },
+  { src = "ca.crt.tpl", dest = "/secrets/ca.crt", vault = true }
 ]
 
 # --- Traefik integration ---

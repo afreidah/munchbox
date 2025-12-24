@@ -7,7 +7,7 @@
 # including HashiCorp CLI tools for Nomad, Consul, and Vault snapshots.
 # -------------------------------------------------------------------------------
 
-REGISTRY   ?= registry.service.consul:5000
+REGISTRY   ?= registry.munchbox.cc
 IMAGE      := temporal-backup-worker
 VERSION    ?= latest
 

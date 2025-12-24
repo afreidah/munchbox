@@ -219,7 +219,7 @@
   serial: 1
   tags: [vault, vault-consul-tls]
   vars:
-    ***REMOVED*** for Vault storage - fetch from Vault at runtime
+    # Consul token for Vault storage - fetch from Vault at runtime
     vault_consul_token: "{{ lookup('env', 'VAULT_CONSUL_TOKEN') }}"
   handlers:
     - name: restart vault

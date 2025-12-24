@@ -30,6 +30,9 @@ job "woodpecker-server" {
       port "grpc" {
         static = 9000
       }
+      port "metrics" {
+        static = 9001
+      }
     }
 
     restart {
@@ -77,6 +80,28 @@ job "woodpecker-server" {
       }
     }
 
+    # --- Metrics Service (for Prometheus) ---
+    service {
+      name     = "woodpecker-metrics"
+      port     = "metrics"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+        "prometheus",
+        "metrics"
+      ]
+
+      check {
+        name     = "woodpecker-metrics-health"
+        type     = "http"
+        port     = "metrics"
+        path     = "/metrics"
+        interval = "30s"
+        timeout  = "5s"
+      }
+    }
+
     task "woodpecker-server" {
       driver = "docker"
 
@@ -113,9 +138,10 @@ job "woodpecker-server" {
         WOODPECKER_GRPC_ADDR        = "0.0.0.0:9000"
         WOODPECKER_LOG_LEVEL        = "debug"
         TZ                          = "America/Los_Angeles"
-        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
-        OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
-        OTEL_SERVICE_NAME           = "woodpecker-server"
+        OTEL_EXPORTER_OTLP_ENDPOINT  = "http://tempo.service.consul:4317"
+        OTEL_EXPORTER_OTLP_PROTOCOL  = "grpc"
+        OTEL_SERVICE_NAME            = "woodpecker-server"
+        WOODPECKER_METRICS_SERVER_ADDR = ":9001"
       }
 
       resources {

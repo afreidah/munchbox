@@ -53,3 +53,11 @@ berks-cookbooks
 *semgrep*
 *tfvars*
 munchbox-env.sh
+
+# --- Secrets & Credentials ---
+bootstrap-token.json
+.bitwarden/
+*.pem
+*.key
+*secret*.json
+!*secret*.tf

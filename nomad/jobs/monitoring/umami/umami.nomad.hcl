@@ -30,10 +30,13 @@ job "umami" {
 
   update {
     max_parallel      = 1
+    canary            = 1
+    health_check      = "checks"
     min_healthy_time  = "30s"
     healthy_deadline  = "5m"
     progress_deadline = "10m"
     auto_revert       = true
+    auto_promote      = true
   }
 
   # ---------------------------------------------------------------------------
@@ -92,11 +95,12 @@ job "umami" {
       ]
 
       check {
-        name     = "umami-health"
-        type     = "http"
-        path     = "/api/heartbeat"
-        interval = "30s"
-        timeout  = "5s"
+        name      = "umami-health"
+        type      = "http"
+        path      = "/api/heartbeat"
+        interval  = "10s"
+        timeout   = "5s"
+        on_update = "require_healthy"
       }
     }
 
@@ -114,7 +118,7 @@ job "umami" {
       }
 
       config {
-        image   = "alpine/curl:latest"
+        image   = "alpine/curl:8.11.1"
         command = "/bin/sh"
         args    = ["-c", "mkdir -p /geoip && cd /geoip && curl -sL \"https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz\" | gunzip > dbip-city-lite.mmdb && ls -la"]
         volumes = ["/mnt/gdrive/geoip:/geoip"]
@@ -146,7 +150,7 @@ job "umami" {
 
       # --- Container Configuration ---
       config {
-        image              = "ghcr.io/umami-software/umami:postgresql-latest"
+        image              = "ghcr.io/umami-software/umami:postgresql-v2.15.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
         volumes            = ["/mnt/gdrive/geoip:/geoip:ro"]

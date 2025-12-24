@@ -68,6 +68,9 @@ job "patroni" {
       port "patroni" {
         static = 8008
       }
+      port "metrics" {
+        static = 9187
+      }
     }
 
     # --- Restart Policy ---
@@ -160,6 +163,29 @@ job "patroni" {
       }
     }
 
+    # --- Postgres Metrics (for Prometheus) ---
+    service {
+      name     = "postgres-exporter"
+      port     = "metrics"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+        "prometheus",
+        "metrics",
+        "postgres"
+      ]
+
+      check {
+        name     = "postgres-exporter-health"
+        type     = "http"
+        port     = "metrics"
+        path     = "/metrics"
+        interval = "30s"
+        timeout  = "5s"
+      }
+    }
+
     # -------------------------------------------------------------------------
     # Task: init-storage
     # -------------------------------------------------------------------------
@@ -213,8 +239,54 @@ job "patroni" {
           # Persistent data - use host path for durability
           "/opt/nomad/data/patroni-${NOMAD_ALLOC_INDEX}:/home/postgres/data",
           "local/patroni.yml:/etc/patroni/patroni.yml:ro",
-          "local/post-init.sh:/etc/patroni/post-init.sh:ro"
+          "local/post-init.sh:/etc/patroni/post-init.sh:ro",
+          # TLS certificates from Vault PKI
+          "secrets/server.crt:/etc/patroni/ssl/server.crt:ro",
+          "secrets/server.key:/etc/patroni/ssl/server.key:ro",
+          "secrets/ca.crt:/etc/patroni/ssl/ca.crt:ro"
         ]
+      }
+
+      # --- TLS Certificate from Vault PKI ---
+      # Note: postgres user in Spilo container has UID/GID 999
+      template {
+        destination = "secrets/server.crt"
+        change_mode = "restart"
+        perms       = "0644"
+        uid         = 999
+        gid         = 999
+        data        = <<-EOF
+{{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=72h" }}
+{{ .Data.certificate }}
+{{ .Data.issuing_ca }}
+{{ end }}
+        EOF
+      }
+
+      template {
+        destination = "secrets/server.key"
+        change_mode = "restart"
+        perms       = "0600"
+        uid         = 999
+        gid         = 999
+        data        = <<-EOF
+{{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=72h" }}
+{{ .Data.private_key }}
+{{ end }}
+        EOF
+      }
+
+      template {
+        destination = "secrets/ca.crt"
+        change_mode = "restart"
+        perms       = "0644"
+        uid         = 999
+        gid         = 999
+        data        = <<-EOF
+{{ with secret "pki_int/cert/ca" }}
+{{ .Data.certificate }}
+{{ end }}
+        EOF
       }
 
       # --- Patroni Configuration ---
@@ -275,6 +347,12 @@ postgresql:
     hot_standby: "on"
     hot_standby_feedback: "on"
 
+    # --- TLS/SSL ---
+    ssl: "on"
+    ssl_cert_file: /etc/patroni/ssl/server.crt
+    ssl_key_file: /etc/patroni/ssl/server.key
+    ssl_ca_file: /etc/patroni/ssl/ca.crt
+
     # --- Logging ---
     log_destination: stderr
     logging_collector: "off"
@@ -288,8 +366,12 @@ postgresql:
   pg_hba:
     - local all all trust
     - host all all 127.0.0.1/32 scram-sha-256
-    - host all all 0.0.0.0/0 scram-sha-256
-    - host replication {{ with secret "secret/data/postgres-shared/replication" }}{{ .Data.data.username }}{{ end }} 0.0.0.0/0 scram-sha-256
+    - hostssl all all 0.0.0.0/0 scram-sha-256
+    # Allow non-TLS from internal cluster (Temporal doesn't support SQL_TLS_ENABLED)
+    - host all all 192.168.68.0/24 scram-sha-256
+    # Allow non-TLS from Docker bridge networks (Nomad containers in bridge mode)
+    - host all all 172.26.64.0/18 scram-sha-256
+    - hostssl replication {{ with secret "secret/data/postgres-shared/replication" }}{{ .Data.data.username }}{{ end }} 0.0.0.0/0 scram-sha-256
 
 # --- Bootstrap Configuration (for new cluster) ---
 bootstrap:
@@ -438,6 +520,54 @@ echo "Database initialization complete"
       # --- Termination ---
       kill_timeout = "60s"
       kill_signal  = "SIGTERM"
+    }
+
+    # -------------------------------------------------------------------------
+    # Task: postgres-exporter (Prometheus metrics sidecar)
+    # -------------------------------------------------------------------------
+
+    task "postgres-exporter" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image        = "quay.io/prometheuscommunity/postgres-exporter:v0.16.0"
+        network_mode = "host"
+      }
+
+      template {
+        destination = "secrets/exporter.env"
+        env         = true
+        data        = <<-EOF
+{{ with secret "secret/data/postgres-shared/root" }}
+DATA_SOURCE_USER={{ .Data.data.username }}
+DATA_SOURCE_PASS={{ .Data.data.password }}
+DATA_SOURCE_URI=127.0.0.1:{{ env "NOMAD_PORT_postgres" }}/postgres?sslmode=require
+{{ end }}
+PG_EXPORTER_WEB_LISTEN_ADDRESS=:{{ env "NOMAD_PORT_metrics" }}
+PG_EXPORTER_DISABLE_DEFAULT_METRICS=false
+PG_EXPORTER_DISABLE_SETTINGS_METRICS=false
+        EOF
+      }
+
+      resources {
+        cpu    = 50
+        memory = 64
+      }
     }
   }
 }

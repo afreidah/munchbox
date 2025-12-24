@@ -25,3 +25,31 @@ resource "vault_pki_secret_backend_role" "traefik" {
   ttl                = "720h"
   require_cn         = false
 }
+
+# -------------------------------------------------------------------------
+# PostgreSQL Role — Certs for Patroni cluster nodes
+# -------------------------------------------------------------------------
+#
+# Enables TLS for PostgreSQL connections. Patroni nodes request certs with
+# their Consul service names. Clients use sslmode=verify-ca with the CA cert.
+
+resource "vault_pki_secret_backend_role" "postgres" {
+  backend = "pki_int"
+  name    = "postgres"
+
+  allowed_domains = [
+    "postgres-primary.service.consul",
+    "postgres-replica.service.consul",
+    "postgres.service.consul",
+    "node.consul"
+  ]
+  allow_subdomains   = true
+  allow_bare_domains = true
+  allow_localhost    = true
+  allow_ip_sans      = true
+  max_ttl            = "720h" # 30 days max
+  ttl                = "72h"  # 3 day default, auto-renewed by Nomad
+  key_type           = "rsa"
+  key_bits           = 2048
+  require_cn         = false
+}

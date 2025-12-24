@@ -18,10 +18,14 @@ job "vaultwarden" {
   # ---------------------------------------------------------------------------
 
   update {
-    max_parallel     = 1
-    min_healthy_time = "30s"
-    healthy_deadline = "5m"
-    auto_revert      = true
+    max_parallel      = 1
+    canary            = 1
+    health_check      = "checks"
+    min_healthy_time  = "30s"
+    healthy_deadline  = "5m"
+    progress_deadline = "10m"
+    auto_revert       = true
+    auto_promote      = true
   }
 
   # ---------------------------------------------------------------------------
@@ -129,8 +133,6 @@ job "vaultwarden" {
           interval = "10s"
           timeout  = "3s"
         }
-
-        deregister_critical_service_after = "1m"
       }
 
       # --- Vault Secrets (Nomad 1.11 secret block) ---

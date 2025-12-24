@@ -131,18 +131,19 @@ func BackupWorkflow(ctx workflow.Context) (*BackupResult, error) {
 	result.PostgresBackup = pgPath
 	logger.Info("PostgreSQL backup complete", "path", pgPath)
 
-	// Take Registry backup
-	logger.Info("Taking Registry backup")
-	var registryPath string
-	err = workflow.ExecuteActivity(longCtx, TakeRegistryBackup).Get(ctx, &registryPath)
-	if err != nil {
-		logger.Error("Registry backup failed", "error", err)
-		result.Error = "Registry backup failed: " + err.Error()
-		result.Success = false
-		return result, err
-	}
-	result.RegistryBackup = registryPath
-	logger.Info("Registry backup complete", "path", registryPath)
+	// Registry backup disabled - images can be rebuilt if needed
+	// To re-enable, uncomment the TakeRegistryBackup activity call
+	// logger.Info("Taking Registry backup")
+	// var registryPath string
+	// err = workflow.ExecuteActivity(longCtx, TakeRegistryBackup).Get(ctx, &registryPath)
+	// if err != nil {
+	// 	logger.Error("Registry backup failed", "error", err)
+	// 	result.Error = "Registry backup failed: " + err.Error()
+	// 	result.Success = false
+	// 	return result, err
+	// }
+	// result.RegistryBackup = registryPath
+	// logger.Info("Registry backup complete", "path", registryPath)
 
 	// Clean up old backups (keep last 7 days)
 	logger.Info("Cleaning up old backups")

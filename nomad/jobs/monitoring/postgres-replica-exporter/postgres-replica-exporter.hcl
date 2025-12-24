@@ -29,8 +29,12 @@ env = {
 
 # --- Configuration templates (Vault credentials) ---
 templates = [
-  { src = "data_source.env", dest = "secrets/postgres.env", env = true }
+  { src = "data_source.env", dest = "secrets/postgres.env", env = true },
+  { src = "ca.crt", dest = "secrets/ca.crt", env = false }
 ]
+
+# --- Volume mounts for TLS ---
+volumes = ["secrets/ca.crt:/etc/ssl/postgres/ca.crt:ro"]
 
 # --- Service tags ---
 tags = ["monitoring", "postgres-exporter", "postgres-replica-exporter", "metrics", "database", "replica"]

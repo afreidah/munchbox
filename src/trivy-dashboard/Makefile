@@ -7,7 +7,7 @@
 # container images for deployment on heterogeneous Nomad clients.
 # -------------------------------------------------------------------------------
 
-REGISTRY   ?= registry.service.consul:5000
+REGISTRY   ?= registry.munchbox.cc
 IMAGE      := trivy-dashboard
 VERSION    ?= latest
 

@@ -67,6 +67,9 @@ job "redis-sentinel" {
       port "sentinel" {
         static = 26379
       }
+      port "metrics" {
+        static = 9121
+      }
     }
 
     # --- Restart Policy ---
@@ -156,6 +159,29 @@ job "redis-sentinel" {
         port     = "sentinel"
         interval = "10s"
         timeout  = "3s"
+      }
+    }
+
+    # --- Redis Metrics (for Prometheus) ---
+    service {
+      name     = "redis-exporter"
+      port     = "metrics"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+        "prometheus",
+        "metrics",
+        "redis"
+      ]
+
+      check {
+        name     = "redis-exporter-health"
+        type     = "http"
+        port     = "metrics"
+        path     = "/metrics"
+        interval = "30s"
+        timeout  = "5s"
       }
     }
 
@@ -341,6 +367,53 @@ sentinel announce-port {{ env "NOMAD_PORT_sentinel" }}
       # --- Termination ---
       kill_timeout = "10s"
       kill_signal  = "SIGTERM"
+    }
+
+    # -------------------------------------------------------------------------
+    # Task: redis-exporter (Prometheus metrics sidecar)
+    # -------------------------------------------------------------------------
+
+    task "redis-exporter" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image        = "oliver006/redis_exporter:v1.66.0"
+        network_mode = "host"
+      }
+
+      template {
+        destination = "secrets/exporter.env"
+        env         = true
+        data        = <<-EOF
+{{ with secret "secret/data/redis-shared" }}
+REDIS_ADDR=redis://127.0.0.1:{{ env "NOMAD_PORT_redis" }}
+REDIS_PASSWORD={{ .Data.data.password }}
+{{ end }}
+REDIS_EXPORTER_WEB_LISTEN_ADDRESS=:{{ env "NOMAD_PORT_metrics" }}
+REDIS_EXPORTER_CHECK_KEYS=*
+REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
+        EOF
+      }
+
+      resources {
+        cpu    = 50
+        memory = 64
+      }
     }
   }
 

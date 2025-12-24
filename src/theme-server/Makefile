@@ -7,7 +7,7 @@
 # publishes amd64 and arm64 variants using Docker Buildx.
 # -------------------------------------------------------------------------------
 
-REGISTRY   ?= registry.service.consul:5000
+REGISTRY   ?= registry.munchbox.cc
 IMAGE      := theme-server
 VERSION    ?= latest
 

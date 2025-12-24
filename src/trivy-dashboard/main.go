@@ -332,7 +332,15 @@ func initDB() error {
 
 	connStr := os.Getenv("DATABASE_URL")
 	if connStr == "" {
-		connStr = "host=" + dbHost + " port=" + dbPort + " user=" + dbUser + " password=" + dbPass + " dbname=" + dbName + " sslmode=disable"
+		sslMode := os.Getenv("DB_SSLMODE")
+		if sslMode == "" {
+			sslMode = "verify-ca"
+		}
+		sslRootCert := os.Getenv("DB_SSLROOTCERT")
+		connStr = "host=" + dbHost + " port=" + dbPort + " user=" + dbUser + " password=" + dbPass + " dbname=" + dbName + " sslmode=" + sslMode
+		if sslRootCert != "" {
+			connStr += " sslrootcert=" + sslRootCert
+		}
 	}
 
 	var err error

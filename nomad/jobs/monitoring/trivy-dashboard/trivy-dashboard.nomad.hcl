@@ -30,14 +30,8 @@ job "trivy-dashboard" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement 
+  # Placement - no constraint, can run on any node
   # -------------------------------------------------------------------------
-
-  constraint {
-    attribute = "${node.unique.name}"
-    operator  = "="
-    value     = "oraclenode2"
-  }
 
   # ---------------------------------------------------------------------------
   # Task Group: dashboard
@@ -97,6 +91,19 @@ job "trivy-dashboard" {
         image              = "registry.munchbox.cc/trivy-dashboard:latest"
         image_pull_timeout = "5m"
         ports              = ["http"]
+        volumes            = ["secrets/ca.crt:/etc/ssl/postgres/ca.crt:ro"]
+        dns_servers        = ["192.168.68.64", "192.168.68.62"]
+      }
+
+      # PostgreSQL CA certificate for TLS verification
+      template {
+        destination = "secrets/ca.crt"
+        perms       = "0644"
+        data        = <<-EOF
+{{ with secret "pki_int/cert/ca" }}
+{{ .Data.certificate }}
+{{ end }}
+        EOF
       }
 
       secret "trivy_db" {
@@ -114,6 +121,8 @@ job "trivy-dashboard" {
         TRIVY_DB_USER               = "${secret.trivy_db.db_username}"
         TRIVY_DB_PASSWORD           = "${secret.trivy_db.db_password}"
         TRIVY_DB_NAME               = "trivy"
+        DB_SSLMODE                  = "verify-ca"
+        DB_SSLROOTCERT              = "/etc/ssl/postgres/ca.crt"
         TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
         # OpenTelemetry tracing to Tempo (gRPC)
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"

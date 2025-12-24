@@ -190,6 +190,10 @@ path "pki_int/issue/traefik" {
   capabilities = ["create", "update", "read"]
 }
 
+path "pki_int/issue/postgres" {
+  capabilities = ["create", "update", "read"]
+}
+
 path "pki_int/cert/ca" {
   capabilities = ["read"]
 }

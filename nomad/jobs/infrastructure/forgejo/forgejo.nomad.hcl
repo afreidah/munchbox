@@ -28,8 +28,10 @@ job "forgejo" {
   # Update Strategy
   # ---------------------------------------------------------------------------
 
+  # Note: No canary - static SSH port 2222 prevents running two instances
   update {
     max_parallel      = 1
+    health_check      = "checks"
     min_healthy_time  = "30s"
     healthy_deadline  = "5m"
     progress_deadline = "10m"
@@ -258,7 +260,8 @@ REPOSITORY_AVATAR_UPLOAD_PATH = /data/gitea/repo-avatars
 PATH = /data/gitea/attachments
 
 [webhook]
-ALLOWED_HOST_LIST = *
+; Restrict webhooks to internal services and munchbox.cc domain (prevents SSRF)
+ALLOWED_HOST_LIST = loopback,*.service.consul,*.munchbox.cc
 
 [migrations]
 ALLOWED_DOMAINS = github.com,api.github.com,gitlab.com
@@ -273,6 +276,11 @@ ENABLED = true
 EXPORTER = otlp
 ENDPOINT = tempo.service.consul:4317
 SERVICE_NAME = forgejo
+
+[metrics]
+ENABLED = true
+ENABLED_ISSUE_BY_LABEL = true
+ENABLED_ISSUE_BY_REPOSITORY = true
 EOH
       }
 

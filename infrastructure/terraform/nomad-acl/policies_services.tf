@@ -52,14 +52,14 @@ resource "nomad_acl_policy" "backup_worker" {
       policy = "read"
     }
 
-    # Agent info for leader detection
+    # Agent write for snapshot operations (required for snapshot save)
     agent {
-      policy = "read"
+      policy = "write"
     }
 
-    # Operator read for snapshot operations
+    # Operator write for snapshot operations
     operator {
-      policy = "read"
+      policy = "write"
     }
   EOT
 }

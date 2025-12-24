@@ -372,8 +372,16 @@ func SaveScanToPostgres(ctx context.Context, result TrivyScanResult) error {
 		dbName = "trivy"
 	}
 
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		dbHost, dbPort, dbUser, dbPass, dbName)
+	sslMode := os.Getenv("DB_SSLMODE")
+	if sslMode == "" {
+		sslMode = "verify-ca"
+	}
+	sslRootCert := os.Getenv("DB_SSLROOTCERT")
+	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		dbHost, dbPort, dbUser, dbPass, dbName, sslMode)
+	if sslRootCert != "" {
+		connStr += " sslrootcert=" + sslRootCert
+	}
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {

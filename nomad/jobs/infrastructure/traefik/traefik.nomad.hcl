@@ -108,7 +108,9 @@ job "traefik" {
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
-          "/mnt/gdrive/munchbox-data/traefik/acme.json:/etc/traefik/acme.json",
+          # Let's Encrypt certs from shared NFS (managed by certbot job)
+          "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.crt:/etc/traefik/certs/munchbox.crt:ro",
+          "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.key:/etc/traefik/certs/munchbox.key:ro",
           "/etc/nomad.d/tls/ca-chain.crt:/etc/traefik/certs/ca-chain.crt:ro"
         ]
       }
@@ -177,7 +179,7 @@ EOH
 # -------------------------------------------------------------------------
 
 [providers.consulCatalog]
-  refreshInterval  = "15s"
+  refreshInterval  = "5s"
   prefix           = "traefik"
   exposedByDefault = false
 
@@ -242,12 +244,13 @@ EOH
       insecure = true
 
 # -------------------------------------------------------------------------
-# ACME (Let's Encrypt) Configuration
+# ACME Resolver (kept for Consul Catalog service compatibility)
+# Actual certs are loaded from files managed by certbot job
 # -------------------------------------------------------------------------
 
 [certificatesResolvers.letsencrypt.acme]
   email = "alex@alexfreidah.com"
-  storage = "/etc/traefik/acme.json"
+  storage = "/tmp/acme.json"
   [certificatesResolvers.letsencrypt.acme.dnsChallenge]
     provider = "cloudflare"
     resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
@@ -262,6 +265,18 @@ EOH
 # -------------------------------------------------------------------------
 # Traefik Dynamic Configuration
 # -------------------------------------------------------------------------
+
+# --- TLS Certificates (managed by certbot, stored in Vault) ---
+[[tls.certificates]]
+  certFile = "/etc/traefik/certs/munchbox.crt"
+  keyFile  = "/etc/traefik/certs/munchbox.key"
+
+# --- Default TLS Store ---
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/etc/traefik/certs/munchbox.crt"
+      keyFile  = "/etc/traefik/certs/munchbox.key"
 
 # --- TLS Options ---
 [tls.options]
@@ -290,10 +305,6 @@ EOH
     service     = "consul-ui"
     middlewares = ["authentik", "dashboard-allowlan"]
     [http.routers.consul.tls]
-      certResolver = "letsencrypt"
-      [[http.routers.consul.tls.domains]]
-        main = "munchbox.cc"
-        sans = ["*.munchbox.cc"]
 
   # --- Consul UI (HTTP, for CF tunnel) ---
   [http.routers.consul-http]
@@ -309,7 +320,6 @@ EOH
     service     = "nomad-ui"
     middlewares = ["authentik", "dashboard-allowlan", "nomad-token"]
     [http.routers.nomad.tls]
-      certResolver = "letsencrypt"
 
   # --- Nomad UI (HTTP, for CF tunnel) ---
   [http.routers.nomad-http]
@@ -325,7 +335,6 @@ EOH
     service     = "api@internal"
     middlewares = ["authentik", "dashboard-allowlan", "dashboard-redirect"]
     [http.routers.traefik-dashboard.tls]
-      certResolver = "letsencrypt"
 
   # --- Traefik Dashboard (HTTP, for CF tunnel) ---
   [http.routers.traefik-dashboard-http]
@@ -349,7 +358,6 @@ EOH
     service     = "proxmox-ui"
     middlewares = ["authentik", "dashboard-allowlan"]
     [http.routers.proxmox.tls]
-      certResolver = "letsencrypt"
 
   # --- Proxmox UI (HTTP, for CF tunnel) ---
   [http.routers.proxmox-http]
@@ -365,7 +373,6 @@ EOH
     service     = "vault-ui"
     middlewares = ["authentik", "dashboard-allowlan", "vault-theme"]
     [http.routers.vault.tls]
-      certResolver = "letsencrypt"
 
   # --- Vault UI (HTTP, for CF tunnel) ---
   [http.routers.vault-http]
@@ -380,7 +387,6 @@ EOH
     entryPoints = ["websecure"]
     service     = "theme-server"
     [http.routers.themes.tls]
-      certResolver = "letsencrypt"
 
   # --- Theme Server (HTTP, internal) ---
   [http.routers.themes-http]
@@ -394,7 +400,6 @@ EOH
     entryPoints = ["websecure"]
     service     = "ping@internal"
     [http.routers.ping.tls]
-      certResolver = "letsencrypt"
 
 # -------------------------------------------------------------------------
 # HTTP Middlewares
@@ -608,10 +613,18 @@ EOH
         tags     = ["traefik.enable=false", "metrics_port=8081"]
 
         check {
-          name     = "traefik-https"
-          type     = "tcp"
-          interval = "10s"
-          timeout  = "2s"
+          name            = "traefik-https-cert"
+          type            = "http"
+          protocol        = "https"
+          port            = "https"
+          path            = "/ping"
+          header {
+            Host = ["traefik.munchbox.cc"]
+          }
+          tls_server_name = "traefik.munchbox.cc"
+          tls_skip_verify = false
+          interval        = "10s"
+          timeout         = "5s"
         }
       }
 
