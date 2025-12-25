@@ -1,0 +1,130 @@
+# -------------------------------------------------------------------------------
+# Source Applications Pipeline
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Builds and pushes container images for applications in src/. Each app only
+# rebuilds when its source files change. Go apps run tests on PRs, images only
+# push on merge to main.
+# -------------------------------------------------------------------------------
+
+name: Source Applications
+
+on:
+  push:
+    paths:
+      - 'src/**'
+  pull_request:
+    paths:
+      - 'src/**'
+  workflow_dispatch:
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Dashboard (Hugo static site)
+  # -------------------------------------------------------------------------
+
+  dashboard-push:
+    runs-on: docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push dashboard
+        run: |
+          cd src/dashboard
+          make push
+
+  # -------------------------------------------------------------------------
+  # Trivy Dashboard (Go web app)
+  # -------------------------------------------------------------------------
+
+  trivy-dashboard-test:
+    runs-on: docker
+    container:
+      image: golang:1.23-alpine
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test trivy-dashboard
+        run: |
+          apk add --no-cache make
+          cd src/trivy-dashboard
+          make test
+
+  trivy-dashboard-push:
+    runs-on: docker
+    needs: trivy-dashboard-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push trivy-dashboard
+        run: |
+          cd src/trivy-dashboard
+          make push
+
+  # -------------------------------------------------------------------------
+  # Theme Server (static CSS)
+  # -------------------------------------------------------------------------
+
+  theme-server-push:
+    runs-on: docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push theme-server
+        run: |
+          cd src/theme-server
+          make push
+
+  # -------------------------------------------------------------------------
+  # Temporal Backup Worker (Go Temporal worker)
+  # -------------------------------------------------------------------------
+
+  temporal-backup-worker-test:
+    runs-on: docker
+    container:
+      image: golang:1.23-alpine
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test temporal-backup-worker
+        run: |
+          apk add --no-cache make
+          cd src/temporal-jobs/temporal-backup-worker
+          make test
+
+  temporal-backup-worker-push:
+    runs-on: docker
+    needs: temporal-backup-worker-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push temporal-backup-worker
+        run: |
+          cd src/temporal-jobs/temporal-backup-worker
+          make push
+
+  # -------------------------------------------------------------------------
+  # S3 Proxy (Go S3 proxy service)
+  # -------------------------------------------------------------------------
+
+  s3-proxy-test:
+    runs-on: docker
+    container:
+      image: golang:1.23-alpine
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test s3-proxy
+        run: |
+          apk add --no-cache make
+          cd src/s3-proxy
+          make test
+
+  s3-proxy-push:
+    runs-on: docker
+    needs: s3-proxy-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push s3-proxy
+        run: |
+          cd src/s3-proxy
+          make push

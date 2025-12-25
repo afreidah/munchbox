@@ -1,0 +1,69 @@
+# -------------------------------------------------------------------------------
+# Docker Images Pipeline
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Builds and tests Docker images on PRs. Pushes to registry on merge to main.
+# -------------------------------------------------------------------------------
+
+name: Docker Images
+
+on:
+  push:
+    paths:
+      - 'docker/**'
+  pull_request:
+    paths:
+      - 'docker/**'
+  workflow_dispatch:
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # ops-build-image
+  # ---------------------------------------------------------------------------
+
+  build-ops-build-image:
+    runs-on: docker
+    if: contains(github.event.head_commit.modified, 'docker/ops-build-image') || contains(github.event.head_commit.added, 'docker/ops-build-image') || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ops-build-image
+        run: |
+          cd docker/ops-build-image
+          make build-multiarch
+
+  push-ops-build-image:
+    runs-on: docker
+    needs: build-ops-build-image
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push ops-build-image
+        run: |
+          cd docker/ops-build-image
+          make push
+
+  # ---------------------------------------------------------------------------
+  # patroni (PostgreSQL 18 + Patroni HA)
+  # ---------------------------------------------------------------------------
+
+  build-patroni:
+    runs-on: docker
+    if: contains(github.event.head_commit.modified, 'docker/patroni') || contains(github.event.head_commit.added, 'docker/patroni') || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build patroni
+        run: |
+          cd docker/patroni
+          make build-multiarch
+
+  push-patroni:
+    runs-on: docker
+    needs: build-patroni
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Push patroni
+        run: |
+          cd docker/patroni
+          make push
