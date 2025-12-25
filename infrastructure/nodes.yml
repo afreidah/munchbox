@@ -83,6 +83,7 @@ bare_metal:
       - nomad_client
       - consul_server
       - vault_server
+      - ingress
     notes: "Raspberry Pi 5 - primary Vault server"
 
   goren:
@@ -93,6 +94,7 @@ bare_metal:
       - nomad_client
       - consul_server
       - vault_server
+      - ingress
     notes: "Raspberry Pi 5 - batch job runner"
 
 # -------------------------------------------------------------------------------

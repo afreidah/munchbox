@@ -20,18 +20,15 @@ size = "medium"
 # --- Storage ---
 storage      = "ephemeral"
 volumes = [
-  "/mnt/gdrive/munchbox-data/registry:/var/lib/registry",
-  "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.crt:/certs/munchbox.crt:ro",
-  "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.key:/certs/munchbox.key:ro"
+  "/mnt/gdrive/munchbox-data/registry:/var/lib/registry"
 ]
 
 # --- Traefik routing ---
 traefik      = true
 traefik_host = "registry.munchbox.cc"
 
-# --- Health check (TCP since registry now uses TLS) ---
-health_type = "tcp"
-health_path = ""
+# --- Health check ---
+health_path = "/v2/"
 
 # --- Container arguments ---
 args = ["serve", "/local/config.yml"]
@@ -46,9 +43,6 @@ tags = [
   "docker",
   "registry",
   "infrastructure",
-  # Tell Traefik to use HTTPS when connecting to the backend
-  "traefik.http.services.registry.loadbalancer.server.scheme=https",
-  "traefik.http.services.registry.loadbalancer.serversTransport=insecure@file",
 ]
 
 # --- Termination ---

@@ -7,7 +7,7 @@
 job "cloudflared-tunnel" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "system"
+  type        = "service"
   node_pool   = "all"
   priority    = 50
 
@@ -27,11 +27,11 @@ job "cloudflared-tunnel" {
   # Placement
   # -------------------------------------------------------------------------
 
-  # --- Pin to ingress nodes ---
+  # --- Pin to goren ---
   constraint {
-    attribute = "${meta.role}"
+    attribute = "${node.unique.name}"
     operator  = "="
-    value     = "ingress"
+    value     = "goren"
   }
 
   # ---------------------------------------------------------------------------
@@ -39,6 +39,7 @@ job "cloudflared-tunnel" {
   # ---------------------------------------------------------------------------
 
   group "cloudflared-tunnel" {
+    count = 1
 
     # --- Network Configuration ---
     network {

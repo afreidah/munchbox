@@ -164,6 +164,10 @@ path "secret/data/forgejo" {
   capabilities = ["read"]
 }
 
+path "secret/data/forgejo-runner" {
+  capabilities = ["read"]
+}
+
 path "secret/data/woodpecker" {
   capabilities = ["read"]
 }

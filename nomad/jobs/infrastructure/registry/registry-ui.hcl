@@ -26,7 +26,7 @@ health_path = "/"
 
 # --- Environment variables ---
 env = {
-  NGINX_PROXY_PASS_URL = "https://registry.munchbox.cc"
+  NGINX_PROXY_PASS_URL = "http://192.168.68.61:5000"
   SINGLE_REGISTRY      = "true"
   REGISTRY_TITLE       = "Munchbox Docker Registry"
   DELETE_IMAGES        = "false"

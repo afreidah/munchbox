@@ -51,3 +51,9 @@ tags = [
 
 # --- DNS configuration ---
 dns = ["192.168.68.64", "192.168.68.62"]
+
+# --- Exclude Oracle nodes (unreliable WAN link) ---
+constraints = [
+  { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode1" },
+  { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode2" }
+]

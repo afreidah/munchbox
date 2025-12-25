@@ -1,44 +1,37 @@
 # -------------------------------------------------------------------------------
-# Configure Pi-hole VIPs for Traefik HA
+# Configure Pi-hole DNS for Traefik
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Configures dnsmasq on Pi-hole to return both Traefik VIPs for *.munchbox.cc.
-# This provides round-robin load distribution across ingress nodes.
-#
-# VIPs:
-#   - 192.168.68.80 (stabler primary)
-#   - 192.168.68.81 (goren primary)
+# Configures dnsmasq on Pi-hole to resolve *.munchbox.cc to Traefik on goren.
 #
 # Usage:
 #   ansible-playbook playbooks/configure-pihole-vips.yml -i inventory/bare-metal.ini
 # -------------------------------------------------------------------------------
 ---
-- name: Configure Pi-hole DNS for Traefik HA VIPs
+- name: Configure Pi-hole DNS for Traefik
   hosts: dns_servers
   become: true
   gather_facts: true
 
   vars:
-    traefik_vip1: "192.168.68.80"
-    traefik_vip2: "192.168.68.81"
+    traefik_ip: "192.168.68.60"  # goren - single traefik instance
 
   tasks:
-    - name: Create dnsmasq config for munchbox.cc VIPs
+    - name: Create dnsmasq config for munchbox.cc
       copy:
         dest: /etc/dnsmasq.d/10-munchbox-vips.conf
         mode: '0644'
         content: |
           # -----------------------------------------------------------------------
-          # Munchbox Traefik HA VIPs
+          # Munchbox Traefik DNS
           #
-          # Returns both VIPs for *.munchbox.cc for round-robin load distribution.
+          # Routes *.munchbox.cc to Traefik on goren (single instance).
           # Managed by Ansible - playbooks/configure-pihole-vips.yml
           # -----------------------------------------------------------------------
 
           # Wildcard for all *.munchbox.cc subdomains
-          address=/.munchbox.cc/{{ traefik_vip1 }}
-          address=/.munchbox.cc/{{ traefik_vip2 }}
+          address=/.munchbox.cc/{{ traefik_ip }}
       notify: Restart pihole-FTL
 
     - name: Remove old single-IP dnsmasq configs if exist
@@ -98,5 +91,5 @@
           dashboard.munchbox.cc resolves to:
           {{ dig_result.stdout }}
 
-          Expected: Both 192.168.68.80 and 192.168.68.81
+          Expected: 192.168.68.60 (goren)
           ============================================================

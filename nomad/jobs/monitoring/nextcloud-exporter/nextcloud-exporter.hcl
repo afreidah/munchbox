@@ -24,11 +24,10 @@ health_timeout = "35s"
 health_interval = "60s"
 
 # --- Environment (static) ---
-# Note: Using direct IP since container doesn't have Consul DNS
-# Nextcloud runs on goren (192.168.68.60) with static port 18081
+# Use Consul DNS to dynamically resolve Nextcloud
 env = {
   TZ                            = "America/Los_Angeles"
-  NEXTCLOUD_SERVER              = "http://192.168.68.60:18081"
+  NEXTCLOUD_SERVER              = "https://nextcloud.munchbox.cc"
   NEXTCLOUD_TIMEOUT             = "30s"
   NEXTCLOUD_TLS_SKIP_VERIFY     = "true"
 }

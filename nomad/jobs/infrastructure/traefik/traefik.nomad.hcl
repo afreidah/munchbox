@@ -14,7 +14,7 @@
 job "traefik" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "system"
+  type        = "service"
   node_pool   = "all"
   priority    = 90
 
@@ -46,9 +46,9 @@ job "traefik" {
   # -------------------------------------------------------------------------
 
   constraint {
-    attribute = "${meta.role}"
+    attribute = "${node.unique.name}"
     operator  = "="
-    value     = "ingress"
+    value     = "goren"
   }
 
   # -------------------------------------------------------------------------
@@ -56,6 +56,7 @@ job "traefik" {
   # -------------------------------------------------------------------------
 
   group "traefik" {
+    count = 1
 
     # --- Network Configuration ---
     network {
