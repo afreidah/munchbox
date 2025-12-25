@@ -110,6 +110,7 @@ runner:
   fetch_timeout: 5s
   fetch_interval: 2s
   labels:
+    - "self-hosted:host"
     - "docker:docker://node:20-alpine"
     - "ubuntu-latest:docker://ubuntu:22.04"
     - "ubuntu-22.04:docker://ubuntu:22.04"
