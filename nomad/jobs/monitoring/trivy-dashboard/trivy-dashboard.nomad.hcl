@@ -72,6 +72,8 @@ job "trivy-dashboard" {
         interval = "15s"
         timeout  = "5s"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     task "dashboard" {

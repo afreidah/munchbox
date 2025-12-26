@@ -116,6 +116,8 @@ job "nextcloud" {
         interval = "30s"
         timeout  = "10s"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # -----------------------------------------------------------------------

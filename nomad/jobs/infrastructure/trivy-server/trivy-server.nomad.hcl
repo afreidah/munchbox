@@ -36,7 +36,6 @@ job "trivy-server" {
   group "server" {
     count = 1
 
-
     network {
       port "http" {
         static = 4954
@@ -69,6 +68,8 @@ job "trivy-server" {
         timeout  = "5s"
         on_update = "require_healthy"
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------

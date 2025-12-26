@@ -627,6 +627,8 @@ EOH
           interval        = "10s"
           timeout         = "5s"
         }
+
+        deregister_critical_service_after = "1m"
       }
 
       # --- Service Registration (Dashboard) ---
@@ -643,6 +645,8 @@ EOH
           interval = "10s"
           timeout  = "2s"
         }
+
+        deregister_critical_service_after = "1m"
       }
 
       # --- Resources ---

@@ -20,13 +20,11 @@ job "authentik" {
 
   update {
     max_parallel      = 1
-    canary            = 1
     health_check      = "checks"
     min_healthy_time  = "30s"
     healthy_deadline  = "10m"
     progress_deadline = "15m"
     auto_revert       = true
-    auto_promote      = true
   }
 
   # ---------------------------------------------------------------------------
@@ -103,6 +101,8 @@ job "authentik" {
         timeout  = "10s"
         failures_before_critical = 3
       }
+
+      deregister_critical_service_after = "1m"
     }
 
     # --- Metrics Service (for Prometheus) ---
