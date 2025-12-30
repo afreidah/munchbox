@@ -59,6 +59,13 @@ job "patroni" {
       value    = "true"
     }
 
+    # --- Pin to nodes with existing data ---
+    constraint {
+      attribute = "${node.unique.name}"
+      operator  = "set_contains_any"
+      value     = "goren,stabler.munchbox.cc"
+    }
+
     # --- Network Configuration ---
     network {
       mode = "host"
@@ -545,7 +552,7 @@ echo "Database initialization complete"
       }
 
       config {
-        image        = "quay.io/prometheuscommunity/postgres-exporter:v0.16.0"
+        image        = "quay.io/prometheuscommunity/postgres-exporter:v0.18.1"
         network_mode = "host"
       }
 

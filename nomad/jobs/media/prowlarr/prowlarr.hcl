@@ -14,8 +14,8 @@ image        = "linuxserver/prowlarr:2.3.0"
 port         = 9696
 static_port  = 9696
 host_network = true
-node         = "nomad-client-03"
 size         = "medium"
+node         = "goren"
 memory       = 300
 cpu          = 1000
 
@@ -47,9 +47,9 @@ tags = [
   "prowlarr",
   "media",
   "arr",
-  "traefik.http.routers.prowlarr.middlewares=authentik@file",
+  "traefik.http.routers.prowlarr.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.prowlarr-http.rule=Host(`prowlarr.munchbox.cc`)",
   "traefik.http.routers.prowlarr-http.entrypoints=web",
-  "traefik.http.routers.prowlarr-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.prowlarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]

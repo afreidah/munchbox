@@ -63,6 +63,11 @@ job "trivy-dashboard" {
         "traefik.http.routers.trivy-dashboard.rule=Host(`trivy-dashboard.munchbox.cc`)",
         "traefik.http.routers.trivy-dashboard.entrypoints=websecure",
         "traefik.http.routers.trivy-dashboard.tls.certresolver=letsencrypt",
+        "traefik.http.routers.trivy-dashboard.middlewares=oauth2-proxy@file",
+        # HTTP router for CF tunnel
+        "traefik.http.routers.trivy-dashboard-http.rule=Host(`trivy-dashboard.munchbox.cc`)",
+        "traefik.http.routers.trivy-dashboard-http.entrypoints=web",
+        "traefik.http.routers.trivy-dashboard-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file",
       ]
 
       check {
@@ -72,8 +77,6 @@ job "trivy-dashboard" {
         interval = "15s"
         timeout  = "5s"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     task "dashboard" {

@@ -23,8 +23,8 @@ storage = "ephemeral"
 volumes = [
   "/opt/nomad/data/ersatztv/config:/config",
   "/opt/nomad/data/ersatztv/transcode:/transcode",
-  "/mnt/gdrive/media/Movies:/media/Movies:ro",
-  "/mnt/gdrive/media/TV:/media/TV:ro"
+  "/tank/media/Movies:/media/Movies:ro",
+  "/tank/media/TV:/media/TV:ro"
 ]
 
 # --- NVIDIA GPU transcoding ---
@@ -55,11 +55,11 @@ tags = [
   "media",
   "ersatztv",
   "streaming",
-  "traefik.http.routers.ersatztv.middlewares=authentik@file",
+  "traefik.http.routers.ersatztv.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.ersatztv-http.rule=Host(`ersatz.munchbox.cc`)",
   "traefik.http.routers.ersatztv-http.entrypoints=web",
-  "traefik.http.routers.ersatztv-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.ersatztv-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]
 
 # --- Termination ---

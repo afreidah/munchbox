@@ -89,15 +89,27 @@ job "forgejo" {
 
       tags = [
         "traefik.enable=true",
-        # HTTPS router (direct LAN access)
+        # HTTPS router for API (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-api.rule=Host(`git.munchbox.cc`) && PathPrefix(`/api/`)",
+        "traefik.http.routers.forgejo-api.entrypoints=websecure",
+        "traefik.http.routers.forgejo-api.tls=true",
+        "traefik.http.routers.forgejo-api.middlewares=forgejo-api-ratelimit@file",
+        "traefik.http.routers.forgejo-api.priority=10",
+        # HTTPS router for web UI (with oauth2-proxy)
         "traefik.http.routers.forgejo.rule=Host(`git.munchbox.cc`)",
         "traefik.http.routers.forgejo.entrypoints=websecure",
         "traefik.http.routers.forgejo.tls=true",
         "traefik.http.routers.forgejo.tls.certresolver=letsencrypt",
-        # HTTP router (Cloudflare tunnel)
+        "traefik.http.routers.forgejo.middlewares=oauth2-proxy@file",
+        # HTTP router for API (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-api-http.rule=Host(`git.munchbox.cc`) && PathPrefix(`/api/`)",
+        "traefik.http.routers.forgejo-api-http.entrypoints=web",
+        "traefik.http.routers.forgejo-api-http.middlewares=cf-tunnel-https@file,forgejo-api-ratelimit@file",
+        "traefik.http.routers.forgejo-api-http.priority=10",
+        # HTTP router for web UI (with oauth2-proxy)
         "traefik.http.routers.forgejo-http.rule=Host(`git.munchbox.cc`)",
         "traefik.http.routers.forgejo-http.entrypoints=web",
-        "traefik.http.routers.forgejo-http.middlewares=cf-tunnel-https@file",
+        "traefik.http.routers.forgejo-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file",
         "git",
         "forgejo",
         "infrastructure"
@@ -210,6 +222,8 @@ ITEM_TTL = 16h
 [session]
 PROVIDER = redis
 PROVIDER_CONFIG = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
+COOKIE_SECURE = true
+SAME_SITE = lax
 
 [queue]
 TYPE = redis

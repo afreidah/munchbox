@@ -28,9 +28,9 @@ storage = "ephemeral"
 volumes = [
   "/opt/nomad/data/jellyfin/config:/config",
   "/opt/nomad/data/jellyfin/cache:/cache",
-  "/mnt/gdrive/media/Movies:/media/Movies:ro",
-  "/mnt/gdrive/media/TV:/media/TV:ro",
-  "/mnt/gdrive/media/Music:/media/Music:ro"
+  "/tank/media/Movies:/media/Movies:ro",
+  "/tank/media/TV:/media/TV:ro",
+  "/tank/media/Music:/media/Music:ro"
 ]
 
 # --- NVIDIA GPU transcoding ---
@@ -70,10 +70,11 @@ tags = [
   "traefik.http.routers.jellyfin.entrypoints=websecure",
   "traefik.http.routers.jellyfin.tls=true",
   "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt",
+  "traefik.http.routers.jellyfin.middlewares=jellyfin-ratelimit@file",
   # HTTP router (for CF tunnel)
   "traefik.http.routers.jellyfin-http.rule=Host(`jellyfin.munchbox.cc`)",
   "traefik.http.routers.jellyfin-http.entrypoints=web",
-  "traefik.http.routers.jellyfin-http.middlewares=cf-tunnel-https@file",
+  "traefik.http.routers.jellyfin-http.middlewares=cf-tunnel-https@file,jellyfin-ratelimit@file",
   "traefik.http.routers.jellyfin-http.service=jellyfin"
 ]
 

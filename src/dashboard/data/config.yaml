@@ -20,6 +20,12 @@ services:
   - name: Apps
     icon: fa-solid fa-cloud
     items:
+      - name: OAuth2 Proxy
+        subtitle: SSO and identity provider
+        url: https://auth.munchbox.cc
+        tag: security
+        icon: oauth2-proxy.png
+
       - name: Nextcloud
         subtitle: Files, calendar, contacts
         url: https://nextcloud.munchbox.cc
@@ -129,12 +135,6 @@ services:
         tag: containers
         icon: registry-ui.png
 
-      - name: Woodpecker
-        subtitle: CI/CD pipelines
-        url: https://woodpecker.munchbox.cc
-        tag: ci
-        icon: woodpecker.svg
-
       - name: Forgejo
         subtitle: Git repository hosting
         url: https://git.munchbox.cc
@@ -170,12 +170,6 @@ services:
         url: https://dash.cloudflare.com
         tag: external
         icon: cloudflare.png
-
-      - name: Authentik
-        subtitle: SSO and identity provider
-        url: https://auth.munchbox.cc
-        tag: security
-        icon: authentik.png
 
       - name: Trivy Scanner
         subtitle: Container vulnerability scans

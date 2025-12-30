@@ -304,7 +304,7 @@ EOH
     rule        = "Host(`consul.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "consul-ui"
-    middlewares = ["authentik", "dashboard-allowlan"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
     [http.routers.consul.tls]
 
   # --- Consul UI (HTTP, for CF tunnel) ---
@@ -312,14 +312,14 @@ EOH
     rule        = "Host(`consul.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "consul-ui"
-    middlewares = ["cf-tunnel-https", "authentik"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy"]
 
   # --- Nomad UI (HTTPS, LAN-only) ---
   [http.routers.nomad]
     rule        = "Host(`nomad.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "nomad-ui"
-    middlewares = ["authentik", "dashboard-allowlan", "nomad-token"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan", "nomad-token"]
     [http.routers.nomad.tls]
 
   # --- Nomad UI (HTTP, for CF tunnel) ---
@@ -327,14 +327,14 @@ EOH
     rule        = "Host(`nomad.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "nomad-ui"
-    middlewares = ["cf-tunnel-https", "authentik", "nomad-token"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy", "nomad-token"]
 
   # --- Traefik Dashboard (HTTPS, LAN-only) ---
   [http.routers.traefik-dashboard]
     rule        = "Host(`traefik.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "api@internal"
-    middlewares = ["authentik", "dashboard-allowlan", "dashboard-redirect"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan", "dashboard-redirect"]
     [http.routers.traefik-dashboard.tls]
 
   # --- Traefik Dashboard (HTTP, for CF tunnel) ---
@@ -342,14 +342,14 @@ EOH
     rule        = "Host(`traefik.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "api@internal"
-    middlewares = ["cf-tunnel-https", "authentik", "dashboard-redirect"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy", "dashboard-redirect"]
 
   # --- Traefik Dashboard fallback on :8081 ---
   [http.routers.traefik-fallback]
     rule        = "PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
     entryPoints = ["traefik"]
     service     = "api@internal"
-    middlewares = ["authentik", "dashboard-allowlan"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
     priority    = 2
 
   # --- Proxmox UI (HTTPS, LAN-only) ---
@@ -357,7 +357,7 @@ EOH
     rule        = "Host(`proxmox.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "proxmox-ui"
-    middlewares = ["authentik", "dashboard-allowlan"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
     [http.routers.proxmox.tls]
 
   # --- Proxmox UI (HTTP, for CF tunnel) ---
@@ -365,14 +365,14 @@ EOH
     rule        = "Host(`proxmox.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "proxmox-ui"
-    middlewares = ["cf-tunnel-https", "authentik"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy"]
 
   # --- Vault UI (HTTPS, LAN-only) ---
   [http.routers.vault]
     rule        = "Host(`vault.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "vault-ui"
-    middlewares = ["authentik", "dashboard-allowlan", "vault-theme"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan", "vault-theme"]
     [http.routers.vault.tls]
 
   # --- Vault UI (HTTP, for CF tunnel) ---
@@ -380,20 +380,8 @@ EOH
     rule        = "Host(`vault.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "vault-ui"
-    middlewares = ["cf-tunnel-https", "authentik", "vault-theme"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy", "vault-theme"]
 
-  # --- Theme Server (HTTPS, internal CSS files) ---
-  [http.routers.themes]
-    rule        = "Host(`themes.munchbox.cc`)"
-    entryPoints = ["websecure"]
-    service     = "theme-server"
-    [http.routers.themes.tls]
-
-  # --- Theme Server (HTTP, internal) ---
-  [http.routers.themes-http]
-    rule        = "Host(`themes.munchbox.cc`)"
-    entryPoints = ["web"]
-    service     = "theme-server"
 
   # --- Health check endpoint (no auth) ---
   [http.routers.ping]
@@ -408,18 +396,21 @@ EOH
 
 [http.middlewares]
 
-  # --- Authentik Forward Auth (domain-level SSO) ---
-  # Using direct IP since system DNS doesn't resolve .service.consul properly
-  [http.middlewares.authentik.forwardAuth]
-    address              = "http://192.168.68.61:9000/outpost.goauthentik.io/auth/traefik"
+  # --- OAuth2 Proxy Forward Auth ---
+  [http.middlewares.oauth2-proxy.forwardAuth]
+    address              = "http://oauth2-proxy.service.consul:4180/oauth2/auth"
     trustForwardHeader   = true
     authResponseHeaders  = [
-      "X-authentik-username",
-      "X-authentik-groups",
-      "X-authentik-email",
-      "X-authentik-name",
-      "X-authentik-uid"
+      "X-Auth-Request-User",
+      "X-Auth-Request-Email",
+      "X-Auth-Request-Access-Token"
     ]
+
+  # --- OAuth2 Proxy Error Handler (redirects 401 to sign-in) ---
+  [http.middlewares.oauth2-proxy-errors.errors]
+    status  = ["401"]
+    service = "oauth2-proxy-signin"
+    query   = "/oauth2/sign_in?rd={url}"
 
   # --- HTTPS redirect ---
   [http.middlewares.redirect-https.redirectScheme]
@@ -506,22 +497,26 @@ EOH
     referrerPolicy          = "strict-origin-when-cross-origin"
     permissionsPolicy       = "camera=(), microphone=(), geolocation=(), payment=()"
 
-  # --- Emby rate limiting ---
-  [http.middlewares.emby-ratelimit.rateLimit]
-    average = 100
-    burst   = 200
-    [http.middlewares.emby-ratelimit.rateLimit.sourceCriterion]
+  # --- OAuth2-Proxy rate limiting (auth.munchbox.cc) ---
+  [http.middlewares.auth-ratelimit.rateLimit]
+    average = 10
+    burst   = 20
+    [http.middlewares.auth-ratelimit.rateLimit.sourceCriterion]
       requestHeaderName = "CF-Connecting-IP"
 
-  # --- Emby security headers ---
-  [http.middlewares.emby-sec.headers]
-    stsSeconds              = 31536000
-    stsIncludeSubdomains    = true
-    forceSTSHeader          = true
-    contentTypeNosniff      = true
-    browserXssFilter        = true
-    customFrameOptionsValue = "SAMEORIGIN"
-    referrerPolicy          = "strict-origin-when-cross-origin"
+  # --- Jellyfin rate limiting ---
+  [http.middlewares.jellyfin-ratelimit.rateLimit]
+    average = 50
+    burst   = 100
+    [http.middlewares.jellyfin-ratelimit.rateLimit.sourceCriterion]
+      requestHeaderName = "CF-Connecting-IP"
+
+  # --- Forgejo API rate limiting ---
+  [http.middlewares.forgejo-api-ratelimit.rateLimit]
+    average = 100
+    burst   = 200
+    [http.middlewares.forgejo-api-ratelimit.rateLimit.sourceCriterion]
+      requestHeaderName = "CF-Connecting-IP"
 
   # --- Nomad UI token injection ---
   [http.middlewares.nomad-token.headers]
@@ -584,10 +579,10 @@ EOH
     [[http.services.vault-ui.loadBalancer.servers]]
       url = "https://192.168.68.61:8200"
 
-  # --- Theme Server (CSS files via WireGuard) ---
-  [http.services.theme-server.loadBalancer]
-    [[http.services.theme-server.loadBalancer.servers]]
-      url = "http://10.200.0.12:8078"
+  # --- OAuth2 Proxy Sign-in (for error redirect) ---
+  [http.services.oauth2-proxy-signin.loadBalancer]
+    [[http.services.oauth2-proxy-signin.loadBalancer.servers]]
+      url = "http://192.168.68.73:4180"
 
 # -------------------------------------------------------------------------
 # Server Transports
@@ -628,7 +623,6 @@ EOH
           timeout         = "5s"
         }
 
-        deregister_critical_service_after = "1m"
       }
 
       # --- Service Registration (Dashboard) ---
@@ -646,7 +640,6 @@ EOH
           timeout  = "2s"
         }
 
-        deregister_critical_service_after = "1m"
       }
 
       # --- Resources ---

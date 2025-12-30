@@ -270,9 +270,10 @@ maxmemory-policy allkeys-lru
 # Logging
 loglevel warning
 
-# Replication - both instances start as standalone masters
-# Sentinel will elect one as master and configure the other as replica
-# This avoids bootstrap dependency on Consul service discovery
+# Replication - goren is master, others replicate from it
+{{ if ne (env "attr.unique.hostname") "goren" }}
+replicaof 192.168.68.60 6379
+{{ end }}
         EOF
       }
 
@@ -340,10 +341,10 @@ port {{ env "NOMAD_PORT_sentinel" }}
 dir /data
 daemonize no
 
-# Monitor the Redis master - use local Redis on same allocation
-# Sentinel will discover other Redis instances and elect master
+# Monitor the Redis master - use goren (192.168.68.60) as initial master
+# Sentinel will discover actual master and reconfigure as needed
 {{ with secret "secret/data/redis-shared" }}
-sentinel monitor munchbox-redis 127.0.0.1 6379 2
+sentinel monitor munchbox-redis 192.168.68.60 6379 2
 sentinel auth-pass munchbox-redis {{ .Data.data.password }}
 {{ end }}
 
@@ -491,9 +492,9 @@ port {{ env "NOMAD_PORT_sentinel" }}
 dir /tmp
 daemonize no
 
-# Bootstrap with placeholder - other sentinels will update master location
+# Monitor the Redis master - use goren (192.168.68.60) as initial master
 {{ with secret "secret/data/redis-shared" }}
-sentinel monitor munchbox-redis 127.0.0.1 6379 2
+sentinel monitor munchbox-redis 192.168.68.60 6379 2
 sentinel auth-pass munchbox-redis {{ .Data.data.password }}
 {{ end }}
 

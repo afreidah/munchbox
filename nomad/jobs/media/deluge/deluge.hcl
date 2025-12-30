@@ -14,6 +14,7 @@ image        = "linuxserver/deluge:2.2.0"
 port         = 8112
 static_port  = 8112
 host_network = true
+node         = "nomad-client-04"
 size         = "medium"
 memory       = 1024
 cpu          = 1500
@@ -22,7 +23,7 @@ cpu          = 1500
 storage      = "local"           # Local, not NFS
 storage_path = "/config"
 volumes = [
-  "/mnt/gdrive:/data"
+  "/tank:/data"
 ]
 
 # --- Traefik routing ---
@@ -47,11 +48,11 @@ tags = [
   "torrent",
   "media",
   # HTTPS router (direct LAN access)
-  "traefik.http.routers.deluge.middlewares=authentik@file",
+  "traefik.http.routers.deluge.middlewares=oauth2-proxy@file",
   # HTTP router (Cloudflare tunnel - TLS terminated at CF edge)
   "traefik.http.routers.deluge-http.rule=Host(`deluge.munchbox.cc`)",
   "traefik.http.routers.deluge-http.entrypoints=web",
-  "traefik.http.routers.deluge-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.deluge-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]
 
 # --- Vault integration ---
