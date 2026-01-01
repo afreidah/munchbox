@@ -25,17 +25,28 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/XSAM/otelsql"
 	"github.com/hashicorp/nomad/api"
+	_ "github.com/lib/pq"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
+
+// tracer is used for creating spans in activities
+var tracer = otel.Tracer("temporal-backup-worker")
 
 // Vulnerability holds details about a single CVE
 type Vulnerability struct {
@@ -191,6 +202,16 @@ func GetRunningImages(ctx context.Context) ([]string, error) {
 		config.TLSConfig.CACert = caCert
 	}
 
+	// Wrap HTTP transport with OpenTelemetry instrumentation for service graph visibility
+	config.HttpClient = &http.Client{
+		Transport: otelhttp.NewTransport(
+			http.DefaultTransport,
+			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+				return fmt.Sprintf("nomad.%s", r.URL.Path)
+			}),
+		),
+	}
+
 	client, err := api.NewClient(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Nomad client: %w", err)
@@ -258,6 +279,17 @@ func ScanImage(ctx context.Context, image string) (TrivyScanResult, error) {
 		trivyServer = "http://trivy-server.service.consul:4954"
 	}
 
+	// Create span for trivy CLI execution (shows as client call to trivy-server)
+	ctx, span := tracer.Start(ctx, "trivy.scan",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("trivy.image", image),
+			attribute.String("trivy.server", trivyServer),
+			semconv.PeerService("trivy-server"),
+		),
+	)
+	defer span.End()
+
 	// Run trivy in client mode, connecting to the server
 	cmd := exec.CommandContext(ctx, "trivy", "image",
 		"--server", trivyServer,
@@ -278,11 +310,15 @@ func ScanImage(ctx context.Context, image string) (TrivyScanResult, error) {
 			strings.Contains(errMsg, "connection refused") {
 			result.Status = "pull_failed"
 			result.Error = errMsg
+			span.SetStatus(codes.Error, "pull_failed")
+			span.SetAttributes(attribute.String("trivy.error", errMsg))
 			logger.Warn("Failed to pull image", "image", image, "error", errMsg)
 			return result, nil
 		}
 		result.Status = "error"
 		result.Error = fmt.Sprintf("%v: %s", err, errMsg)
+		span.SetStatus(codes.Error, "scan_failed")
+		span.SetAttributes(attribute.String("trivy.error", result.Error))
 		logger.Error("Scan failed", "image", image, "error", result.Error)
 		return result, nil
 	}
@@ -340,6 +376,15 @@ func ScanImage(ctx context.Context, image string) (TrivyScanResult, error) {
 		}
 	}
 
+	// Record scan results on span
+	span.SetAttributes(
+		attribute.Int("trivy.critical", result.CriticalCount),
+		attribute.Int("trivy.high", result.HighCount),
+		attribute.Int("trivy.medium", result.MediumCount),
+		attribute.Int("trivy.low", result.LowCount),
+		attribute.Int("trivy.total", len(result.Vulnerabilities)),
+	)
+
 	logger.Info("Scan complete",
 		"image", image,
 		"critical", result.CriticalCount,
@@ -383,11 +428,19 @@ func SaveScanToPostgres(ctx context.Context, result TrivyScanResult) error {
 		connStr += " sslrootcert=" + sslRootCert
 	}
 
-	db, err := sql.Open("postgres", connStr)
+	// Use otelsql for automatic tracing of database operations (shows in service graph)
+	db, err := otelsql.Open("postgres", connStr,
+		otelsql.WithAttributes(
+			semconv.DBSystemPostgreSQL,
+			semconv.DBNamespace(dbName),
+			semconv.ServerAddress(dbHost),
+			semconv.ServerPort(5432),
+		),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to connect to postgres: %w", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := db.PingContext(ctx); err != nil {
 		return fmt.Errorf("failed to ping postgres: %w", err)
@@ -397,7 +450,7 @@ func SaveScanToPostgres(ctx context.Context, result TrivyScanResult) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Insert scan record
 	var scanID int

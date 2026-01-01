@@ -60,6 +60,8 @@ import (
 // Exit codes:
 //   - 0: Workflow completed successfully
 //   - 1: Failed to connect to Temporal or workflow execution failed
+//
+//nolint:unused // Called from trigger_main.go (build tag: trigger)
 func runTrigger() {
 	temporalAddr := os.Getenv("TEMPORAL_ADDRESS")
 	if temporalAddr == "" {
@@ -97,6 +99,8 @@ func runTrigger() {
 }
 
 // runBackupWorkflow executes the backup workflow and logs results.
+//
+//nolint:unused // Called from runTrigger (build tag: trigger)
 func runBackupWorkflow(c client.Client, opts client.StartWorkflowOptions) {
 	we, err := c.ExecuteWorkflow(context.Background(), opts, BackupWorkflow)
 	if err != nil {
@@ -122,6 +126,8 @@ func runBackupWorkflow(c client.Client, opts client.StartWorkflowOptions) {
 }
 
 // runTrivyWorkflow executes the trivy scan workflow and logs results.
+//
+//nolint:unused // Called from runTrigger (build tag: trigger)
 func runTrivyWorkflow(c client.Client, opts client.StartWorkflowOptions) {
 	we, err := c.ExecuteWorkflow(context.Background(), opts, TrivyScanWorkflow)
 	if err != nil {

@@ -38,6 +38,12 @@ services:
         tag: media
         icon: jellyfin.png
 
+      - name: Kavita
+        subtitle: Book Reader
+        url: https://kavita.munchbox.cc
+        tag: media
+        icon: kavita.png
+
       - name: Vaultwarden
         subtitle: Password manager
         url: https://vaultwarden.munchbox.cc
@@ -73,6 +79,12 @@ services:
         url: https://sonarr.munchbox.cc
         tag: media
         icon: sonarr.png
+
+      - name: Readarr
+        subtitle: Book management
+        url: https://readarr.munchbox.cc
+        tag: media
+        icon: readarr.png
 
       - name: Prowlarr
         subtitle: Indexer management

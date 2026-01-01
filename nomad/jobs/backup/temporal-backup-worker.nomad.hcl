@@ -167,7 +167,7 @@ job "temporal-backup-worker" {
         DB_SSLMODE        = "verify-ca"
         DB_SSLROOTCERT    = "/etc/ssl/postgres/ca.crt"
         # OpenTelemetry tracing to Tempo (gRPC)
-        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+        OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
         OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
       }
 

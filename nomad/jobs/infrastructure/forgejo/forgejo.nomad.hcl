@@ -95,6 +95,11 @@ job "forgejo" {
         "traefik.http.routers.forgejo-api.tls=true",
         "traefik.http.routers.forgejo-api.middlewares=forgejo-api-ratelimit@file",
         "traefik.http.routers.forgejo-api.priority=10",
+        # HTTPS router for git operations (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-git.rule=Host(`git.munchbox.cc`) && PathRegexp(`/.+\\.git/.*`)",
+        "traefik.http.routers.forgejo-git.entrypoints=websecure",
+        "traefik.http.routers.forgejo-git.tls=true",
+        "traefik.http.routers.forgejo-git.priority=10",
         # HTTPS router for web UI (with oauth2-proxy)
         "traefik.http.routers.forgejo.rule=Host(`git.munchbox.cc`)",
         "traefik.http.routers.forgejo.entrypoints=websecure",
@@ -106,6 +111,11 @@ job "forgejo" {
         "traefik.http.routers.forgejo-api-http.entrypoints=web",
         "traefik.http.routers.forgejo-api-http.middlewares=cf-tunnel-https@file,forgejo-api-ratelimit@file",
         "traefik.http.routers.forgejo-api-http.priority=10",
+        # HTTP router for git operations (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-git-http.rule=Host(`git.munchbox.cc`) && PathRegexp(`/.+\\.git/.*`)",
+        "traefik.http.routers.forgejo-git-http.entrypoints=web",
+        "traefik.http.routers.forgejo-git-http.middlewares=cf-tunnel-https@file",
+        "traefik.http.routers.forgejo-git-http.priority=10",
         # HTTP router for web UI (with oauth2-proxy)
         "traefik.http.routers.forgejo-http.rule=Host(`git.munchbox.cc`)",
         "traefik.http.routers.forgejo-http.entrypoints=web",
