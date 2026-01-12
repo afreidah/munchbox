@@ -25,7 +25,7 @@ job "traefik" {
   meta {
     managed_by  = "nomad"
     project     = "munchbox"
-    version     = "3.5.3"
+    version     = "3.6.6"
     tier        = "tier-0"
   }
 
@@ -73,6 +73,18 @@ job "traefik" {
       port "dashboard" {
         static = 8081
       }
+
+      port "gitssh" {
+        static = 2222
+      }
+
+      port "log-agent" {
+        static = 5000
+      }
+
+      port "log-dashboard" {
+        static = 3000
+      }
     }
 
     # --- Restart Policy ---
@@ -103,9 +115,9 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.6.4"
+        image        = "traefik:v3.6.6"
         network_mode = "host"
-        ports        = ["http", "https", "dashboard"]
+        ports        = ["http", "https", "dashboard", "gitssh"]
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
@@ -198,7 +210,13 @@ EOH
   filename = "/etc/traefik/traefik_dynamic.toml"
 
 [accessLog]
+  filePath = "/alloc/data/access.log"
   format = "json"
+  bufferingSize = 100
+  [accessLog.filters]
+    statusCodes = ["200-599"]
+    retryAttempts = true
+    minDuration = "0ms"
   [accessLog.fields]
     [accessLog.fields.names]
       StartUTC         = "keep"
@@ -651,6 +669,176 @@ EOH
       # --- Termination ---
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
+    }
+
+    # -----------------------------------------------------------------------
+    # Task: geoip-updater (prestart)
+    # Downloads MaxMind GeoLite2 databases for geolocation
+    # -----------------------------------------------------------------------
+
+    task "geoip-updater" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image = "maxmindinc/geoipupdate:v7"
+      }
+
+      template {
+        destination = "secrets/geoip.env"
+        env         = true
+        data        = <<EOH
+{{ with secret "secret/data/maxmind" }}
+GEOIPUPDATE_ACCOUNT_ID={{ .Data.data.account_id }}
+GEOIPUPDATE_LICENSE_KEY={{ .Data.data.license_key }}
+{{ end }}
+GEOIPUPDATE_EDITION_IDS=GeoLite2-City GeoLite2-Country
+GEOIPUPDATE_DB_DIR=/alloc/data
+EOH
+      }
+
+      resources {
+        cpu    = 100
+        memory = 64
+      }
+    }
+
+    # -----------------------------------------------------------------------
+    # Task: traefik-log-agent
+    # Parses Traefik access logs and exposes metrics API for dashboard
+    # -----------------------------------------------------------------------
+
+    task "traefik-log-agent" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image        = "hhftechnology/traefik-log-dashboard-agent:latest"
+        network_mode = "host"
+        ports        = ["log-agent"]
+      }
+
+      template {
+        destination = "secrets/agent.env"
+        env         = true
+        data        = <<EOH
+{{ with secret "secret/data/traefik-log-dashboard" }}
+TRAEFIK_LOG_DASHBOARD_AUTH_TOKEN={{ .Data.data.auth_token }}
+{{ end }}
+TRAEFIK_LOG_DASHBOARD_ACCESS_PATH=/alloc/data/access.log
+EOH
+      }
+
+      resources {
+        cpu    = 100
+        memory = 128
+      }
+    }
+
+    # -----------------------------------------------------------------------
+    # Task: traefik-log-dashboard
+    # Web UI for viewing Traefik traffic analytics
+    # -----------------------------------------------------------------------
+
+    task "traefik-log-dashboard" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image        = "hhftechnology/traefik-log-dashboard:latest"
+        network_mode = "host"
+        ports        = ["log-dashboard"]
+      }
+
+      template {
+        destination = "secrets/dashboard.env"
+        env         = true
+        data        = <<EOH
+{{ with secret "secret/data/traefik-log-dashboard" }}
+AGENT_API_TOKEN={{ .Data.data.auth_token }}
+{{ end }}
+AGENT_API_URL=http://127.0.0.1:5000
+PORT=3000
+GEOIP_DB_PATH=/alloc/data/GeoLite2-City.mmdb
+EOH
+      }
+
+      resources {
+        cpu    = 200
+        memory = 256
+      }
+    }
+
+    # -----------------------------------------------------------------------
+    # Service: traefik-log-dashboard
+    # -----------------------------------------------------------------------
+
+    service {
+      name     = "traefik-log-dashboard"
+      port     = "log-dashboard"
+      provider = "consul"
+      tags     = [
+        "traefik.enable=true",
+        # HTTPS router (LAN)
+        "traefik.http.routers.traefik-logs.rule=Host(`traefik-logs.munchbox.cc`)",
+        "traefik.http.routers.traefik-logs.entrypoints=websecure",
+        "traefik.http.routers.traefik-logs.tls=true",
+        "traefik.http.routers.traefik-logs.middlewares=oauth2-proxy@file,dashboard-allowlan@file",
+        # HTTP router (CF tunnel)
+        "traefik.http.routers.traefik-logs-http.rule=Host(`traefik-logs.munchbox.cc`)",
+        "traefik.http.routers.traefik-logs-http.entrypoints=web",
+        "traefik.http.routers.traefik-logs-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+      ]
+
+      check {
+        name     = "traefik-log-dashboard-health"
+        type     = "http"
+        path     = "/"
+        interval = "30s"
+        timeout  = "5s"
+      }
     }
   }
 }

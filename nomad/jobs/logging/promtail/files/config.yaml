@@ -125,6 +125,47 @@ scrape_configs:
           expression: '^\s*$'
 
   # -----------------------------------------------------------------
+  # Traefik access logs (file-based, from alloc data directory)
+  # -----------------------------------------------------------------
+  - job_name: traefik-access-logs
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: nomad
+          source: alloc
+          stream: traefik-access
+          task_name: traefik
+          __path__: /var/lib/nomad/alloc/*/alloc/data/access.log
+
+    pipeline_stages:
+      # Extract alloc_id from the file path
+      - regex:
+          source: filename
+          expression: '.*/alloc/(?P<alloc_id>[a-f0-9-]+)/alloc/data/access\.log'
+      - labels:
+          alloc_id:
+      # Parse JSON access logs
+      - json:
+          expressions:
+            level: level
+            RouterName: RouterName
+            ServiceName: ServiceName
+            RequestMethod: RequestMethod
+            RequestPath: RequestPath
+            DownstreamStatus: DownstreamStatus
+            ClientHost: ClientHost
+            entryPointName: entryPointName
+            Duration: Duration
+      - labels:
+          RouterName:
+          ServiceName:
+          RequestMethod:
+          entryPointName:
+      # Drop empty lines
+      - drop:
+          expression: '^\s*$'
+
+  # -----------------------------------------------------------------
   # Nomad allocation logs (stderr)
   # -----------------------------------------------------------------
   - job_name: nomad-alloc-stderr

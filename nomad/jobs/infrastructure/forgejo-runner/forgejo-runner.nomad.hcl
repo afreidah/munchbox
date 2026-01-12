@@ -33,6 +33,23 @@ job "forgejo-runner" {
   group "forgejo-runner" {
     count = 2
 
+    # Run on large Oracle Cloud free tier nodes
+    constraint {
+      attribute = "${meta.cloud}"
+      value     = "oracle"
+    }
+
+    constraint {
+      attribute = "${meta.size}"
+      value     = "large"
+    }
+
+    # Spread allocations across different nodes
+    spread {
+      attribute = "${node.unique.id}"
+      weight    = 100
+    }
+
     network {
       mode = "host"
     }
@@ -133,11 +150,13 @@ EOF
       # --- Registration Token from Vault ---
       template {
         data = <<-EOF
-{{ with secret "secret/data/forgejo-runner" }}
-GITEA_INSTANCE_URL=https://git.munchbox.cc
+{{- with service "forgejo" }}{{- with index . 0 }}
+GITEA_INSTANCE_URL=http://{{ .Address }}:{{ .Port }}
+{{- end }}{{- end }}
+{{- with secret "secret/data/forgejo-runner" }}
 GITEA_RUNNER_REGISTRATION_TOKEN={{ .Data.data.registration_token }}
+{{- end }}
 GITEA_RUNNER_NAME=munchbox-runner-{{ env "NOMAD_ALLOC_INDEX" }}
-{{ end }}
 EOF
         destination = "secrets/runner.env"
         env         = true

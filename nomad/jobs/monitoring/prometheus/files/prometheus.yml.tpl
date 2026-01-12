@@ -215,6 +215,7 @@ scrape_configs:
   # -----------------------------------------------------------------------
   - job_name: "traefik"
     scheme: "http"
+    honor_labels: true
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
@@ -226,8 +227,6 @@ scrape_configs:
         regex: "(.+)"
         target_label: "__address__"
         replacement: "$1:8081"
-      - source_labels: ["__meta_consul_service"]
-        target_label: "service"
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
 

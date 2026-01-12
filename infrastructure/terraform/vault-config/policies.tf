@@ -188,6 +188,14 @@ path "secret/data/oauth2-proxy" {
   capabilities = ["read"]
 }
 
+path "secret/data/traefik-log-dashboard" {
+  capabilities = ["read"]
+}
+
+path "secret/data/maxmind" {
+  capabilities = ["read"]
+}
+
 # KV secrets for workloads
 path "kv/data/traefik" {
   capabilities = ["read"]

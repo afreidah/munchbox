@@ -20,3 +20,11 @@ wireguard_peers:
     public_key: "ox0qRomZZlhl9yHpYgzhWvh+taXGIeUhc+MYSSnLmx4="
     allowed_ips: "10.200.0.12/32"
     persistent_keepalive: true
+  - name: oracle-arm-1
+    public_key: "ifDrDLx7PaCcPiNJVH9DSHJ2hNwDper5pOr+jVZKw0A="
+    allowed_ips: "10.200.0.13/32"
+    persistent_keepalive: true
+  - name: oracle-arm-2
+    public_key: "tit5mdLQ+7SWWTmEUDxKsy6GPTHu4B2uvo9fwqQ7uDs="
+    allowed_ips: "10.200.0.14/32"
+    persistent_keepalive: true

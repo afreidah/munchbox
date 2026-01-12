@@ -11,7 +11,7 @@
 # --- Core job configuration ---
 name         = "readarr"
 type         = "service"
-image        = "linuxserver/readarr:0.4.10-develop"
+image        = "linuxserver/readarr:0.4.19-nightly"
 port         = 8787
 static_port  = 8787
 node         = "nomad-client-01"

@@ -121,7 +121,8 @@ job "temporal-backup-worker" {
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/vault-ca.pem:ro",
           "secrets/postgres-ca.crt:/etc/ssl/postgres/ca.crt:ro"
         ]
-        dns_servers        = ["192.168.68.64", "192.168.68.62"]
+        # Uses goren's dnsmasq which can resolve Consul service names
+        dns_servers        = ["192.168.68.60"]
       }
 
       # PostgreSQL CA certificate for TLS verification

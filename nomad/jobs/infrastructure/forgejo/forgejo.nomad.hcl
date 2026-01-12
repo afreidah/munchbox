@@ -61,6 +61,13 @@ job "forgejo" {
         static = 2222
         to     = 22
       }
+      # Bridge mode containers need explicit DNS config for Consul resolution
+      # Uses goren's dnsmasq which forwards .consul to Consul DNS
+      dns {
+        servers  = ["192.168.68.60"]
+        searches = ["service.consul"]
+        options  = ["ndots:1", "timeout:2", "attempts:2"]
+      }
     }
 
     # --- Restart Policy ---

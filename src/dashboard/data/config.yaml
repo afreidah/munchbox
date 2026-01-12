@@ -165,6 +165,12 @@ services:
         tag: infra
         icon: traefik.png
 
+      - name: Traefik Log Dashboard
+        subtitle: Traefik Traffic Dashboard
+        url: https://traefik-logs.munchbox.cc/dashboard
+        tag: infra
+        icon: traefik-log-dashboard.png
+
       - name: Pi-hole (green)
         subtitle: Primary DNS
         url: http://green/admin

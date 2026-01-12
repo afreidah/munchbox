@@ -46,11 +46,25 @@ job "umami" {
   group "umami" {
     count = 1
 
+    # --- Run on large Oracle Cloud nodes ---
+    constraint {
+      attribute = "${meta.cloud}"
+      value     = "oracle"
+    }
+
+    constraint {
+      attribute = "${meta.size}"
+      value     = "large"
+    }
+
     # --- Network Configuration ---
     network {
       mode = "bridge"
       port "http" {
         to = 3000
+      }
+      dns {
+        servers = ["192.168.68.62", "192.168.68.64"]
       }
     }
 
@@ -120,8 +134,7 @@ job "umami" {
       config {
         image   = "alpine/curl:8.11.1"
         command = "/bin/sh"
-        args    = ["-c", "mkdir -p /geoip && cd /geoip && curl -sL \"https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz\" | gunzip > dbip-city-lite.mmdb && ls -la"]
-        volumes = ["/mnt/gdrive/geoip:/geoip"]
+        args    = ["-c", "cd /alloc/data && curl -sL \"https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz\" | gunzip > dbip-city-lite.mmdb && ls -la"]
       }
 
       resources {
@@ -153,7 +166,6 @@ job "umami" {
         image              = "ghcr.io/umami-software/umami:postgresql-v2.15.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
-        volumes            = ["/mnt/gdrive/geoip:/geoip:ro"]
       }
 
       # --- Environment Variables from Vault ---
@@ -168,8 +180,8 @@ APP_SECRET={{ .Data.data.app_secret }}
 {{ end }}
 # App URL for external access
 APP_URL=https://analytics.munchbox.cc
-# GeoIP database for city-level geolocation (DB-IP free database)
-GEOIP_DATABASE_FILE=/geoip/dbip-city-lite.mmdb
+# GeoIP database for city-level geolocation (DB-IP free database, downloaded by prestart task)
+GEOIP_DATABASE_FILE=/alloc/data/dbip-city-lite.mmdb
 # OpenTelemetry tracing to Tempo
 OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo.service.consul:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc

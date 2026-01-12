@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------------------
 ---
 - name: Enable Prometheus metrics on Nomad servers and clients
-  hosts: nomad_servers:nomad_clients
+  hosts: nomad_servers:nomad_clients:oracle_nodes
   become: true
   tasks:
     - name: Add telemetry block to Nomad configuration

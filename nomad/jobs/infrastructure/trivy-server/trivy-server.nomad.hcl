@@ -68,8 +68,6 @@ job "trivy-server" {
         timeout  = "5s"
         on_update = "require_healthy"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------

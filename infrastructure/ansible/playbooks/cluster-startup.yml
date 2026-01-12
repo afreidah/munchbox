@@ -1,0 +1,260 @@
+# -------------------------------------------------------------------------------
+# Cluster Startup - Graceful startup of Consul/Vault/Nomad
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Starts the Hashicorp stack in the correct order after maintenance.
+# Order: Consul servers -> Consul clients -> Vault -> Nomad servers -> Nomad clients
+#
+# Usage:
+#   ansible-playbook playbooks/cluster-startup.yml
+# -------------------------------------------------------------------------------
+---
+- name: Start Consul servers
+  hosts: consul_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Start Consul server
+      ansible.builtin.systemd:
+        name: consul
+        state: started
+        enabled: true
+
+    - name: Wait for Consul to be ready
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:8500/v1/status/leader"
+        method: GET
+        status_code: [200]
+      register: consul_health
+      retries: 30
+      delay: 2
+      until: consul_health.status == 200
+
+    - name: Display status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Consul server started"
+
+- name: Wait for Consul leader election
+  hosts: consul_servers[0]
+  become: true
+  tasks:
+    - name: Wait for leader to be elected
+      ansible.builtin.shell: |
+        consul operator raft list-peers | grep -c true
+      register: leader_count
+      retries: 30
+      delay: 2
+      until: leader_count.stdout | int >= 1
+      changed_when: false
+
+    - name: Display leader info
+      ansible.builtin.command: consul operator raft list-peers
+      register: peers
+      changed_when: false
+
+    - name: Show Consul cluster status
+      ansible.builtin.debug:
+        msg: "{{ peers.stdout_lines }}"
+
+- name: Start Consul clients
+  hosts: consul_clients
+  become: true
+  serial: 3
+
+  tasks:
+    - name: Start Consul client
+      ansible.builtin.systemd:
+        name: consul
+        state: started
+        enabled: true
+
+    - name: Wait for Consul agent to join
+      ansible.builtin.command: consul members
+      register: members
+      retries: 15
+      delay: 2
+      until: inventory_hostname in members.stdout
+      changed_when: false
+      ignore_errors: true
+
+    - name: Display status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Consul client started"
+
+- name: Start Vault servers
+  hosts: vault_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Start Vault
+      ansible.builtin.systemd:
+        name: vault
+        state: started
+        enabled: true
+
+    - name: Wait for Vault to be ready
+      ansible.builtin.uri:
+        url: "https://127.0.0.1:8200/v1/sys/health"
+        method: GET
+        validate_certs: false
+        status_code: [200, 429, 472, 473, 501, 503]  # Various sealed/standby states are OK
+      register: vault_health
+      retries: 30
+      delay: 2
+      until: vault_health.status is defined
+
+    - name: Display status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Vault started (status: {{ vault_health.status }})"
+
+- name: Check Vault seal status
+  hosts: vault_servers[0]
+  become: true
+  tasks:
+    - name: Check if Vault is sealed
+      ansible.builtin.uri:
+        url: "https://127.0.0.1:8200/v1/sys/health"
+        method: GET
+        validate_certs: false
+        status_code: [200, 429, 472, 473, 501, 503]
+      register: vault_status
+
+    - name: Vault seal warning
+      ansible.builtin.debug:
+        msg: |
+          ⚠️  WARNING: Vault may need to be unsealed!
+
+          Check seal status: vault status
+          If sealed, unseal with: vault operator unseal
+      when: vault_status.status == 503
+
+- name: Start Nomad servers
+  hosts: nomad_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Start Nomad server
+      ansible.builtin.systemd:
+        name: nomad
+        state: started
+        enabled: true
+
+    - name: Wait for Nomad to be ready
+      ansible.builtin.uri:
+        url: "https://127.0.0.1:4646/v1/status/leader"
+        method: GET
+        validate_certs: false
+        status_code: [200]
+      register: nomad_health
+      retries: 30
+      delay: 2
+      until: nomad_health.status == 200
+
+    - name: Display status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Nomad server started"
+
+- name: Wait for Nomad leader election
+  hosts: nomad_servers[0]
+  become: true
+  tasks:
+    - name: Wait for leader to be elected
+      ansible.builtin.shell: |
+        nomad operator raft list-peers 2>/dev/null | grep -c true || echo 0
+      register: leader_count
+      retries: 30
+      delay: 2
+      until: leader_count.stdout | int >= 1
+      changed_when: false
+      environment:
+        NOMAD_ADDR: "https://127.0.0.1:4646"
+        NOMAD_CACERT: "/etc/nomad.d/tls/ca.crt"
+        NOMAD_CLIENT_CERT: "/etc/nomad.d/tls/nomad.crt"
+        NOMAD_CLIENT_KEY: "/etc/nomad.d/tls/nomad.key"
+
+    - name: Display Nomad cluster status
+      ansible.builtin.command: nomad operator raft list-peers
+      register: peers
+      changed_when: false
+      environment:
+        NOMAD_ADDR: "https://127.0.0.1:4646"
+        NOMAD_CACERT: "/etc/nomad.d/tls/ca.crt"
+        NOMAD_CLIENT_CERT: "/etc/nomad.d/tls/nomad.crt"
+        NOMAD_CLIENT_KEY: "/etc/nomad.d/tls/nomad.key"
+
+    - name: Show Nomad cluster status
+      ansible.builtin.debug:
+        msg: "{{ peers.stdout_lines }}"
+
+- name: Start Nomad clients
+  hosts: nomad_clients:!nomad_servers
+  become: true
+  serial: 3
+
+  tasks:
+    - name: Start Nomad client
+      ansible.builtin.systemd:
+        name: nomad
+        state: started
+        enabled: true
+
+    - name: Wait for client to register
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Get node ID
+      ansible.builtin.command: nomad node status -self -json
+      register: node_info
+      changed_when: false
+      environment:
+        NOMAD_ADDR: "https://127.0.0.1:4646"
+        NOMAD_CACERT: "/etc/nomad.d/tls/ca.crt"
+        NOMAD_CLIENT_CERT: "/etc/nomad.d/tls/nomad.crt"
+        NOMAD_CLIENT_KEY: "/etc/nomad.d/tls/nomad.key"
+      ignore_errors: true
+
+    - name: Disable drain (make node eligible)
+      ansible.builtin.command: >
+        nomad node drain -disable -yes {{ (node_info.stdout | from_json).ID }}
+      when: node_info is succeeded
+      environment:
+        NOMAD_ADDR: "https://127.0.0.1:4646"
+        NOMAD_CACERT: "/etc/nomad.d/tls/ca.crt"
+        NOMAD_CLIENT_CERT: "/etc/nomad.d/tls/nomad.crt"
+        NOMAD_CLIENT_KEY: "/etc/nomad.d/tls/nomad.key"
+      ignore_errors: true
+
+    - name: Display status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Nomad client started and eligible"
+
+- name: Summary
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Cluster startup complete
+      ansible.builtin.debug:
+        msg: |
+          ============================================================
+          Cluster startup complete!
+
+          Services started in order:
+            1. Consul servers (leader elected)
+            2. Consul clients
+            3. Vault servers (may need unsealing!)
+            4. Nomad servers (leader elected)
+            5. Nomad clients (drain disabled)
+
+          Verify cluster health:
+            consul members
+            vault status
+            nomad server members
+            nomad node status
+
+          If Vault is sealed, unseal it:
+            vault operator unseal
+          ============================================================

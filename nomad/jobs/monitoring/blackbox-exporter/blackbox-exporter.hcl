@@ -41,3 +41,9 @@ templates = [
 
 # --- Service tags ---
 tags = ["monitoring", "blackbox-exporter", "probes"]
+
+# --- Run on large Oracle Cloud nodes for external probe perspective ---
+constraints = [
+  { attribute = "$${meta.cloud}", value = "oracle" },
+  { attribute = "$${meta.size}", value = "large" }
+]
