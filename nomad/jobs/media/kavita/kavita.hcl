@@ -11,6 +11,7 @@
 name  = "kavita"
 type  = "service"
 image = "jvmilazz0/kavita:0.8.8"
+node  = "oraclearm2"
 port  = 5000
 
 cpu    = 500

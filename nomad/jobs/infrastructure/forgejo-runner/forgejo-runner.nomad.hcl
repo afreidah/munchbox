@@ -44,10 +44,9 @@ job "forgejo-runner" {
       value     = "large"
     }
 
-    # Spread allocations across different nodes
-    spread {
-      attribute = "${node.unique.id}"
-      weight    = 100
+    # Force allocations onto different nodes
+    constraint {
+      distinct_hosts = true
     }
 
     network {

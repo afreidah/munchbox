@@ -213,6 +213,12 @@ services:
         tag: monitoring
         icon: grafana.png
 
+      - name: OpenZFS
+        subtitle: ZFS Pool Dashboard
+        url: https://zfs.munchbox.cc
+        tag: monitoring
+        icon: openzfs.png
+
       - name: Umami
         subtitle: Web analytics
         url: https://analytics.munchbox.cc

@@ -401,6 +401,21 @@ EOH
     middlewares = ["cf-tunnel-https", "oauth2-proxy", "vault-theme"]
 
 
+  # --- ZFS Watcher (HTTPS, LAN-only) ---
+  [http.routers.zfswatcher]
+    rule        = "Host(`zfs.munchbox.cc`)"
+    entryPoints = ["websecure"]
+    service     = "zfswatcher"
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
+    [http.routers.zfswatcher.tls]
+
+  # --- ZFS Watcher (HTTP, for CF tunnel) ---
+  [http.routers.zfswatcher-http]
+    rule        = "Host(`zfs.munchbox.cc`)"
+    entryPoints = ["web"]
+    service     = "zfswatcher"
+    middlewares = ["cf-tunnel-https", "oauth2-proxy"]
+
   # --- Health check endpoint (no auth) ---
   [http.routers.ping]
     rule        = "Host(`traefik.munchbox.cc`) && Path(`/ping`)"
@@ -601,6 +616,11 @@ EOH
   [http.services.oauth2-proxy-signin.loadBalancer]
     [[http.services.oauth2-proxy-signin.loadBalancer.servers]]
       url = "http://192.168.68.73:4180"
+
+  # --- ZFS Watcher (on rubirosa) ---
+  [http.services.zfswatcher.loadBalancer]
+    [[http.services.zfswatcher.loadBalancer.servers]]
+      url = "http://192.168.68.69:8800"
 
 # -------------------------------------------------------------------------
 # Server Transports
