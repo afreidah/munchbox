@@ -127,12 +127,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETARCH
 ENV ARCH_DL=${TARGETARCH}
 
-# --- Base packages + Python for Ansible ---
+# --- Base packages + Python for Ansible + Node.js for GitHub Actions ---
 RUN set -eux; \
   apt-get update; \
   apt-get -y install --no-install-recommends \
     ca-certificates curl git jq make openssh-client \
-    python3 python3-pip pipx; \
+    python3 python3-pip pipx nodejs npm; \
   rm -rf /var/lib/apt/lists/*
 
 # --- Copy all binaries from builder ---
@@ -163,6 +163,7 @@ RUN set -eux; \
   trivy --version && \
   golangci-lint version --format short && \
   go version && \
+  node --version && \
   ansible --version | head -n1 && \
   echo "==================="
 
