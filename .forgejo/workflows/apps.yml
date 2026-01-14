@@ -40,11 +40,13 @@ jobs:
 
   trivy-dashboard-test:
     runs-on: docker
+    defaults:
+      run:
+        shell: sh
     steps:
       - uses: actions/checkout@v4
       - name: Install Go
-        run: |
-          apk add --no-cache go make
+        run: apk add --no-cache go make
       - name: Test trivy-dashboard
         run: |
           cd src/trivy-dashboard
@@ -81,11 +83,13 @@ jobs:
 
   temporal-backup-worker-test:
     runs-on: docker
+    defaults:
+      run:
+        shell: sh
     steps:
       - uses: actions/checkout@v4
       - name: Install Go
-        run: |
-          apk add --no-cache go make
+        run: apk add --no-cache go make
       - name: Test temporal-backup-worker
         run: |
           cd src/temporal-jobs/temporal-backup-worker
@@ -108,11 +112,13 @@ jobs:
 
   s3-proxy-test:
     runs-on: docker
+    defaults:
+      run:
+        shell: sh
     steps:
       - uses: actions/checkout@v4
       - name: Install Go
-        run: |
-          apk add --no-cache go make
+        run: apk add --no-cache go make
       - name: Test s3-proxy
         run: |
           cd src/s3-proxy
