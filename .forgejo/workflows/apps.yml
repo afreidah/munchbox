@@ -39,14 +39,15 @@ jobs:
   # -------------------------------------------------------------------------
 
   trivy-dashboard-test:
-    runs-on: docker
-    container:
-      image: golang:1.23-alpine
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
       - name: Test trivy-dashboard
         run: |
-          apk add --no-cache make
           cd src/trivy-dashboard
           make test
 
@@ -80,14 +81,15 @@ jobs:
   # -------------------------------------------------------------------------
 
   temporal-backup-worker-test:
-    runs-on: docker
-    container:
-      image: golang:1.23-alpine
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
       - name: Test temporal-backup-worker
         run: |
-          apk add --no-cache make
           cd src/temporal-jobs/temporal-backup-worker
           make test
 
@@ -107,14 +109,15 @@ jobs:
   # -------------------------------------------------------------------------
 
   s3-proxy-test:
-    runs-on: docker
-    container:
-      image: golang:1.23-alpine
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
       - name: Test s3-proxy
         run: |
-          apk add --no-cache make
           cd src/s3-proxy
           make test
 

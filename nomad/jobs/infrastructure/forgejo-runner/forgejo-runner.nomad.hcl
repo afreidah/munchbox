@@ -156,6 +156,7 @@ GITEA_INSTANCE_URL=http://{{ .Address }}:{{ .Port }}
 GITEA_RUNNER_REGISTRATION_TOKEN={{ .Data.data.registration_token }}
 {{- end }}
 GITEA_RUNNER_NAME=munchbox-runner-{{ env "NOMAD_ALLOC_INDEX" }}
+GITEA_RUNNER_LABELS=self-hosted:host,docker:docker://node:20-alpine,ubuntu-latest:docker://ubuntu:22.04,ubuntu-22.04:docker://ubuntu:22.04
 EOF
         destination = "secrets/runner.env"
         env         = true
