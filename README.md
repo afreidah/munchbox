@@ -1,6 +1,6 @@
 <div align="center">
 
-# Homelab Infrastructure Platform
+# Homelab Infrastructure Platform - Munchbox Cloud
 
 ### Production-Grade Self-Hosted Infrastructure on HashiCorp Stack
 
