@@ -23,7 +23,7 @@ jobs:
   detect-and-validate:
     runs-on: docker
     container:
-      image: registry.munchbox.cc/ops-build-image:v2
+      image: registry.munchbox.cc/ops-build-image:v3
     outputs:
       changed_jobs: ${{ steps.detect.outputs.jobs }}
       has_changes: ${{ steps.detect.outputs.has_changes }}
@@ -72,7 +72,7 @@ jobs:
     needs: detect-and-validate
     if: needs.detect-and-validate.outputs.has_changes == 'true'
     container:
-      image: registry.munchbox.cc/ops-build-image:v2
+      image: registry.munchbox.cc/ops-build-image:v3
     env:
       NOMAD_ADDR: https://192.168.68.61:4646
       NOMAD_SKIP_VERIFY: "true"
@@ -95,7 +95,7 @@ jobs:
     needs: [detect-and-validate, plan-jobs]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-and-validate.outputs.has_changes == 'true'
     container:
-      image: registry.munchbox.cc/ops-build-image:v2
+      image: registry.munchbox.cc/ops-build-image:v3
     env:
       NOMAD_ADDR: https://192.168.68.61:4646
       NOMAD_SKIP_VERIFY: "true"

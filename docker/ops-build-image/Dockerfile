@@ -57,7 +57,7 @@ RUN set -eux; \
 
 # --- Nomad ---
 RUN set -eux; \
-  NOMAD_VERSION="1.9.3"; \
+  NOMAD_VERSION="1.11.1"; \
   curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/nomad.zip; \
   unzip -o -d /tmp /tmp/nomad.zip; \
   install -m0755 /tmp/nomad /tmp/bin/nomad; \
