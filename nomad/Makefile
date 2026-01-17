@@ -198,7 +198,7 @@ endif
 		nomad-pack render \
 			--var-file="$(JOB_FILE)" \
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
-			"./$(PACK_REGISTRY)/$(PACK)" | nomad job validate -; \
+			"./$(PACK_REGISTRY)/$(PACK)" | sed '1,/^$$/d' | nomad job validate -; \
 	fi
 
 stop:
