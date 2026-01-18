@@ -20,6 +20,12 @@ terraform {
       version = "~> 3.25"
     }
   }
+
+  backend "consul" {
+    address = "consul.service.consul:8500"
+    scheme  = "http"
+    path    = "terraform/consul-acls"
+  }
 }
 
 # -------------------------------------------------------------------------------
@@ -176,6 +182,31 @@ resource "vault_kv_secret_v2" "traefik" {
 resource "consul_acl_policy" "prometheus" {
   name  = "prometheus"
   rules = file("${path.module}/policies/prometheus.hcl")
+}
+
+# -------------------------------------------------------------------------------
+# Patroni ACL Policy - PostgreSQL HA cluster coordination
+# -------------------------------------------------------------------------------
+
+resource "consul_acl_policy" "patroni" {
+  name  = "patroni"
+  rules = file("${path.module}/policies/patroni.hcl")
+}
+
+resource "consul_acl_token" "patroni" {
+  description = "Token for Patroni PostgreSQL HA cluster"
+  policies    = [consul_acl_policy.patroni.name]
+  local       = false
+}
+
+resource "vault_kv_secret_v2" "patroni" {
+  mount = "secret"
+  name  = "patroni"
+
+  data_json = jsonencode({
+    consul_token = consul_acl_token.patroni.id
+    accessor_id  = consul_acl_token.patroni.accessor_id
+  })
 }
 
 # -------------------------------------------------------------------------------

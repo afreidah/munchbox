@@ -14,7 +14,7 @@
 job "traefik" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "system"
+  type        = "service"
   node_pool   = "all"
   priority    = 90
 
@@ -25,7 +25,7 @@ job "traefik" {
   meta {
     managed_by  = "nomad"
     project     = "munchbox"
-    version     = "3.5.3"
+    version     = "3.6.6"
     tier        = "tier-0"
   }
 
@@ -42,19 +42,13 @@ job "traefik" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement — Pin to ingress node
+  # Placement — Pin to ingress nodes
   # -------------------------------------------------------------------------
-
-  constraint {
-    attribute = "${meta.role}"
-    operator  = "="
-    value     = "ingress"
-  }
 
   constraint {
     attribute = "${node.unique.name}"
     operator  = "="
-    value     = "stabler.munchbox.cc"
+    value     = "goren"
   }
 
   # -------------------------------------------------------------------------
@@ -62,6 +56,7 @@ job "traefik" {
   # -------------------------------------------------------------------------
 
   group "traefik" {
+    count = 1
 
     # --- Network Configuration ---
     network {
@@ -77,6 +72,18 @@ job "traefik" {
 
       port "dashboard" {
         static = 8081
+      }
+
+      port "gitssh" {
+        static = 2222
+      }
+
+      port "log-agent" {
+        static = 5000
+      }
+
+      port "log-dashboard" {
+        static = 3000
       }
     }
 
@@ -108,13 +115,15 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.6.4"
+        image        = "traefik:v3.6.6"
         network_mode = "host"
-        ports        = ["http", "https", "dashboard"]
+        ports        = ["http", "https", "dashboard", "gitssh"]
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
-          "/mnt/gdrive/munchbox-data/traefik/acme.json:/etc/traefik/acme.json",
+          # Let's Encrypt certs from shared NFS (managed by certbot job)
+          "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.crt:/etc/traefik/certs/munchbox.crt:ro",
+          "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.key:/etc/traefik/certs/munchbox.key:ro",
           "/etc/nomad.d/tls/ca-chain.crt:/etc/traefik/certs/ca-chain.crt:ro"
         ]
       }
@@ -183,7 +192,7 @@ EOH
 # -------------------------------------------------------------------------
 
 [providers.consulCatalog]
-  refreshInterval  = "15s"
+  refreshInterval  = "5s"
   prefix           = "traefik"
   exposedByDefault = false
 
@@ -201,7 +210,13 @@ EOH
   filename = "/etc/traefik/traefik_dynamic.toml"
 
 [accessLog]
+  filePath = "/alloc/data/access.log"
   format = "json"
+  bufferingSize = 100
+  [accessLog.filters]
+    statusCodes = ["200-599"]
+    retryAttempts = true
+    minDuration = "0ms"
   [accessLog.fields]
     [accessLog.fields.names]
       StartUTC         = "keep"
@@ -248,12 +263,13 @@ EOH
       insecure = true
 
 # -------------------------------------------------------------------------
-# ACME (Let's Encrypt) Configuration
+# ACME Resolver (kept for Consul Catalog service compatibility)
+# Actual certs are loaded from files managed by certbot job
 # -------------------------------------------------------------------------
 
 [certificatesResolvers.letsencrypt.acme]
   email = "alex@alexfreidah.com"
-  storage = "/etc/traefik/acme.json"
+  storage = "/tmp/acme.json"
   [certificatesResolvers.letsencrypt.acme.dnsChallenge]
     provider = "cloudflare"
     resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
@@ -268,6 +284,18 @@ EOH
 # -------------------------------------------------------------------------
 # Traefik Dynamic Configuration
 # -------------------------------------------------------------------------
+
+# --- TLS Certificates (managed by certbot, stored in Vault) ---
+[[tls.certificates]]
+  certFile = "/etc/traefik/certs/munchbox.crt"
+  keyFile  = "/etc/traefik/certs/munchbox.key"
+
+# --- Default TLS Store ---
+[tls.stores]
+  [tls.stores.default]
+    [tls.stores.default.defaultCertificate]
+      certFile = "/etc/traefik/certs/munchbox.crt"
+      keyFile  = "/etc/traefik/certs/munchbox.key"
 
 # --- TLS Options ---
 [tls.options]
@@ -294,58 +322,52 @@ EOH
     rule        = "Host(`consul.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "consul-ui"
-    middlewares = ["authentik", "dashboard-allowlan"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
     [http.routers.consul.tls]
-      certResolver = "letsencrypt"
-      [[http.routers.consul.tls.domains]]
-        main = "munchbox.cc"
-        sans = ["*.munchbox.cc"]
 
   # --- Consul UI (HTTP, for CF tunnel) ---
   [http.routers.consul-http]
     rule        = "Host(`consul.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "consul-ui"
-    middlewares = ["cf-tunnel-https", "authentik"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy"]
 
   # --- Nomad UI (HTTPS, LAN-only) ---
   [http.routers.nomad]
     rule        = "Host(`nomad.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "nomad-ui"
-    middlewares = ["authentik", "dashboard-allowlan", "nomad-token"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan", "nomad-token"]
     [http.routers.nomad.tls]
-      certResolver = "letsencrypt"
 
   # --- Nomad UI (HTTP, for CF tunnel) ---
   [http.routers.nomad-http]
     rule        = "Host(`nomad.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "nomad-ui"
-    middlewares = ["cf-tunnel-https", "authentik", "nomad-token"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy", "nomad-token"]
 
   # --- Traefik Dashboard (HTTPS, LAN-only) ---
   [http.routers.traefik-dashboard]
     rule        = "Host(`traefik.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "api@internal"
-    middlewares = ["authentik", "dashboard-allowlan", "dashboard-redirect"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan", "dashboard-redirect"]
     [http.routers.traefik-dashboard.tls]
-      certResolver = "letsencrypt"
 
   # --- Traefik Dashboard (HTTP, for CF tunnel) ---
   [http.routers.traefik-dashboard-http]
     rule        = "Host(`traefik.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "api@internal"
-    middlewares = ["cf-tunnel-https", "authentik", "dashboard-redirect"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy", "dashboard-redirect"]
 
   # --- Traefik Dashboard fallback on :8081 ---
   [http.routers.traefik-fallback]
     rule        = "PathPrefix(`/dashboard`) || PathPrefix(`/api`)"
     entryPoints = ["traefik"]
     service     = "api@internal"
-    middlewares = ["authentik", "dashboard-allowlan"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
     priority    = 2
 
   # --- Proxmox UI (HTTPS, LAN-only) ---
@@ -353,46 +375,46 @@ EOH
     rule        = "Host(`proxmox.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "proxmox-ui"
-    middlewares = ["authentik", "dashboard-allowlan"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
     [http.routers.proxmox.tls]
-      certResolver = "letsencrypt"
 
   # --- Proxmox UI (HTTP, for CF tunnel) ---
   [http.routers.proxmox-http]
     rule        = "Host(`proxmox.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "proxmox-ui"
-    middlewares = ["cf-tunnel-https", "authentik"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy"]
 
   # --- Vault UI (HTTPS, LAN-only) ---
   [http.routers.vault]
     rule        = "Host(`vault.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "vault-ui"
-    middlewares = ["authentik", "dashboard-allowlan", "vault-theme"]
+    middlewares = ["oauth2-proxy", "dashboard-allowlan", "vault-theme"]
     [http.routers.vault.tls]
-      certResolver = "letsencrypt"
 
   # --- Vault UI (HTTP, for CF tunnel) ---
   [http.routers.vault-http]
     rule        = "Host(`vault.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "vault-ui"
-    middlewares = ["cf-tunnel-https", "authentik", "vault-theme"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy", "vault-theme"]
 
-  # --- Theme Server (HTTPS, internal CSS files) ---
-  [http.routers.themes]
-    rule        = "Host(`themes.munchbox.cc`)"
+
+  # --- ZFS Watcher (HTTPS, LAN-only) ---
+  [http.routers.zfswatcher]
+    rule        = "Host(`zfs.munchbox.cc`)"
     entryPoints = ["websecure"]
-    service     = "theme-server"
-    [http.routers.themes.tls]
-      certResolver = "letsencrypt"
+    service     = "zfswatcher"
+    middlewares = ["oauth2-proxy", "dashboard-allowlan"]
+    [http.routers.zfswatcher.tls]
 
-  # --- Theme Server (HTTP, internal) ---
-  [http.routers.themes-http]
-    rule        = "Host(`themes.munchbox.cc`)"
+  # --- ZFS Watcher (HTTP, for CF tunnel) ---
+  [http.routers.zfswatcher-http]
+    rule        = "Host(`zfs.munchbox.cc`)"
     entryPoints = ["web"]
-    service     = "theme-server"
+    service     = "zfswatcher"
+    middlewares = ["cf-tunnel-https", "oauth2-proxy"]
 
   # --- Health check endpoint (no auth) ---
   [http.routers.ping]
@@ -400,7 +422,6 @@ EOH
     entryPoints = ["websecure"]
     service     = "ping@internal"
     [http.routers.ping.tls]
-      certResolver = "letsencrypt"
 
 # -------------------------------------------------------------------------
 # HTTP Middlewares
@@ -408,18 +429,21 @@ EOH
 
 [http.middlewares]
 
-  # --- Authentik Forward Auth (domain-level SSO) ---
-  # Using direct IP since system DNS doesn't resolve .service.consul properly
-  [http.middlewares.authentik.forwardAuth]
-    address              = "http://192.168.68.61:9000/outpost.goauthentik.io/auth/traefik"
+  # --- OAuth2 Proxy Forward Auth ---
+  [http.middlewares.oauth2-proxy.forwardAuth]
+    address              = "http://oauth2-proxy.service.consul:4180/oauth2/auth"
     trustForwardHeader   = true
     authResponseHeaders  = [
-      "X-authentik-username",
-      "X-authentik-groups",
-      "X-authentik-email",
-      "X-authentik-name",
-      "X-authentik-uid"
+      "X-Auth-Request-User",
+      "X-Auth-Request-Email",
+      "X-Auth-Request-Access-Token"
     ]
+
+  # --- OAuth2 Proxy Error Handler (redirects 401 to sign-in) ---
+  [http.middlewares.oauth2-proxy-errors.errors]
+    status  = ["401"]
+    service = "oauth2-proxy-signin"
+    query   = "/oauth2/sign_in?rd={url}"
 
   # --- HTTPS redirect ---
   [http.middlewares.redirect-https.redirectScheme]
@@ -463,7 +487,7 @@ EOH
     contentTypeNosniff      = true
     customFrameOptionsValue = "SAMEORIGIN"
     referrerPolicy          = "no-referrer"
-    contentSecurityPolicy   = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; frame-ancestors 'self'"
+    contentSecurityPolicy   = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://analytics.alexfreidah.com; connect-src 'self' https://analytics.alexfreidah.com; frame-ancestors 'self'"
 
   # --- k3s-status security headers ---
   [http.middlewares.k3s-status-sec.headers]
@@ -506,22 +530,26 @@ EOH
     referrerPolicy          = "strict-origin-when-cross-origin"
     permissionsPolicy       = "camera=(), microphone=(), geolocation=(), payment=()"
 
-  # --- Emby rate limiting ---
-  [http.middlewares.emby-ratelimit.rateLimit]
-    average = 100
-    burst   = 200
-    [http.middlewares.emby-ratelimit.rateLimit.sourceCriterion]
+  # --- OAuth2-Proxy rate limiting (auth.munchbox.cc) ---
+  [http.middlewares.auth-ratelimit.rateLimit]
+    average = 10
+    burst   = 20
+    [http.middlewares.auth-ratelimit.rateLimit.sourceCriterion]
       requestHeaderName = "CF-Connecting-IP"
 
-  # --- Emby security headers ---
-  [http.middlewares.emby-sec.headers]
-    stsSeconds              = 31536000
-    stsIncludeSubdomains    = true
-    forceSTSHeader          = true
-    contentTypeNosniff      = true
-    browserXssFilter        = true
-    customFrameOptionsValue = "SAMEORIGIN"
-    referrerPolicy          = "strict-origin-when-cross-origin"
+  # --- Jellyfin rate limiting ---
+  [http.middlewares.jellyfin-ratelimit.rateLimit]
+    average = 50
+    burst   = 100
+    [http.middlewares.jellyfin-ratelimit.rateLimit.sourceCriterion]
+      requestHeaderName = "CF-Connecting-IP"
+
+  # --- Forgejo API rate limiting ---
+  [http.middlewares.forgejo-api-ratelimit.rateLimit]
+    average = 100
+    burst   = 200
+    [http.middlewares.forgejo-api-ratelimit.rateLimit.sourceCriterion]
+      requestHeaderName = "CF-Connecting-IP"
 
   # --- Nomad UI token injection ---
   [http.middlewares.nomad-token.headers]
@@ -541,6 +569,15 @@ EOH
     [[http.middlewares.vault-theme.plugin.rewritebody.rewrites]]
       regex = "</head>"
       replacement = "<link rel=\"stylesheet\" href=\"http://themes.munchbox.cc/css/vault.css\"></head>"
+
+  # --- Umami Analytics Injection ---
+  # Injects Umami tracking script into HTML pages
+  # Add this middleware to services you want to track
+  [http.middlewares.umami-tracking.plugin.rewritebody]
+    lastModified = true
+    [[http.middlewares.umami-tracking.plugin.rewritebody.rewrites]]
+      regex = "</head>"
+      replacement = "<script defer src=\"https://analytics.munchbox.cc/script.js\" data-website-id=\"0ac921bc-72f6-4b31-9cf3-77de04fe6337\"></script></head>"
 
 # -------------------------------------------------------------------------
 # HTTP Services (non-Consul backends)
@@ -575,10 +612,15 @@ EOH
     [[http.services.vault-ui.loadBalancer.servers]]
       url = "https://192.168.68.61:8200"
 
-  # --- Theme Server (CSS files via WireGuard) ---
-  [http.services.theme-server.loadBalancer]
-    [[http.services.theme-server.loadBalancer.servers]]
-      url = "http://10.200.0.12:8078"
+  # --- OAuth2 Proxy Sign-in (for error redirect) ---
+  [http.services.oauth2-proxy-signin.loadBalancer]
+    [[http.services.oauth2-proxy-signin.loadBalancer.servers]]
+      url = "http://192.168.68.73:4180"
+
+  # --- ZFS Watcher (on rubirosa) ---
+  [http.services.zfswatcher.loadBalancer]
+    [[http.services.zfswatcher.loadBalancer.servers]]
+      url = "http://192.168.68.69:8800"
 
 # -------------------------------------------------------------------------
 # Server Transports
@@ -605,13 +647,20 @@ EOH
         tags     = ["traefik.enable=false", "metrics_port=8081"]
 
         check {
-          name     = "traefik-https"
-          type     = "tcp"
-          interval = "10s"
-          timeout  = "2s"
+          name            = "traefik-https-cert"
+          type            = "http"
+          protocol        = "https"
+          port            = "https"
+          path            = "/ping"
+          header {
+            Host = ["traefik.munchbox.cc"]
+          }
+          tls_server_name = "traefik.munchbox.cc"
+          tls_skip_verify = false
+          interval        = "10s"
+          timeout         = "5s"
         }
 
-        deregister_critical_service_after = "1m"
       }
 
       # --- Service Registration (Dashboard) ---
@@ -629,7 +678,6 @@ EOH
           timeout  = "2s"
         }
 
-        deregister_critical_service_after = "1m"
       }
 
       # --- Resources ---
@@ -641,6 +689,176 @@ EOH
       # --- Termination ---
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
+    }
+
+    # -----------------------------------------------------------------------
+    # Task: geoip-updater (prestart)
+    # Downloads MaxMind GeoLite2 databases for geolocation
+    # -----------------------------------------------------------------------
+
+    task "geoip-updater" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image = "maxmindinc/geoipupdate:v7"
+      }
+
+      template {
+        destination = "secrets/geoip.env"
+        env         = true
+        data        = <<EOH
+{{ with secret "secret/data/maxmind" }}
+GEOIPUPDATE_ACCOUNT_ID={{ .Data.data.account_id }}
+GEOIPUPDATE_LICENSE_KEY={{ .Data.data.license_key }}
+{{ end }}
+GEOIPUPDATE_EDITION_IDS=GeoLite2-City GeoLite2-Country
+GEOIPUPDATE_DB_DIR=/alloc/data
+EOH
+      }
+
+      resources {
+        cpu    = 100
+        memory = 64
+      }
+    }
+
+    # -----------------------------------------------------------------------
+    # Task: traefik-log-agent
+    # Parses Traefik access logs and exposes metrics API for dashboard
+    # -----------------------------------------------------------------------
+
+    task "traefik-log-agent" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image        = "hhftechnology/traefik-log-dashboard-agent:latest"
+        network_mode = "host"
+        ports        = ["log-agent"]
+      }
+
+      template {
+        destination = "secrets/agent.env"
+        env         = true
+        data        = <<EOH
+{{ with secret "secret/data/traefik-log-dashboard" }}
+TRAEFIK_LOG_DASHBOARD_AUTH_TOKEN={{ .Data.data.auth_token }}
+{{ end }}
+TRAEFIK_LOG_DASHBOARD_ACCESS_PATH=/alloc/data/access.log
+EOH
+      }
+
+      resources {
+        cpu    = 100
+        memory = 128
+      }
+    }
+
+    # -----------------------------------------------------------------------
+    # Task: traefik-log-dashboard
+    # Web UI for viewing Traefik traffic analytics
+    # -----------------------------------------------------------------------
+
+    task "traefik-log-dashboard" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image        = "hhftechnology/traefik-log-dashboard:latest"
+        network_mode = "host"
+        ports        = ["log-dashboard"]
+      }
+
+      template {
+        destination = "secrets/dashboard.env"
+        env         = true
+        data        = <<EOH
+{{ with secret "secret/data/traefik-log-dashboard" }}
+AGENT_API_TOKEN={{ .Data.data.auth_token }}
+{{ end }}
+AGENT_API_URL=http://127.0.0.1:5000
+PORT=3000
+GEOIP_DB_PATH=/alloc/data/GeoLite2-City.mmdb
+EOH
+      }
+
+      resources {
+        cpu    = 200
+        memory = 256
+      }
+    }
+
+    # -----------------------------------------------------------------------
+    # Service: traefik-log-dashboard
+    # -----------------------------------------------------------------------
+
+    service {
+      name     = "traefik-log-dashboard"
+      port     = "log-dashboard"
+      provider = "consul"
+      tags     = [
+        "traefik.enable=true",
+        # HTTPS router (LAN)
+        "traefik.http.routers.traefik-logs.rule=Host(`traefik-logs.munchbox.cc`)",
+        "traefik.http.routers.traefik-logs.entrypoints=websecure",
+        "traefik.http.routers.traefik-logs.tls=true",
+        "traefik.http.routers.traefik-logs.middlewares=oauth2-proxy@file,dashboard-allowlan@file",
+        # HTTP router (CF tunnel)
+        "traefik.http.routers.traefik-logs-http.rule=Host(`traefik-logs.munchbox.cc`)",
+        "traefik.http.routers.traefik-logs-http.entrypoints=web",
+        "traefik.http.routers.traefik-logs-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+      ]
+
+      check {
+        name     = "traefik-log-dashboard-health"
+        type     = "http"
+        path     = "/"
+        interval = "30s"
+        timeout  = "5s"
+      }
     }
   }
 }

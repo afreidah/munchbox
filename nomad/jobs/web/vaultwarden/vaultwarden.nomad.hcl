@@ -18,10 +18,14 @@ job "vaultwarden" {
   # ---------------------------------------------------------------------------
 
   update {
-    max_parallel     = 1
-    min_healthy_time = "30s"
-    healthy_deadline = "5m"
-    auto_revert      = true
+    max_parallel      = 1
+    canary            = 1
+    health_check      = "checks"
+    min_healthy_time  = "30s"
+    healthy_deadline  = "5m"
+    progress_deadline = "10m"
+    auto_revert       = true
+    auto_promote      = true
   }
 
   # ---------------------------------------------------------------------------
@@ -81,7 +85,7 @@ job "vaultwarden" {
 
       # --- Container Configuration ---
       config {
-        image              = "vaultwarden/server:latest"
+        image              = "vaultwarden/server:1.35.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
         volumes            = [
@@ -109,7 +113,7 @@ job "vaultwarden" {
           "traefik.http.routers.vaultwarden.entrypoints=websecure",
           "traefik.http.routers.vaultwarden.tls=true",
           "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt",
-          "traefik.http.routers.vaultwarden.middlewares=authentik@file",
+          "traefik.http.routers.vaultwarden.middlewares=oauth2-proxy@file",
           "traefik.http.routers.vaultwarden.priority=10",
           # --- HTTP router for API (Cloudflare tunnel, no Authentik) ---
           "traefik.http.routers.vaultwarden-api-http.rule=Host(`vaultwarden.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/identity`) || PathPrefix(`/icons`) || PathPrefix(`/notifications`))",
@@ -119,7 +123,7 @@ job "vaultwarden" {
           # --- HTTP router for Web UI (Cloudflare tunnel, with Authentik) ---
           "traefik.http.routers.vaultwarden-http.rule=Host(`vaultwarden.munchbox.cc`)",
           "traefik.http.routers.vaultwarden-http.entrypoints=web",
-          "traefik.http.routers.vaultwarden-http.middlewares=cf-tunnel-https@file,authentik@file",
+          "traefik.http.routers.vaultwarden-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file",
           "traefik.http.routers.vaultwarden-http.priority=10"
         ]
 
@@ -129,8 +133,6 @@ job "vaultwarden" {
           interval = "10s"
           timeout  = "3s"
         }
-
-        deregister_critical_service_after = "1m"
       }
 
       # --- Vault Secrets (Nomad 1.11 secret block) ---

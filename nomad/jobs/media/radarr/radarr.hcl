@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "radarr"
 type         = "service"
-image        = "linuxserver/radarr:latest"
+image        = "linuxserver/radarr:6.0.4"
 port         = 7878
 static_port  = 7878
 node         = "nomad-client-01"
@@ -23,9 +23,7 @@ health_path  = "/ping"
 storage      = "local"
 storage_path = "/config"
 volumes = [
-  "/mnt/gdrive/media/Movies:/movies",
-  "/mnt/gdrive/nomad_deluge_downloads:/downloads",
-  "/mnt/gdrive/nomad_deluge_completed:/completed"
+  "/tank:/data"
 ]
 
 # --- Traefik routing ---
@@ -49,9 +47,9 @@ tags = [
   "radarr",
   "media",
   "arr",
-  "traefik.http.routers.radarr.middlewares=authentik@file",
+  "traefik.http.routers.radarr.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.radarr-http.rule=Host(`radarr.munchbox.cc`)",
   "traefik.http.routers.radarr-http.entrypoints=web",
-  "traefik.http.routers.radarr-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.radarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]

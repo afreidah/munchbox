@@ -12,7 +12,6 @@
 name  = "alertmanager"
 image = "prom/alertmanager:v0.29.0"
 port  = 9093
-node  = "oraclenode2"
 size  = "tiny"
 host_network = true
 vault = true
@@ -57,9 +56,9 @@ tags = [
   "monitoring",
   "alertmanager",
   "alerts",
-  "traefik.http.routers.alertmanager.middlewares=authentik@file",
+  "traefik.http.routers.alertmanager.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.alertmanager-http.rule=Host(`alertmanager.munchbox.cc`)",
   "traefik.http.routers.alertmanager-http.entrypoints=web",
-  "traefik.http.routers.alertmanager-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.alertmanager-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]

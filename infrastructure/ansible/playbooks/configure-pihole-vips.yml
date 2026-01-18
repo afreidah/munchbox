@@ -1,0 +1,95 @@
+# -------------------------------------------------------------------------------
+# Configure Pi-hole DNS for Traefik
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Configures dnsmasq on Pi-hole to resolve *.munchbox.cc to Traefik on goren.
+#
+# Usage:
+#   ansible-playbook playbooks/configure-pihole-vips.yml -i inventory/bare-metal.ini
+# -------------------------------------------------------------------------------
+---
+- name: Configure Pi-hole DNS for Traefik
+  hosts: dns_servers
+  become: true
+  gather_facts: true
+
+  vars:
+    traefik_ip: "192.168.68.60"  # goren - single traefik instance
+
+  tasks:
+    - name: Create dnsmasq config for munchbox.cc
+      copy:
+        dest: /etc/dnsmasq.d/10-munchbox-vips.conf
+        mode: '0644'
+        content: |
+          # -----------------------------------------------------------------------
+          # Munchbox Traefik DNS
+          #
+          # Routes *.munchbox.cc to Traefik on goren (single instance).
+          # Managed by Ansible - playbooks/configure-pihole-vips.yml
+          # -----------------------------------------------------------------------
+
+          # Wildcard for all *.munchbox.cc subdomains
+          address=/.munchbox.cc/{{ traefik_ip }}
+      notify: Restart pihole-FTL
+
+    - name: Remove old single-IP dnsmasq configs if exist
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/dnsmasq.d/05-munchbox.conf
+        - /etc/dnsmasq.d/munchbox-local.conf
+      notify: Restart pihole-FTL
+
+    - name: Remove old munchbox entry from pihole.toml dnsmasq_lines
+      lineinfile:
+        path: /etc/pihole/pihole.toml
+        regexp: 'address=/.munchbox.cc/192\.168\.68\.61'
+        state: absent
+      notify: Restart pihole-FTL
+
+    - name: Block IPv6 for munchbox.cc domains
+      copy:
+        dest: /etc/dnsmasq.d/munchbox-no-ipv6.conf
+        mode: '0644'
+        content: |
+          # Block IPv6 for munchbox.cc domains - return NXDOMAIN for AAAA queries
+          # This prevents browsers from trying unreachable Cloudflare IPv6 addresses
+          # Managed by Ansible - playbooks/configure-pihole-vips.yml
+          address=/munchbox.cc/::
+      notify: Restart pihole-FTL
+
+  handlers:
+    - name: Restart pihole-FTL
+      systemd:
+        name: pihole-FTL
+        state: restarted
+
+- name: Verify DNS resolution
+  hosts: dns_servers
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Wait for pihole-FTL to be ready
+      pause:
+        seconds: 3
+
+    - name: Test DNS resolution for dashboard.munchbox.cc
+      command: dig +short dashboard.munchbox.cc @127.0.0.1
+      register: dig_result
+      changed_when: false
+
+    - name: Display DNS resolution result
+      debug:
+        msg: |
+          ============================================================
+          DNS resolution test on {{ inventory_hostname }}:
+
+          dashboard.munchbox.cc resolves to:
+          {{ dig_result.stdout }}
+
+          Expected: 192.168.68.60 (goren)
+          ============================================================

@@ -37,6 +37,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -50,10 +51,21 @@ import (
 )
 
 // initTracer initializes OpenTelemetry tracing with OTLP gRPC exporter.
-// Reads OTEL_EXPORTER_OTLP_ENDPOINT from environment (defaults to localhost:4317).
+// Reads OTEL_EXPORTER_OTLP_ENDPOINT from environment (defaults to tempo.service.consul:4317).
 // Returns a shutdown function that should be deferred.
 func initTracer(ctx context.Context) func(context.Context) error {
-	exporter, err := otlptracegrpc.New(ctx)
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "tempo.service.consul:4317"
+	}
+	// Strip http:// or https:// prefix if present (gRPC uses host:port)
+	endpoint = strings.TrimPrefix(endpoint, "http://")
+	endpoint = strings.TrimPrefix(endpoint, "https://")
+
+	exporter, err := otlptracegrpc.New(ctx,
+		otlptracegrpc.WithEndpoint(endpoint),
+		otlptracegrpc.WithInsecure(),
+	)
 	if err != nil {
 		log.Printf("Warning: failed to create OTLP exporter: %v (tracing disabled)", err)
 		return func(context.Context) error { return nil }
@@ -75,7 +87,7 @@ func initTracer(ctx context.Context) func(context.Context) error {
 	)
 	otel.SetTracerProvider(tp)
 
-	log.Println("OpenTelemetry tracing initialized")
+	log.Printf("OpenTelemetry tracing initialized (endpoint: %s)", endpoint)
 	return tp.Shutdown
 }
 

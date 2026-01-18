@@ -215,6 +215,7 @@ scrape_configs:
   # -----------------------------------------------------------------------
   - job_name: "traefik"
     scheme: "http"
+    honor_labels: true
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
@@ -226,8 +227,6 @@ scrape_configs:
         regex: "(.+)"
         target_label: "__address__"
         replacement: "$1:8081"
-      - source_labels: ["__meta_consul_service"]
-        target_label: "service"
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
 
@@ -310,7 +309,7 @@ scrape_configs:
       - source_labels: ["__meta_consul_node"]
         target_label: "instance"
       - target_label: "database"
-        replacement: "redis-shared"
+        replacement: "redis-primary"
 
   # -----------------------------------------------------------------------
   # Nextcloud Exporter - Cloud storage metrics via Consul service discovery
@@ -413,3 +412,83 @@ scrape_configs:
         target_label: "instance"
       - target_label: "service"
         replacement: "coredns"
+
+  # -----------------------------------------------------------------------
+  # Authentik - Identity provider metrics (port 9300)
+  # -----------------------------------------------------------------------
+  - job_name: "authentik"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["authentik-metrics"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "authentik"
+
+  # -----------------------------------------------------------------------
+  # Woodpecker Server - CI/CD pipeline metrics (port 9001)
+  # -----------------------------------------------------------------------
+  - job_name: "woodpecker"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["woodpecker-metrics"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "woodpecker"
+
+  # -----------------------------------------------------------------------
+  # Forgejo - Git repository metrics
+  # -----------------------------------------------------------------------
+  - job_name: "forgejo"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["forgejo"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "forgejo"
+
+  # -----------------------------------------------------------------------
+  # Patroni - PostgreSQL HA cluster metrics (REST API)
+  # -----------------------------------------------------------------------
+  - job_name: "patroni"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["patroni"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "patroni"

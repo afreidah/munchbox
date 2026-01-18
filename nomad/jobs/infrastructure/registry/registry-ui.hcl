@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name  = "registry-ui"
 type  = "service"
-image = "joxit/docker-registry-ui:latest"
+image = "joxit/docker-registry-ui@sha256:9e561fbe4fb1460c383e1d33e76f87c4cf4cddfd78adb02db9fb1d039b5c1e15"
 port  = 80
 size = "small"
 
@@ -26,7 +26,7 @@ health_path = "/"
 
 # --- Environment variables ---
 env = {
-  NGINX_PROXY_PASS_URL = "http://registry.service.consul:5000"
+  NGINX_PROXY_PASS_URL = "http://192.168.68.61:5000"
   SINGLE_REGISTRY      = "true"
   REGISTRY_TITLE       = "Munchbox Docker Registry"
   DELETE_IMAGES        = "false"
@@ -39,11 +39,11 @@ tags = [
   "docker",
   "ui",
   "infrastructure",
-  "traefik.http.routers.registry-ui.middlewares=authentik@file",
+  "traefik.http.routers.registry-ui.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.registry-ui-http.rule=Host(`registry-ui.munchbox.cc`)",
   "traefik.http.routers.registry-ui-http.entrypoints=web",
-  "traefik.http.routers.registry-ui-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.registry-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]
 
 # --- Termination ---

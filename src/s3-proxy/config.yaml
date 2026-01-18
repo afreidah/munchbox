@@ -3,7 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# OCI Object Storage backend configuration for Phase 0 testing.
+# Multi-backend configuration with quota management. Objects are automatically
+# routed to backends with available quota. All backends present as a single
+# unified S3-compatible endpoint.
 # -------------------------------------------------------------------------------
 
 server:
@@ -12,7 +14,36 @@ server:
 
 auth:
   # Leave empty for local testing, set for production
-  token: ""
+  token: "${S3_PROXY_TOKEN}"
+
+database:
+  host: "${DB_HOST}"
+  port: 5432
+  database: "${DB_NAME}"
+  user: "${DB_USER}"
+  password: "${DB_PASSWORD}"
+  ssl_mode: "disable"
+
+# Backends are checked in order - first with available quota is used
+backends:
+  - name: "oci"
+    endpoint: "${OCI_S3_ENDPOINT}"
+    region: "${OCI_S3_REGION}"
+    bucket: "${OCI_S3_BUCKET}"
+    access_key_id: "${OCI_S3_ACCESS_KEY}"
+    secret_access_key: "${OCI_S3_SECRET_KEY}"
+    force_path_style: true
+    quota_bytes: 10737418240  # 10GB
+
+  # Uncomment to add additional backends
+  # - name: "backblaze"
+  #   endpoint: "${B2_S3_ENDPOINT}"
+  #   region: "${B2_S3_REGION}"
+  #   bucket: "${B2_S3_BUCKET}"
+  #   access_key_id: "${B2_S3_ACCESS_KEY}"
+  #   secret_access_key: "${B2_S3_SECRET_KEY}"
+  #   force_path_style: true
+  #   quota_bytes: 10737418240  # 10GB
 
 telemetry:
   metrics:
@@ -20,14 +51,6 @@ telemetry:
     path: "/metrics"
   tracing:
     enabled: true
-    endpoint: "tempo.service.consul:4317"
+    endpoint: "${OTEL_ENDPOINT}"
+    insecure: true
     sample_rate: 1.0
-
-backend:
-  name: "oci"
-  endpoint: "https://axlubepkixee.compat.objectstorage.us-phoenix-1.oraclecloud.com"
-  region: "us-phoenix-1"
-  bucket: "munchbox-s3-proxy"
-  access_key_id: "db173c23ccecadf86b2690c23911c619aebacefe"
-  secret_access_key: "LXB++wigmLRf4pe/tq1v5AW+aHGOyYzThNKUzjrML7Q="
-  force_path_style: true

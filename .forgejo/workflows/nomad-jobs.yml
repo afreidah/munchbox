@@ -1,0 +1,114 @@
+# -------------------------------------------------------------------------------
+# Nomad Jobs Pipeline
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Validates and plans Nomad job changes on PRs. Deploys on merge to main.
+# -------------------------------------------------------------------------------
+
+name: Nomad Jobs
+
+on:
+  push:
+    paths:
+      - 'nomad/jobs/**'
+      - 'nomad/packs/**'
+  pull_request:
+    paths:
+      - 'nomad/jobs/**'
+      - 'nomad/packs/**'
+  workflow_dispatch:
+
+jobs:
+  detect-and-validate:
+    runs-on: docker
+    container:
+      image: registry.munchbox.cc/ops-build-image:v3
+    outputs:
+      changed_jobs: ${{ steps.detect.outputs.jobs }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Detect changed jobs
+        id: detect
+        run: |
+          echo "Detecting changed jobs..."
+          git fetch origin main --depth=1 || true
+
+          # Get all .hcl files changed in this branch vs main (exclude files/ subdirs)
+          CHANGED=$(git diff --name-only origin/main...HEAD -- nomad/jobs/ 2>/dev/null \
+            | grep '\.hcl$' \
+            | grep -v '/files/' \
+            | xargs -I{} basename {} .hcl \
+            | sed 's/\.nomad$//' \
+            | sort -u \
+            | tr '\n' ' ')
+
+          if [ -n "$CHANGED" ]; then
+            echo "Changed jobs: $CHANGED"
+            echo "jobs=$CHANGED" >> $GITHUB_OUTPUT
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "No job changes detected"
+            echo "jobs=" >> $GITHUB_OUTPUT
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate jobs
+        if: steps.detect.outputs.has_changes == 'true'
+        run: |
+          cd nomad
+          for job in ${{ steps.detect.outputs.jobs }}; do
+            echo "=== Validating $job ==="
+            make validate JOB="$job" || exit 1
+          done
+
+  plan-jobs:
+    runs-on: docker
+    needs: detect-and-validate
+    if: needs.detect-and-validate.outputs.has_changes == 'true'
+    container:
+      image: registry.munchbox.cc/ops-build-image:v3
+    env:
+      NOMAD_ADDR: https://192.168.68.61:4646
+      NOMAD_SKIP_VERIFY: "true"
+      NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Plan jobs
+        run: |
+          cd nomad
+          for job in ${{ needs.detect-and-validate.outputs.changed_jobs }}; do
+            echo "=== Planning $job ==="
+            make plan JOB="$job" || true
+          done
+
+  deploy-jobs:
+    runs-on: docker
+    needs: [detect-and-validate, plan-jobs]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-and-validate.outputs.has_changes == 'true'
+    container:
+      image: registry.munchbox.cc/ops-build-image:v3
+    env:
+      NOMAD_ADDR: https://192.168.68.61:4646
+      NOMAD_SKIP_VERIFY: "true"
+      NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Deploy jobs
+        run: |
+          cd nomad
+          for job in ${{ needs.detect-and-validate.outputs.changed_jobs }}; do
+            echo "=== Deploying $job ==="
+            make run JOB="$job" || exit 1
+          done

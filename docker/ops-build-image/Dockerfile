@@ -1,19 +1,22 @@
-# filepath: ops-build-image/Dockerfile
+# -------------------------------------------------------------------------------
+# Ops Build Image — CI/CD Toolchain
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Multi-arch build image with infrastructure tools for CI pipelines.
+# Uses multi-stage build to minimize final image size.
+# -------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
-# builder: fetch CLI binaries to copy into final image (multi-arch aware)
+# Stage 1: builder - fetch/compile CLI binaries
 # ------------------------------------------------------------------------------
 FROM debian:trixie-slim AS builder
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Buildx provides these for each platform leg
-ARG TARGETOS
+ARG TARGETOS=linux
 ARG TARGETARCH
-
-# Map Buildx TARGETARCH to release artifact arch tags
-# (most upstreams use "amd64" / "arm64" already, so this is pass-through)
 ENV ARCH_DL=${TARGETARCH}
 
 RUN set -eux; \
@@ -21,196 +24,150 @@ RUN set -eux; \
   apt-get -y install --no-install-recommends ca-certificates curl jq tar gzip unzip; \
   rm -rf /var/lib/apt/lists/*
 
-RUN set -eux; mkdir -p /tmp/bin
+RUN mkdir -p /tmp/bin
 
-# ------------------------------------------------------------------------------
-# tflint (pinned version) - uses arch-specific zip
-# ------------------------------------------------------------------------------
+# --- Go (for building tools) ---
 RUN set -eux; \
-  TFLINT_VERSION="0.59.1"; \
-  curl -sSfL "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" -o /tmp/tflint.zip; \
-  unzip /tmp/tflint.zip -d /tmp; \
-  install -m0755 /tmp/tflint /tmp/bin/tflint; \
-  rm -f /tmp/tflint.zip /tmp/tflint; \
-  test -x /tmp/bin/tflint
-
-# ------------------------------------------------------------------------------
-# terragrunt (latest release, pick correct linux_${ARCH_DL} asset)
-# ------------------------------------------------------------------------------
-RUN set -eux; \
-  tg_url="$(curl -fsSL https://api.github.com/repos/gruntwork-io/terragrunt/releases/latest \
-    | jq -r --arg arch "${ARCH_DL}" '.assets[] | select(.name == ("terragrunt_linux_" + $arch)) | .browser_download_url' \
-    | head -n1)"; \
-  curl -fsSL "$tg_url" -o /tmp/bin/terragrunt; \
-  chmod +x /tmp/bin/terragrunt; \
-  test -x /tmp/bin/terragrunt
-
-# ------------------------------------------------------------------------------
-# Go & hclfmt (pinned Go, arch-specific tarball)
-# ------------------------------------------------------------------------------
-RUN set -eux; \
-  GO_VERSION="1.25.2"; \
+  GO_VERSION="1.25.5"; \
   curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH_DL}.tar.gz" -o /tmp/go.tgz; \
   tar -C /usr/local -xzf /tmp/go.tgz; rm -f /tmp/go.tgz
 ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go
-RUN set -eux; \
-  GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 \
-  go install github.com/hashicorp/hcl/v2/cmd/hclfmt@latest; \
-  install -m0755 /go/bin/hclfmt /tmp/bin/hclfmt; \
-  /tmp/bin/hclfmt -h >/dev/null || true
 
-# ------------------------------------------------------------------------------
-# Terraform (pinned version) - arch-specific zip
-# ------------------------------------------------------------------------------
+# --- Terraform ---
 RUN set -eux; \
-  TF_VERSION="1.13.3"; \
-  curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/terraform.zip; \
-  unzip -d /tmp /tmp/terraform.zip; \
+  TF_VERSION="1.10.3"; \
+  curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/tf.zip; \
+  unzip -o -d /tmp /tmp/tf.zip; \
   install -m0755 /tmp/terraform /tmp/bin/terraform; \
-  rm -f /tmp/terraform /tmp/terraform.zip
+  rm -f /tmp/terraform /tmp/tf.zip
 
-# ------------------------------------------------------------------------------
-# OpenTofu (pinned version) - arch-specific tarball
-# ------------------------------------------------------------------------------
+# --- TFLint ---
 RUN set -eux; \
-  TOFU_VERSION="1.10.3"; \
-  curl -fsSL "https://github.com/opentofu/opentofu/releases/download/v${TOFU_VERSION}/tofu_${TOFU_VERSION}_linux_${ARCH_DL}.tar.gz" -o /tmp/tofu.tgz; \
-  tar -xzf /tmp/tofu.tgz -C /tmp tofu; \
-  install -m0755 /tmp/tofu /tmp/bin/tofu; \
-  rm -f /tmp/tofu /tmp/tofu.tgz
+  TFLINT_VERSION="0.54.0"; \
+  curl -sSfL "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" -o /tmp/tflint.zip; \
+  unzip /tmp/tflint.zip -d /tmp; \
+  install -m0755 /tmp/tflint /tmp/bin/tflint; \
+  rm -f /tmp/tflint.zip /tmp/tflint
+
+# --- Terragrunt ---
+RUN set -eux; \
+  TG_VERSION="0.69.1"; \
+  curl -fsSL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_${ARCH_DL}" -o /tmp/bin/terragrunt; \
+  chmod +x /tmp/bin/terragrunt
+
+# --- Nomad ---
+RUN set -eux; \
+  NOMAD_VERSION="1.11.1"; \
+  curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/nomad.zip; \
+  unzip -o -d /tmp /tmp/nomad.zip; \
+  install -m0755 /tmp/nomad /tmp/bin/nomad; \
+  rm -f /tmp/nomad /tmp/nomad.zip
+
+# --- Nomad Pack ---
+RUN set -eux; \
+  PACK_VERSION="0.1.2"; \
+  curl -fsSL "https://releases.hashicorp.com/nomad-pack/${PACK_VERSION}/nomad-pack_${PACK_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/pack.zip; \
+  unzip -o -d /tmp /tmp/pack.zip; \
+  install -m0755 /tmp/nomad-pack /tmp/bin/nomad-pack; \
+  rm -f /tmp/nomad-pack /tmp/pack.zip
+
+# --- Consul ---
+RUN set -eux; \
+  CONSUL_VERSION="1.20.1"; \
+  curl -fsSL "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/consul.zip; \
+  unzip -o -d /tmp /tmp/consul.zip; \
+  install -m0755 /tmp/consul /tmp/bin/consul; \
+  rm -f /tmp/consul /tmp/consul.zip
+
+# --- Vault ---
+RUN set -eux; \
+  VAULT_VERSION="1.18.3"; \
+  curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/vault.zip; \
+  unzip -o -d /tmp /tmp/vault.zip; \
+  install -m0755 /tmp/vault /tmp/bin/vault; \
+  rm -f /tmp/vault /tmp/vault.zip
+
+# --- hclfmt ---
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    set -eux; \
+  GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
+  go install github.com/hashicorp/hcl/v2/cmd/hclfmt@latest; \
+  install -m0755 /go/bin/hclfmt /tmp/bin/hclfmt
+
+# --- Go linting/testing tools (pre-compiled) ---
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    set -eux; \
+  GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
+  go install honnef.co/go/tools/cmd/staticcheck@latest && \
+  go install github.com/rakyll/gotest@latest && \
+  go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+  install -m0755 /go/bin/staticcheck /tmp/bin/staticcheck && \
+  install -m0755 /go/bin/gotest /tmp/bin/gotest && \
+  install -m0755 /go/bin/golangci-lint /tmp/bin/golangci-lint
+
+# --- Trivy ---
+RUN set -eux; \
+  TRIVY_VERSION="0.58.0"; \
+  if [ "$ARCH_DL" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="64bit"; fi; \
+  curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" -o /tmp/trivy.tgz; \
+  tar -xzf /tmp/trivy.tgz -C /tmp trivy; \
+  install -m0755 /tmp/trivy /tmp/bin/trivy; \
+  rm -f /tmp/trivy /tmp/trivy.tgz
 
 # ------------------------------------------------------------------------------
-# final: toolchain image (multi-arch aware)
+# Stage 2: final - slim runtime image
 # ------------------------------------------------------------------------------
 FROM debian:trixie-slim
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Buildx target info for this stage too
-ARG TARGETOS
 ARG TARGETARCH
 ENV ARCH_DL=${TARGETARCH}
 
-# ------------------------------------------------------------------------------
-# base OS packages
-# ------------------------------------------------------------------------------
+# --- Base packages + Python for Ansible + Node.js for GitHub Actions ---
 RUN set -eux; \
   apt-get update; \
-  apt-get -y dist-upgrade; \
   apt-get -y install --no-install-recommends \
-    ca-certificates curl gnupg git jq make unzip tar xz-utils \
-    build-essential python3 python3-pip python3-venv pipx; \
-  update-ca-certificates; \
+    ca-certificates curl git jq make openssh-client \
+    python3 python3-pip pipx nodejs npm; \
   rm -rf /var/lib/apt/lists/*
 
+# --- Copy all binaries from builder ---
+COPY --from=builder /tmp/bin/ /usr/local/bin/
+
+# --- Go runtime (needed for go test in CI) ---
+COPY --from=builder /usr/local/go /usr/local/go
+ENV PATH=/usr/local/go/bin:/usr/local/bin:$PATH GOPATH=/go
+
+# --- Ansible ---
 ENV PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin
-RUN set -eux; mkdir -p "$PIPX_HOME" && pipx ensurepath
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=cache,target=/root/.cache/pipx \
+    set -eux; \
+  mkdir -p "$PIPX_HOME"; \
+  pipx install --include-deps ansible
 
-# ------------------------------------------------------------------------------
-# Go (runtime - pinned version, arch-specific tarball)
-# ------------------------------------------------------------------------------
-ENV GOPATH=/go PATH=/usr/local/go/bin:/go/bin:/usr/local/bin:$PATH
-RUN set -eux; \
-  GO_VERSION="1.25.2"; \
-  curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH_DL}.tar.gz" -o /tmp/go.tgz; \
-  rm -rf /usr/local/go; \
-  tar -C /usr/local -xzf /tmp/go.tgz; \
-  rm -f /tmp/go.tgz; \
-  go version
-
-# ------------------------------------------------------------------------------
-# Node.js 24.x + CDKTF (pinned npm version)
-# ------------------------------------------------------------------------------
-RUN set -eux; \
-  install -d -m 0755 /etc/apt/keyrings; \
-  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
-    | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg; \
-  chmod a+r /etc/apt/keyrings/nodesource.gpg; \
-  echo "Types: deb" > /etc/apt/sources.list.d/nodesource.sources; \
-  echo "URIs: https://deb.nodesource.com/node_24.x" >> /etc/apt/sources.list.d/nodesource.sources; \
-  echo "Suites: nodistro" >> /etc/apt/sources.list.d/nodesource.sources; \
-  echo "Components: main" >> /etc/apt/sources.list.d/nodesource.sources; \
-  echo "Signed-By: /etc/apt/keyrings/nodesource.gpg" >> /etc/apt/sources.list.d/nodesource.sources; \
-  apt-get update; \
-  apt-get -y install --no-install-recommends nodejs; \
-  npm i -g npm@11.6.2 cdktf-cli@latest; \
-  npm cache clean --force || true; \
-  rm -rf /var/lib/apt/lists/*
-
-# ------------------------------------------------------------------------------
-# copy CLI binaries from builder
-# ------------------------------------------------------------------------------
-COPY --from=builder /tmp/bin/terraform   /usr/local/bin/terraform
-COPY --from=builder /tmp/bin/tofu        /usr/local/bin/tofu
-COPY --from=builder /tmp/bin/tflint      /usr/local/bin/tflint
-COPY --from=builder /tmp/bin/terragrunt  /usr/local/bin/terragrunt
-COPY --from=builder /tmp/bin/hclfmt      /usr/local/bin/hclfmt
-
-# ------------------------------------------------------------------------------
-# Cinc (client + auditor)
-# ------------------------------------------------------------------------------
-RUN set -eux; \
-  curl -fsSL https://omnitruck.cinc.sh/install.sh | bash -s -- -P cinc -c stable; \
-  curl -fsSL https://omnitruck.cinc.sh/install.sh | bash -s -- -P cinc-auditor -c stable
-
-# ------------------------------------------------------------------------------
-# remove Cinc specs, tests, and ALL key/certificate fixtures
-# ------------------------------------------------------------------------------
-RUN set -eux; \
-  for base in /opt/cinc/embedded/lib/ruby/gems /opt/cinc-auditor/embedded/lib/ruby/gems; do \
-    if [ -d "$base" ]; then \
-      find "$base" -type d -name "spec" -print0 | xargs -0 -r rm -rf; \
-      find "$base" -type d -name "test" -print0 | xargs -0 -r rm -rf; \
-      find "$base" -type d -name "examples" -print0 | xargs -0 -r rm -rf; \
-      find "$base" -type d -name "features" -print0 | xargs -0 -r rm -rf; \
-    fi; \
-  done
-
-# ------------------------------------------------------------------------------
-# security / lint / qa tools
-# ------------------------------------------------------------------------------
-RUN set -eux; \
-  pipx install checkov && checkov --version; \
-  pipx inject checkov 'asteval>=1.0.6' && \
-  pipx runpip checkov list | grep asteval
-
-RUN set -eux; curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin; trivy --version
-RUN set -eux; curl -fsSL https://raw.githubusercontent.com/infracost/infracost/master/scripts/install.sh | sh -s -- -b /usr/local/bin; infracost --version
-RUN set -eux; curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin; golangci-lint version
-
-# --- Go-based CLIs (multi-arch safe; disable CGO so no gcc '-m64' on arm64) ---
-ENV GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0
-RUN set -eux; go install honnef.co/go/tools/cmd/staticcheck@latest
-RUN set -eux; go install github.com/rakyll/gotest@latest; go install gotest.tools/gotestsum@latest
-
-# ------------------------------------------------------------------------------
-# sanity checks & version display
-# ------------------------------------------------------------------------------
+# --- Sanity check ---
 RUN set -eux; \
   echo "=== Tool Versions ===" && \
-  echo "Node.js: $(node --version)" && \
-  echo "npm: $(npm --version)" && \
-  echo "cdktf: $(cdktf --version 2>&1 | head -n1)" && \
-  echo "Go: $(go version)" && \
-  echo "Python: $(python3 --version)" && \
-  echo "Terraform: $(terraform version | head -n1)" && \
-  echo "OpenTofu: $(tofu version | head -n1)" && \
-  echo "TFLint: $(tflint --version)" && \
-  echo "Terragrunt: $(terragrunt --version)" && \
-  echo "hclfmt: $(hclfmt -version 2>&1 || echo 'hclfmt installed')" && \
-  echo "Trivy: $(trivy --version | head -n1)" && \
-  echo "Checkov: $(checkov --version)" && \
-  echo "Infracost: $(infracost --version)" && \
-  echo "golangci-lint: $(golangci-lint version --short)" && \
-  echo "staticcheck: $(staticcheck -version)" && \
-  echo "Cinc Client: $(cinc-client --version | head -n1)" && \
-  echo "Cinc Auditor: $(cinc-auditor version)" && \
+  terraform --version && \
+  nomad --version && \
+  nomad-pack version && \
+  consul --version && \
+  vault --version && \
+  tflint --version && \
+  terragrunt --version && \
+  trivy --version && \
+  golangci-lint version --format short && \
+  go version && \
+  node --version && \
+  ansible --version | head -n1 && \
   echo "==================="
 
-# ------------------------------------------------------------------------------
-# non-root runtime user
-# ------------------------------------------------------------------------------
+# --- Non-root user ---
 ARG USERNAME=ci-runner
 ARG UID=10001
 ARG GID=10001
@@ -222,14 +179,3 @@ RUN set -eux; \
 
 WORKDIR /workspace
 USER $USERNAME
-
-# ------------------------------------------------------------------------------
-# healthcheck
-# ------------------------------------------------------------------------------
-HEALTHCHECK --interval=30m --timeout=30s --start-period=5m --retries=3 \
-  CMD bash -lc 'terraform -version >/dev/null 2>&1 \
-    && tofu version >/dev/null 2>&1 \
-    && terragrunt --version >/dev/null 2>&1 \
-    && hclfmt -help >/dev/null 2>&1 \
-    && cdktf --version >/dev/null 2>&1 \
-    || exit 1'

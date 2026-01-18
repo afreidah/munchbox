@@ -13,10 +13,15 @@ name         = "theme-server"
 type         = "service"
 image        = "registry.munchbox.cc/theme-server:latest"
 port         = 8078
-node         = "oraclenode2"
 static_port  = 8078
 host_network = true
 size         = "tiny"
+
+# --- Run on large Oracle Cloud nodes ---
+constraints = [
+  { attribute = "$${meta.cloud}", value = "oracle" },
+  { attribute = "$${meta.size}", value = "large" }
+]
 
 # --- Health check ---
 health_path = "/health"

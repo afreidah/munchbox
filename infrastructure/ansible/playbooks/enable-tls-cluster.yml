@@ -18,10 +18,7 @@
   become: true
   serial: 1
   tags: [consul, certs]
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "10078d03-2a15-5611-ad7c-6e6c898b2c87"
-    vault_approle_secret_id: "1208573c-ffa3-53c3-b945-b175668abd04"
+  # Vault AppRole credentials loaded from group_vars/all.yml
   tasks:
     # --- Generate certificate from Vault PKI ---
     - name: Generate Consul server certificate
@@ -46,10 +43,7 @@
   hosts: nomad_clients
   become: true
   tags: [consul, certs]
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "10078d03-2a15-5611-ad7c-6e6c898b2c87"
-    vault_approle_secret_id: "1208573c-ffa3-53c3-b945-b175668abd04"
+  # Vault AppRole credentials loaded from group_vars/all.yml
   tasks:
     # --- Generate certificate from Vault PKI ---
     - name: Generate Consul client certificate
@@ -225,7 +219,8 @@
   serial: 1
   tags: [vault, vault-consul-tls]
   vars:
-    vault_consul_token: "3f557c81-f89d-6898-4f26-f3424f1dc10a"
+    # Consul token for Vault storage - fetch from Vault at runtime
+    vault_consul_token: "{{ lookup('env', 'VAULT_CONSUL_TOKEN') }}"
   handlers:
     - name: restart vault
       systemd:
@@ -315,10 +310,7 @@
   become: true
   serial: 1
   tags: [nomad, certs]
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "10078d03-2a15-5611-ad7c-6e6c898b2c87"
-    vault_approle_secret_id: "1208573c-ffa3-53c3-b945-b175668abd04"
+  # Vault AppRole credentials loaded from group_vars/all.yml
   tasks:
     # --- Create TLS directory ---
     - name: Create Nomad TLS directory
@@ -352,10 +344,7 @@
   hosts: nomad_clients
   become: true
   tags: [nomad, certs]
-  vars:
-    vault_api_addr: "http://192.168.68.61:8200"
-    vault_approle_role_id: "10078d03-2a15-5611-ad7c-6e6c898b2c87"
-    vault_approle_secret_id: "1208573c-ffa3-53c3-b945-b175668abd04"
+  # Vault AppRole credentials loaded from group_vars/all.yml
   tasks:
     # --- Create TLS directory ---
     - name: Create Nomad TLS directory

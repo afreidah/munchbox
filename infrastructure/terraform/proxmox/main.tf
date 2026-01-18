@@ -87,16 +87,16 @@ resource "proxmox_vm_qemu" "vm" {
   onboot = true
   agent  = 1
 
-  # GPU passthrough support (for future ThinkStation)
-  # Note: Requires PCI passthrough configured on Proxmox host
-  # dynamic "hostpci" {
-  #   for_each = each.value.gpu_passthrough ? [1] : []
-  #   content {
-  #     host   = "0000:01:00"  # PCI address of GPU - will vary
-  #     pcie   = true
-  #     rombar = true
-  #   }
-  # }
+  # GPU passthrough support
+  # Note: Requires IOMMU and VFIO configured on Proxmox host
+  dynamic "hostpci" {
+    for_each = each.value.gpu_passthrough != null ? [each.value.gpu_passthrough] : []
+    content {
+      host   = hostpci.value.pci_address
+      pcie   = 1
+      rombar = 1
+    }
+  }
 }
 
 # -------------------------------------------------------------------------------

@@ -1,0 +1,302 @@
+# -------------------------------------------------------------------------------
+# Cluster Shutdown - Graceful shutdown of Nomad/Vault/Consul
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Shuts down the Hashicorp stack in the correct order for maintenance.
+# Order: Nomad clients -> Nomad servers -> Vault -> Consul clients -> Consul servers
+#
+# Usage:
+#   ansible-playbook playbooks/cluster-shutdown.yml
+#
+# To skip draining Nomad jobs (faster but less graceful):
+#   ansible-playbook playbooks/cluster-shutdown.yml -e skip_drain=true
+# -------------------------------------------------------------------------------
+---
+- name: Shutdown Nomad clients (drain jobs first)
+  hosts: nomad_clients:!nomad_servers
+  become: true
+  serial: 1
+  vars:
+    skip_drain: false
+
+  tasks:
+    - name: Check if Nomad is running
+      ansible.builtin.systemd:
+        name: nomad
+      register: nomad_status
+      ignore_errors: true
+
+    - name: Get node ID
+      ansible.builtin.command: nomad node status -self -json
+      register: node_info
+      changed_when: false
+      when: nomad_status.status.ActiveState == "active" and not skip_drain
+      environment:
+        NOMAD_ADDR: "https://127.0.0.1:4646"
+        NOMAD_CACERT: "/etc/nomad.d/tls/ca.crt"
+        NOMAD_CLIENT_CERT: "/etc/nomad.d/tls/nomad.crt"
+        NOMAD_CLIENT_KEY: "/etc/nomad.d/tls/nomad.key"
+      ignore_errors: true
+
+    - name: Drain node
+      ansible.builtin.command: >
+        nomad node drain -enable -force -yes
+        {{ (node_info.stdout | from_json).ID }}
+      when:
+        - nomad_status.status.ActiveState == "active"
+        - not skip_drain
+        - node_info is succeeded
+      environment:
+        NOMAD_ADDR: "https://127.0.0.1:4646"
+        NOMAD_CACERT: "/etc/nomad.d/tls/ca.crt"
+        NOMAD_CLIENT_CERT: "/etc/nomad.d/tls/nomad.crt"
+        NOMAD_CLIENT_KEY: "/etc/nomad.d/tls/nomad.key"
+      ignore_errors: true
+
+    - name: Wait for drain to complete
+      ansible.builtin.pause:
+        seconds: 10
+      when:
+        - nomad_status.status.ActiveState == "active"
+        - not skip_drain
+
+    - name: Stop Nomad client
+      ansible.builtin.systemd:
+        name: nomad
+        state: stopped
+      when: nomad_status.status.ActiveState == "active"
+
+    - name: Display status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Nomad client stopped"
+
+- name: Shutdown Nomad servers (non-leader first)
+  hosts: nomad_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Check if Nomad is running
+      ansible.builtin.systemd:
+        name: nomad
+      register: nomad_status
+      ignore_errors: true
+
+    - name: Check if this is the leader
+      ansible.builtin.shell: |
+        nomad operator raft list-peers 2>/dev/null | grep -E "$(hostname).*true" || true
+      register: is_leader
+      changed_when: false
+      when: nomad_status.status.ActiveState == "active"
+      environment:
+        NOMAD_ADDR: "https://127.0.0.1:4646"
+        NOMAD_CACERT: "/etc/nomad.d/tls/ca.crt"
+        NOMAD_CLIENT_CERT: "/etc/nomad.d/tls/nomad.crt"
+        NOMAD_CLIENT_KEY: "/etc/nomad.d/tls/nomad.key"
+      ignore_errors: true
+
+    - name: Stop Nomad server (non-leader)
+      ansible.builtin.systemd:
+        name: nomad
+        state: stopped
+      when:
+        - nomad_status.status.ActiveState == "active"
+        - is_leader.stdout == ""
+
+    - name: Display non-leader status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Nomad server (non-leader) stopped"
+      when: is_leader.stdout == ""
+
+- name: Shutdown Nomad leader
+  hosts: nomad_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Check if Nomad is still running (leader)
+      ansible.builtin.systemd:
+        name: nomad
+      register: nomad_status
+      ignore_errors: true
+
+    - name: Stop Nomad leader
+      ansible.builtin.systemd:
+        name: nomad
+        state: stopped
+      when: nomad_status.status.ActiveState == "active"
+
+    - name: Display leader status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Nomad server (leader) stopped"
+      when: nomad_status.status.ActiveState != "active"
+
+- name: Shutdown Vault (standby first)
+  hosts: vault_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Check if Vault is running
+      ansible.builtin.systemd:
+        name: vault
+      register: vault_status
+      ignore_errors: true
+
+    - name: Check if this is the leader
+      ansible.builtin.shell: |
+        vault status -format=json 2>/dev/null | jq -r '.is_self // false' || echo "false"
+      register: vault_is_leader
+      changed_when: false
+      when: vault_status.status.ActiveState == "active"
+      environment:
+        VAULT_ADDR: "https://127.0.0.1:8200"
+        VAULT_CACERT: "/etc/vault.d/certs/ca.crt"
+      ignore_errors: true
+
+    - name: Stop Vault (standby nodes)
+      ansible.builtin.systemd:
+        name: vault
+        state: stopped
+      when:
+        - vault_status.status.ActiveState == "active"
+        - vault_is_leader.stdout != "true"
+
+    - name: Display standby status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Vault (standby) stopped"
+      when: vault_is_leader.stdout != "true"
+
+- name: Shutdown Vault leader
+  hosts: vault_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Check if Vault is still running
+      ansible.builtin.systemd:
+        name: vault
+      register: vault_status
+      ignore_errors: true
+
+    - name: Stop Vault leader
+      ansible.builtin.systemd:
+        name: vault
+        state: stopped
+      when: vault_status.status.ActiveState == "active"
+
+    - name: Display leader status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Vault (leader) stopped"
+
+- name: Shutdown Consul clients
+  hosts: consul_clients
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Check if Consul is running
+      ansible.builtin.systemd:
+        name: consul
+      register: consul_status
+      ignore_errors: true
+
+    - name: Leave Consul cluster gracefully
+      ansible.builtin.command: consul leave
+      when: consul_status.status.ActiveState == "active"
+      ignore_errors: true
+
+    - name: Stop Consul client
+      ansible.builtin.systemd:
+        name: consul
+        state: stopped
+      when: consul_status.status.ActiveState == "active"
+
+    - name: Display status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Consul client stopped"
+
+- name: Shutdown Consul servers (non-leader first)
+  hosts: consul_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Check if Consul is running
+      ansible.builtin.systemd:
+        name: consul
+      register: consul_status
+      ignore_errors: true
+
+    - name: Check if this is the leader
+      ansible.builtin.shell: |
+        consul operator raft list-peers 2>/dev/null | grep -E "$(hostname).*true" || true
+      register: is_leader
+      changed_when: false
+      when: consul_status.status.ActiveState == "active"
+      ignore_errors: true
+
+    - name: Leave Consul cluster gracefully (non-leader)
+      ansible.builtin.command: consul leave
+      when:
+        - consul_status.status.ActiveState == "active"
+        - is_leader.stdout == ""
+      ignore_errors: true
+
+    - name: Stop Consul server (non-leader)
+      ansible.builtin.systemd:
+        name: consul
+        state: stopped
+      when:
+        - consul_status.status.ActiveState == "active"
+        - is_leader.stdout == ""
+
+    - name: Display non-leader status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Consul server (non-leader) stopped"
+      when: is_leader.stdout == ""
+
+- name: Shutdown Consul leader
+  hosts: consul_servers
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Check if Consul is still running
+      ansible.builtin.systemd:
+        name: consul
+      register: consul_status
+      ignore_errors: true
+
+    - name: Leave Consul cluster gracefully (leader)
+      ansible.builtin.command: consul leave
+      when: consul_status.status.ActiveState == "active"
+      ignore_errors: true
+
+    - name: Stop Consul leader
+      ansible.builtin.systemd:
+        name: consul
+        state: stopped
+      when: consul_status.status.ActiveState == "active"
+
+    - name: Display leader status
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: Consul server (leader) stopped"
+
+- name: Summary
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Cluster shutdown complete
+      ansible.builtin.debug:
+        msg: |
+          ============================================================
+          Cluster shutdown complete!
+
+          All Nomad, Vault, and Consul services have been stopped.
+          You can now safely power off the rack.
+
+          To start the cluster again, run:
+            ansible-playbook playbooks/cluster-startup.yml
+          ============================================================

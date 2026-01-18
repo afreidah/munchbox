@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "sonarr"
 type         = "service"
-image        = "linuxserver/sonarr:latest"
+image        = "linuxserver/sonarr:4.0.16"
 port         = 8989
 static_port  = 8989
 host_network = true
@@ -25,9 +25,7 @@ health_path  = "/ping"
 storage      = "local"
 storage_path = "/config"
 volumes = [
-  "/mnt/gdrive/media/TV:/tv",
-  "/mnt/gdrive/nomad_deluge_downloads:/downloads",
-  "/mnt/gdrive/nomad_deluge_completed:/completed"
+  "/tank:/data"
 ]
 
 # --- Traefik routing ---
@@ -51,9 +49,9 @@ tags = [
   "sonarr",
   "media",
   "arr",
-  "traefik.http.routers.sonarr.middlewares=authentik@file",
+  "traefik.http.routers.sonarr.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.sonarr-http.rule=Host(`sonarr.munchbox.cc`)",
   "traefik.http.routers.sonarr-http.entrypoints=web",
-  "traefik.http.routers.sonarr-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.sonarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]

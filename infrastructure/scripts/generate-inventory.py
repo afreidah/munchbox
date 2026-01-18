@@ -28,7 +28,7 @@ def load_nodes():
 
 
 def get_all_nodes(config):
-    """Combine bare_metal and vms into a single dict."""
+    """Combine bare_metal, vms, and cloud_nodes into a single dict."""
     nodes = {}
 
     # Add bare-metal nodes
@@ -50,6 +50,17 @@ def get_all_nodes(config):
             "proxmox_host": data.get("proxmox_host")
         }
 
+    # Add cloud nodes (use public_ip for SSH, wireguard_ip for cluster comms)
+    for name, data in config.get("cloud_nodes", {}).items():
+        nodes[name] = {
+            "ip": data["public_ip"],  # Use public IP for Ansible SSH
+            "wireguard_ip": data.get("wireguard_ip"),
+            "arch": data.get("arch", "amd64"),
+            "roles": data.get("roles", []),
+            "type": "cloud",
+            "datacenter": data.get("datacenter", "oracle")
+        }
+
     return nodes
 
 
@@ -66,7 +77,15 @@ def build_inventory(config):
                 "consul_servers": {"hosts": {}},
                 "consul_clients": {"hosts": {}},
                 "vault_servers": {"hosts": {}},
+                "gpu_nodes": {"hosts": {}},
+                "ingress": {"hosts": {}},
                 "proxmox_hosts": {"hosts": {}},
+                "cloud_nodes": {
+                    "hosts": {},
+                    "vars": {
+                        "ansible_user": "ubuntu"  # Oracle Cloud uses ubuntu user
+                    }
+                },
             },
             "vars": {
                 "ansible_user": "root",
@@ -105,6 +124,16 @@ def build_inventory(config):
 
         if "vault_server" in roles:
             inventory["all"]["children"]["vault_servers"]["hosts"][name] = host_entry.copy()
+
+        if "gpu_node" in roles:
+            inventory["all"]["children"]["gpu_nodes"]["hosts"][name] = host_entry.copy()
+
+        if "ingress" in roles:
+            inventory["all"]["children"]["ingress"]["hosts"][name] = host_entry.copy()
+
+        # Add cloud nodes to their own group
+        if data.get("type") == "cloud":
+            inventory["all"]["children"]["cloud_nodes"]["hosts"][name] = host_entry.copy()
 
     # Remove empty groups
     for group in list(inventory["all"]["children"].keys()):

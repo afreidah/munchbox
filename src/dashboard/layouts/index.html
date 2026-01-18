@@ -4,7 +4,7 @@
 
     <!-- Page header -->
     <header class="mb-8">
-      <h1 class="text-2xl font-semibold text-ctp-blue">
+      <h1 class="text-2xl font-semibold text-ctp-mauve">
         {{ with .Site.Data.config.title }}{{ . }}{{ else }}Munchbox Dashboard{{ end }}
       </h1>
       {{ with .Site.Data.config.subtitle }}
@@ -30,10 +30,10 @@
         <section>
           <!-- Group header -->
           <div class="mb-3 flex items-center gap-2">
-            <div class="h-6 w-6 text-ctp-subtext0">
+            <div class="h-6 w-6 text-ctp-mauve">
               {{ partial "fa" (dict "icon" .icon ) }}
             </div>
-            <h2 class="text-xs font-semibold uppercase tracking-wide text-ctp-subtext0">
+            <h2 class="text-xs font-semibold uppercase tracking-wide text-ctp-mauve">
               {{ .name }}
             </h2>
           </div>
@@ -57,7 +57,7 @@
                   </div>
 
                   <div class="min-w-0">
-                    <div class="mb-1 text-sm font-semibold text-ctp-text truncate">
+                    <div class="mb-1 text-sm font-semibold text-ctp-flamingo truncate">
                       {{ .name }}
                     </div>
                     {{ with .subtitle }}

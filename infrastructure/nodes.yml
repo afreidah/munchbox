@@ -58,15 +58,14 @@ proxmox_hosts:
     features: []
     notes: "HP EliteDesk"
 
-  # Future: Lenovo ThinkStation P3 Tiny Gen 2
-  # thinkstation:
-  #   ip: 192.168.68.XX
-  #   ram_gb: 64
-  #   cpu_cores: 24  # Intel Core Ultra 9 285
-  #   storage: local-lvm
-  #   features:
-  #     - gpu_passthrough  # RTX A1000 8GB
-  #   notes: "Primary compute node for media transcoding"
+  rubirosa:
+    ip: 192.168.68.69
+    ram_gb: 64
+    cpu_cores: 24
+    storage: local-lvm
+    features:
+      - gpu_passthrough
+    notes: "Lenovo ThinkStation P3 Tiny Gen 2 - Intel Core Ultra 9 285, RTX A1000 8GB, 12TB DAS"
 
 # -------------------------------------------------------------------------------
 # Bare-Metal Nomad Nodes
@@ -84,6 +83,7 @@ bare_metal:
       - nomad_client
       - consul_server
       - vault_server
+      - ingress
     notes: "Raspberry Pi 5 - primary Vault server"
 
   goren:
@@ -94,6 +94,7 @@ bare_metal:
       - nomad_client
       - consul_server
       - vault_server
+      - ingress
     notes: "Raspberry Pi 5 - batch job runner"
 
 # -------------------------------------------------------------------------------
@@ -151,6 +152,33 @@ vms:
       - nomad_client
       - consul_client
     notes: "General workload client - on cabot (less reliable)"
+
+  nomad-client-04:
+    proxmox_host: rubirosa
+    vmid: 183
+    ip: 192.168.68.73
+    cores: 10
+    memory_mb: 28672
+    disk_gb: 40
+    gpu_passthrough:
+      pci_address: "02:00"
+    roles:
+      - nomad_client
+      - consul_client
+      - gpu_node
+    notes: "High-performance client with RTX A1000 GPU passthrough"
+
+  nomad-client-05:
+    proxmox_host: rubirosa
+    vmid: 184
+    ip: 192.168.68.74
+    cores: 10
+    memory_mb: 28672
+    disk_gb: 40
+    roles:
+      - nomad_client
+      - consul_client
+    notes: "High-performance general workload client"
 
 # -------------------------------------------------------------------------------
 # Cloud Nodes (Oracle Cloud Free Tier)

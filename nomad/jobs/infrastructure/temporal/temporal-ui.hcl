@@ -42,12 +42,18 @@ tags = [
   "temporal",
   "ui",
   "monitoring",
-  "traefik.http.routers.temporal-ui.middlewares=authentik@file",
+  "traefik.http.routers.temporal-ui.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.temporal-ui-http.rule=Host(`temporal.munchbox.cc`)",
   "traefik.http.routers.temporal-ui-http.entrypoints=web",
-  "traefik.http.routers.temporal-ui-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.temporal-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]
 
 # --- DNS configuration ---
 dns = ["192.168.68.64", "192.168.68.62"]
+
+# --- Exclude Oracle nodes (unreliable WAN link) ---
+constraints = [
+  { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode1" },
+  { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode2" }
+]

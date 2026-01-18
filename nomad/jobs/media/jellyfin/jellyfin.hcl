@@ -10,13 +10,13 @@
 # --- Core job configuration ---
 name  = "jellyfin"
 type  = "service"
-image = "jellyfin/jellyfin:latest"
+image = "jellyfin/jellyfin:10.11.5"
 port  = 8096
 static_port = 8096
 host_network = true
-node = "nomad-client-01"
+node = "nomad-client-04"
 cpu    = 3500
-memory = 3000
+memory = 4000
 
 # --- Additional ports ---
 extra_ports = [
@@ -28,14 +28,18 @@ storage = "ephemeral"
 volumes = [
   "/opt/nomad/data/jellyfin/config:/config",
   "/opt/nomad/data/jellyfin/cache:/cache",
-  "/mnt/gdrive/media/Movies:/media/Movies:ro",
-  "/mnt/gdrive/media/TV:/media/TV:ro",
-  "/mnt/gdrive/media/Music:/media/Music:ro"
+  "/tank/media/Movies:/media/Movies:ro",
+  "/tank/media/TV:/media/TV:ro",
+  "/tank/media/Music:/media/Music:ro"
 ]
 
-# --- Device access for GPU transcoding ---
+# --- NVIDIA GPU transcoding ---
+runtime = "nvidia"
 devices = [
-  { host = "/dev/dri", container = "/dev/dri" }
+  { host = "/dev/nvidia0", container = "/dev/nvidia0" },
+  { host = "/dev/nvidiactl", container = "/dev/nvidiactl" },
+  { host = "/dev/nvidia-uvm", container = "/dev/nvidia-uvm" },
+  { host = "/dev/nvidia-uvm-tools", container = "/dev/nvidia-uvm-tools" }
 ]
 
 # --- Traefik routing ---
@@ -49,6 +53,8 @@ health_path = "/System/Ping"
 env = {
   JELLYFIN_PublishedServerUrl = "https://jellyfin.munchbox.cc"
   TZ                          = "America/Los_Angeles"
+  NVIDIA_VISIBLE_DEVICES      = "all"
+  NVIDIA_DRIVER_CAPABILITIES  = "all"
 }
 
 # --- Service tags (including Traefik routing) ---
@@ -64,10 +70,11 @@ tags = [
   "traefik.http.routers.jellyfin.entrypoints=websecure",
   "traefik.http.routers.jellyfin.tls=true",
   "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt",
+  "traefik.http.routers.jellyfin.middlewares=jellyfin-ratelimit@file",
   # HTTP router (for CF tunnel)
   "traefik.http.routers.jellyfin-http.rule=Host(`jellyfin.munchbox.cc`)",
   "traefik.http.routers.jellyfin-http.entrypoints=web",
-  "traefik.http.routers.jellyfin-http.middlewares=cf-tunnel-https@file",
+  "traefik.http.routers.jellyfin-http.middlewares=cf-tunnel-https@file,jellyfin-ratelimit@file",
   "traefik.http.routers.jellyfin-http.service=jellyfin"
 ]
 

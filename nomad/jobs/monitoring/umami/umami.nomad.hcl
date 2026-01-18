@@ -30,10 +30,13 @@ job "umami" {
 
   update {
     max_parallel      = 1
+    canary            = 1
+    health_check      = "checks"
     min_healthy_time  = "30s"
     healthy_deadline  = "5m"
     progress_deadline = "10m"
     auto_revert       = true
+    auto_promote      = true
   }
 
   # ---------------------------------------------------------------------------
@@ -43,11 +46,25 @@ job "umami" {
   group "umami" {
     count = 1
 
+    # --- Run on large Oracle Cloud nodes ---
+    constraint {
+      attribute = "${meta.cloud}"
+      value     = "oracle"
+    }
+
+    constraint {
+      attribute = "${meta.size}"
+      value     = "large"
+    }
+
     # --- Network Configuration ---
     network {
       mode = "bridge"
       port "http" {
         to = 3000
+      }
+      dns {
+        servers = ["192.168.68.62", "192.168.68.64"]
       }
     }
 
@@ -92,11 +109,37 @@ job "umami" {
       ]
 
       check {
-        name     = "umami-health"
-        type     = "http"
-        path     = "/api/heartbeat"
-        interval = "30s"
-        timeout  = "5s"
+        name      = "umami-health"
+        type      = "http"
+        path      = "/api/heartbeat"
+        interval  = "10s"
+        timeout   = "5s"
+        on_update = "require_healthy"
+      }
+    }
+
+    # -------------------------------------------------------------------------
+    # Task: geoip-updater (prestart)
+    # Downloads DB-IP GeoLite City database for city-level geolocation
+    # Uses DB-IP free database - no account or license key required
+    # -------------------------------------------------------------------------
+
+    task "geoip-updater" {
+      driver = "docker"
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      config {
+        image   = "alpine/curl:8.11.1"
+        command = "/bin/sh"
+        args    = ["-c", "cd /alloc/data && curl -sL \"https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz\" | gunzip > dbip-city-lite.mmdb && ls -la"]
+      }
+
+      resources {
+        cpu    = 100
+        memory = 64
       }
     }
 
@@ -120,7 +163,7 @@ job "umami" {
 
       # --- Container Configuration ---
       config {
-        image              = "ghcr.io/umami-software/umami:postgresql-latest"
+        image              = "ghcr.io/umami-software/umami:postgresql-v2.15.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
@@ -132,11 +175,13 @@ job "umami" {
         change_mode = "restart"
         data        = <<EOH
 {{ with secret "secret/data/umami" }}
-DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-shared.service.consul:5432/umami
+DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-primary.service.consul:5432/umami
 APP_SECRET={{ .Data.data.app_secret }}
 {{ end }}
 # App URL for external access
 APP_URL=https://analytics.munchbox.cc
+# GeoIP database for city-level geolocation (DB-IP free database, downloaded by prestart task)
+GEOIP_DATABASE_FILE=/alloc/data/dbip-city-lite.mmdb
 # OpenTelemetry tracing to Tempo
 OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo.service.consul:4317
 OTEL_EXPORTER_OTLP_PROTOCOL=grpc

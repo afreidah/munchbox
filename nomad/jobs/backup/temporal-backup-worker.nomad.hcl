@@ -118,9 +118,22 @@ job "temporal-backup-worker" {
         volumes            = [
           "/mnt/gdrive:/mnt/gdrive",
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
-          "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/vault-ca.pem:ro"
+          "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/vault-ca.pem:ro",
+          "secrets/postgres-ca.crt:/etc/ssl/postgres/ca.crt:ro"
         ]
-        dns_servers        = ["192.168.68.64", "192.168.68.62"]
+        # Uses goren's dnsmasq which can resolve Consul service names
+        dns_servers        = ["192.168.68.60"]
+      }
+
+      # PostgreSQL CA certificate for TLS verification
+      template {
+        destination = "secrets/postgres-ca.crt"
+        perms       = "0644"
+        data        = <<-EOF
+{{ with secret "pki_int/cert/ca" }}
+{{ .Data.certificate }}
+{{ end }}
+        EOF
       }
 
       template {
@@ -149,11 +162,13 @@ job "temporal-backup-worker" {
         NOMAD_ADDR        = "https://nomad.service.consul:4646"
         NOMAD_CACERT      = "/etc/ssl/certs/nomad-ca.pem"
         VAULT_CACERT      = "/etc/ssl/certs/vault-ca.pem"
-        TRIVY_DB_HOST     = "postgres-shared.service.consul"
+        TRIVY_DB_HOST     = "postgres-primary.service.consul"
         TRIVY_DB_PORT     = "5432"
         TRIVY_DB_NAME     = "trivy"
+        DB_SSLMODE        = "verify-ca"
+        DB_SSLROOTCERT    = "/etc/ssl/postgres/ca.crt"
         # OpenTelemetry tracing to Tempo (gRPC)
-        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+        OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
         OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
       }
 

@@ -75,7 +75,7 @@ resource "vault_jwt_auth_backend" "nomad" {
   path               = "jwt-nomad"
   type               = "jwt"
   description        = "JWT auth for Nomad workload identity"
-  jwks_url           = "https://stabler:4646/.well-known/jwks.json"
+  jwks_url           = "https://192.168.68.61:4646/.well-known/jwks.json"
   jwt_supported_algs = ["RS256", "EdDSA"]
   default_role       = "nomad-workloads"
   jwks_ca_pem        = data.vault_generic_secret.pki_int_ca.data["certificate"]

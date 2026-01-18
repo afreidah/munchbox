@@ -20,6 +20,12 @@ terraform {
       version = "~> 4.0"
     }
   }
+
+  backend "consul" {
+    address = "consul.service.consul:8500"
+    scheme  = "http"
+    path    = "terraform/nomad-acl"
+  }
 }
 
 # -----------------------------------------------------------------------------

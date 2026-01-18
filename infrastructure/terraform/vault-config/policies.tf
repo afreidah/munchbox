@@ -164,11 +164,35 @@ path "secret/data/forgejo" {
   capabilities = ["read"]
 }
 
+path "secret/data/forgejo-runner" {
+  capabilities = ["read"]
+}
+
 path "secret/data/woodpecker" {
   capabilities = ["read"]
 }
 
 path "secret/data/umami" {
+  capabilities = ["read"]
+}
+
+path "secret/data/s3-proxy" {
+  capabilities = ["read"]
+}
+
+path "secret/data/patroni" {
+  capabilities = ["read"]
+}
+
+path "secret/data/oauth2-proxy" {
+  capabilities = ["read"]
+}
+
+path "secret/data/traefik-log-dashboard" {
+  capabilities = ["read"]
+}
+
+path "secret/data/maxmind" {
   capabilities = ["read"]
 }
 
@@ -179,6 +203,10 @@ path "kv/data/traefik" {
 
 # --- PKI Certificate Issuance ---
 path "pki_int/issue/traefik" {
+  capabilities = ["create", "update", "read"]
+}
+
+path "pki_int/issue/postgres" {
   capabilities = ["create", "update", "read"]
 }
 

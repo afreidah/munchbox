@@ -91,16 +91,30 @@ job "nextcloud" {
 
       tags = [
         "traefik.enable=true",
-        # HTTPS router (for direct LAN access)
+        # HTTPS router for API/OCS (no oauth2-proxy - Nextcloud handles auth)
+        "traefik.http.routers.nextcloud-api.rule=Host(`nextcloud.munchbox.cc`) && (PathPrefix(`/ocs`) || PathPrefix(`/remote.php`) || PathPrefix(`/public.php`) || PathPrefix(`/status.php`))",
+        "traefik.http.routers.nextcloud-api.entrypoints=websecure",
+        "traefik.http.routers.nextcloud-api.tls=true",
+        "traefik.http.routers.nextcloud-api.tls.certresolver=letsencrypt",
+        "traefik.http.routers.nextcloud-api.middlewares=nextcloud-ratelimit@file,nextcloud-sec@file",
+        "traefik.http.routers.nextcloud-api.priority=20",
+        # HTTP router for API/OCS (Cloudflare tunnel, no oauth2-proxy)
+        "traefik.http.routers.nextcloud-api-http.rule=Host(`nextcloud.munchbox.cc`) && (PathPrefix(`/ocs`) || PathPrefix(`/remote.php`) || PathPrefix(`/public.php`) || PathPrefix(`/status.php`))",
+        "traefik.http.routers.nextcloud-api-http.entrypoints=web",
+        "traefik.http.routers.nextcloud-api-http.middlewares=cf-tunnel-https@file,nextcloud-ratelimit@file,nextcloud-sec@file",
+        "traefik.http.routers.nextcloud-api-http.priority=20",
+        # HTTPS router for Web UI (with oauth2-proxy)
         "traefik.http.routers.nextcloud.rule=Host(`nextcloud.munchbox.cc`)",
         "traefik.http.routers.nextcloud.entrypoints=websecure",
         "traefik.http.routers.nextcloud.tls=true",
         "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt",
-        "traefik.http.routers.nextcloud.middlewares=authentik@file,nextcloud-ratelimit@file,nextcloud-sec@file",
-        # HTTP router (for Cloudflare tunnel - TLS terminated at CF edge)
+        "traefik.http.routers.nextcloud.middlewares=oauth2-proxy@file,nextcloud-ratelimit@file,nextcloud-sec@file",
+        "traefik.http.routers.nextcloud.priority=10",
+        # HTTP router for Web UI (Cloudflare tunnel, with oauth2-proxy)
         "traefik.http.routers.nextcloud-http.rule=Host(`nextcloud.munchbox.cc`)",
         "traefik.http.routers.nextcloud-http.entrypoints=web",
-        "traefik.http.routers.nextcloud-http.middlewares=cf-tunnel-https@file,authentik@file,nextcloud-ratelimit@file,nextcloud-sec@file",
+        "traefik.http.routers.nextcloud-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,nextcloud-ratelimit@file,nextcloud-sec@file",
+        "traefik.http.routers.nextcloud-http.priority=10",
         "traefik.http.services.nextcloud.loadbalancer.server.port=18081",
         "cloud",
         "files",
@@ -116,8 +130,6 @@ job "nextcloud" {
         interval = "30s"
         timeout  = "10s"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -----------------------------------------------------------------------
@@ -147,29 +159,11 @@ job "nextcloud" {
         ]
       }
 
-      # --- Vault Secrets (Nomad 1.11 secret block) ---
-      secret "nextcloud" {
-        provider = "vault"
-        path     = "secret/data/nextcloud"
-        config {
-          engine = "kv_v2"
-        }
-      }
-
-      secret "redis_shared" {
-        provider = "vault"
-        path     = "secret/data/redis-shared"
-        config {
-          engine = "kv_v2"
-        }
-      }
-
-      # --- Environment Variables (static + dynamic from Vault) ---
+      # --- Environment Variables (static) ---
       env {
-        # Static config
-        POSTGRES_HOST        = "postgres-shared.service.consul"
+        POSTGRES_HOST        = "postgres-primary.service.consul"
         POSTGRES_DB          = "nextcloud"
-        REDIS_HOST           = "redis-shared.service.consul"
+        REDIS_HOST           = "redis-primary.service.consul"
         REDIS_PORT           = "6379"
         REDIS_HOST_PORT      = "6379"
         REDIS_HOST_DB        = "0"
@@ -177,15 +171,27 @@ job "nextcloud" {
         OVERWRITEPROTOCOL    = "https"
         OVERWRITEHOST        = "nextcloud.munchbox.cc"
         OVERWRITECLIURL      = "https://nextcloud.munchbox.cc"
-        # Dynamic secrets from Vault
-        POSTGRES_PASSWORD    = "${secret.nextcloud.db_password}"
-        REDIS_HOST_PASSWORD  = "${secret.redis_shared.password}"
+      }
+
+      # --- Dynamic Secrets from Vault ---
+      template {
+        destination = "secrets/env.sh"
+        env         = true
+        change_mode = "restart"
+        data        = <<-EOF
+{{ with secret "secret/data/nextcloud" }}
+POSTGRES_PASSWORD={{ .Data.data.db_password }}
+{{ end }}
+{{ with secret "secret/data/redis-shared" }}
+REDIS_HOST_PASSWORD={{ .Data.data.password }}
+{{ end }}
+        EOF
       }
 
       # --- Resources ---
       resources {
-        cpu    = 2500
-        memory = 1800
+        cpu    = 3500
+        memory = 2048
       }
 
       # --- Termination ---

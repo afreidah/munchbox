@@ -68,8 +68,6 @@ job "trivy-server" {
         timeout  = "5s"
         on_update = "require_healthy"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------
@@ -90,7 +88,7 @@ job "trivy-server" {
       }
 
       config {
-        image              = "aquasec/trivy:latest"
+        image              = "aquasec/trivy:0.68.2"
         image_pull_timeout = "10m"
         ports              = ["http"]
         args               = [
@@ -102,7 +100,7 @@ job "trivy-server" {
       template {
         data = <<-EOF
         {{ with secret "secret/data/redis-shared" }}
-        TRIVY_CACHE_BACKEND=redis://:{{ .Data.data.password }}@redis-shared.service.consul:6379
+        TRIVY_CACHE_BACKEND=redis://:{{ .Data.data.password }}@redis-primary.service.consul:6379
         {{ end }}
         EOF
         destination = "secrets/secrets.env"

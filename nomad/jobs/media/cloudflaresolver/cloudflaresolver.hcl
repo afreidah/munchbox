@@ -10,7 +10,8 @@
 # --- Core job configuration ---
 name         = "cloudflaresolverr"
 type         = "service"
-image        = "ghcr.io/flaresolverr/flaresolverr:latest"
+image        = "ghcr.io/flaresolverr/flaresolverr:v3.4.6"
+node         = "oraclearm2"
 port         = 8191
 size         = "medium"
 memory       = 512

@@ -28,8 +28,10 @@ job "forgejo" {
   # Update Strategy
   # ---------------------------------------------------------------------------
 
+  # Note: No canary - static SSH port 2222 prevents running two instances
   update {
     max_parallel      = 1
+    health_check      = "checks"
     min_healthy_time  = "30s"
     healthy_deadline  = "5m"
     progress_deadline = "10m"
@@ -43,6 +45,12 @@ job "forgejo" {
   group "forgejo" {
     count = 1
 
+    # --- Constraint: Require gdrive NFS mount ---
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "stabler.munchbox.cc"
+    }
+
     # --- Network Configuration ---
     network {
       mode = "bridge"
@@ -52,6 +60,13 @@ job "forgejo" {
       port "ssh" {
         static = 2222
         to     = 22
+      }
+      # Bridge mode containers need explicit DNS config for Consul resolution
+      # Uses goren's dnsmasq which forwards .consul to Consul DNS
+      dns {
+        servers  = ["192.168.68.60"]
+        searches = ["service.consul"]
+        options  = ["ndots:1", "timeout:2", "attempts:2"]
       }
     }
 
@@ -81,15 +96,37 @@ job "forgejo" {
 
       tags = [
         "traefik.enable=true",
-        # HTTPS router (direct LAN access)
+        # HTTPS router for API (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-api.rule=Host(`git.munchbox.cc`) && PathPrefix(`/api/`)",
+        "traefik.http.routers.forgejo-api.entrypoints=websecure",
+        "traefik.http.routers.forgejo-api.tls=true",
+        "traefik.http.routers.forgejo-api.middlewares=forgejo-api-ratelimit@file",
+        "traefik.http.routers.forgejo-api.priority=10",
+        # HTTPS router for git operations (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-git.rule=Host(`git.munchbox.cc`) && PathRegexp(`/.+\\.git/.*`)",
+        "traefik.http.routers.forgejo-git.entrypoints=websecure",
+        "traefik.http.routers.forgejo-git.tls=true",
+        "traefik.http.routers.forgejo-git.priority=10",
+        # HTTPS router for web UI (with oauth2-proxy)
         "traefik.http.routers.forgejo.rule=Host(`git.munchbox.cc`)",
         "traefik.http.routers.forgejo.entrypoints=websecure",
         "traefik.http.routers.forgejo.tls=true",
         "traefik.http.routers.forgejo.tls.certresolver=letsencrypt",
-        # HTTP router (Cloudflare tunnel)
+        "traefik.http.routers.forgejo.middlewares=oauth2-proxy@file",
+        # HTTP router for API (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-api-http.rule=Host(`git.munchbox.cc`) && PathPrefix(`/api/`)",
+        "traefik.http.routers.forgejo-api-http.entrypoints=web",
+        "traefik.http.routers.forgejo-api-http.middlewares=cf-tunnel-https@file,forgejo-api-ratelimit@file",
+        "traefik.http.routers.forgejo-api-http.priority=10",
+        # HTTP router for git operations (no oauth2-proxy, higher priority)
+        "traefik.http.routers.forgejo-git-http.rule=Host(`git.munchbox.cc`) && PathRegexp(`/.+\\.git/.*`)",
+        "traefik.http.routers.forgejo-git-http.entrypoints=web",
+        "traefik.http.routers.forgejo-git-http.middlewares=cf-tunnel-https@file",
+        "traefik.http.routers.forgejo-git-http.priority=10",
+        # HTTP router for web UI (with oauth2-proxy)
         "traefik.http.routers.forgejo-http.rule=Host(`git.munchbox.cc`)",
         "traefik.http.routers.forgejo-http.entrypoints=web",
-        "traefik.http.routers.forgejo-http.middlewares=cf-tunnel-https@file",
+        "traefik.http.routers.forgejo-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file",
         "git",
         "forgejo",
         "infrastructure"
@@ -146,7 +183,7 @@ job "forgejo" {
       }
 
       config {
-        image   = "busybox:latest"
+        image   = "busybox:1.37.0"
         command = "sh"
         args    = ["-c", "mkdir -p /data/gitea/conf && cp /local/app.ini /data/gitea/conf/app.ini && chown -R 1000:1000 /data/gitea"]
         volumes = [
@@ -177,7 +214,7 @@ OFFLINE_MODE = false
 
 [database]
 DB_TYPE = postgres
-HOST = postgres-shared.service.consul:5432
+HOST = postgres-primary.service.consul:5432
 NAME = forgejo
 USER = {{ .db_username }}
 PASSWD = {{ .db_password }}
@@ -196,16 +233,18 @@ JWT_SECRET = {{ .jwt_secret }}
 {{ with .Data.data }}
 [cache]
 ADAPTER = redis
-HOST = redis://default:{{ .password }}@redis-shared.service.consul:6379/2
+HOST = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
 ITEM_TTL = 16h
 
 [session]
 PROVIDER = redis
-PROVIDER_CONFIG = redis://default:{{ .password }}@redis-shared.service.consul:6379/2
+PROVIDER_CONFIG = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
+COOKIE_SECURE = true
+SAME_SITE = lax
 
 [queue]
 TYPE = redis
-CONN_STR = redis://default:{{ .password }}@redis-shared.service.consul:6379/2
+CONN_STR = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
 {{ end }}{{ end }}
 
 [indexer]
@@ -252,7 +291,8 @@ REPOSITORY_AVATAR_UPLOAD_PATH = /data/gitea/repo-avatars
 PATH = /data/gitea/attachments
 
 [webhook]
-ALLOWED_HOST_LIST = *
+; Restrict webhooks to internal services and munchbox.cc domain (prevents SSRF)
+ALLOWED_HOST_LIST = loopback,*.service.consul,*.munchbox.cc
 
 [migrations]
 ALLOWED_DOMAINS = github.com,api.github.com,gitlab.com
@@ -267,6 +307,11 @@ ENABLED = true
 EXPORTER = otlp
 ENDPOINT = tempo.service.consul:4317
 SERVICE_NAME = forgejo
+
+[metrics]
+ENABLED = true
+ENABLED_ISSUE_BY_LABEL = true
+ENABLED_ISSUE_BY_REPOSITORY = true
 EOH
       }
 

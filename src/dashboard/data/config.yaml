@@ -9,7 +9,7 @@
 # groups, each with items that define downstream service URLs.
 # -------------------------------------------------------------------------------
 
-title: Munchbox Dashboard
+title: Munchbox Cloud Dashboard
 subtitle: Central access to Munchbox services
 icon: munchbox
 
@@ -20,6 +20,12 @@ services:
   - name: Apps
     icon: fa-solid fa-cloud
     items:
+      - name: OAuth2 Proxy
+        subtitle: SSO and identity provider
+        url: https://auth.munchbox.cc
+        tag: security
+        icon: oauth2-proxy.png
+
       - name: Nextcloud
         subtitle: Files, calendar, contacts
         url: https://nextcloud.munchbox.cc
@@ -30,7 +36,13 @@ services:
         subtitle: Media server
         url: https://jellyfin.munchbox.cc
         tag: media
-        icon: jellyfin.svg
+        icon: jellyfin.png
+
+      - name: Kavita
+        subtitle: Book Reader
+        url: https://kavita.munchbox.cc
+        tag: media
+        icon: kavita.png
 
       - name: Vaultwarden
         subtitle: Password manager
@@ -60,13 +72,19 @@ services:
         subtitle: Music management
         url: https://lidarr.munchbox.cc
         tag: media
-        icon: lidarr.svg
+        icon: lidarr.png
 
       - name: Sonarr
         subtitle: TV management
         url: https://sonarr.munchbox.cc
         tag: media
         icon: sonarr.png
+
+      - name: Readarr
+        subtitle: Book management
+        url: https://readarr.munchbox.cc
+        tag: media
+        icon: readarr.png
 
       - name: Prowlarr
         subtitle: Indexer management
@@ -102,7 +120,7 @@ services:
         subtitle: Secrets management
         url: https://vault.munchbox.cc
         tag: security
-        icon: vault.svg
+        icon: vault.png
         bg: bg-ctp-yellow
 
       - name: Proxmox
@@ -129,12 +147,6 @@ services:
         tag: containers
         icon: registry-ui.png
 
-      - name: Woodpecker
-        subtitle: CI/CD pipelines
-        url: https://woodpecker.munchbox.cc
-        tag: ci
-        icon: woodpecker.svg
-
       - name: Forgejo
         subtitle: Git repository hosting
         url: https://git.munchbox.cc
@@ -153,29 +165,29 @@ services:
         tag: infra
         icon: traefik.png
 
-      - name: Green
-        subtitle: Pi-hole DNS server 1
+      - name: Traefik Log Dashboard
+        subtitle: Traefik Traffic Dashboard
+        url: https://traefik-logs.munchbox.cc/dashboard
+        tag: infra
+        icon: traefik-log-dashboard.png
+
+      - name: Pi-hole (green)
+        subtitle: Primary DNS
         url: http://green/admin
         tag: dns
-        icon: pi-hole-unbound.svg
+        icon: pi-hole.png
 
-      - name: Logan
-        subtitle: Pi-hole DNS server 2
+      - name: Pi-hole (logan)
+        subtitle: Secondary DNS
         url: http://logan/admin
         tag: dns
-        icon: pi-hole-unbound.svg
+        icon: pi-hole.png
 
       - name: Cloudflare
         subtitle: CDN, DNS, and tunnels
         url: https://dash.cloudflare.com
         tag: external
         icon: cloudflare.png
-
-      - name: Authentik
-        subtitle: SSO and identity provider
-        url: https://auth.munchbox.cc
-        tag: security
-        icon: authentik.png
 
       - name: Trivy Scanner
         subtitle: Container vulnerability scans
@@ -200,3 +212,15 @@ services:
         url: https://grafana.munchbox.cc
         tag: monitoring
         icon: grafana.png
+
+      - name: OpenZFS
+        subtitle: ZFS Pool Dashboard
+        url: https://zfs.munchbox.cc
+        tag: monitoring
+        icon: openzfs.png
+
+      - name: Umami
+        subtitle: Web analytics
+        url: https://analytics.munchbox.cc
+        tag: analytics
+        icon: umami.png

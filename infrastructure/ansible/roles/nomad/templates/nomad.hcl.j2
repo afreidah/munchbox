@@ -41,6 +41,11 @@ client {
 {% if nomad_network_interface %}
   network_interface = "{{ nomad_network_interface }}"
 {% endif %}
+{% if 'ingress' in group_names or (node_roles is defined and 'ingress' in node_roles) %}
+  meta {
+    role = "ingress"
+  }
+{% endif %}
 }
 # -------------------------------------------------------------------------------
 # Consul Integration
@@ -89,6 +94,7 @@ vault {
 # -------------------------------------------------------------------------------
 plugin "docker" {
   config {
+    allow_privileged = true
     allow_caps = ["audit_write", "chown", "dac_override", "fowner", "fsetid", "kill",
                   "mknod", "net_bind_service", "setfcap", "setgid", "setpcap", "setuid",
                   "sys_chroot", "net_admin", "net_raw"]

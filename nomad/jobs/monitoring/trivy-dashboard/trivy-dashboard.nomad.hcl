@@ -30,14 +30,8 @@ job "trivy-dashboard" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement 
+  # Placement - no constraint, can run on any node
   # -------------------------------------------------------------------------
-
-  constraint {
-    attribute = "${node.unique.name}"
-    operator  = "="
-    value     = "oraclenode2"
-  }
 
   # ---------------------------------------------------------------------------
   # Task Group: dashboard
@@ -69,6 +63,11 @@ job "trivy-dashboard" {
         "traefik.http.routers.trivy-dashboard.rule=Host(`trivy-dashboard.munchbox.cc`)",
         "traefik.http.routers.trivy-dashboard.entrypoints=websecure",
         "traefik.http.routers.trivy-dashboard.tls.certresolver=letsencrypt",
+        "traefik.http.routers.trivy-dashboard.middlewares=oauth2-proxy@file",
+        # HTTP router for CF tunnel
+        "traefik.http.routers.trivy-dashboard-http.rule=Host(`trivy-dashboard.munchbox.cc`)",
+        "traefik.http.routers.trivy-dashboard-http.entrypoints=web",
+        "traefik.http.routers.trivy-dashboard-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file",
       ]
 
       check {
@@ -78,8 +77,6 @@ job "trivy-dashboard" {
         interval = "15s"
         timeout  = "5s"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     task "dashboard" {
@@ -99,6 +96,19 @@ job "trivy-dashboard" {
         image              = "registry.munchbox.cc/trivy-dashboard:latest"
         image_pull_timeout = "5m"
         ports              = ["http"]
+        volumes            = ["secrets/ca.crt:/etc/ssl/postgres/ca.crt:ro"]
+        dns_servers        = ["192.168.68.64", "192.168.68.62"]
+      }
+
+      # PostgreSQL CA certificate for TLS verification
+      template {
+        destination = "secrets/ca.crt"
+        perms       = "0644"
+        data        = <<-EOF
+{{ with secret "pki_int/cert/ca" }}
+{{ .Data.certificate }}
+{{ end }}
+        EOF
       }
 
       secret "trivy_db" {
@@ -111,11 +121,13 @@ job "trivy-dashboard" {
 
       env {
         PORT                        = "8080"
-        TRIVY_DB_HOST               = "postgres-replica.service.consul"
-        TRIVY_DB_PORT               = "5433"
+        TRIVY_DB_HOST               = "postgres-primary.service.consul"
+        TRIVY_DB_PORT               = "5432"
         TRIVY_DB_USER               = "${secret.trivy_db.db_username}"
         TRIVY_DB_PASSWORD           = "${secret.trivy_db.db_password}"
         TRIVY_DB_NAME               = "trivy"
+        DB_SSLMODE                  = "verify-ca"
+        DB_SSLROOTCERT              = "/etc/ssl/postgres/ca.crt"
         TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
         # OpenTelemetry tracing to Tempo (gRPC)
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"

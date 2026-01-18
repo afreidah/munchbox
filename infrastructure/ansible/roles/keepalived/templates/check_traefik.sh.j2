@@ -1,0 +1,12 @@
+#!/bin/sh
+# -------------------------------------------------------------------------------
+# Traefik Health Check Script for Keepalived
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Checks if Traefik is responding on the local node.
+# Exit 0 = healthy, Exit 1 = unhealthy (triggers priority reduction)
+# -------------------------------------------------------------------------------
+
+curl -sf {{ keepalived_traefik_health_url }} > /dev/null 2>&1
+exit $?

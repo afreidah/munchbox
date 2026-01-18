@@ -10,9 +10,10 @@
 
 REGISTRY   ?= registry.munchbox.cc
 IMAGE      := dash
-VERSION    := latest
+VERSION    ?= latest
 
 FULL_TAG   := $(REGISTRY)/$(IMAGE):$(VERSION)
+CACHE_TAG  := $(REGISTRY)/$(IMAGE):cache
 PLATFORMS  := linux/amd64,linux/arm64
 
 # -------------------------------------------------------------------------
@@ -43,6 +44,8 @@ builder: ## Ensure the Buildx builder exists and is ready
 # -------------------------------------------------------------------------
 
 build: ## Build the dashboard image for the local architecture
+	@echo "Rebuilding Tailwind CSS"
+	npm run build
 	@echo "Building $(FULL_TAG) for local architecture"
 	docker build -t $(FULL_TAG) .
 
@@ -51,11 +54,15 @@ build: ## Build the dashboard image for the local architecture
 # -------------------------------------------------------------------------
 
 push: builder ## Build and push amd64 and arm64 images to the registry
+	@echo "Rebuilding Tailwind CSS"
+	npm run build
 	@echo "Building and pushing $(FULL_TAG) for $(PLATFORMS)"
 	docker buildx build \
 	  --platform $(PLATFORMS) \
 	  -t $(FULL_TAG) \
-	  --push \
+	  --cache-from type=registry,ref=$(CACHE_TAG) \
+	  --cache-to type=registry,ref=$(CACHE_TAG),mode=max \
+	  --output type=image,push=true,registry.insecure=true \
 	  .
 
 # -------------------------------------------------------------------------

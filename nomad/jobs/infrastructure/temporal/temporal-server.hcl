@@ -7,6 +7,9 @@
 # DNS. Exposes gRPC API (port 7233) for workflow submissions and queries.
 # -------------------------------------------------------------------------------
 
+# --- Job directory (for template files) ---
+job_dir = "/home/afreidah/tools/munchbox/nomad/jobs/infrastructure/temporal"
+
 # --- General Settings ---
 name  = "temporal-server"
 type  = "service"
@@ -23,11 +26,15 @@ env = {
   TZ                              = "UTC"
   DB                              = "postgres12_pgx"
   DB_PORT                         = "5432"
-  POSTGRES_SEEDS                  = "postgres-shared.service.consul"
+  POSTGRES_SEEDS                  = "postgres-primary.service.consul"
   SKIP_DB_CREATE                  = "true"
   SKIP_SCHEMA_SETUP               = "false"  # Temporarily enabled to run migration from 1.14 to 1.18
   SKIP_DEFAULT_NAMESPACE_CREATION = "true"
   BIND_ON_IP                      = "0.0.0.0"
+  # PostgreSQL TLS configuration
+  SQL_TLS_ENABLED                 = "true"
+  SQL_TLS_CA_FILE                 = "/secrets/ca.crt"
+  SQL_TLS_DISABLE_HOST_VERIFICATION = "true"  # Using Consul DNS, not cert CN
   # OpenTelemetry tracing to Tempo (gRPC)
   OTEL_EXPORTER_OTLP_ENDPOINT     = "http://tempo.service.consul:4317"
   OTEL_EXPORTER_OTLP_PROTOCOL     = "grpc"
@@ -39,7 +46,8 @@ vault = true
 
 # --- Templates (inject secrets from Vault) ---
 templates = [
-  { src = "temporal.env.tpl", dest = "/secrets/temporal.env", env = true, vault = true }
+  { src = "temporal.env.tpl", dest = "/secrets/temporal.env", env = true, vault = true },
+  { src = "ca.crt.tpl", dest = "/secrets/ca.crt", vault = true }
 ]
 
 # --- Traefik integration ---
@@ -60,4 +68,5 @@ cpu = 300      # Reduced from 1000 - actual usage <1%
 memory = 256   # Reduced from 1024 - actual usage 81MB
 
 # --- DNS configuration ---
-dns = ["192.168.68.64", "192.168.68.62"]
+# Uses goren's dnsmasq which can resolve Consul service names
+dns = ["192.168.68.60"]

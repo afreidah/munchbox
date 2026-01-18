@@ -2,12 +2,18 @@
 # cloudflared-tunnel — Munchbox Deployment
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Runs cloudflared connector using token-based auth. Tunnel ingress configuration
+# is managed by Terraform (infrastructure/terraform/dns/main.tf) via the
+# cloudflare_tunnel_config resource. This job just runs the connector.
+#
+# To update tunnel routing: modify Terraform, not this file.
 # -------------------------------------------------------------------------------
 
 job "cloudflared-tunnel" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "system"
+  type        = "service"
   node_pool   = "all"
   priority    = 50
 
@@ -27,17 +33,11 @@ job "cloudflared-tunnel" {
   # Placement
   # -------------------------------------------------------------------------
 
-  # --- Pin to ingress nodes ---
-  constraint {
-    attribute = "${meta.role}"
-    operator  = "="
-    value     = "ingress"
-  }
-
+  # --- Pin to goren ---
   constraint {
     attribute = "${node.unique.name}"
     operator  = "="
-    value     = "stabler.munchbox.cc"
+    value     = "goren"
   }
 
   # ---------------------------------------------------------------------------
@@ -45,11 +45,12 @@ job "cloudflared-tunnel" {
   # ---------------------------------------------------------------------------
 
   group "cloudflared-tunnel" {
+    count = 1
 
     # --- Network Configuration ---
     network {
       mode = "host"
-      port "http" {
+      port "metrics" {
         static = 2000
       }
     }
@@ -65,7 +66,7 @@ job "cloudflared-tunnel" {
     # --- Service Registration ---
     service {
       name     = "cloudflared-tunnel"
-      port     = "http"
+      port     = "metrics"
       provider = "consul"
 
       tags = [
@@ -79,7 +80,7 @@ job "cloudflared-tunnel" {
         name     = "cloudflared-tunnel-health"
         type     = "http"
         path     = "/ready"
-        port     = "http"
+        port     = "metrics"
         interval = "10s"
         timeout  = "3s"
       }
@@ -100,140 +101,31 @@ job "cloudflared-tunnel" {
         file = true
         aud  = ["vault.io"]
       }
+
       config {
-        image              = "cloudflare/cloudflared:latest"
+        image              = "cloudflare/cloudflared:2025.11.1"
         image_pull_timeout = "10m"
-        ports              = ["http"]
+        ports              = ["metrics"]
         network_mode       = "host"
-        args               = ["tunnel", "--config", "/secrets/config.yml", "run"]
-        volumes            = ["secrets/credentials.json:/local/credentials.json:ro", "secrets/config.yml:/local/config.yml:ro"]
+        args = [
+          "tunnel",
+          "--metrics", "0.0.0.0:2000",
+          "run",
+          "--token", "${TUNNEL_TOKEN}"
+        ]
       }
+
+      # --- Tunnel token from Vault ---
+      # Token includes credentials and tunnel ID. Ingress config fetched from CF API.
+      # Generate token: Cloudflare Dashboard > Zero Trust > Networks > Tunnels > Configure
       template {
         data        = <<EOH
-{{ with secret "secret/data/cloudflared" }}{{ .Data.data.credentials_json }}{{ end }}
-
+{{ with secret "secret/data/cloudflared" }}
+TUNNEL_TOKEN={{ .Data.data.tunnel_token }}
+{{ end }}
 EOH
-        destination = "secrets/credentials.json"
-        change_mode = "restart"
-      }
-      template {
-        data        = <<EOH
-tunnel: {{ with secret "secret/data/cloudflared" }}{{ .Data.data.tunnel_uuid }}{{ end }}
-credentials-file: /local/credentials.json
-
-# Enable metrics and health endpoints
-metrics: 0.0.0.0:2000
-
-ingress:
-  # --- alexfreidah.com domains ---
-  - hostname: "alexfreidah.com"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: alexfreidah.com
-
-  - hostname: "www.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: www.alexfreidah.com
-
-  - hostname: "resume.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: resume.alexfreidah.com
-
-  - hostname: "k3s-status.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: k3s-status.alexfreidah.com
-
-  - hostname: "analytics.alexfreidah.com"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: analytics.alexfreidah.com
-
-  # --- munchbox.cc domains (Authentik-protected) ---
-  - hostname: "dashboard.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: dashboard.munchbox.cc
-
-  - hostname: "nomad.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: nomad.munchbox.cc
-
-  - hostname: "consul.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: consul.munchbox.cc
-
-  - hostname: "traefik.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: traefik.munchbox.cc
-
-  - hostname: "auth.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: auth.munchbox.cc
-
-  - hostname: "nextcloud.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: nextcloud.munchbox.cc
-
-  - hostname: "prometheus.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: prometheus.munchbox.cc
-
-  - hostname: "grafana.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: grafana.munchbox.cc
-
-  - hostname: "vaultwarden.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: vaultwarden.munchbox.cc
-
-  - hostname: "alertmanager.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: alertmanager.munchbox.cc
-
-  - hostname: "emby.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: emby.munchbox.cc
-
-  - hostname: "jellyfin.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: jellyfin.munchbox.cc
-
-  - hostname: "analytics.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: analytics.munchbox.cc
-
-  - hostname: "git.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: git.munchbox.cc
-
-  - hostname: "woodpecker.munchbox.cc"
-    service: "http://traefik.service.consul:80"
-    originRequest:
-      httpHostHeader: woodpecker.munchbox.cc
-
-  - service: http_status:404
-
-warp-routing:
-  enabled: false
-
-EOH
-        destination = "secrets/config.yml"
+        destination = "secrets/cloudflared.env"
+        env         = true
         change_mode = "restart"
       }
 
@@ -248,15 +140,9 @@ EOH
       kill_signal  = "SIGTERM"
     }
   }
+
   meta = {
-    managed_by             = "nomad-pack"
-    "pack.deployment_name" = "munchbox-service"
-    "pack.job"             = "cloudflared-tunnel"
-    "pack.name"            = "munchbox-service"
-    "pack.path"            = "/home/afreidah/tools/munchbox/nomad/packs/registry/munchbox-service"
-    "pack.registry"        = "<<local folder>>"
-    "pack.version"         = "<<none>>"
-    project                = "munchbox"
+    managed_by = "nomad"
+    project    = "munchbox"
   }
 }
-

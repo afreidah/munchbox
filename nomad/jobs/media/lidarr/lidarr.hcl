@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "lidarr"
 type         = "service"
-image        = "linuxserver/lidarr:latest"
+image        = "linuxserver/lidarr:3.1.0"
 port         = 8686
 static_port  = 8686
 host_network = true
@@ -24,9 +24,7 @@ health_path  = "/ping"
 storage      = "local"
 storage_path = "/config"
 volumes = [
-  "/mnt/gdrive/media/Music:/music",
-  "/mnt/gdrive/nomad_deluge_downloads:/downloads",
-  "/mnt/gdrive/nomad_deluge_completed:/completed"
+  "/tank:/data"
 ]
 
 # --- Traefik routing ---
@@ -51,9 +49,9 @@ tags = [
   "media",
   "arr",
   "music",
-  "traefik.http.routers.lidarr.middlewares=authentik@file",
+  "traefik.http.routers.lidarr.middlewares=oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.lidarr-http.rule=Host(`lidarr.munchbox.cc`)",
   "traefik.http.routers.lidarr-http.entrypoints=web",
-  "traefik.http.routers.lidarr-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.lidarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
 ]

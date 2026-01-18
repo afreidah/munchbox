@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏠 Homelab Infrastructure Platform
+# Homelab Infrastructure Platform - Munchbox Cloud
 
 ### Production-Grade Self-Hosted Infrastructure on HashiCorp Stack
 
@@ -21,7 +21,7 @@
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Key Features](#key-features)
@@ -47,7 +47,7 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 This project implements a complete homelab infrastructure using modern DevOps practices and cloud-native technologies. It provides a robust foundation for running containerized workloads, managing secrets, service discovery, and monitoring across a distributed cluster of nodes.
 
@@ -55,18 +55,18 @@ Built on the HashiCorp stack (Nomad, Consul, Vault/OpenBao) and managed entirely
 
 ---
 
-## ✨ Key Features
+## Key Features
 
 | Feature | Description |
 |---------|-------------|
-| 🚀 **Infrastructure as Code** | CDKTF (Terraform CDK) in Go for declarative infrastructure management |
-| 🔒 **Security First** | Automated security scanning with Trivy, Checkov, and comprehensive ACL policies |
-| 📊 **Full Observability** | Prometheus metrics, Grafana dashboards, Loki log aggregation, and Alertmanager notifications |
-| 🔐 **Secrets Management** | Vault/OpenBao with workload identity integration |
-| 🌐 **Service Mesh** | Consul for service discovery and health checking |
-| ⚡ **Workload Orchestration** | Nomad for container and VM workload scheduling |
-| 🔄 **CI/CD** | GitHub Actions pipelines for automated testing and deployment |
-| 📦 **Configuration Management** | Chef cookbooks for infrastructure provisioning |
+| **Infrastructure as Code** | CDKTF (Terraform CDK) in Go for declarative infrastructure management |
+| **Security First** | Automated security scanning with Trivy, Checkov, and comprehensive ACL policies |
+| **Full Observability** | Prometheus metrics, Grafana dashboards, Loki log aggregation, and Alertmanager notifications |
+| **Secrets Management** | Vault/OpenBao with workload identity integration |
+| **Service Mesh** | Consul for service discovery and health checking |
+| **Workload Orchestration** | Nomad for container and VM workload scheduling |
+| **CI/CD** | GitHub Actions pipelines for automated testing and deployment |
+| **Configuration Management** | Chef cookbooks for infrastructure provisioning |
 
 ---
 

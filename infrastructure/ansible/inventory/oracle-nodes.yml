@@ -23,11 +23,23 @@ all:
           ansible_user: ubuntu
           static_ip: 10.200.0.12
           wireguard_client_address: "10.200.0.12/24"
+        oracle-arm-1:
+          ansible_host: 132.226.26.135
+          ansible_user: ubuntu
+          static_ip: 10.200.0.13
+          wireguard_client_address: "10.200.0.13/24"
+        oracle-arm-2:
+          ansible_host: 137.131.39.64
+          ansible_user: ubuntu
+          static_ip: 10.200.0.14
+          wireguard_client_address: "10.200.0.14/24"
 
     wireguard_clients:
       hosts:
         oracle-node-1:
         oracle-node-2:
+        oracle-arm-1:
+        oracle-arm-2:
 
     wireguard_server:
       hosts:

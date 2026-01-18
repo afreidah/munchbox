@@ -9,9 +9,10 @@
 
 REGISTRY   ?= registry.munchbox.cc
 IMAGE      := theme-server
-VERSION    := latest
+VERSION    ?= latest
 
 FULL_TAG   := $(REGISTRY)/$(IMAGE):$(VERSION)
+CACHE_TAG  := $(REGISTRY)/$(IMAGE):cache
 PLATFORMS  := linux/amd64,linux/arm64
 
 # -------------------------------------------------------------------------
@@ -52,7 +53,9 @@ push: builder ## Build and push multi-arch images
 	docker buildx build \
 	  --platform $(PLATFORMS) \
 	  -t $(FULL_TAG) \
-	  --push \
+	  --cache-from type=registry,ref=$(CACHE_TAG) \
+	  --cache-to type=registry,ref=$(CACHE_TAG),mode=max \
+	  --output type=image,push=true,registry.insecure=true \
 	  .
 
 # -------------------------------------------------------------------------

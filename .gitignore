@@ -10,8 +10,16 @@
 .terraform
 cdktf.out
 cdktf.log
-*terraform.*.tfstate*
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
 generated
+
+# --- Local Config Overrides ---
+config.local.yaml
+*.local.yaml
+.env
+.env.*
 
 # --- Tags ---
 *tags*
@@ -45,3 +53,11 @@ berks-cookbooks
 *semgrep*
 *tfvars*
 munchbox-env.sh
+
+# --- Secrets & Credentials ---
+bootstrap-token.json
+.bitwarden/
+*.pem
+*.key
+*secret*.json
+!*secret*.tf
