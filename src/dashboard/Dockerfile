@@ -3,12 +3,12 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Multi-architecture build using Hugo on amd64 only. The static output is
-# platform-agnostic, so we build once and copy to both arch variants.
+# Multi-architecture build using Hugo. The static output is platform-agnostic,
+# so we let Hugo run natively on the build host architecture.
 # -------------------------------------------------------------------------------
 
-# --- Build stage (amd64 only) ---
-FROM --platform=linux/amd64 klakegg/hugo:ext-alpine AS builder
+# --- Build stage ---
+FROM klakegg/hugo:ext-alpine AS builder
 
 WORKDIR /src
 COPY . .
