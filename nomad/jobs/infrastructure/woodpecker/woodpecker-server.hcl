@@ -66,7 +66,7 @@ tags = [
   "infrastructure",
   # Main UI router - protected by Authentik
   "traefik.http.routers.woodpecker-server.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`)",
-  "traefik.http.routers.woodpecker-server.middlewares=authentik@file",
+  "traefik.http.routers.woodpecker-server.middlewares=authentik@file,umami-tracking@file",
   # API/webhook router - no auth (agents, GitHub webhooks need direct access)
   "traefik.http.routers.woodpecker-api.rule=Host(`woodpecker.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/hook`))",
   "traefik.http.routers.woodpecker-api.entrypoints=websecure",
@@ -75,7 +75,7 @@ tags = [
   # HTTP router for CF tunnel (UI only)
   "traefik.http.routers.woodpecker-server-http.rule=Host(`woodpecker.munchbox.cc`) && !PathPrefix(`/api`) && !PathPrefix(`/hook`)",
   "traefik.http.routers.woodpecker-server-http.entrypoints=web",
-  "traefik.http.routers.woodpecker-server-http.middlewares=cf-tunnel-https@file,authentik@file"
+  "traefik.http.routers.woodpecker-server-http.middlewares=cf-tunnel-https@file,authentik@file,umami-tracking@file"
 ]
 
 # --- Termination ---

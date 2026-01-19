@@ -55,11 +55,11 @@ tags = [
   "media",
   "ersatztv",
   "streaming",
-  "traefik.http.routers.ersatztv.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.ersatztv.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.ersatztv-http.rule=Host(`ersatz.munchbox.cc`)",
   "traefik.http.routers.ersatztv-http.entrypoints=web",
-  "traefik.http.routers.ersatztv-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.ersatztv-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]
 
 # --- Termination ---

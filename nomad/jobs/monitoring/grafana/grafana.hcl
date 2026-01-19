@@ -55,9 +55,9 @@ templates = [
 tags = [
   "monitoring",
   "grafana",
-  "traefik.http.routers.grafana.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.grafana.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.grafana-http.rule=Host(`grafana.munchbox.cc`)",
   "traefik.http.routers.grafana-http.entrypoints=web",
-  "traefik.http.routers.grafana-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.grafana-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]

@@ -45,11 +45,11 @@ tags = [
   "books",
   "kavita",
   # HTTPS router middleware
-  "traefik.http.routers.kavita.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.kavita.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.kavita-http.rule=Host(`kavita.munchbox.cc`)",
   "traefik.http.routers.kavita-http.entrypoints=web",
-  "traefik.http.routers.kavita-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.kavita-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]
 
 # --- Make publicly accessible (skip LAN-only middleware on HTTPS router) ---

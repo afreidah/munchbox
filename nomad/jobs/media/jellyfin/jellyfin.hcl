@@ -70,11 +70,11 @@ tags = [
   "traefik.http.routers.jellyfin.entrypoints=websecure",
   "traefik.http.routers.jellyfin.tls=true",
   "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt",
-  "traefik.http.routers.jellyfin.middlewares=jellyfin-ratelimit@file",
+  "traefik.http.routers.jellyfin.middlewares=jellyfin-ratelimit@file,umami-tracking@file",
   # HTTP router (for CF tunnel)
   "traefik.http.routers.jellyfin-http.rule=Host(`jellyfin.munchbox.cc`)",
   "traefik.http.routers.jellyfin-http.entrypoints=web",
-  "traefik.http.routers.jellyfin-http.middlewares=cf-tunnel-https@file,jellyfin-ratelimit@file",
+  "traefik.http.routers.jellyfin-http.middlewares=cf-tunnel-https@file,jellyfin-ratelimit@file,umami-tracking@file",
   "traefik.http.routers.jellyfin-http.service=jellyfin"
 ]
 

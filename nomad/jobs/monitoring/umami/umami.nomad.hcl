@@ -163,7 +163,7 @@ job "umami" {
 
       # --- Container Configuration ---
       config {
-        image              = "ghcr.io/umami-software/umami:postgresql-v2.15.1"
+        image              = "ghcr.io/umami-software/umami:latest"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

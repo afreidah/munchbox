@@ -460,18 +460,6 @@ CREATE DATABASE IF NOT EXISTS temporal OWNER {{ .Data.data.db_username }};
 CREATE DATABASE IF NOT EXISTS temporal_visibility OWNER {{ .Data.data.db_username }};
 {{ end }}
 
--- Woodpecker
-{{ with secret "secret/data/woodpecker" }}
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
-    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
-  END IF;
-END
-\$\$;
-CREATE DATABASE IF NOT EXISTS woodpecker OWNER {{ .Data.data.db_username }};
-{{ end }}
-
 -- Forgejo
 {{ with secret "secret/data/forgejo" }}
 DO \$\$
