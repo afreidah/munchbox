@@ -3,4 +3,4 @@
 	url = https://github.com/afreidah/nomad-pack-registry
 [submodule "src/vault-cert-manager"]
 	path = src/vault-cert-manager
-	url = git@github.com:afreidah/vault-cert-manager.git
+	url = https://github.com/afreidah/vault-cert-manager.git
