@@ -4,3 +4,6 @@
 [submodule "src/vault-cert-manager"]
 	path = src/vault-cert-manager
 	url = https://github.com/afreidah/vault-cert-manager.git
+[submodule "src/resume"]
+	path = src/resume
+	url = https://github.com/afreidah/resume.git
