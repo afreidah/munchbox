@@ -7,8 +7,8 @@
 # so we let Hugo run natively on the build host architecture.
 # -------------------------------------------------------------------------------
 
-# --- Build stage ---
-FROM klakegg/hugo:ext-alpine AS builder
+# --- Build stage (hugomods/hugo supports multi-arch including arm64) ---
+FROM hugomods/hugo:exts AS builder
 
 WORKDIR /src
 COPY . .
