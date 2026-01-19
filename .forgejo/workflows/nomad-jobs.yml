@@ -40,8 +40,8 @@ jobs:
           echo "Detecting changed jobs..."
           git fetch origin main --depth=1 || true
 
-          # Get all .hcl files changed in this branch vs main (exclude files/ subdirs)
-          CHANGED=$(git diff --name-only origin/main...HEAD -- nomad/jobs/ 2>/dev/null \
+          # Get all .hcl files changed in this branch vs main (exclude files/ subdirs and deleted files)
+          CHANGED=$(git diff --name-only --diff-filter=d origin/main...HEAD -- nomad/jobs/ 2>/dev/null \
             | grep '\.hcl$' \
             | grep -v '/files/' \
             | xargs -I{} basename {} .hcl \
