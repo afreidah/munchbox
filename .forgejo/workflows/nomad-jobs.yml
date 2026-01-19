@@ -93,7 +93,8 @@ jobs:
   deploy-jobs:
     runs-on: docker
     needs: [detect-and-validate, plan-jobs]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-and-validate.outputs.has_changes == 'true'
+    # TEMPORARILY DISABLED - uncomment to re-enable auto-deploy
+    if: false && github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-and-validate.outputs.has_changes == 'true'
     container:
       image: registry.munchbox.cc/ops-build-image:v3
     env:
