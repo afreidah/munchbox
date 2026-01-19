@@ -49,9 +49,9 @@ tags = [
   "readarr",
   "media",
   "arr",
-  "traefik.http.routers.readarr.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.readarr.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.readarr-http.rule=Host(`readarr.munchbox.cc`)",
   "traefik.http.routers.readarr-http.entrypoints=web",
-  "traefik.http.routers.readarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.readarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]

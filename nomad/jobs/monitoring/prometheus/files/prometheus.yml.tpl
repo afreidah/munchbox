@@ -270,28 +270,6 @@ scrape_configs:
         replacement: "primary"
 
   # -----------------------------------------------------------------------
-  # PostgreSQL Replica Exporter - Replica metrics via Consul SD
-  # -----------------------------------------------------------------------
-  - job_name: "postgres-replica-exporter"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "192.168.68.61:8500"
-        scheme: "http"
-        services: ["postgres-replica-exporter"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "database"
-        replacement: "postgres-shared"
-      - target_label: "role"
-        replacement: "replica"
-
-  # -----------------------------------------------------------------------
   # Redis Exporter - Cache metrics via Consul service discovery
   # -----------------------------------------------------------------------
   - job_name: "redis-exporter"
@@ -414,46 +392,6 @@ scrape_configs:
         replacement: "coredns"
 
   # -----------------------------------------------------------------------
-  # Authentik - Identity provider metrics (port 9300)
-  # -----------------------------------------------------------------------
-  - job_name: "authentik"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "192.168.68.61:8500"
-        scheme: "http"
-        services: ["authentik-metrics"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "authentik"
-
-  # -----------------------------------------------------------------------
-  # Woodpecker Server - CI/CD pipeline metrics (port 9001)
-  # -----------------------------------------------------------------------
-  - job_name: "woodpecker"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "192.168.68.61:8500"
-        scheme: "http"
-        services: ["woodpecker-metrics"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "woodpecker"
-
-  # -----------------------------------------------------------------------
   # Forgejo - Git repository metrics
   # -----------------------------------------------------------------------
   - job_name: "forgejo"
@@ -492,3 +430,23 @@ scrape_configs:
         target_label: "instance"
       - target_label: "service"
         replacement: "patroni"
+
+  # -----------------------------------------------------------------------
+  # Vault Cert Manager - Certificate lifecycle metrics
+  # -----------------------------------------------------------------------
+  - job_name: "vault-cert-manager"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["vault-cert-manager"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "vault-cert-manager"

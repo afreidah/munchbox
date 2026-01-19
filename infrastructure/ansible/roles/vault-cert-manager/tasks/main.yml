@@ -1,0 +1,81 @@
+---
+# -------------------------------------------------------------------------------
+# Vault Cert Manager Role - Main Tasks
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Installs and configures vault-cert-manager for automated certificate lifecycle
+# management from HashiCorp Vault PKI.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# Installation
+# -------------------------------------------------------------------------------
+
+- name: Determine package architecture
+  set_fact:
+    vault_cert_manager_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+- name: Copy .deb package to target
+  copy:
+    src: "{{ vault_cert_manager_deb_path }}"
+    dest: "/tmp/vault-cert-manager.deb"
+    mode: "0644"
+
+- name: Install vault-cert-manager package
+  command: dpkg -i --force-confold /tmp/vault-cert-manager.deb
+  register: dpkg_result
+  changed_when: "'Setting up vault-cert-manager' in dpkg_result.stdout"
+  notify: Restart vault-cert-manager
+
+- name: Remove temporary .deb file
+  file:
+    path: /tmp/vault-cert-manager.deb
+    state: absent
+
+# -------------------------------------------------------------------------------
+# Configuration
+# -------------------------------------------------------------------------------
+
+- name: Deploy secret_id file
+  copy:
+    content: "{{ vault_cert_manager_secret_id }}"
+    dest: "{{ vault_cert_manager_config_dir }}/secret_id"
+    owner: "{{ vault_cert_manager_user }}"
+    group: "{{ vault_cert_manager_group }}"
+    mode: "0600"
+  no_log: true
+  notify: Restart vault-cert-manager
+
+- name: Template configuration file
+  template:
+    src: config.yaml.j2
+    dest: "{{ vault_cert_manager_config_dir }}/config.yaml"
+    owner: "{{ vault_cert_manager_user }}"
+    group: "{{ vault_cert_manager_group }}"
+    mode: "0640"
+  notify: Restart vault-cert-manager
+
+# -------------------------------------------------------------------------------
+# Consul Service Registration
+# -------------------------------------------------------------------------------
+
+- name: Register vault-cert-manager with Consul
+  template:
+    src: consul-service.json.j2
+    dest: /etc/consul.d/vault-cert-manager.json
+    owner: consul
+    group: consul
+    mode: "0640"
+  notify: Reload Consul
+
+# -------------------------------------------------------------------------------
+# Systemd Service
+# -------------------------------------------------------------------------------
+
+- name: Enable and start vault-cert-manager
+  systemd:
+    name: vault-cert-manager
+    enabled: true
+    state: started
+    daemon_reload: true

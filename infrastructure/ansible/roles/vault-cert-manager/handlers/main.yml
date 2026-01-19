@@ -1,0 +1,22 @@
+---
+# -------------------------------------------------------------------------------
+# Vault Cert Manager Role - Handlers
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Service handlers for vault-cert-manager.
+# -------------------------------------------------------------------------------
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart vault-cert-manager
+  systemd:
+    name: vault-cert-manager
+    state: restarted
+
+- name: Reload Consul
+  systemd:
+    name: consul
+    state: reloaded

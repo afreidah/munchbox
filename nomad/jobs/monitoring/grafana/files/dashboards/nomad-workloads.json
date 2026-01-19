@@ -173,7 +173,7 @@
         "targets": [
           {
             "expr": "up{job=\"nomad\"}",
-            "legendFormat": "{{instance}}"
+            "legendFormat": "{{ "{{"  }}instance{{ "}}" }}"
           }
         ],
         "options": {
@@ -214,7 +214,7 @@
         "targets": [
           {
             "expr": "up{job=\"nomad-client\"}",
-            "legendFormat": "{{instance}}"
+            "legendFormat": "{{ "{{"  }}instance{{ "}}" }}"
           }
         ],
         "options": {
@@ -261,7 +261,7 @@
         "targets": [
           {
             "expr": "avg by (exported_job) (\n  nomad_client_allocs_cpu_total_ticks / nomad_client_allocs_cpu_allocated * 100\n)",
-            "legendFormat": "{{exported_job}}"
+            "legendFormat": "{{ "{{"  }}exported_job{{ "}}" }}"
           }
         ],
         "options": {
@@ -308,7 +308,7 @@
         "targets": [
           {
             "expr": "avg by (exported_job) (\n  nomad_client_allocs_memory_rss / nomad_client_allocs_memory_allocated * 100\n)",
-            "legendFormat": "{{exported_job}}"
+            "legendFormat": "{{ "{{"  }}exported_job{{ "}}" }}"
           }
         ],
         "options": {
@@ -361,7 +361,7 @@
         "targets": [
           {
             "expr": "sort_desc(\n  avg by (exported_job) (\n    nomad_client_allocs_cpu_total_ticks / nomad_client_allocs_cpu_allocated * 100\n  )\n)",
-            "legendFormat": "{{exported_job}}",
+            "legendFormat": "{{ "{{"  }}exported_job{{ "}}" }}",
             "instant": true
           }
         ],
@@ -403,7 +403,7 @@
         "targets": [
           {
             "expr": "sort_desc(\n  avg by (exported_job) (\n    nomad_client_allocs_memory_rss / nomad_client_allocs_memory_allocated * 100\n  )\n)",
-            "legendFormat": "{{exported_job}}",
+            "legendFormat": "{{ "{{"  }}exported_job{{ "}}" }}",
             "instant": true
           }
         ],

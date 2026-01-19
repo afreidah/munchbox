@@ -49,11 +49,11 @@ tags = [
   "vault",
   "ui",
   "infrastructure",
-  "traefik.http.routers.vault-ui.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.vault-ui.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.vault-ui-http.rule=Host(`vault-ui.munchbox.cc`)",
   "traefik.http.routers.vault-ui-http.entrypoints=web",
-  "traefik.http.routers.vault-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.vault-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]
 
 # --- Termination ---

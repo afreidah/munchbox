@@ -56,9 +56,9 @@ tags = [
   "monitoring",
   "alertmanager",
   "alerts",
-  "traefik.http.routers.alertmanager.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.alertmanager.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.alertmanager-http.rule=Host(`alertmanager.munchbox.cc`)",
   "traefik.http.routers.alertmanager-http.entrypoints=web",
-  "traefik.http.routers.alertmanager-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.alertmanager-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]

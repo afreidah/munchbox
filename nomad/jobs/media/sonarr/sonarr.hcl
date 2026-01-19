@@ -49,9 +49,9 @@ tags = [
   "sonarr",
   "media",
   "arr",
-  "traefik.http.routers.sonarr.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.sonarr.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.sonarr-http.rule=Host(`sonarr.munchbox.cc`)",
   "traefik.http.routers.sonarr-http.entrypoints=web",
-  "traefik.http.routers.sonarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.sonarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]

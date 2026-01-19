@@ -121,7 +121,6 @@ services:
         url: https://vault.munchbox.cc
         tag: security
         icon: vault.png
-        bg: bg-ctp-yellow
 
       - name: Proxmox
         subtitle: Virtualization cluster
@@ -194,6 +193,12 @@ services:
         url: https://trivy-dashboard.munchbox.cc
         tag: security
         icon: trivy.png
+
+      - name: Vault Cert Manager
+        subtitle: Status and rotation of certs
+        url: http://vault-cert-manager-aggregator.service.consul:9102
+        tag: security
+        icon: vault.png
 
       - name: Prometheus
         subtitle: Metrics collection

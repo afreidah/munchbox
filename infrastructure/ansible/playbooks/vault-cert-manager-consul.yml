@@ -1,0 +1,79 @@
+---
+# -------------------------------------------------------------------------------
+# Vault Cert Manager Aggregator Dashboard
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Deploys the vault-cert-manager in aggregator mode on consul servers,
+# providing a centralized dashboard for all nodes.
+# -------------------------------------------------------------------------------
+
+- name: Deploy vault-cert-manager aggregator
+  hosts: consul_servers
+  become: true
+  vars:
+    aggregator_port: 9102
+    consul_addr: "http://localhost:8500"
+    service_name: "vault-cert-manager"
+
+  tasks:
+    - name: Create aggregator systemd unit
+      copy:
+        dest: /etc/systemd/system/vault-cert-manager-aggregator.service
+        content: |
+          [Unit]
+          Description=Vault Cert Manager Aggregator Dashboard
+          After=network.target consul.service
+          Requires=consul.service
+
+          [Service]
+          Type=simple
+          User=root
+          ExecStart=/usr/bin/vault-cert-manager --aggregator --consul-addr {{ consul_addr }} --service-name {{ service_name }} --port {{ aggregator_port }}
+          Restart=always
+          RestartSec=5
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: "0644"
+      notify: Restart aggregator
+
+    - name: Register aggregator with Consul
+      copy:
+        dest: /etc/consul.d/vault-cert-manager-aggregator.json
+        content: |
+          {
+            "service": {
+              "name": "vault-cert-manager-aggregator",
+              "port": {{ aggregator_port }},
+              "tags": ["dashboard"],
+              "check": {
+                "http": "http://localhost:{{ aggregator_port }}/",
+                "interval": "30s",
+                "timeout": "5s"
+              }
+            }
+          }
+        owner: consul
+        group: consul
+        mode: "0640"
+      notify: Reload Consul
+
+    - name: Enable and start aggregator
+      systemd:
+        name: vault-cert-manager-aggregator
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  handlers:
+    - name: Restart aggregator
+      systemd:
+        name: vault-cert-manager-aggregator
+        state: restarted
+        daemon_reload: true
+
+    - name: Reload Consul
+      systemd:
+        name: consul
+        state: reloaded

@@ -75,4 +75,27 @@ acl {
   enabled        = true
   default_policy = "deny"
   down_policy    = "extend-cache"
+{% if consul_acl_agent_token is defined %}
+  tokens {
+    agent   = "{{ consul_acl_agent_token }}"
+    default = "{{ consul_acl_default_token | default(consul_acl_agent_token) }}"
+  }
+{% endif %}
 }
+
+{% if consul_tls_enabled | default(true) | bool %}
+tls {
+  defaults {
+    ca_file   = "{{ consul_tls_ca_file }}"
+    cert_file = "{{ consul_tls_cert_file }}"
+    key_file  = "{{ consul_tls_key_file }}"
+
+    verify_incoming = {{ consul_tls_verify_incoming | default(true) | lower }}
+    verify_outgoing = {{ consul_tls_verify_outgoing | default(true) | lower }}
+  }
+
+  internal_rpc {
+    verify_server_hostname = {{ consul_tls_verify_server_hostname | default(true) | lower }}
+  }
+}
+{% endif %}

@@ -65,6 +65,7 @@ vault_api_addr: "https://{{ (groups['vault_servers'] | default(['stabler'])) | f
 
 consul_datacenter: munchbox
 consul_domain: consul
+consul_acl_agent_token: "{{ (lookup('file', '~/.munchbox/consul/tokens.json') | from_json).agent }}"
 
 nomad_datacenter: munchbox
 nomad_region: global

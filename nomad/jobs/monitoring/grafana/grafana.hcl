@@ -11,8 +11,8 @@
 # --- Core job configuration ---
 name         = "grafana"
 image        = "grafana/grafana:12.3.0"
-port         = 3000
-static_port  = 3000
+port         = 3030
+static_port  = 3030
 host_network = true
 size         = "medium"
 vault        = true
@@ -26,6 +26,7 @@ health_path = "/api/health"
 
 # --- Environment ---
 env = {
+  GF_SERVER_HTTP_PORT                        = "3030"
   GF_SERVER_SERVE_FROM_SUB_PATH              = "false"
   GF_SERVER_ROOT_URL                         = "https://grafana.munchbox.cc/"
   # Dark theme by default (closest to Catppuccin Mocha without custom CSS)
@@ -46,16 +47,17 @@ templates = [
   { src = "datasources.yml", dest = "/etc/grafana/provisioning/datasources/datasources.yml", vault = false },
   { src = "dashboards.yml", dest = "/etc/grafana/provisioning/dashboards/dashboards.yml", vault = false },
   { src = "dashboards/infrastructure-services.json", dest = "/etc/grafana/provisioning/dashboards/json/infrastructure-services.json", vault = false },
-  { src = "dashboards/nomad-cluster-overview.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-cluster-overview.json", vault = false }
+  { src = "dashboards/nomad-cluster-overview.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-cluster-overview.json", vault = false },
+  { src = "dashboards/certificate-management.json", dest = "/etc/grafana/provisioning/dashboards/json/certificate-management.json", vault = false }
 ]
 
 # --- Service tags ---
 tags = [
   "monitoring",
   "grafana",
-  "traefik.http.routers.grafana.middlewares=oauth2-proxy@file",
+  "traefik.http.routers.grafana.middlewares=oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.grafana-http.rule=Host(`grafana.munchbox.cc`)",
   "traefik.http.routers.grafana-http.entrypoints=web",
-  "traefik.http.routers.grafana-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file"
+  "traefik.http.routers.grafana-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
 ]
