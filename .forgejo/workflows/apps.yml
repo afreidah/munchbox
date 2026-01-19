@@ -44,7 +44,7 @@ jobs:
         run: |
           git fetch origin main --depth=1 || true
 
-          # Get changed files in src/
+          # Get changed files in src/ (including submodule pointer changes)
           CHANGED=$(git diff --name-only origin/main...HEAD -- src/ 2>/dev/null || git diff --name-only HEAD~1 -- src/)
           echo "Changed files:"
           echo "$CHANGED"
@@ -58,8 +58,9 @@ jobs:
           for makefile in $(find src -name "Makefile" -type f); do
             APP_DIR=$(dirname "$makefile")
 
-            # Check if this app has changes
-            if ! echo "$CHANGED" | grep -q "^$APP_DIR/"; then
+            # Check if this app has changes (handle both regular files and submodule pointer changes)
+            # Submodules show up as just "src/submodule" without trailing slash
+            if ! echo "$CHANGED" | grep -qE "^${APP_DIR}(/|$)"; then
               echo "No changes in: $APP_DIR"
               continue
             fi
