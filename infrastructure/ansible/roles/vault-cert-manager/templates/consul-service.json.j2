@@ -1,0 +1,18 @@
+{
+  "service": {
+    "name": "vault-cert-manager",
+    "address": "{{ static_ip | default(ansible_default_ipv4.address) | default(ansible_host) }}",
+    "port": {{ vault_cert_manager_metrics_port }},
+    "tags": ["prometheus"],
+    "meta": {
+      "metrics_path": "/metrics"
+    },
+    "checks": [
+      {
+        "http": "http://127.0.0.1:{{ vault_cert_manager_metrics_port }}/metrics",
+        "interval": "30s",
+        "timeout": "5s"
+      }
+    ]
+  }
+}

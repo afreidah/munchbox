@@ -213,6 +213,30 @@ cloud_nodes:
     datacenter: oracle
     notes: "Oracle Cloud Free Tier AMD micro instance"
 
+  oracle-arm-1:
+    wireguard_ip: 10.200.0.13
+    public_ip: 132.226.26.135
+    arch: arm64
+    memory_mb: 24576
+    cpu_cores: 4
+    roles:
+      - nomad_client
+      - consul_client
+    datacenter: oracle
+    notes: "Oracle Cloud Free Tier ARM Ampere A1 instance"
+
+  oracle-arm-2:
+    wireguard_ip: 10.200.0.14
+    public_ip: 137.131.39.64
+    arch: arm64
+    memory_mb: 24576
+    cpu_cores: 4
+    roles:
+      - nomad_client
+      - consul_client
+    datacenter: oracle
+    notes: "Oracle Cloud Free Tier ARM Ampere A1 instance"
+
 # -------------------------------------------------------------------------------
 # Other Infrastructure (DNS, Storage, etc.)
 #
