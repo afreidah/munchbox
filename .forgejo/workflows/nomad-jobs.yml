@@ -87,6 +87,7 @@ jobs:
         run: |
           cd nomad
           PLAN_OUTPUT=""
+          BACKTICKS='```'
           for job in ${{ needs.detect-and-validate.outputs.changed_jobs }}; do
             echo "=== Planning $job ==="
             JOB_PLAN=$(make plan JOB="$job" 2>&1) || true
@@ -94,9 +95,9 @@ jobs:
           <details>
           <summary><b>${job}</b></summary>
 
-          \`\`\`diff
+          ${BACKTICKS}
           ${JOB_PLAN}
-          \`\`\`
+          ${BACKTICKS}
 
           </details>
           "
