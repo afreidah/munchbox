@@ -1,0 +1,396 @@
+# -------------------------------------------------------------------------------
+# Infrastructure Validation Pipeline
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Validates Terraform, Terragrunt, and Ansible changes on PRs. Posts validation
+# results and plan outputs as PR comments. No apply/deploy actions on merge.
+# -------------------------------------------------------------------------------
+
+name: Infrastructure Validation
+
+on:
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+  workflow_dispatch:
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Detect which infrastructure components changed
+  # -------------------------------------------------------------------------
+
+  detect:
+    runs-on: docker
+    outputs:
+      terraform: ${{ steps.detect.outputs.terraform }}
+      terragrunt: ${{ steps.detect.outputs.terragrunt }}
+      ansible: ${{ steps.detect.outputs.ansible }}
+      terraform_dirs: ${{ steps.detect.outputs.terraform_dirs }}
+      terragrunt_dirs: ${{ steps.detect.outputs.terragrunt_dirs }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: detect
+        run: |
+          git fetch origin main --depth=1 || true
+          CHANGED=$(git diff --name-only origin/main...HEAD -- infrastructure/ 2>/dev/null || git diff --name-only HEAD~1 -- infrastructure/)
+
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          # Check for terraform changes
+          if echo "$CHANGED" | grep -q "^infrastructure/terraform/"; then
+            echo "terraform=true" >> $GITHUB_OUTPUT
+            # Get list of changed terraform directories (top-level modules only)
+            TF_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terraform/" | cut -d'/' -f3 | sort -u | grep -v "^modules$" | tr '\n' ' ')
+            echo "terraform_dirs=$TF_DIRS" >> $GITHUB_OUTPUT
+            echo "Terraform directories with changes: $TF_DIRS"
+          else
+            echo "terraform=false" >> $GITHUB_OUTPUT
+            echo "terraform_dirs=" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for terragrunt changes
+          if echo "$CHANGED" | grep -q "^infrastructure/terragrunt/"; then
+            echo "terragrunt=true" >> $GITHUB_OUTPUT
+            # Get changed terragrunt directories (exclude helpers and root)
+            TG_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terragrunt/" | grep -v "_env_helpers" | grep -v "root.hcl" | cut -d'/' -f3-4 | sort -u | tr '\n' ' ')
+            echo "terragrunt_dirs=$TG_DIRS" >> $GITHUB_OUTPUT
+            echo "Terragrunt directories with changes: $TG_DIRS"
+          else
+            echo "terragrunt=false" >> $GITHUB_OUTPUT
+            echo "terragrunt_dirs=" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for ansible changes
+          if echo "$CHANGED" | grep -q "^infrastructure/ansible/"; then
+            echo "ansible=true" >> $GITHUB_OUTPUT
+          else
+            echo "ansible=false" >> $GITHUB_OUTPUT
+          fi
+
+  # -------------------------------------------------------------------------
+  # Terraform validation and plan
+  # -------------------------------------------------------------------------
+
+  terraform:
+    runs-on: docker
+    needs: detect
+    if: needs.detect.outputs.terraform == 'true'
+    container:
+      image: hashicorp/terraform:latest
+    env:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Terraform fmt check
+        id: fmt
+        run: |
+          cd infrastructure/terraform
+          echo "## Terraform Format Check" > /tmp/tf-fmt.md
+          if terraform fmt -check -recursive -diff > /tmp/fmt-output.txt 2>&1; then
+            echo "[PASS] All files properly formatted" >> /tmp/tf-fmt.md
+          else
+            echo "[FAIL] Format issues found:" >> /tmp/tf-fmt.md
+            echo '```diff' >> /tmp/tf-fmt.md
+            cat /tmp/fmt-output.txt >> /tmp/tf-fmt.md
+            echo '```' >> /tmp/tf-fmt.md
+          fi
+        continue-on-error: true
+
+      - name: Terraform validate and plan
+        id: plan
+        run: |
+          cd infrastructure/terraform
+          echo "## Terraform Validation and Plan" > /tmp/tf-plan.md
+
+          DIRS="${{ needs.detect.outputs.terraform_dirs }}"
+          if [ -z "$DIRS" ]; then
+            DIRS=$(ls -d */ 2>/dev/null | grep -v "modules/" | tr -d '/')
+          fi
+
+          for dir in $DIRS; do
+            [ -d "$dir" ] || continue
+            echo "### $dir" >> /tmp/tf-plan.md
+
+            cd "$dir"
+            if terraform init > /tmp/init.txt 2>&1; then
+              if terraform validate > /tmp/validate.txt 2>&1; then
+                echo "[PASS] Validation passed" >> /tmp/tf-plan.md
+
+                # Run plan
+                echo "" >> /tmp/tf-plan.md
+                echo "**Plan output:**" >> /tmp/tf-plan.md
+                if terraform plan -no-color -out=/tmp/tfplan > /tmp/plan.txt 2>&1; then
+                  echo '```hcl' >> /tmp/tf-plan.md
+                  cat /tmp/plan.txt >> /tmp/tf-plan.md
+                  echo '```' >> /tmp/tf-plan.md
+                else
+                  echo '```' >> /tmp/tf-plan.md
+                  cat /tmp/plan.txt >> /tmp/tf-plan.md
+                  echo '```' >> /tmp/tf-plan.md
+                fi
+              else
+                echo "[FAIL] Validation failed:" >> /tmp/tf-plan.md
+                echo '```' >> /tmp/tf-plan.md
+                cat /tmp/validate.txt >> /tmp/tf-plan.md
+                echo '```' >> /tmp/tf-plan.md
+              fi
+            else
+              echo "[WARN] Init failed:" >> /tmp/tf-plan.md
+              echo '```' >> /tmp/tf-plan.md
+              tail -30 /tmp/init.txt >> /tmp/tf-plan.md
+              echo '```' >> /tmp/tf-plan.md
+            fi
+            echo "" >> /tmp/tf-plan.md
+            cd ..
+          done
+        continue-on-error: true
+
+      - name: Upload terraform results
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-results
+          path: |
+            /tmp/tf-fmt.md
+            /tmp/tf-plan.md
+          retention-days: 1
+
+  # -------------------------------------------------------------------------
+  # Terragrunt validation and plan
+  # -------------------------------------------------------------------------
+
+  terragrunt:
+    runs-on: docker
+    needs: detect
+    if: needs.detect.outputs.terragrunt == 'true'
+    container:
+      image: alpine/terragrunt:latest
+    env:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Terragrunt hclfmt check
+        id: fmt
+        run: |
+          cd infrastructure/terragrunt
+          echo "## Terragrunt Format Check" > /tmp/tg-fmt.md
+          if terragrunt hclfmt --terragrunt-check > /tmp/fmt-output.txt 2>&1; then
+            echo "[PASS] All HCL files properly formatted" >> /tmp/tg-fmt.md
+          else
+            echo "[FAIL] Format issues found:" >> /tmp/tg-fmt.md
+            echo '```' >> /tmp/tg-fmt.md
+            cat /tmp/fmt-output.txt >> /tmp/tg-fmt.md
+            echo '```' >> /tmp/tg-fmt.md
+          fi
+        continue-on-error: true
+
+      - name: Terragrunt validate and plan
+        id: plan
+        run: |
+          cd infrastructure/terragrunt
+          echo "## Terragrunt Validation and Plan" > /tmp/tg-plan.md
+
+          # Find all terragrunt.hcl files (excluding cache and root)
+          find . -name "terragrunt.hcl" -not -path "*/.terragrunt-cache/*" -not -name "root.hcl" | sort | while read -r tgfile; do
+            dir=$(dirname "$tgfile")
+            echo "### $dir" >> /tmp/tg-plan.md
+
+            cd "$dir"
+            if terragrunt validate --terragrunt-non-interactive > /tmp/validate.txt 2>&1; then
+              echo "[PASS] Validation passed" >> /tmp/tg-plan.md
+
+              # Run plan
+              echo "" >> /tmp/tg-plan.md
+              echo "**Plan output:**" >> /tmp/tg-plan.md
+              if terragrunt plan --terragrunt-non-interactive -no-color > /tmp/plan.txt 2>&1; then
+                echo '```hcl' >> /tmp/tg-plan.md
+                tail -100 /tmp/plan.txt >> /tmp/tg-plan.md
+                echo '```' >> /tmp/tg-plan.md
+              else
+                echo '```' >> /tmp/tg-plan.md
+                tail -50 /tmp/plan.txt >> /tmp/tg-plan.md
+                echo '```' >> /tmp/tg-plan.md
+              fi
+            else
+              echo "[WARN] Validation output:" >> /tmp/tg-plan.md
+              echo '```' >> /tmp/tg-plan.md
+              tail -30 /tmp/validate.txt >> /tmp/tg-plan.md
+              echo '```' >> /tmp/tg-plan.md
+            fi
+            echo "" >> /tmp/tg-plan.md
+            cd - > /dev/null
+          done || true
+
+          echo "" >> /tmp/tg-plan.md
+          echo "_Note: Some validations may fail due to missing backend access or credentials._" >> /tmp/tg-plan.md
+        continue-on-error: true
+
+      - name: Upload terragrunt results
+        uses: actions/upload-artifact@v4
+        with:
+          name: terragrunt-results
+          path: |
+            /tmp/tg-fmt.md
+            /tmp/tg-plan.md
+          retention-days: 1
+
+  # -------------------------------------------------------------------------
+  # Ansible validation
+  # -------------------------------------------------------------------------
+
+  ansible:
+    runs-on: docker
+    needs: detect
+    if: needs.detect.outputs.ansible == 'true'
+    container:
+      image: cytopia/ansible-lint:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ansible lint
+        id: lint
+        run: |
+          cd infrastructure/ansible
+          echo "## Ansible Lint" > /tmp/ansible-lint.md
+
+          if ansible-lint --nocolor playbooks/ roles/ > /tmp/lint-output.txt 2>&1; then
+            echo "[PASS] No linting issues found" >> /tmp/ansible-lint.md
+          else
+            echo "[WARN] Linting issues:" >> /tmp/ansible-lint.md
+            echo '```' >> /tmp/ansible-lint.md
+            cat /tmp/lint-output.txt >> /tmp/ansible-lint.md
+            echo '```' >> /tmp/ansible-lint.md
+          fi
+        continue-on-error: true
+
+      - name: Ansible syntax check
+        id: syntax
+        run: |
+          cd infrastructure/ansible
+          echo "## Ansible Syntax Check" > /tmp/ansible-syntax.md
+
+          FAILED=0
+          for playbook in playbooks/*.yml; do
+            [ -f "$playbook" ] || continue
+            name=$(basename "$playbook")
+            if ansible-playbook --syntax-check "$playbook" > /tmp/syntax.txt 2>&1; then
+              echo "[PASS] $name" >> /tmp/ansible-syntax.md
+            else
+              echo "[FAIL] $name" >> /tmp/ansible-syntax.md
+              echo '```' >> /tmp/ansible-syntax.md
+              cat /tmp/syntax.txt >> /tmp/ansible-syntax.md
+              echo '```' >> /tmp/ansible-syntax.md
+              FAILED=1
+            fi
+          done
+
+          exit $FAILED
+        continue-on-error: true
+
+      - name: Upload ansible results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ansible-results
+          path: |
+            /tmp/ansible-lint.md
+            /tmp/ansible-syntax.md
+          retention-days: 1
+
+  # -------------------------------------------------------------------------
+  # Post results to PR
+  # -------------------------------------------------------------------------
+
+  comment:
+    runs-on: docker
+    needs: [detect, terraform, terragrunt, ansible]
+    if: always() && github.event_name == 'pull_request'
+    container:
+      image: alpine:latest
+    steps:
+      - name: Install dependencies
+        run: apk add --no-cache curl jq
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/results
+          merge-multiple: true
+        continue-on-error: true
+
+      - name: Build and post PR comment
+        env:
+          FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMENT_FILE="/tmp/comment.md"
+          echo "## Infrastructure Validation Results" > "$COMMENT_FILE"
+          echo "" >> "$COMMENT_FILE"
+
+          # Collect all result files
+          FOUND_RESULTS=false
+
+          # Terraform results
+          if [ -f "/tmp/results/tf-fmt.md" ]; then
+            FOUND_RESULTS=true
+            echo "<details>" >> "$COMMENT_FILE"
+            echo "<summary><b>Terraform</b></summary>" >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+            cat /tmp/results/tf-fmt.md >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+            [ -f "/tmp/results/tf-plan.md" ] && cat /tmp/results/tf-plan.md >> "$COMMENT_FILE"
+            echo "</details>" >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+          fi
+
+          # Terragrunt results
+          if [ -f "/tmp/results/tg-fmt.md" ]; then
+            FOUND_RESULTS=true
+            echo "<details>" >> "$COMMENT_FILE"
+            echo "<summary><b>Terragrunt</b></summary>" >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+            cat /tmp/results/tg-fmt.md >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+            [ -f "/tmp/results/tg-plan.md" ] && cat /tmp/results/tg-plan.md >> "$COMMENT_FILE"
+            echo "</details>" >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+          fi
+
+          # Ansible results
+          if [ -f "/tmp/results/ansible-lint.md" ]; then
+            FOUND_RESULTS=true
+            echo "<details>" >> "$COMMENT_FILE"
+            echo "<summary><b>Ansible</b></summary>" >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+            cat /tmp/results/ansible-lint.md >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+            [ -f "/tmp/results/ansible-syntax.md" ] && cat /tmp/results/ansible-syntax.md >> "$COMMENT_FILE"
+            echo "</details>" >> "$COMMENT_FILE"
+            echo "" >> "$COMMENT_FILE"
+          fi
+
+          if [ "$FOUND_RESULTS" = "false" ]; then
+            echo "No infrastructure validation results to report." >> "$COMMENT_FILE"
+          fi
+
+          echo "---" >> "$COMMENT_FILE"
+          echo "_Generated by Infrastructure Validation workflow_" >> "$COMMENT_FILE"
+
+          # Post comment
+          jq -n --rawfile body "$COMMENT_FILE" '{body: $body}' > /tmp/comment.json
+          curl -s -X POST \
+            -H "Authorization: token ${FORGEJO_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/comment.json \
+            "${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
