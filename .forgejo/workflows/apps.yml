@@ -3,9 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Builds and pushes container images for applications in src/. Each app only
-# rebuilds when its source files change. Go apps run tests on PRs, images only
-# push on merge to main.
+# Dynamically detects and builds apps in src/. Apps are identified by having a
+# Makefile. Supports Docker images (push target), Debian packages (build-deb
+# target), and Go tests (test target). Only builds apps with actual changes.
 # -------------------------------------------------------------------------------
 
 name: Source Applications
@@ -21,113 +21,191 @@ on:
 
 jobs:
   # -------------------------------------------------------------------------
-  # Dashboard (Hugo static site)
+  # Detect apps and changes
   # -------------------------------------------------------------------------
 
-  dashboard-push:
+  detect:
     runs-on: docker
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      apps_to_test: ${{ steps.detect.outputs.apps_to_test }}
+      apps_to_push: ${{ steps.detect.outputs.apps_to_push }}
+      apps_to_deb: ${{ steps.detect.outputs.apps_to_deb }}
+      has_tests: ${{ steps.detect.outputs.has_tests }}
+      has_pushes: ${{ steps.detect.outputs.has_pushes }}
+      has_debs: ${{ steps.detect.outputs.has_debs }}
     steps:
       - uses: actions/checkout@v4
-      - name: Push dashboard
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Detect changed apps
+        id: detect
         run: |
-          cd src/dashboard
-          make push
+          git fetch origin main --depth=1 || true
+
+          # Get changed files in src/
+          CHANGED=$(git diff --name-only origin/main...HEAD -- src/ 2>/dev/null || git diff --name-only HEAD~1 -- src/)
+          echo "Changed files:"
+          echo "$CHANGED"
+          echo ""
+
+          # Find all app directories with Makefiles
+          APPS_TO_TEST="[]"
+          APPS_TO_PUSH="[]"
+          APPS_TO_DEB="[]"
+
+          for makefile in $(find src -name "Makefile" -type f); do
+            APP_DIR=$(dirname "$makefile")
+
+            # Check if this app has changes
+            if ! echo "$CHANGED" | grep -q "^$APP_DIR/"; then
+              echo "No changes in: $APP_DIR"
+              continue
+            fi
+
+            echo "Changes detected in: $APP_DIR"
+
+            # Check for push target (Docker images)
+            if grep -q "^push:" "$makefile"; then
+              APPS_TO_PUSH=$(echo "$APPS_TO_PUSH" | jq -c ". + [\"$APP_DIR\"]")
+              echo "  - Has push target (Docker)"
+            fi
+
+            # Check for build-deb target (Debian packages)
+            if grep -q "^build-deb:" "$makefile"; then
+              APPS_TO_DEB=$(echo "$APPS_TO_DEB" | jq -c ". + [\"$APP_DIR\"]")
+              echo "  - Has build-deb target (Debian)"
+            fi
+
+            # Check for test target
+            if grep -q "^test:" "$makefile"; then
+              APPS_TO_TEST=$(echo "$APPS_TO_TEST" | jq -c ". + [\"$APP_DIR\"]")
+              echo "  - Has test target"
+            fi
+          done
+
+          echo ""
+          echo "Apps to test: $APPS_TO_TEST"
+          echo "Apps to push: $APPS_TO_PUSH"
+          echo "Apps to deb:  $APPS_TO_DEB"
+
+          # Set outputs
+          echo "apps_to_test=$APPS_TO_TEST" >> $GITHUB_OUTPUT
+          echo "apps_to_push=$APPS_TO_PUSH" >> $GITHUB_OUTPUT
+          echo "apps_to_deb=$APPS_TO_DEB" >> $GITHUB_OUTPUT
+
+          if [ "$APPS_TO_TEST" != "[]" ]; then
+            echo "has_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$APPS_TO_PUSH" != "[]" ]; then
+            echo "has_pushes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_pushes=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$APPS_TO_DEB" != "[]" ]; then
+            echo "has_debs=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_debs=false" >> $GITHUB_OUTPUT
+          fi
 
   # -------------------------------------------------------------------------
-  # Trivy Dashboard (Go web app)
+  # Run tests (matrix)
   # -------------------------------------------------------------------------
 
-  trivy-dashboard-test:
+  test:
     runs-on: docker
+    needs: detect
+    if: needs.detect.outputs.has_tests == 'true'
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.detect.outputs.apps_to_test) }}
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      - name: Test trivy-dashboard
+
+      - name: Test ${{ matrix.app }}
         run: |
-          cd src/trivy-dashboard
+          cd ${{ matrix.app }}
           make test
 
-  trivy-dashboard-push:
+  # -------------------------------------------------------------------------
+  # Push Docker images (matrix)
+  # -------------------------------------------------------------------------
+
+  push:
     runs-on: docker
-    needs: trivy-dashboard-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [detect, test]
+    if: |
+      always() &&
+      needs.detect.outputs.has_pushes == 'true' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push'
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.detect.outputs.apps_to_push) }}
+      fail-fast: false
+      max-parallel: 2
     steps:
       - uses: actions/checkout@v4
-      - name: Push trivy-dashboard
+
+      - name: Push ${{ matrix.app }}
         run: |
-          cd src/trivy-dashboard
+          cd ${{ matrix.app }}
           make push
 
   # -------------------------------------------------------------------------
-  # Theme Server (static CSS)
+  # Build Debian packages (matrix)
   # -------------------------------------------------------------------------
 
-  theme-server-push:
+  build-deb:
     runs-on: docker
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [detect, test]
+    if: |
+      always() &&
+      needs.detect.outputs.has_debs == 'true' &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push'
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.detect.outputs.apps_to_deb) }}
+      fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: Push theme-server
-        run: |
-          cd src/theme-server
-          make push
+        with:
+          submodules: recursive
 
-  # -------------------------------------------------------------------------
-  # Temporal Backup Worker (Go Temporal worker)
-  # -------------------------------------------------------------------------
-
-  temporal-backup-worker-test:
-    runs-on: docker
-    steps:
-      - uses: actions/checkout@v4
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-      - name: Test temporal-backup-worker
+
+      - name: Install nfpm
         run: |
-          cd src/temporal-jobs/temporal-backup-worker
-          make test
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
-  temporal-backup-worker-push:
-    runs-on: docker
-    needs: temporal-backup-worker-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Push temporal-backup-worker
+      - name: Build Debian packages for ${{ matrix.app }}
         run: |
-          cd src/temporal-jobs/temporal-backup-worker
-          make push
+          cd ${{ matrix.app }}
+          make build-deb
+          make build-deb-arm64
 
-  # -------------------------------------------------------------------------
-  # S3 Proxy (Go S3 proxy service)
-  # -------------------------------------------------------------------------
-
-  s3-proxy-test:
-    runs-on: docker
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Upload Debian packages
+        uses: actions/upload-artifact@v4
         with:
-          go-version: '1.23'
-      - name: Test s3-proxy
-        run: |
-          cd src/s3-proxy
-          make test
-
-  s3-proxy-push:
-    runs-on: docker
-    needs: s3-proxy-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Push s3-proxy
-        run: |
-          cd src/s3-proxy
-          make push
+          name: deb-${{ matrix.app }}
+          path: ${{ matrix.app }}/dist/*.deb
+          retention-days: 30
