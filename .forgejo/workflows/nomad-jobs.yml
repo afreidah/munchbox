@@ -158,7 +158,8 @@ jobs:
   deploy-jobs:
     runs-on: docker
     needs: detect-and-validate
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-and-validate.outputs.has_changes == 'true'
+    # DISABLED: Deploy on merge temporarily disabled
+    if: false && github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-and-validate.outputs.has_changes == 'true'
     strategy:
       matrix:
         job: ${{ fromJson(needs.detect-and-validate.outputs.jobs_matrix) }}
