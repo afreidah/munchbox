@@ -58,10 +58,15 @@ jobs:
           echo ""
 
           # Find all app directories with Makefiles
-          APPS_TO_TEST="[]"
-          APPS_TO_PUSH="[]"
-          APPS_TO_DEB="[]"
+          # Use simple space-separated lists, convert to JSON at the end
+          TEST_APPS=""
+          PUSH_APPS=""
+          DEB_APPS=""
 
+          echo "Checking for jq..."
+          which jq && jq --version || echo "WARNING: jq not found!"
+
+          echo ""
           echo "Looking for Makefiles in src/..."
           find src -name "Makefile" -type f
 
@@ -69,65 +74,73 @@ jobs:
             APP_DIR=$(dirname "$makefile")
             echo "Checking app: $APP_DIR"
 
-            # Check if this app has changes (handle both regular files and submodule pointer changes)
-            # Submodules show up as just "src/submodule" without trailing slash
-            echo "  Checking pattern: ^${APP_DIR}(/|$)"
+            # Check if this app has changes
             if ! echo "$CHANGED" | grep -qE "^${APP_DIR}(/|$)"; then
-              echo "  No changes in: $APP_DIR"
+              echo "  No changes"
               continue
             fi
 
-            echo "  Changes detected in: $APP_DIR"
+            echo "  Has changes!"
 
-            # Check for push target (Docker images)
+            # Check for targets
             if grep -q "^push:" "$makefile"; then
-              APPS_TO_PUSH=$(echo "$APPS_TO_PUSH" | jq -c ". + [\"$APP_DIR\"]")
-              echo "    - Has push target (Docker)"
+              PUSH_APPS="$PUSH_APPS $APP_DIR"
+              echo "    - push target"
             fi
 
-            # Check for build-deb target (Debian packages)
             if grep -q "^build-deb:" "$makefile"; then
-              APPS_TO_DEB=$(echo "$APPS_TO_DEB" | jq -c ". + [\"$APP_DIR\"]")
-              echo "    - Has build-deb target (Debian)"
+              DEB_APPS="$DEB_APPS $APP_DIR"
+              echo "    - build-deb target"
             fi
 
-            # Check for test target
             if grep -q "^test:" "$makefile"; then
-              APPS_TO_TEST=$(echo "$APPS_TO_TEST" | jq -c ". + [\"$APP_DIR\"]")
-              echo "    - Has test target"
-              echo "    APPS_TO_TEST is now: $APPS_TO_TEST"
+              TEST_APPS="$TEST_APPS $APP_DIR"
+              echo "    - test target"
             fi
           done
 
-          echo ""
-          echo "Apps to test: $APPS_TO_TEST"
-          echo "Apps to push: $APPS_TO_PUSH"
-          echo "Apps to deb:  $APPS_TO_DEB"
+          # Convert space-separated lists to JSON arrays
+          to_json_array() {
+            local items="$1"
+            if [ -z "$items" ]; then
+              echo "[]"
+            else
+              echo "$items" | xargs -n1 | jq -R . | jq -s -c .
+            fi
+          }
 
-          # Validate JSON arrays
-          echo "Validating JSON..."
-          echo "$APPS_TO_TEST" | jq .
-          echo "$APPS_TO_PUSH" | jq .
-          echo "$APPS_TO_DEB" | jq .
+          APPS_TO_TEST=$(to_json_array "$TEST_APPS")
+          APPS_TO_PUSH=$(to_json_array "$PUSH_APPS")
+          APPS_TO_DEB=$(to_json_array "$DEB_APPS")
+
+          echo ""
+          echo "Final results:"
+          echo "  TEST_APPS: '$TEST_APPS'"
+          echo "  APPS_TO_TEST: $APPS_TO_TEST"
+          echo "  PUSH_APPS: '$PUSH_APPS'"
+          echo "  APPS_TO_PUSH: $APPS_TO_PUSH"
+          echo "  DEB_APPS: '$DEB_APPS'"
+          echo "  APPS_TO_DEB: $APPS_TO_DEB"
 
           # Set outputs
           echo "apps_to_test=$APPS_TO_TEST" >> $GITHUB_OUTPUT
           echo "apps_to_push=$APPS_TO_PUSH" >> $GITHUB_OUTPUT
           echo "apps_to_deb=$APPS_TO_DEB" >> $GITHUB_OUTPUT
 
-          if [ "$APPS_TO_TEST" != "[]" ]; then
+          # Set boolean flags - check for non-empty JSON arrays
+          if [ "$APPS_TO_TEST" != "[]" ] && [ -n "$APPS_TO_TEST" ]; then
             echo "has_tests=true" >> $GITHUB_OUTPUT
           else
             echo "has_tests=false" >> $GITHUB_OUTPUT
           fi
 
-          if [ "$APPS_TO_PUSH" != "[]" ]; then
+          if [ "$APPS_TO_PUSH" != "[]" ] && [ -n "$APPS_TO_PUSH" ]; then
             echo "has_pushes=true" >> $GITHUB_OUTPUT
           else
             echo "has_pushes=false" >> $GITHUB_OUTPUT
           fi
 
-          if [ "$APPS_TO_DEB" != "[]" ]; then
+          if [ "$APPS_TO_DEB" != "[]" ] && [ -n "$APPS_TO_DEB" ]; then
             echo "has_debs=true" >> $GITHUB_OUTPUT
           else
             echo "has_debs=false" >> $GITHUB_OUTPUT
@@ -157,13 +170,8 @@ jobs:
 
       - name: Test ${{ matrix.app }}
         run: |
-          echo "Matrix app: '${{ matrix.app }}'"
-          echo "Current dir: $(pwd)"
-          ls -la "${{ matrix.app }}" || echo "Directory not found"
+          echo "Testing: ${{ matrix.app }}"
           cd "${{ matrix.app }}"
-          echo "Now in: $(pwd)"
-          ls -la Makefile || echo "No Makefile found"
-          grep "^test:" Makefile || echo "No test target"
           make test
 
   # -------------------------------------------------------------------------
