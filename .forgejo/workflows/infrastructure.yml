@@ -52,7 +52,7 @@ jobs:
           # Check for terraform changes
           if [ -n "$CHANGED" ] && echo "$CHANGED" | grep -q "^infrastructure/terraform/"; then
             echo "terraform=true" >> $GITHUB_OUTPUT
-            TF_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terraform/" | cut -d'/' -f3 | sort -u | grep -v "^modules$" | tr '\n' ' ' || true)
+            TF_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terraform/" | cut -d'/' -f3 | sort -u | grep -v "^modules$" | grep -v "^consul-acls$" | tr '\n' ' ' || true)
             echo "terraform_dirs=$TF_DIRS" >> $GITHUB_OUTPUT
             echo "Terraform directories with changes: $TF_DIRS"
           else
@@ -136,12 +136,12 @@ jobs:
             echo "" >> "$COMMENT_FILE"
 
             cd "$dir"
-            if terraform init > /tmp/init.txt 2>&1; then
+            if terraform init -input=false > /tmp/init.txt 2>&1; then
               if terraform validate > /tmp/validate.txt 2>&1; then
                 echo "[PASS] Validation passed" >> "$COMMENT_FILE"
                 echo "" >> "$COMMENT_FILE"
                 echo "**Plan output:**" >> "$COMMENT_FILE"
-                if terraform plan -no-color -out=/tmp/tfplan > /tmp/plan.txt 2>&1; then
+                if terraform plan -input=false -no-color -out=/tmp/tfplan > /tmp/plan.txt 2>&1; then
                   echo '```hcl' >> "$COMMENT_FILE"
                   tail -100 /tmp/plan.txt >> "$COMMENT_FILE"
                   echo '```' >> "$COMMENT_FILE"
