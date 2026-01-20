@@ -152,12 +152,10 @@ jobs:
 
   test:
     runs-on: docker
+    container:
+      image: registry.munchbox.cc/ops-build-image:v3
     needs: detect
     if: needs.detect.outputs.has_tests == 'true'
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.detect.outputs.apps_to_test) }}
-      fail-fast: false
     steps:
       - uses: actions/checkout@v4
         with:
@@ -168,11 +166,18 @@ jobs:
         with:
           go-version: '1.23'
 
-      - name: Test ${{ matrix.app }}
+      - name: Run tests
+        env:
+          APPS_TO_TEST: ${{ needs.detect.outputs.apps_to_test }}
         run: |
-          echo "Testing: ${{ matrix.app }}"
-          cd "${{ matrix.app }}"
-          make test
+          echo "Apps to test: $APPS_TO_TEST"
+          # Parse JSON array and run tests for each app
+          echo "$APPS_TO_TEST" | jq -r '.[]' | while read -r app; do
+            echo "=== Testing: $app ==="
+            cd "$app"
+            make test
+            cd -
+          done
 
   # -------------------------------------------------------------------------
   # Push Docker images (matrix)
