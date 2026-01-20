@@ -88,11 +88,10 @@ jobs:
     if: needs.detect.outputs.terraform == 'true' && github.event_name == 'pull_request'
     container:
       image: registry.munchbox.cc/ops-build-image:v3
-      options: --dns 192.168.68.64 --dns 192.168.68.62
+      options: --dns 192.168.68.64 --dns 192.168.68.62 -v /etc/consul.d/tls/ca-chain.crt:/certs/ca-chain.crt:ro
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-      VAULT_SKIP_VERIFY: "true"
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
@@ -100,6 +99,11 @@ jobs:
       FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup CA cert
+        run: |
+          mkdir -p ~/.munchbox
+          cp /certs/ca-chain.crt ~/.munchbox/ca-chain.crt
 
       - name: Terraform validation and plan
         run: |
@@ -206,17 +210,21 @@ jobs:
     if: needs.detect.outputs.terragrunt == 'true' && github.event_name == 'pull_request'
     container:
       image: registry.munchbox.cc/ops-build-image:v3
-      options: --dns 192.168.68.64 --dns 192.168.68.62
+      options: --dns 192.168.68.64 --dns 192.168.68.62 -v /etc/consul.d/tls/ca-chain.crt:/certs/ca-chain.crt:ro
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-      VAULT_SKIP_VERIFY: "true"
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
       FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup CA cert
+        run: |
+          mkdir -p ~/.munchbox
+          cp /certs/ca-chain.crt ~/.munchbox/ca-chain.crt
 
       - name: Terragrunt validation and plan
         run: |
