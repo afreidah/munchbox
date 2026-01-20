@@ -34,8 +34,7 @@ terraform {
 # -------------------------------------------------------------------------
 
 provider "vault" {
-  address      = "https://192.168.68.61:8200"
-  ca_cert_file = pathexpand("~/.munchbox/ca-chain.crt")
+  address = "https://192.168.68.61:8200"
 }
 
 data "vault_kv_secret_v2" "dns" {

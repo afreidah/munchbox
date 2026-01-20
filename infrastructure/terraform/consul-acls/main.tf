@@ -33,15 +33,13 @@ terraform {
 # -------------------------------------------------------------------------------
 
 provider "consul" {
-  address = "stabler:8501"
-  scheme  = "https"
-  ca_file = "/home/afreidah/.munchbox/consul/ca-chain.crt"
+  address = "stabler:8500"
+  scheme  = "http"
   token   = var.consul_bootstrap_token
 }
 
 provider "vault" {
-  address      = "https://192.168.68.61:8200"
-  ca_cert_file = pathexpand("~/.munchbox/ca-chain.crt")
+  address = "https://192.168.68.61:8200"
 }
 
 # -------------------------------------------------------------------------------
@@ -249,4 +247,29 @@ resource "consul_acl_token" "anonymous" {
     # Prevent accidental deletion of the built-in anonymous token
     prevent_destroy = true
   }
+}
+
+# -------------------------------------------------------------------------------
+# Terraform CI ACL Policy - For CI/CD terraform state management
+# -------------------------------------------------------------------------------
+
+resource "consul_acl_policy" "terraform_ci" {
+  name  = "terraform-ci"
+  rules = file("${path.module}/policies/terraform-ci.hcl")
+}
+
+resource "consul_acl_token" "terraform_ci" {
+  description = "Token for CI/CD terraform state management"
+  policies    = [consul_acl_policy.terraform_ci.name]
+  local       = false
+}
+
+resource "vault_kv_secret_v2" "terraform_ci_token" {
+  mount = "secret"
+  name  = "consul/terraform-ci-token"
+
+  data_json = jsonencode({
+    token       = consul_acl_token.terraform_ci.id
+    accessor_id = consul_acl_token.terraform_ci.accessor_id
+  })
 }

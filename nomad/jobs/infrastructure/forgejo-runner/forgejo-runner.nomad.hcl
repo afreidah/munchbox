@@ -138,7 +138,7 @@ cache:
 container:
   network: host
   privileged: true
-  options:
+  options: "--dns=192.168.68.64 --dns=192.168.68.62"
   valid_volumes:
     - /var/run/docker.sock
   docker_host: unix:///var/run/docker.sock

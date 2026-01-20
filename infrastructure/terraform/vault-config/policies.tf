@@ -218,6 +218,39 @@ EOT
 }
 
 # -------------------------------------------------------------------------
+# Vault Cert Manager Policy (for automated certificate rotation)
+# -------------------------------------------------------------------------
+
+resource "vault_policy" "vault_cert_manager" {
+  name = "vault-cert-manager"
+
+  policy = <<EOT
+# Issue certificates for Consul servers and clients
+path "pki_int/issue/consul-server" {
+  capabilities = ["create", "update"]
+}
+
+path "pki_int/issue/consul-client" {
+  capabilities = ["create", "update"]
+}
+
+# Issue certificates for Nomad servers and clients
+path "pki_int/issue/nomad-server" {
+  capabilities = ["create", "update"]
+}
+
+path "pki_int/issue/nomad-client" {
+  capabilities = ["create", "update"]
+}
+
+# Read CA certificate
+path "pki_int/cert/ca" {
+  capabilities = ["read"]
+}
+EOT
+}
+
+# -------------------------------------------------------------------------
 # Backup Worker Policy (for Vault Raft snapshots)
 # -------------------------------------------------------------------------
 

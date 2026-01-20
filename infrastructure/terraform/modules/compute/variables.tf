@@ -92,10 +92,10 @@ variable "aws_config" {
   type = object({
     subnet_id             = string
     security_group_ids    = list(string)
-    instance_type         = optional(string)       # Override auto-selected type
-    architecture          = optional(string)       # "arm64" or "x86_64"
-    spot_type             = optional(string)       # "persistent" or "one-time"
-    interruption_behavior = optional(string)       # "stop" or "terminate"
+    instance_type         = optional(string) # Override auto-selected type
+    architecture          = optional(string) # "arm64" or "x86_64"
+    spot_type             = optional(string) # "persistent" or "one-time"
+    interruption_behavior = optional(string) # "stop" or "terminate"
     assign_elastic_ip     = optional(bool)
   })
   default = null
