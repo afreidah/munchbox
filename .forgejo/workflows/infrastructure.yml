@@ -87,7 +87,7 @@ jobs:
     needs: detect
     if: needs.detect.outputs.terraform == 'true'
     container:
-      image: hashicorp/terraform:latest
+      image: registry.munchbox.cc/ops-build-image:v3
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
@@ -178,7 +178,7 @@ jobs:
     needs: detect
     if: needs.detect.outputs.terragrunt == 'true'
     container:
-      image: alpine/terragrunt:latest
+      image: registry.munchbox.cc/ops-build-image:v3
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
@@ -261,7 +261,7 @@ jobs:
     needs: detect
     if: needs.detect.outputs.ansible == 'true'
     container:
-      image: cytopia/ansible-lint:latest
+      image: registry.munchbox.cc/ops-build-image:v3
     steps:
       - uses: actions/checkout@v4
 
