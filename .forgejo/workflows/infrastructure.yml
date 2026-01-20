@@ -40,7 +40,7 @@ jobs:
           git fetch origin main --depth=1 2>/dev/null || true
 
           # Try PR comparison first, fall back to previous commit
-          CHANGED=$(git diff --name-only origin/main...HEAD -- infrastructure/ 2>/dev/null)
+          CHANGED=$(git diff --name-only origin/main..HEAD -- infrastructure/ 2>/dev/null)
           if [ -z "$CHANGED" ]; then
             echo "No changes vs origin/main, comparing against previous commit..."
             CHANGED=$(git diff --name-only HEAD~1 -- infrastructure/ 2>/dev/null || true)

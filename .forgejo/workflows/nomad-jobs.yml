@@ -41,8 +41,8 @@ jobs:
           git fetch origin main --depth=1 || true
 
           # Get all .hcl files changed (exclude files/ subdirs and deleted files)
-          # On merge to main, origin/main...HEAD is empty, so compare against previous commit
-          DIFF_TARGET="origin/main...HEAD"
+          # On merge to main, origin/main..HEAD is empty, so compare against previous commit
+          DIFF_TARGET="origin/main..HEAD"
           if [ -z "$(git diff --name-only $DIFF_TARGET -- nomad/jobs/ 2>/dev/null)" ]; then
             echo "No changes vs origin/main, comparing against previous commit..."
             DIFF_TARGET="HEAD~1"
