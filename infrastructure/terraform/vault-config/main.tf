@@ -29,7 +29,7 @@ terraform {
 }
 
 provider "vault" {
-  address  = "https://192.168.68.61:8200"
+  address      = "https://192.168.68.61:8200"
   ca_cert_file = pathexpand("~/.munchbox/ca-chain.crt")
 }
 
