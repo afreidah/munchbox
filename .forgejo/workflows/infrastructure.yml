@@ -36,23 +36,23 @@ jobs:
       - name: Detect changes
         id: detect
         run: |
-          git fetch origin main --depth=1 || true
+          set +e  # Don't exit on error
+          git fetch origin main --depth=1 2>/dev/null || true
 
-          # On merge to main, origin/main...HEAD is empty, so compare against previous commit
+          # Try PR comparison first, fall back to previous commit
           CHANGED=$(git diff --name-only origin/main...HEAD -- infrastructure/ 2>/dev/null)
           if [ -z "$CHANGED" ]; then
             echo "No changes vs origin/main, comparing against previous commit..."
-            CHANGED=$(git diff --name-only HEAD~1 -- infrastructure/ 2>/dev/null)
+            CHANGED=$(git diff --name-only HEAD~1 -- infrastructure/ 2>/dev/null || true)
           fi
 
           echo "Changed files:"
           echo "$CHANGED"
 
           # Check for terraform changes
-          if echo "$CHANGED" | grep -q "^infrastructure/terraform/"; then
+          if [ -n "$CHANGED" ] && echo "$CHANGED" | grep -q "^infrastructure/terraform/"; then
             echo "terraform=true" >> $GITHUB_OUTPUT
-            # Get list of changed terraform directories (top-level modules only)
-            TF_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terraform/" | cut -d'/' -f3 | sort -u | grep -v "^modules$" | tr '\n' ' ')
+            TF_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terraform/" | cut -d'/' -f3 | sort -u | grep -v "^modules$" | tr '\n' ' ' || true)
             echo "terraform_dirs=$TF_DIRS" >> $GITHUB_OUTPUT
             echo "Terraform directories with changes: $TF_DIRS"
           else
@@ -61,10 +61,9 @@ jobs:
           fi
 
           # Check for terragrunt changes
-          if echo "$CHANGED" | grep -q "^infrastructure/terragrunt/"; then
+          if [ -n "$CHANGED" ] && echo "$CHANGED" | grep -q "^infrastructure/terragrunt/"; then
             echo "terragrunt=true" >> $GITHUB_OUTPUT
-            # Get changed terragrunt directories (exclude helpers and root)
-            TG_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terragrunt/" | grep -v "_env_helpers" | grep -v "root.hcl" | cut -d'/' -f3-4 | sort -u | tr '\n' ' ')
+            TG_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terragrunt/" | grep -v "_env_helpers" | grep -v "root.hcl" | cut -d'/' -f3-4 | sort -u | tr '\n' ' ' || true)
             echo "terragrunt_dirs=$TG_DIRS" >> $GITHUB_OUTPUT
             echo "Terragrunt directories with changes: $TG_DIRS"
           else
@@ -73,7 +72,7 @@ jobs:
           fi
 
           # Check for ansible changes
-          if echo "$CHANGED" | grep -q "^infrastructure/ansible/"; then
+          if [ -n "$CHANGED" ] && echo "$CHANGED" | grep -q "^infrastructure/ansible/"; then
             echo "ansible=true" >> $GITHUB_OUTPUT
           else
             echo "ansible=false" >> $GITHUB_OUTPUT
