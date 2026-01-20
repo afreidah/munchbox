@@ -60,34 +60,40 @@ jobs:
           APPS_TO_PUSH="[]"
           APPS_TO_DEB="[]"
 
+          echo "Looking for Makefiles in src/..."
+          find src -name "Makefile" -type f
+
           for makefile in $(find src -name "Makefile" -type f); do
             APP_DIR=$(dirname "$makefile")
+            echo "Checking app: $APP_DIR"
 
             # Check if this app has changes (handle both regular files and submodule pointer changes)
             # Submodules show up as just "src/submodule" without trailing slash
+            echo "  Checking pattern: ^${APP_DIR}(/|$)"
             if ! echo "$CHANGED" | grep -qE "^${APP_DIR}(/|$)"; then
-              echo "No changes in: $APP_DIR"
+              echo "  No changes in: $APP_DIR"
               continue
             fi
 
-            echo "Changes detected in: $APP_DIR"
+            echo "  Changes detected in: $APP_DIR"
 
             # Check for push target (Docker images)
             if grep -q "^push:" "$makefile"; then
               APPS_TO_PUSH=$(echo "$APPS_TO_PUSH" | jq -c ". + [\"$APP_DIR\"]")
-              echo "  - Has push target (Docker)"
+              echo "    - Has push target (Docker)"
             fi
 
             # Check for build-deb target (Debian packages)
             if grep -q "^build-deb:" "$makefile"; then
               APPS_TO_DEB=$(echo "$APPS_TO_DEB" | jq -c ". + [\"$APP_DIR\"]")
-              echo "  - Has build-deb target (Debian)"
+              echo "    - Has build-deb target (Debian)"
             fi
 
             # Check for test target
             if grep -q "^test:" "$makefile"; then
               APPS_TO_TEST=$(echo "$APPS_TO_TEST" | jq -c ". + [\"$APP_DIR\"]")
-              echo "  - Has test target"
+              echo "    - Has test target"
+              echo "    APPS_TO_TEST is now: $APPS_TO_TEST"
             fi
           done
 
@@ -95,6 +101,12 @@ jobs:
           echo "Apps to test: $APPS_TO_TEST"
           echo "Apps to push: $APPS_TO_PUSH"
           echo "Apps to deb:  $APPS_TO_DEB"
+
+          # Validate JSON arrays
+          echo "Validating JSON..."
+          echo "$APPS_TO_TEST" | jq .
+          echo "$APPS_TO_PUSH" | jq .
+          echo "$APPS_TO_DEB" | jq .
 
           # Set outputs
           echo "apps_to_test=$APPS_TO_TEST" >> $GITHUB_OUTPUT
