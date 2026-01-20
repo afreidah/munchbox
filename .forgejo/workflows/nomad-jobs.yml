@@ -40,8 +40,15 @@ jobs:
           echo "Detecting changed jobs..."
           git fetch origin main --depth=1 || true
 
-          # Get all .hcl files changed in this branch vs main (exclude files/ subdirs and deleted files)
-          CHANGED=$(git diff --name-only --diff-filter=d origin/main...HEAD -- nomad/jobs/ 2>/dev/null \
+          # Get all .hcl files changed (exclude files/ subdirs and deleted files)
+          # On merge to main, origin/main...HEAD is empty, so compare against previous commit
+          DIFF_TARGET="origin/main...HEAD"
+          if [ -z "$(git diff --name-only $DIFF_TARGET -- nomad/jobs/ 2>/dev/null)" ]; then
+            echo "No changes vs origin/main, comparing against previous commit..."
+            DIFF_TARGET="HEAD~1"
+          fi
+
+          CHANGED=$(git diff --name-only --diff-filter=d $DIFF_TARGET -- nomad/jobs/ 2>/dev/null \
             | grep '\.hcl$' \
             | grep -v '/files/' \
             | xargs -I{} basename {} .hcl \

@@ -45,7 +45,12 @@ jobs:
           git fetch origin main --depth=1 || true
 
           # Get changed files in src/ (including submodule pointer changes)
-          CHANGED=$(git diff --name-only origin/main...HEAD -- src/ 2>/dev/null || git diff --name-only HEAD~1 -- src/)
+          # On merge to main, origin/main...HEAD is empty, so compare against previous commit
+          CHANGED=$(git diff --name-only origin/main...HEAD -- src/ 2>/dev/null)
+          if [ -z "$CHANGED" ]; then
+            echo "No changes vs origin/main, comparing against previous commit..."
+            CHANGED=$(git diff --name-only HEAD~1 -- src/ 2>/dev/null)
+          fi
           echo "Changed files:"
           echo "$CHANGED"
           echo ""

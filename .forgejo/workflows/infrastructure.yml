@@ -37,7 +37,13 @@ jobs:
         id: detect
         run: |
           git fetch origin main --depth=1 || true
-          CHANGED=$(git diff --name-only origin/main...HEAD -- infrastructure/ 2>/dev/null || git diff --name-only HEAD~1 -- infrastructure/)
+
+          # On merge to main, origin/main...HEAD is empty, so compare against previous commit
+          CHANGED=$(git diff --name-only origin/main...HEAD -- infrastructure/ 2>/dev/null)
+          if [ -z "$CHANGED" ]; then
+            echo "No changes vs origin/main, comparing against previous commit..."
+            CHANGED=$(git diff --name-only HEAD~1 -- infrastructure/ 2>/dev/null)
+          fi
 
           echo "Changed files:"
           echo "$CHANGED"
