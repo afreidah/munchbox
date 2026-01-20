@@ -143,7 +143,13 @@ jobs:
 
       - name: Test ${{ matrix.app }}
         run: |
-          cd ${{ matrix.app }}
+          echo "Matrix app: '${{ matrix.app }}'"
+          echo "Current dir: $(pwd)"
+          ls -la "${{ matrix.app }}" || echo "Directory not found"
+          cd "${{ matrix.app }}"
+          echo "Now in: $(pwd)"
+          ls -la Makefile || echo "No Makefile found"
+          grep "^test:" Makefile || echo "No test target"
           make test
 
   # -------------------------------------------------------------------------
