@@ -29,8 +29,8 @@ terraform {
 }
 
 provider "vault" {
-  address      = "https://192.168.68.61:8200"
-  ca_cert_file = pathexpand("~/.munchbox/ca-chain.crt")
+  address = "https://192.168.68.61:8200"
+  # Uses VAULT_CACERT env var locally, VAULT_SKIP_VERIFY in CI
 }
 
 # -------------------------------------------------------------------------------
