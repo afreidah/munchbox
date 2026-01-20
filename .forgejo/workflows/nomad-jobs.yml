@@ -24,6 +24,7 @@ jobs:
     runs-on: docker
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     outputs:
       changed_jobs: ${{ steps.detect.outputs.jobs }}
       jobs_matrix: ${{ steps.detect.outputs.jobs_matrix }}
@@ -90,6 +91,7 @@ jobs:
       fail-fast: false
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     env:
       NOMAD_ADDR: https://192.168.68.61:4646
       NOMAD_SKIP_VERIFY: "true"
@@ -164,6 +166,7 @@ jobs:
       max-parallel: 4
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     env:
       NOMAD_ADDR: https://192.168.68.61:4646
       NOMAD_SKIP_VERIFY: "true"

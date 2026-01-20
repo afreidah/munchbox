@@ -88,6 +88,7 @@ jobs:
     if: needs.detect.outputs.terraform == 'true' && github.event_name == 'pull_request'
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
@@ -201,6 +202,7 @@ jobs:
     if: needs.detect.outputs.terragrunt == 'true' && github.event_name == 'pull_request'
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
@@ -304,6 +306,7 @@ jobs:
     if: needs.detect.outputs.ansible == 'true' && github.event_name == 'pull_request'
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     env:
       FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
