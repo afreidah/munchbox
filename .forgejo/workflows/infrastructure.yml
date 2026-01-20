@@ -95,6 +95,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+      TF_VAR_consul_bootstrap_token: ${{ secrets.CONSUL_BOOTSTRAP_TOKEN }}
       FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
