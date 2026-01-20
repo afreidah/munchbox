@@ -35,26 +35,27 @@ jobs:
 
       - name: Detect changes
         id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set +e  # Don't exit on error
 
-          # Debug: show git remotes and branches
-          echo "Git remotes:"
-          git remote -v
-          echo "Git branches:"
-          git branch -a
+          # Debug info
+          echo "BASE_SHA: $BASE_SHA"
+          echo "HEAD: $(git rev-parse HEAD)"
 
-          # Fetch main branch - try both origin and other remotes
-          git fetch origin main --depth=1 2>/dev/null || git fetch --all --depth=1 2>/dev/null || true
-
-          # Try PR comparison against main
-          CHANGED=$(git diff --name-only origin/main..HEAD -- infrastructure/ 2>/dev/null)
-          if [ -z "$CHANGED" ]; then
-            # Try refs/heads/main directly
-            CHANGED=$(git diff --name-only refs/remotes/origin/main..HEAD -- infrastructure/ 2>/dev/null)
+          # Use PR base SHA if available, otherwise try origin/main
+          if [ -n "$BASE_SHA" ]; then
+            echo "Using PR base SHA for comparison"
+            CHANGED=$(git diff --name-only "$BASE_SHA"..HEAD -- infrastructure/ 2>/dev/null)
+          else
+            echo "No PR base SHA, trying origin/main"
+            git fetch origin main --depth=1 2>/dev/null || true
+            CHANGED=$(git diff --name-only origin/main..HEAD -- infrastructure/ 2>/dev/null)
           fi
+
           if [ -z "$CHANGED" ]; then
-            echo "No changes vs origin/main, comparing against previous commit..."
+            echo "No changes detected, comparing against previous commit..."
             CHANGED=$(git diff --name-only HEAD~1 -- infrastructure/ 2>/dev/null || true)
           fi
 
