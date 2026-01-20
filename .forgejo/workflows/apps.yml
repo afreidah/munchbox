@@ -215,3 +215,4 @@ jobs:
           name: deb-${{ matrix.app }}
           path: ${{ matrix.app }}/dist/*.deb
           retention-days: 30
+        continue-on-error: true  # Artifact uploads may fail on Forgejo
