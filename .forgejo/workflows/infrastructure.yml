@@ -161,7 +161,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload terraform results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: terraform-results
           path: |
@@ -244,7 +244,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload terragrunt results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: terragrunt-results
           path: |
@@ -306,7 +306,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload ansible results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: ansible-results
           path: |
@@ -328,11 +328,25 @@ jobs:
       - name: Install dependencies
         run: apk add --no-cache curl jq
 
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Download terraform results
+        uses: actions/download-artifact@v3
         with:
+          name: terraform-results
           path: /tmp/results
-          merge-multiple: true
+        continue-on-error: true
+
+      - name: Download terragrunt results
+        uses: actions/download-artifact@v3
+        with:
+          name: terragrunt-results
+          path: /tmp/results
+        continue-on-error: true
+
+      - name: Download ansible results
+        uses: actions/download-artifact@v3
+        with:
+          name: ansible-results
+          path: /tmp/results
         continue-on-error: true
 
       - name: Build and post PR comment

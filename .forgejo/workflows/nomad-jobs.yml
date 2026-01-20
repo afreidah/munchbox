@@ -129,7 +129,7 @@ jobs:
 
       - name: Upload plan artifact
         if: steps.plan.outputs.has_changes == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: plan-${{ matrix.job }}
           path: /tmp/plans/${{ matrix.job }}.txt
@@ -143,11 +143,9 @@ jobs:
       image: registry.munchbox.cc/ops-build-image:v3
     steps:
       - name: Download all plan artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
-          pattern: plan-*
           path: /tmp/plans
-          merge-multiple: true
         continue-on-error: true
 
       - name: Build and post PR comment
@@ -156,14 +154,14 @@ jobs:
         run: |
           PLAN_FILE="/tmp/plan_output.md"
 
-          # Check if any plans were downloaded
-          if [ -d "/tmp/plans" ] && [ "$(ls -A /tmp/plans 2>/dev/null)" ]; then
+          # Check if any plans were downloaded (v3 puts artifacts in subdirs)
+          if [ -d "/tmp/plans" ] && [ "$(find /tmp/plans -name '*.txt' 2>/dev/null)" ]; then
             echo "## Nomad Job Plan" > "$PLAN_FILE"
             echo "" >> "$PLAN_FILE"
             echo "The following jobs have changes to be applied:" >> "$PLAN_FILE"
             echo "" >> "$PLAN_FILE"
 
-            for plan in /tmp/plans/*.txt; do
+            for plan in $(find /tmp/plans -name '*.txt' 2>/dev/null); do
               [ -f "$plan" ] || continue
               JOB_NAME=$(basename "$plan" .txt)
               echo "<details>" >> "$PLAN_FILE"
