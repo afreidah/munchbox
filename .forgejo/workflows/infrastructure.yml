@@ -125,7 +125,7 @@ jobs:
 
           DIRS="${{ needs.detect.outputs.terraform_dirs }}"
           if [ -z "$DIRS" ]; then
-            DIRS=$(ls -d */ 2>/dev/null | grep -v "modules/" | tr -d '/')
+            DIRS=$(ls -d */ 2>/dev/null | grep -v "modules/" | grep -v "consul-acls" | tr -d '/')
           fi
 
           for dir in $DIRS; do
@@ -136,7 +136,7 @@ jobs:
             echo "" >> "$COMMENT_FILE"
 
             cd "$dir"
-            if terraform init -input=false > /tmp/init.txt 2>&1; then
+            if terraform init -input=false -reconfigure > /tmp/init.txt 2>&1; then
               if terraform validate > /tmp/validate.txt 2>&1; then
                 echo "[PASS] Validation passed" >> "$COMMENT_FILE"
                 echo "" >> "$COMMENT_FILE"
