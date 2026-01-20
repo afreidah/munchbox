@@ -26,6 +26,8 @@ jobs:
 
   detect:
     runs-on: docker
+    container:
+      image: registry.munchbox.cc/ops-build-image:v3
     outputs:
       apps_to_test: ${{ steps.detect.outputs.apps_to_test }}
       apps_to_push: ${{ steps.detect.outputs.apps_to_push }}
