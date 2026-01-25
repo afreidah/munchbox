@@ -7,6 +7,10 @@
 # Uses Postgres for database and stores user data on /mnt/gdrive.
 # -------------------------------------------------------------------------------
 
+# --- Shared Variables (from shared.vars.hcl) ---
+variable "pihole_1" { type = string }
+variable "pihole_2" { type = string }
+
 job "nextcloud" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -54,9 +58,9 @@ job "nextcloud" {
         static = 18081
       }
       # Bridge mode containers need explicit DNS config at network level
-      # Use goren's local dnsmasq for Consul DNS resolution
+      # Uses node's dnsmasq (via CoreDNS) with Pi-hole fallbacks
       dns {
-        servers  = ["192.168.68.60", "192.168.68.64", "192.168.68.62"]
+        servers  = ["${attr.unique.network.ip-address}", var.pihole_1, var.pihole_2]
         searches = ["service.consul"]
         options  = ["ndots:1", "timeout:2", "attempts:2"]
       }

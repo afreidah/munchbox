@@ -97,7 +97,6 @@ job "trivy-dashboard" {
         image_pull_timeout = "5m"
         ports              = ["http"]
         volumes            = ["secrets/ca.crt:/etc/ssl/postgres/ca.crt:ro"]
-        dns_servers        = ["192.168.68.64", "192.168.68.62"]
       }
 
       # PostgreSQL CA certificate for TLS verification

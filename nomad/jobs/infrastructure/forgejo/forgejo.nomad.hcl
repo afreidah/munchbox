@@ -8,6 +8,10 @@
 # Git operations (push/pull) use Forgejo's native auth (tokens/SSH keys).
 # -------------------------------------------------------------------------------
 
+# --- Shared Variables (from shared.vars.hcl) ---
+variable "pihole_1" { type = string }
+variable "pihole_2" { type = string }
+
 job "forgejo" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -62,9 +66,9 @@ job "forgejo" {
         to     = 22
       }
       # Bridge mode containers need explicit DNS config for Consul resolution
-      # Uses goren's dnsmasq which forwards .consul to Consul DNS
+      # Uses node's dnsmasq (via CoreDNS) with Pi-hole fallbacks
       dns {
-        servers  = ["192.168.68.60"]
+        servers  = ["${attr.unique.network.ip-address}", var.pihole_1, var.pihole_2]
         searches = ["service.consul"]
         options  = ["ndots:1", "timeout:2", "attempts:2"]
       }

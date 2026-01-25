@@ -4,14 +4,26 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Lightweight DNS forwarder that load balances queries across both Pi-hole
-# servers (green and logan). Provides round-robin distribution, health checks,
-# automatic failover, and response caching to reduce Pi-hole load.
+# servers (green and logan). Runs as a system job on every node so each node
+# has local DNS with round-robin distribution, health checks, and caching.
+#
+# Each node's dnsmasq points to localhost:5353 for non-Consul queries.
 # -------------------------------------------------------------------------------
+
+# --- Shared Variables (from shared.vars.hcl) ---
+variable "pihole_1" {
+  type    = string
+  default = "192.168.68.62"
+}
+variable "pihole_2" {
+  type    = string
+  default = "192.168.68.64"
+}
 
 job "coredns" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "service"
+  type        = "system"
   priority    = 80
 
   # ---------------------------------------------------------------------------
@@ -28,21 +40,8 @@ job "coredns" {
   # ---------------------------------------------------------------------------
 
   update {
-    max_parallel      = 1
-    min_healthy_time  = "10s"
-    healthy_deadline  = "3m"
-    progress_deadline = "5m"
-    auto_revert       = true
-  }
-
-  # ---------------------------------------------------------------------------
-  # Placement — Pin to stabler (ingress node)
-  # ---------------------------------------------------------------------------
-
-  constraint {
-    attribute = "${node.unique.name}"
-    operator  = "="
-    value     = "nomad-client-03"
+    max_parallel = 1
+    stagger      = "30s"
   }
 
   # ---------------------------------------------------------------------------
@@ -50,7 +49,6 @@ job "coredns" {
   # ---------------------------------------------------------------------------
 
   group "coredns" {
-    count = 1
 
     # --- Network Configuration ---
     network {
@@ -69,16 +67,6 @@ job "coredns" {
       interval = "5m"
       delay    = "15s"
       mode     = "fail"
-    }
-
-    # --- Reschedule Policy ---
-    reschedule {
-      attempts       = 3
-      interval       = "1h"
-      delay          = "30s"
-      delay_function = "exponential"
-      max_delay      = "10m"
-      unlimited      = false
     }
 
     # --- Service Registration ---
@@ -101,8 +89,6 @@ job "coredns" {
         timeout  = "2s"
         on_update = "require_healthy"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # --- Metrics Service ---
@@ -124,8 +110,6 @@ job "coredns" {
         timeout  = "5s"
         on_update = "require_healthy"
       }
-
-      deregister_critical_service_after = "1m"
     }
 
     # -------------------------------------------------------------------------
@@ -151,11 +135,11 @@ job "coredns" {
         change_mode = "restart"
         data        = <<EOH
 # CoreDNS Configuration - DNS Load Balancer for Pi-holes
-# Forwards to green (192.168.68.62) and logan (192.168.68.64)
+# Forwards to pihole_1 and pihole_2 with round-robin and health checks
 
 .:5353 {
-    # Health checks for upstream Pi-holes
-    health {
+    # Health endpoint on 8053 (avoid 8080 conflicts)
+    health :8053 {
         lameduck 5s
     }
 
@@ -175,7 +159,7 @@ job "coredns" {
     }
 
     # Forward to both Pi-holes with health checks
-    forward . 192.168.68.62 192.168.68.64 {
+    forward . ${var.pihole_1} ${var.pihole_2} {
         policy round_robin
         health_check 10s
         max_fails 3

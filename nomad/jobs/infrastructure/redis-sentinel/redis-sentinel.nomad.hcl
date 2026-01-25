@@ -330,7 +330,6 @@ REDIS_PASSWORD={{ .Data.data.password }}
         image              = "redis:8-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
-        dns_servers        = ["192.168.68.71"]
         command            = "/bin/sh"
         args               = ["-c", "cp /etc/sentinel/sentinel.conf.tpl /data/sentinel.conf && redis-sentinel /data/sentinel.conf"]
 
@@ -489,7 +488,6 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
         image              = "redis:8-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
-        dns_servers        = ["192.168.68.71"]
         command            = "/bin/sh"
         args               = ["-c", "echo 'Waiting for redis-primary.service.consul...'; while ! getent hosts redis-primary.service.consul >/dev/null 2>&1; do sleep 2; done; echo 'Master found, starting sentinel'; cp /etc/sentinel/sentinel.conf.tpl /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"]
 

@@ -23,6 +23,9 @@ PACK_REGISTRY := packs/registry
 # Default pack for jobs without explicit PACK directive
 DEFAULT_PACK := munchbox-service
 
+# Shared variables file for raw HCL jobs
+SHARED_VARS := shared.vars.hcl
+
 # -------------------------------------------------------------------------------
 # Help
 # -------------------------------------------------------------------------------
@@ -124,6 +127,7 @@ endif
 	@echo "File: $(JOB_FILE)"
 	@if [ "$(IS_RAW)" = "yes" ]; then \
 		echo "Type: Raw HCL"; \
+		echo "Vars: $(SHARED_VARS)"; \
 		echo ""; \
 		cat "$(JOB_FILE)"; \
 	else \
@@ -149,7 +153,7 @@ endif
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
 	@echo "=== Planning $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		nomad job plan "$(JOB_FILE)"; \
+		nomad job plan -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
 	else \
 		nomad-pack plan \
 			--var-file="$(JOB_FILE)" \
@@ -171,7 +175,7 @@ endif
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
 	@echo "=== Deploying $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		nomad job run "$(JOB_FILE)"; \
+		nomad job run -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
 	else \
 		nomad-pack run \
 			--var-file="$(JOB_FILE)" \
@@ -193,7 +197,7 @@ endif
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
 	@echo "=== Validating $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		nomad job validate "$(JOB_FILE)"; \
+		nomad job validate -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
 	else \
 		nomad-pack render \
 			--var-file="$(JOB_FILE)" \

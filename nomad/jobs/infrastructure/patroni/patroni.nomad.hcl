@@ -241,8 +241,6 @@ job "patroni" {
         image              = "registry.munchbox.cc/patroni:pg18"
         image_pull_timeout = "10m"
         network_mode       = "host"
-        # DNS for Consul service resolution
-        dns_servers        = ["192.168.68.60"]
 
         volumes = [
           # Persistent data - use host path for durability
@@ -544,7 +542,6 @@ echo "Database initialization complete"
       config {
         image        = "quay.io/prometheuscommunity/postgres-exporter:v0.18.1"
         network_mode = "host"
-        dns_servers  = ["192.168.68.60"]
       }
 
       template {

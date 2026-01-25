@@ -1,24 +1,30 @@
 # -------------------------------------------------------------------------------
-# Configure Local Consul DNS Resolution
+# Configure Local DNS Resolution
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# This playbook configures dnsmasq on each node to handle .consul DNS queries
-# locally via the Consul agent, reducing load on Pi-hole and eliminating the
-# single point of failure for service discovery.
+# Configures dnsmasq on each node for DNS resolution with the following flow:
 #
-# The setup:
-# - dnsmasq listens on 127.0.0.53:53 (avoiding conflict with Consul on 8600)
-# - .consul queries are forwarded to local Consul agent (127.0.0.1:8600)
-# - All other queries go to CoreDNS which load balances to Pi-holes
-# - resolv.conf points to local dnsmasq first
+#   Container/Process → dnsmasq (127.0.0.53)
+#                            ↓
+#         ┌──────────────────┴──────────────────┐
+#         │ .consul queries    │ other queries  │
+#         ↓                    ↓                │
+#   Consul (8600)        CoreDNS (5353)         │
+#                              ↓                │
+#                        Pi-holes (round-robin) │
+#                              ↓                │
+#                   [fallback if CoreDNS down]──┘
+#
+# CoreDNS runs as a Nomad system job on every node (coredns.nomad.hcl).
+# dnsmasq provides fallback to Pi-holes directly if CoreDNS is unavailable.
 #
 # Usage:
-#   ansible-playbook playbooks/configure-local-consul-dns.yml -l nomad_cluster
+#   ansible-playbook playbooks/configure-local-consul-dns.yml
 # -------------------------------------------------------------------------------
 ---
 - name: Configure local Consul DNS resolution via dnsmasq
-  hosts: all
+  hosts: nomad_clients:oracle_nodes
   become: true
   gather_facts: true
 
@@ -27,15 +33,29 @@
     # Also listen on the host's primary IP for Docker containers
     dnsmasq_host_ip: "{{ ansible_default_ipv4.address }}"
     consul_dns_port: 8600
-    # CoreDNS load balancer (round-robins to Pi-holes with health checks)
-    coredns_server: "192.168.68.71"
+    # Local CoreDNS (runs as system job on every node)
     coredns_port: 5353
-    # Direct Pi-hole access for fallback in resolv.conf
-    fallback_dns_servers:
-      - "192.168.68.64"  # pihole-02 (logan)
+    # Direct Pi-hole access for fallback if CoreDNS is down
+    pihole_servers:
       - "192.168.68.62"  # pihole-01 (green)
+      - "192.168.68.64"  # pihole-02 (logan)
 
   tasks:
+    - name: Disable avahi-daemon (conflicts with CoreDNS on port 5353)
+      ansible.builtin.systemd:
+        name: avahi-daemon
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Remove old dnsmasq config files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/dnsmasq.d/10-consul.conf
+      failed_when: false
+
     - name: Install dnsmasq
       ansible.builtin.apt:
         name: dnsmasq
@@ -67,8 +87,16 @@
           # Don't use /etc/resolv.conf for upstream (we manage it below)
           no-resolv
 
-          # Upstream DNS: CoreDNS load balancer (round-robins to Pi-holes)
-          server={{ coredns_server }}#{{ coredns_port }}
+          # Upstream DNS servers (tried in order with strict-order)
+          # 1. Local CoreDNS (round-robins to Pi-holes with health checks)
+          server=127.0.0.1#{{ coredns_port }}
+          # 2-3. Direct Pi-hole fallback if CoreDNS is down
+          {% for pihole in pihole_servers %}
+          server={{ pihole }}
+          {% endfor %}
+
+          # Try servers in order, fail over if unreachable
+          strict-order
 
           # Cache settings
           cache-size=1000
@@ -102,12 +130,14 @@
         mode: '0644'
         content: |
           # Managed by Ansible - configure-local-consul-dns.yml
-          # Local dnsmasq handles .consul queries via Consul agent
-          # dnsmasq forwards to CoreDNS which load balances to Pi-holes
+          # Local dnsmasq handles all DNS:
+          #   .consul queries → Consul agent (port 8600)
+          #   Other queries → local CoreDNS → Pi-holes (round-robin)
           search munchbox.cc
           nameserver {{ dnsmasq_listen_address }}
-          nameserver {{ fallback_dns_servers[0] }}
-          nameserver {{ fallback_dns_servers[1] }}
+          {% for pihole in pihole_servers %}
+          nameserver {{ pihole }}
+          {% endfor %}
 
     - name: Ensure dnsmasq is enabled and started
       ansible.builtin.systemd:
@@ -133,7 +163,7 @@
         state: restarted
 
 - name: Configure Docker to use local dnsmasq
-  hosts: all
+  hosts: nomad_clients:oracle_nodes
   become: true
   gather_facts: true
 
@@ -186,18 +216,18 @@
         state: restarted
 
 - name: Verify Consul DNS resolution
-  hosts: all
+  hosts: nomad_clients
   become: true
   gather_facts: false
 
   tasks:
     - name: Test local Consul DNS resolution
       ansible.builtin.command:
-        cmd: dig +short redis-shared.service.consul
+        cmd: dig +short redis-primary.service.consul
       register: dig_result
       changed_when: false
       failed_when: dig_result.rc != 0 or dig_result.stdout == ""
 
     - name: Display resolution result
       ansible.builtin.debug:
-        msg: "Consul DNS working: redis-shared.service.consul -> {{ dig_result.stdout }}"
+        msg: "Consul DNS working: redis-primary.service.consul -> {{ dig_result.stdout }}"

@@ -132,7 +132,6 @@ job "oauth2-proxy" {
         image_pull_timeout = "5m"
         network_mode       = "host"
         ports              = ["http"]
-        dns_servers        = ["192.168.68.61", "192.168.68.60"]
         volumes = [
           "secrets/authenticated-emails.txt:/etc/oauth2-proxy/authenticated-emails.txt:ro"
         ]

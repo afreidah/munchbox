@@ -8,6 +8,10 @@
 # JS snippet on tracked sites.
 # -------------------------------------------------------------------------------
 
+# --- Shared Variables (from shared.vars.hcl) ---
+variable "pihole_1" { type = string }
+variable "pihole_2" { type = string }
+
 job "umami" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -63,8 +67,12 @@ job "umami" {
       port "http" {
         to = 3000
       }
+      # Bridge mode containers need explicit DNS config for Consul resolution
+      # Uses node's dnsmasq (via CoreDNS) with Pi-hole fallbacks
       dns {
-        servers = ["192.168.68.62", "192.168.68.64"]
+        servers  = ["${attr.unique.network.ip-address}", var.pihole_1, var.pihole_2]
+        searches = ["service.consul"]
+        options  = ["ndots:1", "timeout:2", "attempts:2"]
       }
     }
 

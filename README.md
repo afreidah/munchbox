@@ -28,6 +28,7 @@
 - [Architecture](#architecture)
   - [Core Stack](#core-stack)
   - [Infrastructure Services](#infrastructure-services)
+  - [DNS Architecture](#dns-architecture)
 - [Directory Structure](#directory-structure)
 - [Technology Stack](#technology-stack)
 - [Quick Start](#quick-start)
@@ -98,6 +99,51 @@ Built on the HashiCorp stack (Nomad, Consul, Vault) and managed through Infrastr
 - **Alerting**: Alertmanager with Telegram notifications
 - **Backup**: Temporal workflows for automated backup orchestration
 - **DNS**: CoreDNS with dnsmasq for Consul DNS forwarding
+
+### DNS Architecture
+
+Each node runs a local DNS stack that provides service discovery and external resolution:
+
+```
+Container/Process → dnsmasq (127.0.0.53)
+                         ↓
+      ┌──────────────────┴──────────────────┐
+      │ .consul queries    │ other queries  │
+      ↓                    ↓                │
+Consul (8600)        CoreDNS (5353)         │
+                           ↓                │
+                     Pi-holes (round-robin) │
+                           ↓                │
+                        Unbound             │
+                           ↓                │
+                   Root DNS Servers         │
+                           ↓                │
+                [fallback if CoreDNS down]──┘
+```
+
+**Components:**
+
+| Component | Port | Purpose |
+|-----------|------|---------|
+| **dnsmasq** | 127.0.0.53 | Local DNS forwarder, routes queries to appropriate upstream |
+| **Consul DNS** | 8600 | Service discovery for `.consul` domain (e.g., `redis-primary.service.consul`) |
+| **CoreDNS** | 5353 | System job on every node, load balances to Pi-holes with health checks |
+| **Pi-hole** | 53 | Ad-blocking DNS servers (green, logan) |
+| **Unbound** | 5335 | Recursive resolver on Pi-hole hosts, queries root servers directly |
+
+**Key Features:**
+
+- **Local-first resolution**: Every node has its own DNS stack, no single point of failure
+- **Automatic failover**: dnsmasq falls back to Pi-holes directly if CoreDNS is down
+- **Service discovery**: Consul DNS enables dynamic service lookup across the cluster
+- **Health-checked upstreams**: CoreDNS monitors Pi-hole health and removes failed servers
+- **Privacy-focused**: Unbound resolves directly from root servers, no third-party DNS
+
+**Configuration:**
+
+- Ansible playbook: `infrastructure/ansible/playbooks/configure-local-consul-dns.yml`
+- CoreDNS job: `nomad/jobs/infrastructure/coredns/coredns.nomad.hcl`
+- Bridge-mode containers use `${attr.unique.network.ip-address}` for DNS with Pi-hole fallbacks
 
 ---
 
