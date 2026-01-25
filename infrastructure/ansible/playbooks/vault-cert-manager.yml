@@ -95,9 +95,9 @@
         - "127.0.0.1"
       owner: "{{ nomad_user | default('nomad') }}"
       group: "{{ nomad_group | default('nomad') }}"
-      on_change: "systemctl reload nomad"
+      on_change: "systemctl restart nomad"
       health_check:
-        tcp: "127.0.0.1:4646"
+        tcp: "{{ static_ip | default('127.0.0.1') }}:4646"
         timeout: 5s
 
     _nomad_server_cert:
@@ -118,9 +118,9 @@
         - "127.0.0.1"
       owner: "{{ nomad_user | default('nomad') }}"
       group: "{{ nomad_group | default('nomad') }}"
-      on_change: "systemctl reload nomad"
+      on_change: "systemctl restart nomad"
       health_check:
-        tcp: "127.0.0.1:4646"
+        tcp: "{{ static_ip | default('127.0.0.1') }}:4646"
         timeout: 5s
 
     # Combined cert for nodes that are both nomad server AND client (e.g., stabler, goren)
@@ -143,9 +143,9 @@
         - "127.0.0.1"
       owner: "{{ nomad_user | default('nomad') }}"
       group: "{{ nomad_group | default('nomad') }}"
-      on_change: "systemctl reload nomad"
+      on_change: "systemctl restart nomad"
       health_check:
-        tcp: "127.0.0.1:4646"
+        tcp: "{{ static_ip | default('127.0.0.1') }}:4646"
         timeout: 5s
 
     # -------------------------------------------------------------------------

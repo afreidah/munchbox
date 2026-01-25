@@ -11,9 +11,32 @@
 # -------------------------------------------------------------------------------
 
 storage "consul" {
-  address = "{{ vault_consul_address }}"
-  path    = "{{ vault_consul_path }}"
-  scheme  = "{{ vault_consul_scheme }}"
+  address       = "{{ vault_consul_address }}"
+  scheme        = "{{ vault_consul_scheme }}"
+  path          = "{{ vault_consul_path }}"
+{% if vault_consul_token is defined %}
+  token         = "{{ vault_consul_token }}"
+{% endif %}
+{% if vault_consul_tls_ca_file is defined %}
+  tls_ca_file   = "{{ vault_consul_tls_ca_file }}"
+  tls_cert_file = "{{ vault_consul_tls_cert_file }}"
+  tls_key_file  = "{{ vault_consul_tls_key_file }}"
+{% endif %}
+}
+
+# -------------------------------------------------------------------------------
+# Service Registration - Consul
+# -------------------------------------------------------------------------------
+
+service_registration "consul" {
+{% if vault_consul_token is defined %}
+  token         = "{{ vault_consul_token }}"
+{% endif %}
+{% if vault_consul_tls_ca_file is defined %}
+  tls_ca_file   = "{{ vault_consul_tls_ca_file }}"
+  tls_cert_file = "{{ vault_consul_tls_cert_file }}"
+  tls_key_file  = "{{ vault_consul_tls_key_file }}"
+{% endif %}
 }
 
 # -------------------------------------------------------------------------------
@@ -52,6 +75,19 @@ telemetry {
   disable_hostname          = {{ vault_telemetry_disable_hostname | lower }}
   prometheus_retention_time = "{{ vault_telemetry_prometheus_retention_time }}"
 }
+
+# -------------------------------------------------------------------------------
+# Auto-Unseal - OCI KMS
+# -------------------------------------------------------------------------------
+
+{% if vault_seal_type == "ocikms" %}
+seal "ocikms" {
+  key_id              = "{{ vault_ocikms_key_id }}"
+  crypto_endpoint     = "{{ vault_ocikms_crypto_endpoint }}"
+  management_endpoint = "{{ vault_ocikms_management_endpoint }}"
+  auth_type_api_key   = {{ vault_ocikms_auth_type_api_key | default(true) | lower }}
+}
+{% endif %}
 
 # -------------------------------------------------------------------------------
 # Performance and Limits

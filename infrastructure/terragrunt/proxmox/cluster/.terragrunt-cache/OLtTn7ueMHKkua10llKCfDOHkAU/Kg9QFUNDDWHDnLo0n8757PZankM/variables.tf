@@ -17,6 +17,13 @@ variable "vms" {
     onboot          = optional(bool, true)
     qemu_agent      = optional(bool, true)
     gpu_passthrough = optional(object({ pci_address = string }), null)
+    cloud_init = optional(object({
+      user       = optional(string, "root")
+      ip         = string
+      gateway    = string
+      nameserver = optional(string)
+      sshkeys    = optional(string)
+    }), null)
   }))
 }
 

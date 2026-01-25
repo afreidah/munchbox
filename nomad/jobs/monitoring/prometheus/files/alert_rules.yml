@@ -775,3 +775,45 @@ groups:
         annotations:
           summary: "NFS storage low on {{"{{"}} $labels.mountpoint {{"}}"}}"
           description: "NFS mount {{"{{"}} $labels.mountpoint {{"}}"}} has less than 10% free space."
+
+  # ---------------------------------------------------------------------------
+  # Vault Cert Manager - Certificate Lifecycle Alerts
+  # ---------------------------------------------------------------------------
+  - name: vault-cert-manager-health
+    interval: 30s
+    rules:
+      - alert: VaultCertManagerDown
+        expr: up{job="vault-cert-manager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Vault Cert Manager down on {{"{{"}} $labels.instance {{"}}"}}"
+          description: "Vault Cert Manager on {{"{{"}} $labels.instance {{"}}"}} is not responding. Certificate renewals will not occur."
+
+      - alert: ManagedCertExpiringSoon
+        expr: (managed_cert_not_after_timestamp_seconds - time()) < 7*24*60*60
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Managed certificate expiring soon: {{"{{"}} $labels.name {{"}}"}}"
+          description: "Certificate {{"{{"}} $labels.name {{"}}"}} on {{"{{"}} $labels.instance {{"}}"}} expires in less than 7 days."
+
+      - alert: ManagedCertExpired
+        expr: managed_cert_not_after_timestamp_seconds < time()
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Managed certificate expired: {{"{{"}} $labels.name {{"}}"}}"
+          description: "Certificate {{"{{"}} $labels.name {{"}}"}} on {{"{{"}} $labels.instance {{"}}"}} has expired. Services using this certificate will fail TLS validation."
+
+      - alert: ManagedCertRenewalsFailing
+        expr: increase(managed_cert_renewals_total{status="failure"}[1h]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Certificate renewal failures: {{"{{"}} $labels.name {{"}}"}}"
+          description: "Certificate {{"{{"}} $labels.name {{"}}"}} on {{"{{"}} $labels.instance {{"}}"}} has had renewal failures in the last hour. Check Vault connectivity and PKI role permissions."

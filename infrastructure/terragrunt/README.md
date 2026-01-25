@@ -1,26 +1,38 @@
 # Munchbox Terragrunt
 
-Terragrunt wrapper for deploying Munchbox cluster nodes across AWS, OCI, and Proxmox.
+Terragrunt wrapper for deploying Munchbox infrastructure across OCI and Proxmox.
 
 ## Structure
 
 ```
 terragrunt/
 ├── root.hcl                    # Centralized config (WireGuard, cluster, defaults)
-├── _env_helpers/
-│   └── bootstrap.hcl           # Bootstrap module logic
-├── aws/
-│   └── nomad-client-aws-1/
-│       ├── node.yaml           # Node-specific config
-│       └── terragrunt.hcl      # Just includes root + bootstrap
-├── oci/
-│   └── nomad-client-oci-1/
-│       ├── node.yaml
-│       └── terragrunt.hcl
+├── _env_helpers/               # Module inclusion and dependency logic
+│   ├── bootstrap.hcl           # Node bootstrap module
+│   ├── proxmox-cluster.hcl     # Proxmox VM cluster
+│   ├── kms-oci.hcl             # OCI KMS for Vault auto-unseal
+│   ├── consul-acls.hcl         # Consul ACL policies
+│   ├── nomad-acls.hcl          # Nomad ACL policies
+│   ├── vault-config.hcl        # Vault configuration
+│   ├── oauth2-proxy-secrets.hcl
+│   ├── vaultwarden-secrets.hcl
+│   └── dns.hcl
+├── global/                     # Provider-agnostic services
+│   ├── consul-acls/
+│   ├── nomad-acls/
+│   ├── vault-config/
+│   ├── dns/
+│   ├── oauth2-proxy-secrets/
+│   └── vaultwarden-secrets/
+├── oci/                        # Oracle Cloud Infrastructure
+│   ├── oracle-arm-1/           # ARM node
+│   ├── oracle-arm-2/           # ARM node
+│   ├── oracle-node-1/          # x86 node
+│   ├── oracle-node-2/          # x86 node
+│   ├── kms/                    # Vault auto-unseal KMS
+│   └── object-storage/
 └── proxmox/
-    └── nomad-client-pve-1/
-        ├── node.yaml
-        └── terragrunt.hcl
+    └── cluster/                # Proxmox VM definitions
 ```
 
 ## Quick Start
@@ -33,18 +45,16 @@ export MUNCHBOX_WG_SERVER_PUBKEY="your-server-public-key"
 export MUNCHBOX_WG_ENDPOINT="home.example.com:51820"
 
 # Per-node WireGuard private keys (named by node)
-export WG_PRIVATE_KEY_NOMAD_CLIENT_AWS_1="node-private-key"
+export WG_PRIVATE_KEY_ORACLE_ARM_1="node-private-key"
 
 # Provider credentials
-export AWS_ACCESS_KEY_ID="..."
-export AWS_SECRET_ACCESS_KEY="..."
 export OCI_COMPARTMENT_ID="ocid1.compartment..."
 ```
 
 ### 2. Deploy a Node
 
 ```bash
-cd terragrunt/aws/nomad-client-aws-1
+cd terragrunt/oci/oracle-arm-1
 terragrunt init
 terragrunt plan
 terragrunt apply
@@ -61,19 +71,18 @@ terragrunt run-all apply
 
 1. Create directory: `<provider>/<node-name>/`
 2. Create `node.yaml` with node config
-3. Create `terragrunt.hcl` that includes root + bootstrap
+3. Create `terragrunt.hcl` that includes root + env_helper
 
 Example `node.yaml`:
 ```yaml
-name: nomad-client-aws-2
+name: oracle-arm-3
 cpu: 2
-memory_gb: 4
-disk_gb: 20
-wireguard_address: "10.200.0.13"
+memory_gb: 12
+disk_gb: 50
+wireguard_address: "10.200.0.14"
 
-aws_config:
-  availability_zones:
-    - us-east-1a
+oci_config:
+  availability_domain: "AD-1"
   architecture: arm64
 ```
 
@@ -110,7 +119,6 @@ Per-node config:
 | `disk_gb` | No | Disk size in GB (default: 20) |
 | `wireguard_address` | Yes | WireGuard IP for this node |
 | `node_class` | No | Nomad node class (default: cloud) |
-| `aws_config` | If AWS | AWS-specific settings |
 | `oci_config` | If OCI | OCI-specific settings |
 | `proxmox_config` | If Proxmox | Proxmox-specific settings |
 

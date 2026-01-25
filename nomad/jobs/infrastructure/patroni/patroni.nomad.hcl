@@ -265,7 +265,7 @@ job "patroni" {
         uid         = 999
         gid         = 999
         data        = <<-EOF
-{{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=72h" }}
+{{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=2160h" }}
 {{ .Data.certificate }}
 {{ .Data.issuing_ca }}
 {{ end }}
@@ -279,7 +279,7 @@ job "patroni" {
         uid         = 999
         gid         = 999
         data        = <<-EOF
-{{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=72h" }}
+{{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=2160h" }}
 {{ .Data.private_key }}
 {{ end }}
         EOF

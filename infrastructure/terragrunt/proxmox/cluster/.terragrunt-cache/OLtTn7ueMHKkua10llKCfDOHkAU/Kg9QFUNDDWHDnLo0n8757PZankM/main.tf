@@ -47,13 +47,19 @@ resource "proxmox_vm_qemu" "vm" {
   onboot = try(each.value.onboot, true)
   agent  = try(each.value.qemu_agent, true) ? 1 : 0
 
+  # Cloud-init (optional)
+  ciuser     = try(each.value.cloud_init.user, null)
+  ipconfig0  = try(each.value.cloud_init, null) != null ? "ip=${each.value.cloud_init.ip},gw=${each.value.cloud_init.gateway}" : null
+  nameserver = try(each.value.cloud_init.nameserver, null)
+  sshkeys    = try(each.value.cloud_init.sshkeys, null)
+
   # GPU passthrough (optional)
-  dynamic "hostpci" {
+  dynamic "pci" {
     for_each = try(each.value.gpu_passthrough, null) != null ? [each.value.gpu_passthrough] : []
     content {
-      host   = hostpci.value.pci_address
+      id     = "0"
+      raw_id = pci.value.pci_address
       pcie   = true
-      rombar = true
     }
   }
 

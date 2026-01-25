@@ -11,6 +11,8 @@
 - [Comment Types and Spacing](#comment-types-and-spacing)
 - [File Headers](#file-headers)
 - [Nomad Job Structure](#nomad-job-structure)
+- [Terragrunt Structure](#terragrunt-structure)
+- [Terraform Modules](#terraform-modules)
 - [Code Style](#code-style)
 
 ---
@@ -363,6 +365,398 @@ group "web" {
   }
 }
 ```
+
+---
+
+## Terragrunt Structure
+
+Terragrunt provides a DRY wrapper around Terraform modules. Configuration splits across three layers.
+
+### Directory Layout
+
+```
+infrastructure/terragrunt/
+├── root.hcl                      # Central config, providers, inputs, hooks
+├── _env_helpers/                 # Module inclusion, dependencies, logic
+│   └── <module-name>.hcl
+├── global/                       # Provider-agnostic services
+│   └── <service>/terragrunt.hcl
+└── <provider>/                   # Provider-specific deployments
+    └── <node-name>/
+        ├── terragrunt.hcl
+        └── node.yaml             # Optional per-instance config
+```
+
+### Layer 1: root.hcl
+
+Central configuration file with several key sections:
+
+**locals{}** - Internal configuration, computed values, environment-specific settings:
+
+```hcl
+locals {
+  # Path parsing - derive context from directory structure
+  terragrunt_dir = get_original_terragrunt_dir()
+  node_name      = basename(local.terragrunt_dir)
+  provider_type  = basename(dirname(local.terragrunt_dir))
+
+  # Environment-specific configuration
+  env_config = {
+    production = { instance_type = "t3.large", replica_count = 3 }
+    staging    = { instance_type = "t3.medium", replica_count = 2 }
+  }
+
+  # Computed configuration objects
+  networking_config = {
+    vpc_cidr = local.env_config[local.environment].vpc_cidr
+    # ...
+  }
+}
+```
+
+**inputs{}** - Exposes locals to _env_helpers (accessed via `local.root.inputs.*`):
+
+```hcl
+inputs = {
+  # Core identity
+  environment = local.environment
+  region      = local.region
+  component   = local.component
+
+  # Configuration objects (single line references to locals)
+  networking_config = local.networking_config
+  aurora_config     = local.aurora_config
+  eks_config        = local.eks_config
+
+  # Common tags
+  common_tags = {
+    Environment = local.environment
+    ManagedBy   = "Terragrunt"
+  }
+}
+```
+
+**terraform{}** - Extra arguments and hooks for pre/post execution:
+
+```hcl
+terraform {
+  # Add CLI flags to terraform commands
+  extra_arguments "force_named_plan_out" {
+    commands  = ["plan"]
+    arguments = ["-out=plan.tfplan"]
+  }
+
+  # Run security scans after plan/apply
+  after_hook "trivy_scan" {
+    commands = ["plan", "apply"]
+    execute  = ["bash", "-c", "trivy config ."]
+  }
+
+  after_hook "checkov_scan" {
+    commands = ["plan", "apply"]
+    execute  = ["bash", "-c", "checkov -d . -o github_failed_only"]
+  }
+
+  # Run tests before apply
+  before_hook "validate" {
+    commands = ["apply"]
+    execute  = ["terraform", "validate"]
+  }
+}
+```
+
+**remote_state{}** - Backend configuration:
+
+```hcl
+remote_state {
+  backend = "consul"
+  config = {
+    address = "consul.service.consul:8500"
+    path    = "terraform/munchbox/${local.provider_type}/${local.node_name}"
+    lock    = true
+  }
+  generate = {
+    path      = "backend.tf"
+    if_exists = "overwrite_terragrunt"
+  }
+}
+```
+
+**generate{}** - Generate provider configuration:
+
+```hcl
+generate "providers" {
+  path      = "providers.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<-EOF
+    terraform {
+      required_providers {
+        aws = { source = "hashicorp/aws", version = "~> 5.0" }
+      }
+    }
+    provider "aws" {
+      region = "${local.region}"
+    }
+  EOF
+}
+```
+
+### Layer 2: _env_helpers/<module>.hcl
+
+The env_helper does the real work: includes the module, defines dependencies, computes values, and wires inputs. Access root values via `local.root.inputs.*`.
+
+**Simple helper** - direct pass-through:
+
+```hcl
+terraform {
+  source = "${get_repo_root()}/modules//<module-name>"
+}
+
+locals {
+  root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+}
+
+inputs = {
+  token       = local.root.inputs.some_token
+  vault_mount = local.root.inputs.vault_mount
+}
+```
+
+**Complex helper** - dependencies, computed values, conditional logic:
+
+```hcl
+terraform {
+  source = "${get_repo_root()}/modules//<module-name>"
+}
+
+locals {
+  root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+
+  # Load per-instance config
+  node_config = yamldecode(file("${get_terragrunt_dir()}/node.yaml"))
+
+  # Conditional provider-specific config
+  aws_config = local.root.inputs.provider_type == "aws" ? merge(
+    local.root.inputs.aws_defaults,
+    try(local.node_config.aws_config, {})
+  ) : null
+}
+
+# Cross-module dependencies
+dependency "networking" {
+  config_path = "../general-networking"
+  mock_outputs = { vpc_id = "vpc-mock", subnet_ids = ["subnet-mock"] }
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+}
+
+inputs = merge(
+  {
+    environment = local.root.inputs.environment
+    region      = local.root.inputs.region
+  },
+  {
+    # Computed identifiers
+    cluster_name = "${local.root.inputs.environment}-${local.root.inputs.region}-cluster"
+
+    # Values from dependencies
+    vpc_id     = dependency.networking.outputs.vpc_id
+    subnet_ids = dependency.networking.outputs.subnet_ids
+
+    # Conditional logic
+    role_arn = local.root.inputs.monitoring_interval > 0 ? "arn:..." : null
+
+    # Dynamic env vars
+    key = get_env("KEY_${upper(replace(local.root.inputs.node_name, "-", "_"))}", "")
+
+    # Fallbacks with try()
+    instance_type = try(local.node_config.instance_type, "t3.medium")
+
+    # Merged tags
+    tags = merge(local.root.inputs.common_tags, try(local.node_config.tags, {}))
+  }
+)
+```
+
+### Layer 3: Environment terragrunt.hcl
+
+Minimal - just two includes. All logic lives in env_helper.
+
+```hcl
+# -----------------------------------------------------------------------------
+# <Service Name>
+# -----------------------------------------------------------------------------
+
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+include "<module>" {
+  path   = "${get_repo_root()}/_env_helpers/<module>.hcl"
+  expose = true
+}
+```
+
+---
+
+## Terraform Modules
+
+Modules live in `modules/` and are consumed via Terragrunt.
+
+### Directory Structure
+
+```
+modules/<module-name>/
+├── main.tf           # Resources (or split by category)
+├── variables.tf      # Inputs with validations
+├── outputs.tf        # Outputs grouped by category
+└── tests/
+    └── default.tftest.hcl
+```
+
+No `versions.tf` - Terragrunt generates providers.
+
+### main.tf
+
+Comprehensive header with architecture, security model, and warnings:
+
+```hcl
+# -----------------------------------------------------------------------------
+# <MODULE NAME>
+# -----------------------------------------------------------------------------
+#
+# Brief description.
+#
+# Components Created:
+#   - Resource A: Description
+#   - Resource B: Description
+#
+# Architecture:
+#   - How components interact
+#   - Design decisions and trade-offs
+#
+# Security Model:
+#   - Access control approach
+#   - Network isolation
+#
+# IMPORTANT:
+#   - Destructive operation warnings
+#   - Required permissions
+#   - Cost considerations
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# <RESOURCE SECTION>
+# -----------------------------------------------------------------------------
+
+# Comment explaining WHY this resource exists
+resource "provider_resource" "name" {
+  count = length(var.availability_zones)
+
+  attribute = var.some_input
+
+  tags = merge(var.tags, { Name = "${var.name}-suffix" })
+}
+```
+
+### variables.tf
+
+Grouped with categories and validations:
+
+```hcl
+# -----------------------------------------------------------------------------
+# <MODULE NAME> - INPUT VARIABLES
+# -----------------------------------------------------------------------------
+#
+# Variable Categories:
+#   - Core: Primary configuration
+#   - Network: Subnet and AZ settings
+#   - Options: Feature toggles
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# CORE CONFIGURATION
+# -----------------------------------------------------------------------------
+
+variable "name" {
+  description = "Resource name prefix"
+  type        = string
+
+  validation {
+    condition     = length(var.name) <= 32
+    error_message = "Name must be 32 characters or less."
+  }
+}
+```
+
+### outputs.tf
+
+Grouped with usage context:
+
+```hcl
+# -----------------------------------------------------------------------------
+# <MODULE NAME> - OUTPUT VALUES
+# -----------------------------------------------------------------------------
+#
+# Output Categories:
+#   - Identifiers: Resource IDs and ARNs
+#   - Network: Subnet and routing info
+#
+# Usage:
+#   - vpc_id: Required for security groups
+#   - subnet_ids: For compute placement
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# IDENTIFIERS
+# -----------------------------------------------------------------------------
+
+output "vpc_id" {
+  description = "ID of the VPC"
+  value       = aws_vpc.main.id
+}
+```
+
+### tests/default.tftest.hcl
+
+Test logic, computed values, edge cases - not variable pass-through:
+
+```hcl
+# -----------------------------------------------------------------------------
+# <MODULE NAME> - TEST SUITE
+# -----------------------------------------------------------------------------
+#
+# Test Categories:
+#   - Baseline: Core resource creation
+#   - Outputs: Value correctness
+#   - Edge Cases: Optional features
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# TEST DEFAULTS
+# -----------------------------------------------------------------------------
+
+variables {
+  name               = "test"
+  availability_zones = ["us-east-1a", "us-east-1b"]
+}
+
+# -----------------------------------------------------------------------------
+# BASELINE
+# -----------------------------------------------------------------------------
+
+run "baseline" {
+  command = plan
+
+  assert {
+    condition     = length(aws_subnet.main) == length(var.availability_zones)
+    error_message = "Should create one subnet per AZ"
+  }
+}
+```
+
+**Test focus:** Resource counts, computed values, output structure, edge cases.
+
+**Do NOT test:** Variable pass-through.
 
 ---
 

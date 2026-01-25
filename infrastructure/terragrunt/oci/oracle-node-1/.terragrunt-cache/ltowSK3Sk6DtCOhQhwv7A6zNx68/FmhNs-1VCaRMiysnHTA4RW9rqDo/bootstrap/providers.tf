@@ -15,6 +15,18 @@ terraform {
       source  = "telmate/proxmox"
       version = "3.0.2-rc05"
     }
+    consul = {
+      source  = "hashicorp/consul"
+      version = "~> 2.20"
+    }
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 3.25"
+    }
+    nomad = {
+      source  = "hashicorp/nomad"
+      version = "~> 2.1"
+    }
   }
 }
 
@@ -36,4 +48,16 @@ provider "oci" {
 provider "proxmox" {
   # Uses PM_API_URL, PM_API_TOKEN_ID, PM_API_TOKEN_SECRET env vars
   pm_tls_insecure = true
+}
+
+provider "consul" {
+  # Uses CONSUL_HTTP_ADDR and CONSUL_HTTP_TOKEN env vars
+}
+
+provider "vault" {
+  # Uses VAULT_ADDR and VAULT_TOKEN env vars
+}
+
+provider "nomad" {
+  # Uses NOMAD_ADDR and NOMAD_TOKEN env vars
 }

@@ -121,11 +121,11 @@ module "proxmox" {
   memory_mb = var.memory_gb * 1024
   disk_size = "${var.disk_gb}G"
 
-  template_name  = coalesce(try(var.proxmox_config.template_name, null), "debian-base")
-  disk_storage   = coalesce(try(var.proxmox_config.disk_storage, null), "local-lvm")
-  network_bridge = coalesce(try(var.proxmox_config.network_bridge, null), "vmbr0")
-  existing       = coalesce(try(var.proxmox_config.existing, null), false)
-  qemu_agent     = coalesce(try(var.proxmox_config.qemu_agent, null), true)
+  template_name   = coalesce(try(var.proxmox_config.template_name, null), "debian-base")
+  disk_storage    = coalesce(try(var.proxmox_config.disk_storage, null), "local-lvm")
+  network_bridge  = coalesce(try(var.proxmox_config.network_bridge, null), "vmbr0")
+  existing        = coalesce(try(var.proxmox_config.existing, null), false)
+  qemu_agent      = coalesce(try(var.proxmox_config.qemu_agent, null), true)
   gpu_passthrough = try(var.proxmox_config.gpu_passthrough, null)
 }
 

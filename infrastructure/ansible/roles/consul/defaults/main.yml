@@ -49,7 +49,7 @@ consul_raft_multiplier: 1
 consul_ports:
   dns: 8600
   http: 8500
-  https: -1
+  https: 8501
   grpc: 8502
   grpc_tls: 8503
   serf_lan: 8301

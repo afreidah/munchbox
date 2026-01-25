@@ -58,6 +58,13 @@ job "redis-sentinel" {
       value    = "true"
     }
 
+    # --- Keep Redis on bare metal nodes (not Oracle Cloud nodes over WireGuard) ---
+    constraint {
+      attribute = "${node.unique.name}"
+      operator  = "set_contains_any"
+      value     = "stabler,goren,nomad-server-03,nomad-client-01,nomad-client-02,nomad-client-03,nomad-client-04,nomad-client-05"
+    }
+
     # --- Network Configuration ---
     network {
       mode = "host"
@@ -200,7 +207,7 @@ job "redis-sentinel" {
       config {
         image   = "busybox:1.37.0"
         command = "sh"
-        args    = ["-c", "mkdir -p /data/redis /data/sentinel && chown -R 999:999 /data && chmod 700 /data/redis /data/sentinel"]
+        args    = ["-c", "mkdir -p /data/redis /data/sentinel && rm -f /data/sentinel/sentinel.conf && chown -R 999:999 /data && chmod 700 /data/redis /data/sentinel"]
         volumes = ["/opt/nomad/data/redis-${NOMAD_ALLOC_INDEX}:/data"]
       }
 
@@ -270,9 +277,10 @@ maxmemory-policy allkeys-lru
 # Logging
 loglevel warning
 
-# Replication - goren is master, others replicate from it
-{{ if ne (env "attr.unique.hostname") "goren" }}
-replicaof 192.168.68.60 6379
+# Replication - first allocation (index 0) is initial master, others replicate via Consul
+# Sentinel handles failover if master goes down
+{{ if ne (env "NOMAD_ALLOC_INDEX") "0" }}
+replicaof redis-primary.service.consul 6379
 {{ end }}
         EOF
       }
@@ -322,6 +330,7 @@ REDIS_PASSWORD={{ .Data.data.password }}
         image              = "redis:8-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
+        dns_servers        = ["192.168.68.71"]
         command            = "/bin/sh"
         args               = ["-c", "cp /etc/sentinel/sentinel.conf.tpl /data/sentinel.conf && redis-sentinel /data/sentinel.conf"]
 
@@ -341,10 +350,15 @@ port {{ env "NOMAD_PORT_sentinel" }}
 dir /data
 daemonize no
 
-# Monitor the Redis master - use goren (192.168.68.60) as initial master
-# Sentinel will discover actual master and reconfigure as needed
+# Monitor the Redis master
+# ALLOC_INDEX=0 is the initial master, so monitor locally
+# Other allocations monitor via Consul once master is healthy
 {{ with secret "secret/data/redis-shared" }}
-sentinel monitor munchbox-redis 192.168.68.60 6379 2
+{{ if eq (env "NOMAD_ALLOC_INDEX") "0" }}
+sentinel monitor munchbox-redis 127.0.0.1 6379 2
+{{ else }}
+sentinel monitor munchbox-redis redis-primary.service.consul 6379 2
+{{ end }}
 sentinel auth-pass munchbox-redis {{ .Data.data.password }}
 {{ end }}
 
@@ -475,8 +489,9 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
         image              = "redis:8-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
+        dns_servers        = ["192.168.68.71"]
         command            = "/bin/sh"
-        args               = ["-c", "cp /etc/sentinel/sentinel.conf.tpl /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"]
+        args               = ["-c", "echo 'Waiting for redis-primary.service.consul...'; while ! getent hosts redis-primary.service.consul >/dev/null 2>&1; do sleep 2; done; echo 'Master found, starting sentinel'; cp /etc/sentinel/sentinel.conf.tpl /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"]
 
         volumes = [
           "local/sentinel.conf:/etc/sentinel/sentinel.conf.tpl:ro"
@@ -492,9 +507,9 @@ port {{ env "NOMAD_PORT_sentinel" }}
 dir /tmp
 daemonize no
 
-# Monitor the Redis master - use goren (192.168.68.60) as initial master
+# Monitor the Redis master via Consul service discovery
 {{ with secret "secret/data/redis-shared" }}
-sentinel monitor munchbox-redis 192.168.68.60 6379 2
+sentinel monitor munchbox-redis redis-primary.service.consul 6379 2
 sentinel auth-pass munchbox-redis {{ .Data.data.password }}
 {{ end }}
 

@@ -57,9 +57,9 @@ locals {
     nomad_servers     = join(", ", [for s in var.nomad_servers : "\"${s}\""])
 
     # Node configuration
-    node_class   = var.node_class
-    node_pool    = var.node_pool
-    node_meta    = var.node_meta
+    node_class    = var.node_class
+    node_pool     = var.node_pool
+    node_meta     = var.node_meta
     provider_type = var.provider_type
 
     # Consul integration
@@ -75,7 +75,7 @@ locals {
   })
 
   # Determine subnet and security group IDs
-  subnet_id = var.create_network ? module.network[0].subnet_id : var.existing_subnet_id
+  subnet_id         = var.create_network ? module.network[0].subnet_id : var.existing_subnet_id
   security_group_id = var.create_network ? module.network[0].security_group_id : var.existing_security_group_id
 }
 

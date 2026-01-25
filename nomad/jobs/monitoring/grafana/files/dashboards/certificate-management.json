@@ -103,12 +103,12 @@
     {
       "type": "stat",
       "title": "Fingerprint Mismatches",
-      "description": "Certs where disk and memory fingerprints differ (indicates sync issue)",
+      "description": "Count of certs where disk and memory fingerprints differ",
       "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "count(count by (instance, name) (managed_cert_fingerprint_info{location=\"disk\"}) != count by (instance, name) (managed_cert_fingerprint_info{location=\"memory\"})) or vector(0)",
+          "expr": "count(managed_cert_fingerprint_info{location=\"disk\"} unless on(instance, name, fingerprint) managed_cert_fingerprint_info{location=\"memory\"}) or vector(0)",
           "legendFormat": "Mismatches"
         }
       ],
@@ -130,15 +130,68 @@
       }
     },
     {
+      "type": "table",
+      "title": "Mismatched Certificates",
+      "description": "Certificates where disk fingerprint doesn't match memory (service needs restart)",
+      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "managed_cert_fingerprint_info{location=\"disk\"} unless on(instance, name, fingerprint) managed_cert_fingerprint_info{location=\"memory\"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": ""
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "job": true,
+              "service": true,
+              "location": true,
+              "Value": true
+            },
+            "renameByName": {
+              "instance": "Node",
+              "name": "Certificate",
+              "fingerprint": "Disk Fingerprint"
+            },
+            "indexByName": {
+              "Node": 0,
+              "Certificate": 1,
+              "Disk Fingerprint": 2
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        }
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          { "displayName": "Node", "desc": false }
+        ]
+      }
+    },
+    {
       "type": "row",
       "title": "Certificate Details",
-      "gridPos": { "x": 0, "y": 5, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
       "type": "table",
       "title": "All Managed Certificates",
-      "gridPos": { "x": 0, "y": 6, "w": 24, "h": 10 },
+      "gridPos": { "x": 0, "y": 11, "w": 24, "h": 10 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -210,13 +263,13 @@
     {
       "type": "row",
       "title": "Certificate Expiry Timeline",
-      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 21, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "Days Until Expiry",
-      "gridPos": { "x": 0, "y": 17, "w": 24, "h": 8 },
+      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -254,13 +307,13 @@
     {
       "type": "row",
       "title": "By Certificate Type",
-      "gridPos": { "x": 0, "y": 25, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 30, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
       "type": "stat",
       "title": "Consul Certs",
-      "gridPos": { "x": 0, "y": 26, "w": 6, "h": 4 },
+      "gridPos": { "x": 0, "y": 31, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -286,7 +339,7 @@
     {
       "type": "stat",
       "title": "Nomad Certs",
-      "gridPos": { "x": 6, "y": 26, "w": 6, "h": 4 },
+      "gridPos": { "x": 6, "y": 31, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
@@ -312,7 +365,7 @@
     {
       "type": "piechart",
       "title": "Certificates by Type",
-      "gridPos": { "x": 12, "y": 26, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 31, "w": 12, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {

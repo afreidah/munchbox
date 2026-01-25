@@ -1,19 +1,19 @@
 <div align="center">
 
-# Homelab Infrastructure Platform - Munchbox Cloud
+# Munchbox Cloud — Homelab Infrastructure Platform
 
 ### Production-Grade Self-Hosted Infrastructure on HashiCorp Stack
 
 [![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red.svg)](LICENSE)
-[![Nomad](https://img.shields.io/badge/Nomad-v1.10.3-00CA8E?logo=nomad)](https://www.nomadproject.io/)
-[![Consul](https://img.shields.io/badge/Consul-v1.21.3-F24C53?logo=consul)](https://www.consul.io/)
-[![Vault](https://img.shields.io/badge/OpenBao-v0.2.1-000000?logo=vault)](https://openbao.org/)
-[![Traefik](https://img.shields.io/badge/Traefik-v3.5.3-24A1C1?logo=traefikproxy)](https://traefik.io/)
+[![Nomad](https://img.shields.io/badge/Nomad-v1.11.1-00CA8E?logo=nomad)](https://www.nomadproject.io/)
+[![Consul](https://img.shields.io/badge/Consul-v1.22.2-F24C53?logo=consul)](https://www.consul.io/)
+[![Vault](https://img.shields.io/badge/Vault-v1.15.4-000000?logo=vault)](https://www.vaultproject.io/)
+[![Traefik](https://img.shields.io/badge/Traefik-v3.6.6-24A1C1?logo=traefikproxy)](https://traefik.io/)
 [![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go)](https://golang.org/)
 
 ---
 
-**A complete infrastructure platform featuring workload orchestration, service discovery, secrets management, and comprehensive monitoring—all managed as code.**
+**A complete infrastructure platform featuring workload orchestration, service discovery, secrets management, and comprehensive monitoring—all managed as code with Terragrunt/Terraform and Ansible.**
 
 [Features](#key-features) • [Architecture](#architecture) • [Quick Start](#quick-start) • [Documentation](#documentation)
 
@@ -35,8 +35,9 @@
   - [Initial Setup](#initial-setup)
   - [Service Access](#service-access)
 - [Feature Details](#feature-details)
-  - [Automatic Metadata Injection](#automatic-metadata-injection)
-  - [Service Tiers](#service-tiers)
+  - [vault-cert-manager](#vault-cert-manager)
+  - [Nomad Pack Templates](#nomad-pack-templates)
+  - [High Availability Databases](#high-availability-databases)
   - [Security Scanning](#security-scanning)
   - [Backup Strategy](#backup-strategy)
 - [Make Targets Reference](#make-targets-reference)
@@ -49,9 +50,9 @@
 
 ## Overview
 
-This project implements a complete homelab infrastructure using modern DevOps practices and cloud-native technologies. It provides a robust foundation for running containerized workloads, managing secrets, service discovery, and monitoring across a distributed cluster of nodes.
+This project implements a complete homelab infrastructure using modern DevOps practices and cloud-native technologies. It provides a robust foundation for running containerized workloads, managing secrets, service discovery, and monitoring across a distributed hybrid cluster spanning on-premises Proxmox nodes and Oracle Cloud Infrastructure.
 
-Built on the HashiCorp stack (Nomad, Consul, Vault/OpenBao) and managed entirely through Infrastructure as Code using CDKTF (Terraform CDK) in Go, this platform demonstrates enterprise-grade patterns in a self-hosted environment.
+Built on the HashiCorp stack (Nomad, Consul, Vault) and managed through Infrastructure as Code using Terragrunt/Terraform modules and Ansible, this platform demonstrates enterprise-grade patterns in a self-hosted environment.
 
 ---
 
@@ -59,188 +60,208 @@ Built on the HashiCorp stack (Nomad, Consul, Vault/OpenBao) and managed entirely
 
 | Feature | Description |
 |---------|-------------|
-| **Infrastructure as Code** | CDKTF (Terraform CDK) in Go for declarative infrastructure management |
-| **Security First** | Automated security scanning with Trivy, Checkov, and comprehensive ACL policies |
-| **Full Observability** | Prometheus metrics, Grafana dashboards, Loki log aggregation, and Alertmanager notifications |
-| **Secrets Management** | Vault/OpenBao with workload identity integration |
-| **Service Mesh** | Consul for service discovery and health checking |
-| **Workload Orchestration** | Nomad for container and VM workload scheduling |
-| **CI/CD** | GitHub Actions pipelines for automated testing and deployment |
-| **Configuration Management** | Chef cookbooks for infrastructure provisioning |
+| **Infrastructure as Code** | Terragrunt + Terraform modules for multi-cloud infrastructure (Proxmox, OCI, AWS) |
+| **Configuration Management** | Ansible playbooks and roles for node provisioning and configuration |
+| **Workload Orchestration** | Nomad with pure HCL jobs and Nomad Pack templates (munchbox-service pack) |
+| **Secrets Management** | HashiCorp Vault with workload identity and PKI certificate automation |
+| **Certificate Lifecycle** | vault-cert-manager for automated PKI cert issuance, renewal, and health monitoring |
+| **Service Discovery** | Consul for service discovery, health checking, and DNS |
+| **High Availability** | Patroni for PostgreSQL HA, Redis Sentinel for Redis HA |
+| **Full Observability** | Prometheus, Grafana, Loki, Tempo, Alertmanager with Telegram notifications |
+| **Security Scanning** | Trivy for container and infrastructure vulnerability scanning |
+| **CI/CD** | Forgejo with self-hosted act_runner for GitHub Actions-compatible workflows |
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Stack
 
 | Component | Version | Purpose |
 |-----------|---------|---------|
-| **HashiCorp Nomad** | v1.10.3 | Workload scheduling and deployment |
-| **HashiCorp Consul** | v1.21.3 | Service mesh and configuration |
-| **OpenBao** | v0.2.1 | Fork of Vault for secrets management |
-| **Traefik** | v3.5.3 | Dynamic routing with automatic TLS |
-| **Prometheus Stack** | Latest | Metrics collection and alerting |
-| **Grafana** | v12.2.0 | Metrics visualization |
-| **Loki** | v3.2.0 | Log aggregation |
+| **HashiCorp Nomad** | v1.11.1 | Workload scheduling and deployment |
+| **HashiCorp Consul** | v1.22.2 | Service discovery and DNS |
+| **HashiCorp Vault** | v1.15.4 | Secrets management and PKI |
+| **Traefik** | v3.6.6 | Dynamic routing with automatic TLS |
+| **Prometheus** | Latest | Metrics collection and alerting |
+| **Grafana** | Latest | Metrics visualization |
+| **Loki** | Latest | Log aggregation |
+| **Tempo** | Latest | Distributed tracing |
 
 ### Infrastructure Services
 
 - **Edge Access**: Cloudflare Tunnel for secure external access
-- **Container Registry**: Private Docker registry mirror with web UI
-- **Logging**: Centralized log aggregation with Loki and Promtail
-- **Alerting**: Telegram notifications via Alertmanager
-- **Backup**: Automated snapshots for Consul and Nomad state
+- **Container Registry**: Private Docker registry with web UI
+- **Database HA**: Patroni for PostgreSQL, Redis Sentinel for Redis
+- **Certificate Management**: vault-cert-manager for automated PKI lifecycle
+- **Logging**: Loki + Promtail for log aggregation
+- **Alerting**: Alertmanager with Telegram notifications
+- **Backup**: Temporal workflows for automated backup orchestration
+- **DNS**: CoreDNS with dnsmasq for Consul DNS forwarding
 
 ---
 
-## 📁 Directory Structure
+## Directory Structure
 
 ```
 .
-├── .github/workflows/          # CI/CD pipelines
-│   ├── cdktf-ci.yml           # Infrastructure deployment pipeline
-│   └── docker-ci.yml          # Container build and security scanning
+├── .github/workflows/           # CI/CD pipelines
+│   └── docker-ci.yml            # Waypoint Docker build pipeline
 │
-├── cdktf/                      # Infrastructure as Code
-│   ├── common/                 # Shared Go libraries
-│   │   ├── consul.go           # Consul provider utilities
-│   │   ├── metadata.go         # Job metadata management
-│   │   ├── nomad.go            # Nomad provider utilities
-│   │   ├── validation.go       # Metadata validation
-│   │   └── vault.go            # Vault provider utilities
-│   │
-│   ├── cmd/                    # CLI utilities
-│   │   ├── nomad-query/        # Query Nomad job metadata
-│   │   └── validate-structure/ # Validate job organization
-│   │
-│   ├── infra/                  # Infrastructure definitions
-│   │   ├── cloudflare/         # DNS and CDN configuration
-│   │   ├── consul-policy/      # Consul ACL policies
-│   │   ├── consul-tokens/      # Consul ACL tokens
-│   │   ├── nomad-jobs/         # Nomad job specifications
-│   │   │   ├── backup/         # Automated backup jobs
-│   │   │   ├── development/    # Dev tools and registry
-│   │   │   ├── infrastructure/ # Core services
-│   │   │   ├── logging/        # Loki and Promtail
-│   │   │   ├── monitoring/     # Prometheus stack
-│   │   │   └── utility/        # Helper jobs
-│   │   ├── nomad-policy/       # Nomad ACL policies
-│   │   ├── vault-policy/       # Vault ACL policies
-│   │   └── vault-jwt-roles/    # Vault workload identity roles
-│   │
-│   ├── Makefile                # Build and deployment automation
-│   ├── cdktf.json              # CDKTF configuration
-│   └── main.go                 # CDKTF application entry point
+├── src/                         # Custom applications
+│   ├── vault-cert-manager/      # Vault PKI certificate lifecycle manager (Go)
+│   ├── trivy-dashboard/         # Vulnerability dashboard for Trivy (Go)
+│   ├── temporal-jobs/           # Temporal workflow workers
+│   │   └── temporal-backup-worker/
+│   ├── dashboard/               # Hugo-based link dashboard
+│   ├── resume/                  # Personal resume site
+│   ├── s3-proxy/                # S3 proxy service (Go)
+│   └── theme-server/            # Theme server for dashboards
 │
-├── chef/cookbooks/             # Configuration management
-│   ├── consul/                 # Consul installation and config
-│   │   ├── recipes/            # Chef recipes
-│   │   ├── resources/          # Custom resources
-│   │   └── templates/          # Configuration templates
-│   │
-│   ├── nomad/                  # Nomad installation and config
-│   │   ├── recipes/            # Chef recipes
-│   │   ├── resources/          # Custom resources
-│   │   └── templates/          # Configuration templates
-│   │
-│   └── openbao/                # OpenBao installation and config
-│       ├── recipes/            # Chef recipes
-│       ├── resources/          # Custom resources
-│       └── templates/          # Configuration templates
+├── nomad/                       # Nomad workload definitions
+│   ├── jobs/                    # Job specifications
+│   │   ├── backup/              # Backup jobs (Temporal triggers)
+│   │   ├── games/               # Game servers (Zomboid)
+│   │   ├── infrastructure/      # Core services (Traefik, Patroni, Redis, etc.)
+│   │   ├── logging/             # Loki, Promtail, Tempo
+│   │   ├── media/               # Media stack (Jellyfin, *arr apps, Deluge)
+│   │   ├── monitoring/          # Prometheus, Grafana, exporters
+│   │   └── web/                 # Web apps (Nextcloud, Vaultwarden, dashboard)
+│   └── packs/registry/          # Nomad Pack templates
+│       └── munchbox-service/    # Reusable service pack
 │
-└── docker/                     # Custom Docker images
-    ├── Makefile                # Docker build automation
-    ├── deluge-vpn/             # VPN-enabled torrent client
-    └── ops-build-image/        # CI/CD toolchain image
+├── infrastructure/
+│   ├── ansible/                 # Configuration management
+│   │   ├── inventory/           # Host inventory and group vars
+│   │   ├── playbooks/           # Deployment playbooks
+│   │   └── roles/               # Reusable roles
+│   │       ├── consul/          # Consul agent setup
+│   │       ├── nomad/           # Nomad agent setup
+│   │       ├── vault/           # Vault server setup
+│   │       ├── vault-cert-manager/  # Certificate manager deployment
+│   │       ├── wireguard/       # WireGuard VPN tunnels
+│   │       └── ...              # Other roles
+│   │
+│   ├── terraform/modules/       # Reusable Terraform modules
+│   │   ├── bootstrap/           # Node bootstrap (cloud-init)
+│   │   ├── compute-oci/         # OCI compute instances
+│   │   ├── compute-proxmox/     # Proxmox VMs
+│   │   ├── consul-acls/         # Consul ACL policies and tokens
+│   │   ├── nomad-acls/          # Nomad ACL policies and tokens
+│   │   ├── vault-config/        # Vault configuration
+│   │   ├── kms-oci/             # OCI KMS for Vault auto-unseal
+│   │   └── ...                  # Other modules
+│   │
+│   └── terragrunt/              # Environment configurations
+│       ├── _env_helpers/        # Shared Terragrunt includes
+│       ├── global/              # Global resources (ACLs, DNS, secrets)
+│       ├── oci/                 # Oracle Cloud nodes
+│       ├── proxmox/             # On-prem Proxmox cluster
+│       └── aws/                 # AWS resources
+│
+└── docker/                      # Custom Docker images
+    ├── Makefile                 # Docker build automation
+    ├── deluge-vpn/              # VPN-enabled torrent client
+    ├── patroni/                 # Custom Patroni image
+    └── ops-build-image/         # CI/CD toolchain image
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Infrastructure Layer
 
-- **IaC**: CDKTF (Terraform CDK) with Go
-- **Orchestration**: Nomad, Docker, raw_exec driver
-- **Service Discovery**: Consul with DNS integration
-- **Secrets**: OpenBao (Vault fork) with workload identity
-- **Networking**: CNI plugins, Traefik reverse proxy
-- **Configuration**: Chef with custom cookbooks and resources
+- **IaC**: Terragrunt + Terraform modules for multi-cloud (Proxmox, OCI, AWS)
+- **Configuration**: Ansible playbooks and roles
+- **Orchestration**: Nomad with Docker driver, Nomad Pack templates
+- **Service Discovery**: Consul with DNS via CoreDNS/dnsmasq
+- **Secrets**: HashiCorp Vault with workload identity (JWT auth)
+- **Networking**: WireGuard tunnels, Traefik reverse proxy
+- **Virtualization**: Proxmox VE for on-prem, OCI for cloud
 
 ### Monitoring & Observability
 
-- **Metrics**: Prometheus, Node Exporter, Blackbox Exporter
+- **Metrics**: Prometheus, Node Exporter, Blackbox Exporter, custom exporters
 - **Visualization**: Grafana with pre-configured dashboards
 - **Logging**: Loki + Promtail for log aggregation
+- **Tracing**: Tempo for distributed tracing
 - **Alerting**: Alertmanager with Telegram integration
-- **Health Checks**: Consul health checks + Traefik healthcheck middleware
+- **Security Scanning**: Trivy server with custom dashboard
 
 ### Security
 
-- **Scanning**: Trivy (container + config), Checkov (IaC)
-- **TLS**: Automated certificate generation and rotation
-- **ACLs**: Fine-grained access control across all services
-- **Encryption**: Gossip encryption, TLS everywhere
+- **Vulnerability Scanning**: Trivy for containers and infrastructure
+- **TLS**: Vault PKI with vault-cert-manager for automated rotation
+- **ACLs**: Fine-grained access control across Nomad, Consul, Vault
+- **Encryption**: Gossip encryption, mTLS for service communication
 - **Secrets**: Vault workload identity, no hardcoded credentials
+- **Authentication**: OAuth2 Proxy for web service SSO
 
 ### Development Tools
 
-- **CI/CD**: GitHub Actions with self-hosted runners
+- **CI/CD**: Forgejo with act_runner (GitHub Actions compatible)
 - **Registry**: Private Docker registry with web UI
-- **Testing**: Kitchen (Test Kitchen) for cookbook testing
-- **Linting**: golangci-lint, staticcheck, cookstyle
+- **Workflows**: Temporal for backup orchestration and automation
+- **Linting**: golangci-lint for Go code
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-Ensure you have the following installed:
+- **Ansible** for node configuration
+- **Terraform** and **Terragrunt** for infrastructure provisioning
+- **Consul**, **Nomad**, and **Vault** CLI tools
+- **Docker** for container builds
+- **Go** 1.23+ for building custom applications
+- **Make** for automation
 
-- **Go** 1.23 or later
-- **Node.js** 24.x
-- **Docker** and Docker Compose
-- **Consul**, **Nomad**, and **Vault/OpenBao** CLI tools
-- **Chef Workstation** (for configuration management)
-- **Make** (for automation)
+### Environment Setup
 
-### Initial Setup
+Always source the environment file before running commands:
+```bash
+source munchbox-env.sh
+```
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd homelab-infrastructure
-   ```
+### Deploying Nomad Jobs
 
-2. **Bootstrap the cluster**:
-   ```bash
-   cd cdktf
-   make init          # Install dependencies and fetch providers
-   make build-all     # Build all binaries
-   ```
+From the munchbox root directory:
+```bash
+source munchbox-env.sh && cd nomad && make run JOB=<jobname>
+```
 
-3. **Validate configuration**:
-   ```bash
-   make validate      # Validate all Nomad jobs
-   make check-structure  # Validate directory structure
-   ```
+Examples:
+```bash
+make run JOB=grafana      # Deploy Grafana
+make run JOB=traefik      # Deploy Traefik
+make plan JOB=prometheus  # Plan changes for Prometheus
+make list                 # Show all available jobs
+```
 
-4. **Deploy infrastructure**:
-   ```bash
-   make synth         # Generate Terraform JSON
-   make deploy        # Deploy all infrastructure
-   ```
+**Job Types:**
+- `.nomad.hcl` files — Pure Nomad job specifications
+- `.hcl` files — Variable files for the `munchbox-service` Nomad Pack
 
-5. **Deploy specific services**:
-   ```bash
-   # Deploy only monitoring and infrastructure services
-   make deploy-jobs JOBS=monitoring,infrastructure
-   
-   # Deploy all jobs in a specific category
-   make deploy-category CAT=monitoring
-   ```
+### Infrastructure Provisioning
+
+Terragrunt manages multi-cloud infrastructure:
+```bash
+cd infrastructure/terragrunt/proxmox/cluster
+terragrunt apply
+
+cd infrastructure/terragrunt/oci/oracle-arm-1
+terragrunt apply
+```
+
+### Node Configuration
+
+Ansible playbooks configure nodes:
+```bash
+cd infrastructure/ansible
+ansible-playbook playbooks/vault-cert-manager.yml -l nomad_cluster
+```
 
 ### Service Access
 
@@ -248,248 +269,250 @@ Once deployed, services are available at:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| **Nomad UI** | https://nomad.munchbox | Workload management |
-| **Consul UI** | https://consul.munchbox | Service discovery |
-| **Grafana** | https://grafana.munchbox | Metrics visualization |
-| **Prometheus** | https://prometheus.munchbox | Metrics collection |
-| **Traefik** | https://traefik.munchbox | Reverse proxy dashboard |
-| **Alertmanager** | https://alertmanager.munchbox | Alert management |
-| **Loki** | https://loki.munchbox | Log aggregation |
-| **Registry UI** | https://registry.munchbox | Docker registry |
+| **Nomad UI** | https://nomad.munchbox.cc | Workload management |
+| **Consul UI** | https://consul.munchbox.cc | Service discovery |
+| **Vault UI** | https://vault.munchbox.cc | Secrets management |
+| **Grafana** | https://grafana.munchbox.cc | Metrics visualization |
+| **Prometheus** | https://prometheus.munchbox.cc | Metrics collection |
+| **Traefik** | https://traefik.munchbox.cc | Reverse proxy dashboard |
+| **Alertmanager** | https://alertmanager.munchbox.cc | Alert management |
+| **Forgejo** | https://forgejo.munchbox.cc | Git hosting and CI/CD |
+| **Nextcloud** | https://cloud.munchbox.cc | File sync and sharing |
 
-> **Note**: All services are LAN-restricted except for the public resume site accessible via Cloudflare Tunnel.
+> **Note**: All services are LAN-restricted via OAuth2 Proxy, except for the public resume site accessible via Cloudflare Tunnel.
 
 ---
 
-## 🔍 Feature Details
+## Feature Details
 
-### Automatic Metadata Injection
+### vault-cert-manager
 
-All Nomad jobs receive automatic metadata injection for tracking and management:
+Automated certificate lifecycle management for infrastructure services:
 
-```hcl
-meta {
-  # Version tracking
-  version     = "1.0.0"
-  image_tag   = "main"
-  
-  # Ownership
-  owner       = "alex.freidah"
-  
-  # Classification
-  category    = "monitoring"
-  tier        = "tier-1"
-  environment = "production"
-  
-  # Description
-  description = "Prometheus metrics collection"
-}
-```
+- **Automated Issuance**: Issues certificates from Vault PKI when missing
+- **Renewal**: Renews certificates before expiration with jitter
+- **Web Dashboard**: Per-node UI showing certificate status with manual rotation
+- **Aggregator Mode**: Centralized dashboard discovering all instances via Consul
+- **Out-of-Sync Detection**: Identifies when disk certs differ from running services
+- **Prometheus Metrics**: `vault_cert_*` metrics for monitoring
+- **Post-Change Hooks**: Configurable scripts for service reloads
 
-Features:
-- **Automatic Category Inference**: Derived from directory structure
-- **Tier Assignment**: Based on service criticality
-- **Git Integration**: Tracks deployment branch
-- **Validation**: Ensures all required fields are present
+Deployed via Ansible to all cluster nodes, manages Consul and Nomad TLS certificates.
 
-### Service Tiers
+### Nomad Pack Templates
 
-Jobs are organized into tiers with automatic assignment based on category:
+The `munchbox-service` pack provides a reusable template for common service patterns:
 
-| Tier | Priority | Use Case | Examples |
-|------|----------|----------|----------|
-| **Tier 0** | Critical | Infrastructure services | Traefik, Consul agents |
-| **Tier 1** | Important | Monitoring and logging | Prometheus, Grafana, Loki |
-| **Tier 2** | Standard | Development tools | Docker Registry, CI runners |
-| **Tier 3** | Optional | Nice-to-have services | Media servers, utilities |
+- Standardized job structure with consistent metadata
+- Vault integration for secrets
+- Traefik labels for automatic routing
+- Consul service registration
+- Resource defaults with overrides
+
+Jobs using the pack define variables (`.hcl` files), while complex jobs use pure Nomad HCL (`.nomad.hcl` files).
+
+### High Availability Databases
+
+**PostgreSQL with Patroni:**
+- Automatic leader election and failover
+- Streaming replication
+- Health checks via Consul
+
+**Redis with Sentinel:**
+- Master/replica replication
+- Sentinel quorum for automatic failover
+- Dynamic master discovery via Consul DNS
 
 ### Security Scanning
 
-Automated security scanning runs on every change:
+Trivy server provides continuous vulnerability scanning:
 
-```yaml
-# In GitHub Actions pipeline
-- Checkov scans Dockerfiles for misconfigurations
-- Trivy performs config scans on Dockerfiles
-- Trivy scans built images for vulnerabilities
-- CRITICAL findings block deployment
-- Scan results uploaded as artifacts
-```
-
-**Security Gates**:
-- ✅ Dockerfile best practices enforcement
-- ✅ Base image vulnerability scanning
-- ✅ Critical CVE detection and blocking
-- ✅ Secrets detection in container layers
+- Container image scanning
+- Custom dashboard (`trivy-dashboard`) for vulnerability visibility
+- Integration with Prometheus for alerting
 
 ### Backup Strategy
 
-Automated daily backups ensure cluster state preservation:
+Temporal workflows orchestrate automated backups:
 
-| Service | Schedule | Retention | Location |
-|---------|----------|-----------|----------|
-| **Consul** | Daily 2:00 AM PT | Configurable | /mnt/gdrive/consul-snapshots |
-| **Nomad** | Daily 2:00 AM PT | Configurable | /mnt/gdrive/nomad-snapshots |
+| Data | Schedule | Retention | Location |
+|------|----------|-----------|----------|
+| **Nomad** snapshots | Daily 2 AM PT | 7 days | /mnt/gdrive/nomad-snapshots |
+| **Consul** snapshots | Daily 2 AM PT | 7 days | /mnt/gdrive/consul-snapshots |
+| **Vault** snapshots | Daily 2 AM PT | 7 days | /mnt/gdrive/vault-snapshots |
 
-Features:
-- Automatic snapshot creation
-- Retention policy enforcement
-- Retry logic for transient failures
-- Journald logging for audit trail
+The `temporal-backup-worker` runs continuously listening for workflow tasks, while `temporal-backup-trigger` dispatches the daily backup workflow.
 
 ---
 
 ## 📖 Make Targets Reference
 
-### Setup & Dependencies
+### Nomad Jobs (`cd nomad`)
 
 ```bash
-make init                     # First-time setup (install deps, fetch providers)
-make install-cdktf            # Install CDKTF CLI
-make deps                     # Update Go deps and fetch CDKTF providers
+source munchbox-env.sh && cd nomad
+
+make list                     # List all available jobs with types
+make run JOB=<name>           # Deploy a job (auto-detects pack vs raw HCL)
+make plan JOB=<name>          # Preview job changes
+make render JOB=<name>        # Show generated HCL (useful for debugging)
+make validate JOB=<name>      # Validate job syntax
+make stop JOB=<name>          # Stop running job
+make purge JOB=<name>         # Stop and purge job
+
+# Batch operations
+make render-all               # Render all jobs
+make plan-all                 # Plan all jobs
+make validate-all             # Validate all jobs
 ```
 
-### Build Commands
+**Job Detection:**
+- Files ending in `.nomad.hcl` → raw HCL (`nomad job run`)
+- Files with `# PACK: <name>` → uses specified pack
+- All other `.hcl` files → uses `munchbox-service` pack
+
+### Infrastructure (`cd infrastructure`)
 
 ```bash
-make build                    # Build CDKTF application (nomad-app)
-make build-tools              # Build utility tools (validate-structure, nomad-query)
-make build-all                # Build everything
+# VM Provisioning (Proxmox)
+make tf-init                  # Initialize Terraform
+make tf-plan                  # Preview VM changes
+make tf-apply                 # Provision VMs
+make tf-output                # Show VM details
+make tf-destroy               # Destroy all VMs
+
+# Node Management
+make generate                 # Generate inventory from nodes.yml
+make show-nodes               # Display node configuration
+make add-node VM=<name>       # Configure node (VM or bare-metal)
+make add-vm VM=<name>         # Full VM workflow: generate + tf-apply + add-node
+
+# Consul ACL Management
+make consul-prereqs           # Copy certs and enable Vault KV
+make consul-acl-init          # Initialize Consul ACL Terraform
+make consul-acl-plan          # Preview ACL changes
+make consul-acl-apply         # Apply ACL configuration
+
+# Vault Configuration
+make vault-config-init        # Initialize Vault config Terraform
+make vault-config-plan        # Preview Vault changes
+make vault-config-apply       # Apply Vault configuration
 ```
 
-### Deployment Commands
+### Docker Images (`cd docker`)
 
 ```bash
-make synth                    # Generate Terraform JSON from CDKTF
-make deploy                   # Deploy all infrastructure
-make deploy-jobs JOBS=...     # Deploy specific categories (comma-separated)
-make deploy-category CAT=...  # Deploy all jobs in one category
-make plan                     # Show Terraform plan
-make diff                     # Show CDKTF diff
+make apps                     # List discovered Docker apps
+make build                    # Build all images
+make build-app APP=<name>     # Build specific app
+
+# Security Scanning
+make checkov                  # Scan Dockerfiles with Checkov
+make trivy                    # Scan configs with Trivy
+make trivy-image              # Scan built images (fails on CRITICAL)
+make security                 # Run all security scans
+
+# Multi-Architecture Builds
+make buildx-setup             # Set up BuildKit for multi-arch
+make publish-multiarch        # Build and push amd64 + arm64 images
 ```
 
-### Validation Commands
+### Ansible Playbooks (`cd infrastructure/ansible`)
 
 ```bash
-make validate                 # Validate all Nomad job files
-make validate-category CAT=...# Validate jobs in specific category
-make check-structure          # Validate directory structure
-make lint                     # Lint HCL files
-make semgrep                  # Run Semgrep security scan
-make trivy                    # Run Trivy config scan
-```
-
-### Formatting Commands
-
-```bash
-make fmt                      # Format Go code and Nomad jobs
-make fmt-jobs                 # Format only Nomad jobs
-```
-
-### Category Management
-
-```bash
-make list-categories          # List all job categories
-make category-report          # Detailed breakdown by category
-```
-
-### Development Commands
-
-```bash
-make test                     # Run Go tests
-make lint-go                  # Run Go linter
-make clean                    # Remove build artifacts
-make clean-all                # Full clean including Go cache
-```
-
-### Query Tools
-
-```bash
-make query ARGS='...'         # Query Nomad jobs
-# Examples:
-make query ARGS='-category monitoring'
-make query ARGS='-job prometheus'
+# Run playbooks directly with ansible-playbook
+ansible-playbook playbooks/nomad-cluster.yml        # Full cluster setup
+ansible-playbook playbooks/add-node.yml -e target_host=<node>
+ansible-playbook playbooks/vault-cert-manager.yml   # Deploy cert manager
 ```
 
 ---
 
 ## 📦 Nomad Job Categories
 
-### Infrastructure (Tier 0) - Critical Services
+### Infrastructure - Core Services
 
 **Purpose**: Core infrastructure required for cluster operation
 
 - `traefik` - Reverse proxy and load balancer
 - `cloudflared-tunnel` - Secure edge access via Cloudflare
-- `nginx-resume` - Static site hosting
+- `coredns` - DNS resolution for service discovery
+- `keepalived` - Virtual IP failover
+- `certbot` - Let's Encrypt certificate management
+- `oauth2-proxy` - Authentication proxy for services
+- `patroni` - HA PostgreSQL with Patroni orchestration
+- `redis-sentinel` - HA Redis with Sentinel failover
+- `postgres-shared` / `postgres-replica` - Standalone PostgreSQL instances
+- `redis-shared` - Standalone Redis instance
+- `temporal` - Workflow orchestration (for backups, scans)
+- `forgejo` - Self-hosted Git server (Gitea fork)
+- `forgejo-runner` - CI/CD runners (act_runner)
+- `registry` - Private Docker registry with mirror capability
+- `trivy-server` - Vulnerability scanning server
+- `theme-server` - CSS theme serving for unified UI
+- `vault-ui` - HashiCorp Vault web interface
 
-**Characteristics**:
-- Must be highly available
-- Minimal restart tolerance
-- Health checks with quick failover
+### Monitoring - Observability Stack
 
-### Monitoring (Tier 1) - Important Services
-
-**Purpose**: Observability and alerting infrastructure
+**Purpose**: Metrics collection, visualization, and alerting
 
 - `prometheus` - Metrics collection and alerting rules
 - `grafana` - Metrics visualization and dashboards
 - `alertmanager` - Alert routing and notifications
 - `node-exporter` - System metrics (runs on all nodes)
 - `blackbox-exporter` - External endpoint monitoring
+- `postgres-exporter` / `postgres-replica-exporter` - PostgreSQL metrics
+- `redis-exporter` - Redis metrics
+- `nextcloud-exporter` - Nextcloud metrics
+- `trivy-dashboard` - Vulnerability scan dashboard
+- `umami` - Privacy-focused web analytics
 
-**Characteristics**:
-- Important but not critical
-- Can tolerate brief downtime
-- Essential for operations
+### Logging - Log Aggregation
 
-### Logging (Tier 1) - Important Services
-
-**Purpose**: Centralized log aggregation and analysis
+**Purpose**: Centralized log collection and tracing
 
 - `loki` - Log aggregation server
 - `promtail` - Log collection agent (runs on all nodes)
+- `tempo` - Distributed tracing
 
-**Characteristics**:
-- Stores 5 days of logs
-- Retention policies enforced
-- Queries via Grafana
+### Web - User Applications
 
-### Development (Tier 2) - Standard Services
+**Purpose**: User-facing web applications
 
-**Purpose**: Development and CI/CD tooling
+- `dashboard` - Munchbox landing page
+- `nginx-resume` - Personal resume/portfolio site
+- `nextcloud` - Self-hosted cloud storage
+- `vaultwarden` - Bitwarden-compatible password manager
+- `health-checker` - Service health status page
 
-- `registry` - Private Docker registry with mirror capability
-- `registry-ui` - Web interface for registry management
-- `github-actions-runners` - Self-hosted CI/CD runners
+### Media - Media Management
 
-**Characteristics**:
-- Development workflow enablers
-- Can be redeployed without data loss
-- Resource-intensive workloads
+**Purpose**: Media streaming and management (the *arr stack)
 
-### Backup (Tier 2) - Standard Services
+- `jellyfin` - Media streaming server
+- `sonarr` - TV show management
+- `radarr` - Movie management
+- `lidarr` - Music management
+- `readarr` - Book/audiobook management
+- `prowlarr` - Indexer manager
+- `kavita` - Comic/manga reader
+- `deluge` - BitTorrent client
+- `ersatz` - Content request system
+- `cloudflaresolver` - Cloudflare bypass for indexers
 
-**Purpose**: Automated state backup and recovery
+### Games - Game Servers
 
-- `consul-snapshot` - Daily Consul state backup
-- `nomad-snapshot` - Daily Nomad state backup
+**Purpose**: Self-hosted game servers
 
-**Characteristics**:
-- Batch jobs (periodic execution)
-- Run on specific nodes with storage access
-- Configurable retention policies
+- `zomboid` - Project Zomboid dedicated server
 
-### Utility (Tier 3) - Optional Services
+### Backup - Automated Backups
 
-**Purpose**: Helper jobs and resource management
+**Purpose**: Scheduled backup workflows via Temporal
 
-- `reserve-k3s-capacity-dummy` - Reserve resources for external workloads
-
-**Characteristics**:
-- Nice-to-have functionality
-- Lowest priority for resources
-- Can be stopped without impact
+- `temporal-backup-worker` - Backup execution worker
+- `temporal-backup-trigger` - Daily backup scheduler
+- `temporal-trivy-trigger` - Scheduled vulnerability scans
 
 ---
 
@@ -516,12 +539,12 @@ Management Token (admin)
 
 **In Transit**:
 - TLS for all HTTP/RPC communication
-- mTLS for server-to-server communication
+- mTLS for server-to-server communication (via vault-cert-manager)
 - Gossip encryption for Consul/Nomad
 
 **At Rest**:
 - Vault-managed secrets
-- Encrypted data bags for Chef
+- Ansible Vault for sensitive variables
 - No secrets in version control
 
 ### Network Security
@@ -587,8 +610,8 @@ This is a personal homelab project, but suggestions and improvements are welcome
 ### Code Standards
 
 - **Go**: Follow standard Go conventions, use `gofmt` and `golangci-lint`
-- **HCL**: Use `nomad fmt` for Nomad job files
-- **Chef**: Follow Cookstyle conventions
+- **HCL**: Use `nomad fmt` for Nomad job files, `terraform fmt` for Terraform
+- **Ansible**: Follow ansible-lint conventions
 - **Documentation**: Update README for significant changes
 
 ---
@@ -607,11 +630,15 @@ Built with these excellent open-source projects:
 
 - [HashiCorp Nomad](https://www.nomadproject.io/) - Workload orchestration
 - [HashiCorp Consul](https://www.consul.io/) - Service networking
-- [OpenBao](https://openbao.org/) - Secrets management
+- [HashiCorp Vault](https://www.vaultproject.io/) - Secrets management
 - [Traefik](https://traefik.io/) - Cloud-native reverse proxy
 - [Prometheus](https://prometheus.io/) - Monitoring and alerting
 - [Grafana](https://grafana.com/) - Observability platform
 - [Loki](https://grafana.com/oss/loki/) - Log aggregation
+- [Patroni](https://github.com/patroni/patroni) - HA PostgreSQL
+- [Temporal](https://temporal.io/) - Workflow orchestration
+- [Forgejo](https://forgejo.org/) - Self-hosted Git
+- [Terragrunt](https://terragrunt.gruntwork.io/) - Terraform wrapper
 
 ---
 

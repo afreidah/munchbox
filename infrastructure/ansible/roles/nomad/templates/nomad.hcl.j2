@@ -3,7 +3,7 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# {% if nomad_server_enabled | bool %}Server{% else %}Client{% endif %} configuration for {{ ansible_hostname }}. Managed by Ansible.
+# {% if 'nomad_servers' in group_names %}Server{% endif %}{% if 'nomad_clients' in group_names %}{% if 'nomad_servers' in group_names %}/{% endif %}Client{% endif %} configuration for {{ ansible_hostname }}. Managed by Ansible.
 # -------------------------------------------------------------------------------
 datacenter = "{{ nomad_datacenter }}"
 region = "{{ nomad_region }}"
@@ -15,7 +15,7 @@ advertise {
   rpc  = "{{ nomad_advertise_rpc }}"
   serf = "{{ nomad_advertise_serf }}"
 }
-{% if nomad_server_enabled | bool %}
+{% if 'nomad_servers' in group_names %}
 # -------------------------------------------------------------------------------
 # Server Configuration
 # -------------------------------------------------------------------------------
@@ -30,10 +30,23 @@ server {
 {% endif %}
 }
 {% endif %}
+{% if 'nomad_clients' in group_names %}
 # -------------------------------------------------------------------------------
 # Client Configuration
 # -------------------------------------------------------------------------------
 client {
+{% if 'ingress' in group_names or nomad_client_meta is defined %}
+  meta {
+{% if 'ingress' in group_names %}
+    role = "ingress"
+{% endif %}
+{% if nomad_client_meta is defined %}
+{% for key, value in nomad_client_meta.items() %}
+    {{ key }} = "{{ value }}"
+{% endfor %}
+{% endif %}
+  }
+{% endif %}
   enabled = true
 {% if nomad_servers | length > 0 %}
   servers = {{ nomad_servers | to_json }}
@@ -41,16 +54,18 @@ client {
 {% if nomad_network_interface %}
   network_interface = "{{ nomad_network_interface }}"
 {% endif %}
-{% if 'ingress' in group_names or (node_roles is defined and 'ingress' in node_roles) %}
-  meta {
-    role = "ingress"
-  }
-{% endif %}
 }
+{% endif %}
 # -------------------------------------------------------------------------------
 # Consul Integration
 # -------------------------------------------------------------------------------
 consul {
+{% if nomad_consul_ssl | default(false) | bool %}
+  verify_ssl = true
+{% endif %}
+{% if consul_acl_agent_token is defined %}
+  token = "{{ consul_acl_agent_token }}"
+{% endif %}
   address = "{{ nomad_consul_address }}"
   datacenter = "{{ nomad_consul_datacenter }}"
 {% if nomad_consul_ssl | default(false) | bool %}
@@ -86,8 +101,15 @@ tls {
 # Vault Integration
 # -------------------------------------------------------------------------------
 vault {
+  default_identity {
+    aud = ["vault.io"]
+    ttl = "1h"
+  }
   enabled = true
   address = "{{ vault_api_addr }}"
+{% if nomad_vault_ca_file is defined %}
+  ca_file = "{{ nomad_vault_ca_file }}"
+{% endif %}
 }
 # -------------------------------------------------------------------------------
 # Docker Plugin Configuration
@@ -113,4 +135,14 @@ plugin "docker" {
       }
     }
   }
+}
+
+# -------------------------------------------------------------------------------
+# Telemetry - Prometheus Metrics
+# -------------------------------------------------------------------------------
+telemetry {
+  prometheus_metrics         = true
+  disable_hostname           = false
+  publish_allocation_metrics = true
+  publish_node_metrics       = true
 }
