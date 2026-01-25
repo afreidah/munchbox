@@ -1,10 +1,10 @@
-# Nomad client policy - service registration only
+# Nomad client policy - service registration and node updates
 agent_prefix "" {
   policy = "read"
 }
 
 node_prefix "" {
-  policy = "read"
+  policy = "write"
 }
 
 service_prefix "" {

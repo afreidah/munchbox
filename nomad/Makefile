@@ -106,6 +106,17 @@ else \
 fi)
 endef
 
+# --- Check if job uses any variables from shared.vars.hcl ---
+# Extracts var names from shared.vars.hcl and checks if job declares any of them
+define uses_shared_vars
+$(shell vars=$$(grep -oE '^[a-z_]+' "$(SHARED_VARS)" 2>/dev/null | tr '\n' '|' | sed 's/|$$//'); \
+	if [ -n "$$vars" ] && grep -qE "variable \"($$vars)\"" "$(1)" 2>/dev/null; then \
+		echo "yes"; \
+	else \
+		echo "no"; \
+	fi)
+endef
+
 # -------------------------------------------------------------------------------
 # Commands
 # -------------------------------------------------------------------------------
@@ -151,9 +162,14 @@ endif
 	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
 	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
+	$(eval HAS_SHARED := $(call uses_shared_vars,$(JOB_FILE)))
 	@echo "=== Planning $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		nomad job plan -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
+		if [ "$(HAS_SHARED)" = "yes" ]; then \
+			nomad job plan -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
+		else \
+			nomad job plan "$(JOB_FILE)"; \
+		fi; \
 	else \
 		nomad-pack plan \
 			--var-file="$(JOB_FILE)" \
@@ -173,9 +189,14 @@ endif
 	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
 	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
+	$(eval HAS_SHARED := $(call uses_shared_vars,$(JOB_FILE)))
 	@echo "=== Deploying $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		nomad job run -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
+		if [ "$(HAS_SHARED)" = "yes" ]; then \
+			nomad job run -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
+		else \
+			nomad job run "$(JOB_FILE)"; \
+		fi; \
 	else \
 		nomad-pack run \
 			--var-file="$(JOB_FILE)" \
@@ -195,9 +216,14 @@ endif
 	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
 	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
+	$(eval HAS_SHARED := $(call uses_shared_vars,$(JOB_FILE)))
 	@echo "=== Validating $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		nomad job validate -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
+		if [ "$(HAS_SHARED)" = "yes" ]; then \
+			nomad job validate -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
+		else \
+			nomad job validate "$(JOB_FILE)"; \
+		fi; \
 	else \
 		nomad-pack render \
 			--var-file="$(JOB_FILE)" \

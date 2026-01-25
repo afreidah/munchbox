@@ -280,7 +280,9 @@ loglevel warning
 # Replication - first allocation (index 0) is initial master, others replicate via Consul
 # Sentinel handles failover if master goes down
 {{ if ne (env "NOMAD_ALLOC_INDEX") "0" }}
-replicaof redis-primary.service.consul 6379
+{{ range service "redis-primary" }}
+replicaof {{ .Address }} 6379
+{{ end }}
 {{ end }}
         EOF
       }
@@ -356,7 +358,9 @@ daemonize no
 {{ if eq (env "NOMAD_ALLOC_INDEX") "0" }}
 sentinel monitor munchbox-redis 127.0.0.1 6379 2
 {{ else }}
-sentinel monitor munchbox-redis redis-primary.service.consul 6379 2
+{{ range service "redis-primary" }}
+sentinel monitor munchbox-redis {{ .Address }} 6379 2
+{{ end }}
 {{ end }}
 sentinel auth-pass munchbox-redis {{ .Data.data.password }}
 {{ end }}
@@ -489,7 +493,7 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
         image_pull_timeout = "10m"
         network_mode       = "host"
         command            = "/bin/sh"
-        args               = ["-c", "echo 'Waiting for redis-primary.service.consul...'; while ! getent hosts redis-primary.service.consul >/dev/null 2>&1; do sleep 2; done; echo 'Master found, starting sentinel'; cp /etc/sentinel/sentinel.conf.tpl /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"]
+        args               = ["-c", "echo 'Waiting for redis master...'; while ! grep -q 'sentinel monitor' /etc/sentinel/sentinel.conf.tpl 2>/dev/null || ! grep 'sentinel monitor' /etc/sentinel/sentinel.conf.tpl | grep -qE '[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+'; do sleep 2; done; echo 'Master IP resolved, starting sentinel'; cp /etc/sentinel/sentinel.conf.tpl /tmp/sentinel.conf && redis-sentinel /tmp/sentinel.conf"]
 
         volumes = [
           "local/sentinel.conf:/etc/sentinel/sentinel.conf.tpl:ro"
@@ -507,7 +511,9 @@ daemonize no
 
 # Monitor the Redis master via Consul service discovery
 {{ with secret "secret/data/redis-shared" }}
-sentinel monitor munchbox-redis redis-primary.service.consul 6379 2
+{{ range service "redis-primary" }}
+sentinel monitor munchbox-redis {{ .Address }} 6379 2
+{{ end }}
 sentinel auth-pass munchbox-redis {{ .Data.data.password }}
 {{ end }}
 

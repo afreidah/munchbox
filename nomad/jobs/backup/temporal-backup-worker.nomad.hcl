@@ -37,10 +37,10 @@ job "temporal-backup-worker" {
   # Placement
   # ---------------------------------------------------------------------------
 
-  #constraint {
-  #  attribute = "${node.unique.name}"
-  #  value     = "mccoy"
-  #}
+  constraint {
+    attribute = "${node.unique.name}"
+    value     = "nomad-client-03"
+  }
 
   # ---------------------------------------------------------------------------
   # Task Group: worker
