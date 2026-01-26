@@ -322,7 +322,7 @@ EOH
     rule        = "Host(`consul.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "consul-ui"
-    middlewares = ["oauth2-proxy", "dashboard-allowlan", "umami-tracking"]
+    middlewares = ["dashboard-allowlan"]
     [http.routers.consul.tls]
 
   # --- Consul UI (HTTP, for CF tunnel) ---
@@ -330,7 +330,7 @@ EOH
     rule        = "Host(`consul.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "consul-ui"
-    middlewares = ["cf-tunnel-https", "oauth2-proxy", "umami-tracking"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy"]
 
   # --- Nomad UI (HTTPS, LAN-only) ---
   [http.routers.nomad]
@@ -738,6 +738,34 @@ EOH
     }
 
     # -----------------------------------------------------------------------
+    # Task: traefik-log-filter
+    # Filters out Nomad blocking queries (index=) from access logs
+    # -----------------------------------------------------------------------
+
+    task "traefik-log-filter" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      config {
+        image        = "busybox:1.37"
+        network_mode = "host"
+        # Filter out long-poll/websocket connections that skew response time metrics:
+        # - Nomad blocking queries (index=)
+        # - SignalR real-time connections (signalr)
+        args         = ["sh", "-c", "tail -F /alloc/data/access.log | grep -vE 'index=|signalr' > /alloc/data/access-filtered.log"]
+      }
+
+      resources {
+        cpu    = 50
+        memory = 32
+      }
+    }
+
+    # -----------------------------------------------------------------------
     # Task: traefik-log-agent
     # Parses Traefik access logs and exposes metrics API for dashboard
     # -----------------------------------------------------------------------
@@ -773,7 +801,7 @@ EOH
 {{ with secret "secret/data/traefik-log-dashboard" }}
 TRAEFIK_LOG_DASHBOARD_AUTH_TOKEN={{ .Data.data.auth_token }}
 {{ end }}
-TRAEFIK_LOG_DASHBOARD_ACCESS_PATH=/alloc/data/access.log
+TRAEFIK_LOG_DASHBOARD_ACCESS_PATH=/alloc/data/access-filtered.log
 EOH
       }
 

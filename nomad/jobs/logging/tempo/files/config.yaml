@@ -17,6 +17,12 @@ distributor:
           endpoint: 0.0.0.0:4318
     zipkin:
       endpoint: 0.0.0.0:9411
+    jaeger:
+      protocols:
+        thrift_http:
+          endpoint: 0.0.0.0:14268
+        grpc:
+          endpoint: 0.0.0.0:14250
 
 # Ingester writes traces to storage
 ingester:
@@ -41,6 +47,15 @@ metrics_generator:
   registry:
     external_labels:
       source: tempo
+    collection_interval: 15s
+  processor:
+    service_graphs:
+      dimensions: [http.method, http.status_code]
+      enable_client_server_prefix: true
+      peer_attributes: [db.name, net.peer.name]
+    span_metrics:
+      dimensions: [http.method, http.status_code, http.route]
+      enable_target_info: true
   storage:
     path: /var/tempo/generator/wal
     remote_write:

@@ -150,7 +150,7 @@ EOF
       # Use internal Forgejo address to bypass oauth2-proxy
       template {
         data = <<-EOF
-GITEA_INSTANCE_URL=http://192.168.68.61:20778
+GITEA_INSTANCE_URL=http://{{ range service "forgejo" }}{{ .Address }}:{{ .Port }}{{ end }}
 {{- with secret "secret/data/forgejo-runner" }}
 GITEA_RUNNER_REGISTRATION_TOKEN={{ .Data.data.registration_token }}
 {{- end }}

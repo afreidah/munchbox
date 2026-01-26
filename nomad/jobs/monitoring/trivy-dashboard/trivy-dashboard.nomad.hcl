@@ -41,8 +41,9 @@ job "trivy-dashboard" {
     count = 1
 
     network {
+      mode = "host"
       port "http" {
-        to = 8080
+        static = 8080
       }
     }
 

@@ -8,6 +8,11 @@ global:
     cluster: "munchbox"
     datacenter: "pi-dc"
 
+# Storage configuration - accept out-of-order samples from Tempo metrics generator
+storage:
+  tsdb:
+    out_of_order_time_window: 30m
+
 # Alert rules file
 rule_files:
   - /etc/prometheus/config/alert_rules.yml
@@ -37,6 +42,33 @@ scrape_configs:
       - targets: ["127.0.0.1:9090"]
         labels:
           service: "prometheus"
+
+  # -----------------------------------------------------------------------
+  # Consul - Cluster health and RPC metrics
+  # -----------------------------------------------------------------------
+  - job_name: "consul"
+    metrics_path: "/v1/agent/metrics"
+    scheme: "https"
+    tls_config:
+      ca_file: "/etc/prometheus/certs/ca-chain.crt"
+      insecure_skip_verify: true
+    params:
+      format: ["prometheus"]
+    authorization:
+      type: "Bearer"
+      credentials: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["consul"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_address"]
+        target_label: "__address__"
+        replacement: "$1:8501"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
 
   # -----------------------------------------------------------------------
   # Nomad servers - Dynamic discovery via Consul
@@ -184,9 +216,9 @@ scrape_configs:
         target_label: "instance"
 
   # -----------------------------------------------------------------------
-  # Consul cluster metrics
+  # Consul cluster metrics (HTTP endpoint)
   # -----------------------------------------------------------------------
-  - job_name: "consul"
+  - job_name: "consul-http"
     metrics_path: "/v1/agent/metrics"
     params:
       format: ["prometheus"]

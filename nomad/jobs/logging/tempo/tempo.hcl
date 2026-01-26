@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name         = "tempo"
-image        = "grafana/tempo:2.9.0"
+image        = "grafana/tempo:2.9.1"
 port         = 3200
 static_port  = 3200
 host_network = true
@@ -49,7 +49,9 @@ tags = ["logging", "tempo", "tracing", "observability"]
 
 # --- Additional ports for trace ingestion ---
 extra_ports = [
-  { name = "otlp-grpc", port = "4317", static = "true" },
-  { name = "otlp-http", port = "4318", static = "true" },
-  { name = "zipkin",    port = "9411", static = "true" }
+  { name = "otlp-grpc",    port = "4317",  static = "true" },
+  { name = "otlp-http",    port = "4318",  static = "true" },
+  { name = "zipkin",       port = "9411",  static = "true" },
+  { name = "jaeger-http",  port = "14268", static = "true" },
+  { name = "jaeger-grpc",  port = "14250", static = "true" }
 ]

@@ -33,10 +33,6 @@ health_path = "/ready"
 # --- Environment ---
 env = {
   TZ = "America/Los_Angeles"
-  # OpenTelemetry tracing to Tempo
-  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
-  OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
-  OTEL_SERVICE_NAME           = "loki"
 }
 
 # --- Container arguments ---

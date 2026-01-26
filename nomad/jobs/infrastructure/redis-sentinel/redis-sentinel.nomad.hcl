@@ -277,6 +277,9 @@ maxmemory-policy allkeys-lru
 # Logging
 loglevel warning
 
+# Disable config rewriting (config managed by Nomad)
+config-rewrite-period 0
+
 # Replication - first allocation (index 0) is initial master, others replicate via Consul
 # Sentinel handles failover if master goes down
 {{ if ne (env "NOMAD_ALLOC_INDEX") "0" }}

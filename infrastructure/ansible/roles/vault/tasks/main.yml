@@ -53,6 +53,7 @@
   stat:
     path: "{{ vault_bin_path }}"
   register: vault_binary
+  tags: [install, vault_install]
 
 - name: Get installed Vault version
   command: "{{ vault_bin_path }} version"
@@ -60,6 +61,7 @@
   changed_when: false
   failed_when: false
   when: vault_binary.stat.exists
+  tags: [install, vault_install]
 
 - name: Download Vault
   get_url:
@@ -67,6 +69,7 @@
     dest: "/tmp/{{ vault_archive }}"
     mode: "0644"
   when: not vault_binary.stat.exists or vault_version not in vault_installed_version.stdout
+  tags: [install, vault_install]
 
 - name: Unzip Vault binary
   unarchive:
@@ -78,17 +81,20 @@
     group: root
   when: not vault_binary.stat.exists or vault_version not in vault_installed_version.stdout
   notify: restart vault
+  tags: [install, vault_install]
 
 - name: Remove Vault archive
   file:
     path: "/tmp/{{ vault_archive }}"
     state: absent
+  tags: [install, vault_install]
 
 - name: Set Vault binary capabilities
   capabilities:
     path: "{{ vault_bin_path }}"
     capability: cap_ipc_lock=+ep
     state: present
+  tags: [install, vault_install]
 
 # -------------------------------------------------------------------------------
 # TLS Certificates
@@ -147,7 +153,9 @@
     owner: "{{ vault_user }}"
     group: "{{ vault_group }}"
     mode: "0640"
+    backup: yes
   notify: restart vault
+  tags: [config, vault_config]
 
 # -------------------------------------------------------------------------------
 # Systemd Service

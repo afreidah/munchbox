@@ -49,7 +49,8 @@ args = [
   "--web.enable-remote-write-receiver",
   "--storage.tsdb.retention.time=30d",
   "--storage.tsdb.wal-compression",
-  "--web.page-title=Munchbox Prometheus"
+  "--web.page-title=Munchbox Prometheus",
+  "--enable-feature=exemplar-storage"
 ]
 
 # --- Configuration templates ---

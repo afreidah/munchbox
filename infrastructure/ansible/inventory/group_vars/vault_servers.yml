@@ -58,8 +58,8 @@ vault_consul_tls_cert_file: "/etc/consul.d/tls/consul.crt"
 vault_consul_tls_key_file: "/etc/consul.d/tls/consul.key"
 
 vault_tls_disable: false
-vault_tls_cert_file: "/etc/vault.d/tls/vault-fullchain.crt"
 vault_tls_key_file: "/etc/vault.d/tls/vault.key"
+# vault_tls_cert_file uses default (vault.crt) - override in host_vars if needed
 
 vault_listener_address: "0.0.0.0:8200"
 

@@ -30,6 +30,12 @@ traefik_host = "registry.munchbox.cc"
 # --- Health check ---
 health_path = "/v2/"
 
+# --- Environment (OTEL tracing to Tempo) ---
+env = {
+  OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4318"
+  OTEL_EXPORTER_OTLP_INSECURE = "true"
+}
+
 # --- Container arguments ---
 args = ["serve", "/local/config.yml"]
 

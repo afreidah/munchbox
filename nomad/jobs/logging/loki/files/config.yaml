@@ -93,6 +93,7 @@ ruler:
 analytics:
   reporting_enabled: false
 
-# Tracing (enabled - use OTEL_* env vars for export config)
+# Tracing disabled - Loki 3.6.x has OTEL SDK schema version conflict bug
+# Re-enable when fixed upstream (https://github.com/grafana/loki/issues/14269)
 tracing:
-  enabled: true
+  enabled: false

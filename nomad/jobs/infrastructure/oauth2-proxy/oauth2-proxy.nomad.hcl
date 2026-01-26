@@ -11,6 +11,7 @@ job "oauth2-proxy" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
+  node_pool   = "all"
 
   # ---------------------------------------------------------------------------
   # Update Strategy
@@ -32,16 +33,11 @@ job "oauth2-proxy" {
   group "oauth2-proxy" {
     count = 1
 
-    # --- Keep off oracle nodes (high latency over WireGuard) ---
+    # --- Colocate with Traefik on goren for minimal latency ---
     constraint {
       attribute = "${node.unique.name}"
-      operator  = "!="
-      value     = "oraclenode1"
-    }
-    constraint {
-      attribute = "${node.unique.name}"
-      operator  = "!="
-      value     = "oraclenode2"
+      operator  = "="
+      value     = "goren"
     }
 
     # --- Network Configuration ---

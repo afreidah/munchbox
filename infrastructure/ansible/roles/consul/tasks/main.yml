@@ -102,7 +102,9 @@
     owner: "{{ consul_user }}"
     group: "{{ consul_group }}"
     mode: "0640"
+    backup: yes
   notify: restart consul
+  tags: [config, consul_config]
 
 # -------------------------------------------------------------------------------
 # Systemd Service

@@ -83,6 +83,15 @@ acl {
 {% endif %}
 }
 
+# -------------------------------------------------------------------------------
+# Telemetry
+# -------------------------------------------------------------------------------
+
+telemetry {
+  prometheus_retention_time = "{{ consul_telemetry_prometheus_retention_time | default('30s') }}"
+  disable_hostname = {{ consul_telemetry_disable_hostname | default(false) | lower }}
+}
+
 {% if consul_tls_enabled | default(true) | bool %}
 tls {
   defaults {
@@ -96,6 +105,11 @@ tls {
 
   internal_rpc {
     verify_server_hostname = {{ consul_tls_verify_server_hostname | default(true) | lower }}
+  }
+
+  # Allow browsers to access HTTPS UI without client certificates
+  https {
+    verify_incoming = false
   }
 }
 {% endif %}

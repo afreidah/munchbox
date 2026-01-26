@@ -1,0 +1,12 @@
+# -------------------------------------------------------------------------------
+# Host Variables - stabler
+#
+# Project: Munchbox / Author: Alex Freidah
+# -------------------------------------------------------------------------------
+
+vault_api_addr: "https://192.168.68.61:8200"
+vault_cluster_addr: "https://192.168.68.61:8201"
+vault_cluster_address: "192.168.68.61:8201"
+
+# Vault uses fullchain cert on this node
+vault_tls_cert_file: "/etc/vault.d/tls/vault-fullchain.crt"

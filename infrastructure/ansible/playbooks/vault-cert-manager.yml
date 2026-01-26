@@ -113,6 +113,7 @@
         - "{{ ansible_hostname }}"
         - "{{ inventory_hostname }}.munchbox.cc"
         - "server.{{ nomad_region | default('global') }}.nomad"
+        - "nomad.service.consul"
       ip_sans:
         - "{{ static_ip | default(ansible_default_ipv4.address) }}"
         - "127.0.0.1"
@@ -138,6 +139,7 @@
         - "{{ inventory_hostname }}.munchbox.cc"
         - "server.{{ nomad_region | default('global') }}.nomad"
         - "client.{{ nomad_region | default('global') }}.nomad"
+        - "nomad.service.consul"
       ip_sans:
         - "{{ static_ip | default(ansible_default_ipv4.address) }}"
         - "127.0.0.1"

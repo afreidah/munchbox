@@ -1,14 +1,7 @@
 version: 0.1
 log:
   level: info
-# OpenTelemetry tracing to Tempo
-otel:
-  enabled: true
-  servicename: registry
-  exporter:
-    otlp:
-      endpoint: tempo.service.consul:4318
-      insecure: true
+# Note: OTEL tracing configured via env vars (Registry 3.0 ignores YAML otel config)
 storage:
   filesystem:
     rootdirectory: /var/lib/registry
