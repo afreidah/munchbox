@@ -1,11 +1,18 @@
-# -------------------------------------------------------------------------------
-# Nomad ACLs Module - Input Variables
+# -----------------------------------------------------------------------------
+# NOMAD-ACLS MODULE - INPUT VARIABLES
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Configuration for Nomad ACL provisioning. Requires a management token with
-# full ACL permissions. Provider configuration handled by Terragrunt.
-# -------------------------------------------------------------------------------
+# Variable Categories:
+#   - Core: Bootstrap token and Vault mount path
+#   - Policies: Map of Nomad ACL policies with rules
+#   - Tokens: Map of Nomad ACL tokens with policy bindings
+#   - Vault Secrets: Map of secrets to store in Vault KV
+# -----------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# CORE CONFIGURATION
+# -------------------------------------------------------------------------
 
 variable "nomad_bootstrap_token" {
   description = "Nomad ACL bootstrap token (from 'nomad acl bootstrap' command)"
@@ -19,9 +26,55 @@ variable "vault_mount" {
   default     = "secret"
 }
 
-variable "backup_consul_token" {
-  description = "Consul token for backup-worker service"
-  type        = string
-  default     = ""
+# -------------------------------------------------------------------------
+# POLICIES
+# -------------------------------------------------------------------------
+
+variable "policies" {
+  description = "Map of Nomad ACL policies to create"
+  type = map(object({
+    description = optional(string, "")
+    rules_hcl   = string
+  }))
+  default = {}
+}
+
+# -------------------------------------------------------------------------
+# TOKENS
+# -------------------------------------------------------------------------
+
+variable "tokens" {
+  description = "Map of Nomad ACL tokens to create"
+  type = map(object({
+    type        = optional(string, "client")
+    policies    = list(string)
+    expiration  = optional(string, null)
+  }))
+  default = {}
+}
+
+# -------------------------------------------------------------------------
+# VAULT SECRETS
+# -------------------------------------------------------------------------
+
+variable "vault_secrets" {
+  description = "Map of secrets to store in Vault KV with token references"
+  type = map(object({
+    vault_path       = string
+    token_key        = string
+    token_field_name = optional(string, "token")
+    extra_data       = optional(map(string), {})
+  }))
+  default = {}
+}
+
+# -------------------------------------------------------------------------
+# EXTRA DATA FOR VAULT SECRETS (CROSS-MODULE)
+# -------------------------------------------------------------------------
+
+variable "extra_secret_values" {
+  description = "Map of extra values to inject into vault secrets (e.g., consul tokens from other modules)"
+  type        = map(string)
+  default     = {}
   sensitive   = true
 }

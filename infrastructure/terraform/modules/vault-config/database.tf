@@ -7,7 +7,7 @@
 #   - Phase 1: Stores static root password in Vault KV (always when kv_enabled)
 #   - Phase 2: Configures dynamic credentials (when database_secrets_enabled)
 #
-# Database roles are created for each application requiring PostgreSQL access.
+# Database roles are defined via the database_roles input variable from root.hcl.
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
@@ -47,50 +47,22 @@ resource "vault_database_secrets_mount" "postgres" {
     password          = random_password.postgres_root[0].result
     connection_url    = "postgresql://{{username}}:{{password}}@${var.postgres_host}:${var.postgres_port}/postgres?sslmode=disable"
     verify_connection = true
-    allowed_roles     = var.database_roles
+    allowed_roles     = keys(var.database_roles)
   }
 }
 
 # -------------------------------------------------------------------------
-# DATABASE ROLE: TEMPORAL
+# DATABASE ROLES
 # -------------------------------------------------------------------------
 
-resource "vault_database_secret_backend_role" "temporal" {
-  count   = var.database_secrets_enabled && contains(var.database_roles, "temporal") ? 1 : 0
+resource "vault_database_secret_backend_role" "role" {
+  for_each = var.database_secrets_enabled ? var.database_roles : {}
+
   backend = vault_database_secrets_mount.postgres[0].path
-  name    = "temporal"
+  name    = each.key
   db_name = vault_database_secrets_mount.postgres[0].postgresql[0].name
 
-  creation_statements = [
-    "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
-    "GRANT ALL PRIVILEGES ON DATABASE temporal TO \"{{name}}\";",
-    "GRANT ALL ON SCHEMA public TO \"{{name}}\";"
-  ]
-
-  default_ttl = var.database_default_ttl
-  max_ttl     = var.database_max_ttl
-}
-
-# -------------------------------------------------------------------------
-# DATABASE ROLE: KANBOARD
-# -------------------------------------------------------------------------
-
-resource "vault_database_secret_backend_role" "kanboard" {
-  count   = var.database_secrets_enabled && contains(var.database_roles, "kanboard") ? 1 : 0
-  backend = vault_database_secrets_mount.postgres[0].path
-  name    = "kanboard"
-  db_name = vault_database_secrets_mount.postgres[0].postgresql[0].name
-
-  creation_statements = [
-    "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
-    "GRANT CONNECT ON DATABASE kanboard TO \"{{name}}\";",
-    "GRANT USAGE, CREATE ON SCHEMA public TO \"{{name}}\";",
-    "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
-    "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"{{name}}\";",
-    "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"{{name}}\";"
-  ]
-
-  default_ttl = var.database_default_ttl
-  max_ttl     = var.database_max_ttl
+  creation_statements = each.value.creation_statements
+  default_ttl         = each.value.default_ttl
+  max_ttl             = each.value.max_ttl
 }

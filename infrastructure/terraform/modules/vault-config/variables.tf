@@ -113,21 +113,13 @@ variable "postgres_port" {
 }
 
 variable "database_roles" {
-  description = "List of database roles to create"
-  type        = list(string)
-  default     = ["temporal", "kanboard"]
-}
-
-variable "database_default_ttl" {
-  description = "Default TTL for database credentials in seconds"
-  type        = number
-  default     = 86400
-}
-
-variable "database_max_ttl" {
-  description = "Maximum TTL for database credentials in seconds"
-  type        = number
-  default     = 259200
+  description = "Map of database roles to create with their creation statements"
+  type = map(object({
+    creation_statements = list(string)
+    default_ttl         = optional(number, 86400)
+    max_ttl             = optional(number, 259200)
+  }))
+  default = {}
 }
 
 # -------------------------------------------------------------------------
@@ -140,21 +132,22 @@ variable "pki_backend_path" {
   default     = "pki_int"
 }
 
-variable "traefik_allowed_domains" {
-  description = "Allowed domains for Traefik PKI role"
-  type        = list(string)
-  default     = ["munchbox.cc"]
-}
-
-variable "postgres_allowed_domains" {
-  description = "Allowed domains for PostgreSQL PKI role"
-  type        = list(string)
-  default = [
-    "postgres-primary.service.consul",
-    "postgres-replica.service.consul",
-    "postgres.service.consul",
-    "node.consul"
-  ]
+variable "pki_roles" {
+  description = "Map of PKI roles to create"
+  type = map(object({
+    allowed_domains    = list(string)
+    allow_subdomains   = optional(bool, true)
+    allow_bare_domains = optional(bool, true)
+    allow_localhost    = optional(bool, true)
+    allow_ip_sans      = optional(bool, true)
+    allow_glob_domains = optional(bool, false)
+    max_ttl            = optional(string, "8760h")
+    ttl                = optional(string, "720h")
+    key_type           = optional(string, "rsa")
+    key_bits           = optional(number, 4096)
+    require_cn         = optional(bool, false)
+  }))
+  default = {}
 }
 
 # -------------------------------------------------------------------------
@@ -164,33 +157,13 @@ variable "postgres_allowed_domains" {
 variable "workload_secrets" {
   description = "List of secret paths that Nomad workloads can access"
   type        = list(string)
-  default = [
-    "traefik",
-    "grafana",
-    "backup-worker",
-    "prometheus",
-    "prometheus-nomad",
-    "nomad-ui",
-    "hashiuisecret",
-    "alertmanager",
-    "redis-shared",
-    "postgres-shared/root",
-    "postgres-shared/replication",
-    "nextcloud",
-    "deluge",
-    "pia",
-    "mullvad",
-    "cloudflared",
-    "vaultwarden",
-    "temporal",
-    "trivy-dashboard",
-    "forgejo",
-    "forgejo-runner",
-    "umami",
-    "s3-proxy",
-    "patroni",
-    "oauth2-proxy",
-    "traefik-log-dashboard",
-    "maxmind"
-  ]
+  default     = []
+}
+
+variable "vault_policies" {
+  description = "Map of Vault policies to create"
+  type = map(object({
+    policy = string
+  }))
+  default = {}
 }

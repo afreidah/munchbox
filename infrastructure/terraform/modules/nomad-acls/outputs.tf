@@ -1,38 +1,42 @@
-# -------------------------------------------------------------------------------
-# Nomad ACLs Module - Outputs
+# -----------------------------------------------------------------------------
+# NOMAD-ACLS MODULE - OUTPUT VALUES
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Exposes policy names, token accessor IDs, and Vault paths for verification.
-# Token secrets are stored in Vault and intentionally not exposed here.
-# -------------------------------------------------------------------------------
+# Output Categories:
+#   - Policies: Map of created policy names
+#   - Token Accessors: Safe-to-log accessor IDs for tokens
+#   - Vault Paths: Where tokens are stored (not the tokens themselves)
+#
+# Usage:
+#   - policies: Reference created policy names for verification
+#   - token_accessors: Safe to log, use for token management
+#   - vault_paths: Paths for applications to retrieve tokens from Vault
+# -----------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# POLICIES
+# -------------------------------------------------------------------------
 
 output "policies" {
   description = "Map of created ACL policy names"
-  value = {
-    admin         = nomad_acl_policy.admin.name
-    read_only     = nomad_acl_policy.read_only.name
-    developer     = nomad_acl_policy.developer.name
-    hashi_ui      = nomad_acl_policy.hashi_ui.name
-    backup_worker = nomad_acl_policy.backup_worker.name
-    prometheus    = nomad_acl_policy.prometheus.name
-  }
+  value       = { for k, v in nomad_acl_policy.policy : k => v.name }
 }
+
+# -------------------------------------------------------------------------
+# TOKEN ACCESSORS
+# -------------------------------------------------------------------------
 
 output "token_accessors" {
   description = "Map of token accessor IDs (safe to log)"
-  value = {
-    hashi_ui      = nomad_acl_token.hashi_ui.accessor_id
-    backup_worker = nomad_acl_token.backup_worker.accessor_id
-    prometheus    = nomad_acl_token.prometheus.accessor_id
-  }
+  value       = { for k, v in nomad_acl_token.token : k => v.accessor_id }
 }
+
+# -------------------------------------------------------------------------
+# VAULT PATHS
+# -------------------------------------------------------------------------
 
 output "vault_paths" {
   description = "Vault KV paths where tokens are stored"
-  value = {
-    hashi_ui      = "${var.vault_mount}/hashiuisecret"
-    backup_worker = "${var.vault_mount}/backup-worker"
-    prometheus    = "${var.vault_mount}/prometheus-nomad"
-  }
+  value       = { for k, v in var.vault_secrets : k => "${var.vault_mount}/${v.vault_path}" }
 }

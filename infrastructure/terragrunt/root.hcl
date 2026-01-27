@@ -159,22 +159,297 @@ locals {
   # ---------------------------------------------------------------------------
   # CONSUL-ACLS MODULE INPUTS
   # ---------------------------------------------------------------------------
-  # Consul ACL policies and tokens, stored in Vault KV
+  # Consul ACL policies, tokens, and Vault secret storage configuration
 
   consul_acls_inputs = {
     consul_bootstrap_token = get_env("CONSUL_HTTP_TOKEN", "")
     vault_mount            = "secret"
+
+    # --- ACL Policies ---
+    policies = {
+      "nomad-server" = {
+        description = "Nomad server - full cluster orchestration"
+        rules       = <<-EOT
+          agent_prefix "" { policy = "read" }
+          node_prefix "" { policy = "write" }
+          service_prefix "" { policy = "write" }
+          acl = "write"
+          query_prefix "" { policy = "read" }
+          key_prefix "" { policy = "write" }
+        EOT
+      }
+
+      "nomad-client" = {
+        description = "Nomad client - service registration and node updates"
+        rules       = <<-EOT
+          agent_prefix "" { policy = "read" }
+          node_prefix "" { policy = "write" }
+          service_prefix "" { policy = "write" }
+          key_prefix "" { policy = "read" }
+        EOT
+      }
+
+      "vault-storage" = {
+        description = "Vault storage backend"
+        rules       = <<-EOT
+          key_prefix "vault/" { policy = "write" }
+          node_prefix "" { policy = "write" }
+          service "vault" { policy = "write" }
+          agent_prefix "" { policy = "write" }
+          session_prefix "" { policy = "write" }
+        EOT
+      }
+
+      "consul-agent" = {
+        description = "Consul agent - self registration and services"
+        rules       = <<-EOT
+          node_prefix "" { policy = "write" }
+          agent_prefix "" { policy = "write" }
+          service_prefix "" { policy = "write" }
+        EOT
+      }
+
+      "traefik" = {
+        description = "Traefik - Consul Catalog service discovery"
+        rules       = <<-EOT
+          service_prefix "" { policy = "read" }
+          node_prefix "" { policy = "read" }
+          agent_prefix "" { policy = "read" }
+        EOT
+      }
+
+      "prometheus" = {
+        description = "Prometheus - service discovery and metrics collection"
+        rules       = <<-EOT
+          service_prefix "" { policy = "read" }
+          node_prefix "" { policy = "read" }
+          agent_prefix "" { policy = "read" }
+        EOT
+      }
+
+      "patroni" = {
+        description = "Patroni - PostgreSQL HA cluster coordination"
+        rules       = <<-EOT
+          session_prefix "" { policy = "write" }
+          key_prefix "service/munchbox-postgres" { policy = "write" }
+          service_prefix "postgres" { policy = "write" }
+          service "patroni" { policy = "write" }
+          node_prefix "" { policy = "read" }
+        EOT
+      }
+
+      "health-checks" = {
+        description = "Health checks - service and Vault startup operations"
+        rules       = <<-EOT
+          service_prefix "" { policy = "read" }
+          node_prefix "" { policy = "read" }
+          key_prefix "vault" { policy = "read" }
+        EOT
+      }
+
+      "terraform-ci" = {
+        description = "Terraform CI - state storage and locking"
+        rules       = <<-EOT
+          key_prefix "terraform/" { policy = "write" }
+          session_prefix "" { policy = "write" }
+        EOT
+      }
+    }
+
+    # --- ACL Tokens ---
+    tokens = {
+      "nomad-server" = {
+        description = "Token for Nomad servers"
+        policies    = ["nomad-server"]
+      }
+      "nomad-client" = {
+        description = "Token for Nomad clients"
+        policies    = ["nomad-client"]
+      }
+      "vault-storage" = {
+        description = "Token for Vault storage backend"
+        policies    = ["vault-storage"]
+      }
+      "consul-agent" = {
+        description = "Token for Consul client agents"
+        policies    = ["consul-agent"]
+      }
+      "traefik" = {
+        description = "Token for Traefik reverse proxy"
+        policies    = ["traefik"]
+      }
+      "prometheus" = {
+        description = "Token for Prometheus service discovery"
+        policies    = ["prometheus"]
+      }
+      "patroni" = {
+        description = "Token for Patroni PostgreSQL HA cluster"
+        policies    = ["patroni"]
+      }
+      "terraform-ci" = {
+        description = "Token for CI/CD terraform state management"
+        policies    = ["terraform-ci"]
+      }
+    }
+
+    # --- Vault Secret Storage ---
+    vault_secrets = {
+      "nomad-server" = {
+        vault_path = "consul/nomad-server-token"
+        token_key  = "nomad-server"
+      }
+      "nomad-client" = {
+        vault_path = "consul/nomad-client-token"
+        token_key  = "nomad-client"
+      }
+      "vault-storage" = {
+        vault_path = "consul/vault-storage-token"
+        token_key  = "vault-storage"
+      }
+      "consul-agent" = {
+        vault_path = "consul/agent-token"
+        token_key  = "consul-agent"
+      }
+      "traefik" = {
+        vault_path          = "traefik"
+        token_key           = "traefik"
+        token_field_name    = "consul_token"
+        include_accessor_id = false
+      }
+      "prometheus" = {
+        vault_path          = "prometheus"
+        token_key           = "prometheus"
+        token_field_name    = "consul_token"
+        include_accessor_id = false
+      }
+      "patroni" = {
+        vault_path       = "patroni"
+        token_key        = "patroni"
+        token_field_name = "consul_token"
+      }
+      "terraform-ci" = {
+        vault_path = "consul/terraform-ci-token"
+        token_key  = "terraform-ci"
+      }
+    }
   }
 
   # ---------------------------------------------------------------------------
   # NOMAD-ACLS MODULE INPUTS
   # ---------------------------------------------------------------------------
-  # Nomad ACL policies and tokens, stored in Vault KV
+  # Nomad ACL policies, tokens, and Vault secret storage configuration
 
   nomad_acls_inputs = {
     nomad_bootstrap_token = get_env("NOMAD_TOKEN", "")
     vault_mount           = "secret"
-    backup_consul_token   = get_env("BACKUP_CONSUL_TOKEN", "")
+
+    # Extra values to inject into vault secrets (cross-module dependencies)
+    extra_secret_values = {
+      backup_consul_token = get_env("BACKUP_CONSUL_TOKEN", "")
+    }
+
+    # --- ACL Policies ---
+    policies = {
+      # Operator Policies (no tokens generated - for human access via UI)
+      "admin" = {
+        description = "Full cluster administration access"
+        rules_hcl   = <<-EOT
+          namespace "*" {
+            policy       = "write"
+            capabilities = ["alloc-exec", "alloc-node-exec", "alloc-lifecycle"]
+          }
+          node { policy = "write" }
+          agent { policy = "write" }
+          operator { policy = "write" }
+          plugin { policy = "read" }
+          host_volume "*" { policy = "write" }
+        EOT
+      }
+
+      "read-only" = {
+        description = "Read-only cluster monitoring access"
+        rules_hcl   = <<-EOT
+          namespace "*" { policy = "read" }
+          node { policy = "read" }
+          agent { policy = "read" }
+        EOT
+      }
+
+      "developer" = {
+        description = "Job management in default namespace"
+        rules_hcl   = <<-EOT
+          namespace "default" {
+            policy       = "write"
+            capabilities = ["alloc-exec", "alloc-lifecycle"]
+          }
+          node { policy = "read" }
+          agent { policy = "read" }
+          host_volume "*" { policy = "read" }
+        EOT
+      }
+
+      # Service Policies (tokens generated for automated services)
+      "hashi-ui" = {
+        description = "Hashi-UI dashboard - read-only cluster visibility"
+        rules_hcl   = <<-EOT
+          namespace "*" { policy = "read" }
+          node { policy = "read" }
+          agent { policy = "read" }
+        EOT
+      }
+
+      "backup-worker" = {
+        description = "Temporal backup worker - snapshot and read access"
+        rules_hcl   = <<-EOT
+          namespace "*" { policy = "read" }
+          node { policy = "read" }
+          agent { policy = "write" }
+          operator { policy = "write" }
+        EOT
+      }
+
+      "prometheus" = {
+        description = "Prometheus metrics scraping access"
+        rules_hcl   = <<-EOT
+          namespace "*" { policy = "read" }
+          node { policy = "read" }
+          agent { policy = "read" }
+        EOT
+      }
+    }
+
+    # --- ACL Tokens (only for services, not operators) ---
+    tokens = {
+      "hashi-ui" = {
+        policies = ["hashi-ui"]
+      }
+      "backup-worker" = {
+        policies = ["backup-worker"]
+      }
+      "prometheus" = {
+        policies = ["prometheus"]
+      }
+    }
+
+    # --- Vault Secret Storage ---
+    vault_secrets = {
+      "hashi-ui" = {
+        vault_path       = "hashiuisecret"
+        token_key        = "hashi-ui"
+        token_field_name = "token"
+      }
+      "backup-worker" = {
+        vault_path       = "backup-worker"
+        token_key        = "backup-worker"
+        token_field_name = "nomad_token"
+        extra_data       = { consul_token = "backup_consul_token" }
+      }
+      "prometheus" = {
+        vault_path       = "prometheus-nomad"
+        token_key        = "prometheus"
+        token_field_name = "nomad_token"
+      }
+    }
   }
 
   # ---------------------------------------------------------------------------
@@ -193,7 +468,7 @@ locals {
   # ---------------------------------------------------------------------------
   # VAULT-CONFIG MODULE INPUTS
   # ---------------------------------------------------------------------------
-  # Vault secrets engines, auth backends, and policies
+  # Vault secrets engines, auth backends, policies, PKI roles, and database roles
 
   vault_config_inputs = {
     # Feature flags
@@ -211,16 +486,90 @@ locals {
     # JWT auth for Nomad workload identity
     nomad_jwks_url = "https://192.168.68.61:4646/.well-known/jwks.json"
 
-    # PKI configuration
-    traefik_allowed_domains = ["munchbox.cc"]
-    postgres_allowed_domains = [
-      "postgres-primary.service.consul",
-      "postgres-replica.service.consul",
-      "postgres.service.consul",
-      "node.consul"
-    ]
+    # --- PKI Roles ---
+    pki_roles = {
+      "traefik" = {
+        allowed_domains    = ["munchbox.cc"]
+        allow_glob_domains = true
+        max_ttl            = "8760h"
+        ttl                = "720h"
+      }
 
-    # Workload secrets accessible via nomad-workloads policy
+      "postgres" = {
+        allowed_domains = [
+          "postgres-primary.service.consul",
+          "postgres-replica.service.consul",
+          "postgres.service.consul",
+          "node.consul"
+        ]
+        max_ttl  = "720h"
+        ttl      = "72h"
+        key_bits = 2048
+      }
+    }
+
+    # --- Vault Policies ---
+    vault_policies = {
+      "consul-token-read" = {
+        policy = <<-EOT
+          path "secret/data/consul/*" {
+            capabilities = ["read"]
+          }
+        EOT
+      }
+
+      "nomad-server" = {
+        policy = <<-EOT
+          path "secret/data/consul/nomad-server-token" {
+            capabilities = ["read"]
+          }
+          path "pki_int/issue/nomad-server" {
+            capabilities = ["create", "update"]
+          }
+        EOT
+      }
+
+      "nomad-client" = {
+        policy = <<-EOT
+          path "secret/data/consul/nomad-client-token" {
+            capabilities = ["read"]
+          }
+          path "pki_int/issue/nomad-client" {
+            capabilities = ["create", "update"]
+          }
+        EOT
+      }
+
+      "vault-cert-manager" = {
+        policy = <<-EOT
+          path "pki_int/issue/consul-server" {
+            capabilities = ["create", "update"]
+          }
+          path "pki_int/issue/consul-client" {
+            capabilities = ["create", "update"]
+          }
+          path "pki_int/issue/nomad-server" {
+            capabilities = ["create", "update"]
+          }
+          path "pki_int/issue/nomad-client" {
+            capabilities = ["create", "update"]
+          }
+          path "pki_int/cert/ca" {
+            capabilities = ["read"]
+          }
+        EOT
+      }
+
+      "backup-worker" = {
+        policy = <<-EOT
+          path "sys/storage/raft/snapshot" {
+            capabilities = ["read"]
+          }
+        EOT
+      }
+    }
+
+    # --- Workload Secrets (for nomad-workloads policy) ---
     workload_secrets = [
       "traefik",
       "grafana",
@@ -250,6 +599,28 @@ locals {
       "traefik-log-dashboard",
       "maxmind"
     ]
+
+    # --- Database Roles (disabled by default) ---
+    database_roles = {
+      "temporal" = {
+        creation_statements = [
+          "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
+          "GRANT ALL PRIVILEGES ON DATABASE temporal TO \"{{name}}\";",
+          "GRANT ALL ON SCHEMA public TO \"{{name}}\";"
+        ]
+      }
+      "kanboard" = {
+        creation_statements = [
+          "CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';",
+          "GRANT CONNECT ON DATABASE kanboard TO \"{{name}}\";",
+          "GRANT USAGE, CREATE ON SCHEMA public TO \"{{name}}\";",
+          "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO \"{{name}}\";",
+          "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO \"{{name}}\";",
+          "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"{{name}}\";",
+          "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"{{name}}\";"
+        ]
+      }
+    }
   }
 
   # ---------------------------------------------------------------------------
