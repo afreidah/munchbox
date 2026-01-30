@@ -245,7 +245,7 @@ jobs:
 
           # Format check
           echo "### Format Check" >> "$COMMENT_FILE"
-          if terragrunt hclfmt --terragrunt-check > /tmp/fmt-output.txt 2>&1; then
+          if terragrunt hcl fmt --check > /tmp/fmt-output.txt 2>&1; then
             echo "[PASS] All HCL files properly formatted" >> "$COMMENT_FILE"
           else
             echo "[FAIL] Format issues found:" >> "$COMMENT_FILE"
@@ -266,11 +266,11 @@ jobs:
             echo "" >> "$COMMENT_FILE"
 
             cd "$dir"
-            if terragrunt validate --terragrunt-non-interactive > /tmp/validate.txt 2>&1; then
+            if terragrunt validate --non-interactive > /tmp/validate.txt 2>&1; then
               echo "[PASS] Validation passed" >> "$COMMENT_FILE"
               echo "" >> "$COMMENT_FILE"
               echo "**Plan output:**" >> "$COMMENT_FILE"
-              if terragrunt plan --terragrunt-non-interactive -no-color > /tmp/plan.txt 2>&1; then
+              if terragrunt plan --non-interactive -no-color > /tmp/plan.txt 2>&1; then
                 echo '```hcl' >> "$COMMENT_FILE"
                 tail -100 /tmp/plan.txt >> "$COMMENT_FILE"
                 echo '```' >> "$COMMENT_FILE"

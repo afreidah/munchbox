@@ -665,11 +665,11 @@ locals {
   # ---------------------------------------------------------------------------
   # Cloudflare DNS records, tunnel configuration, and rate limiting
 
-  cloudflare_account_id     = "02e53aa2113dc76e57f9598af2f74939"
+  cloudflare_account_id          = "02e53aa2113dc76e57f9598af2f74939"
   cloudflare_alexfreidah_zone_id = "79e647e591f69cc27254bf4771464619"
   cloudflare_munchbox_zone_id    = "bd3f7236466255155ab59b9d21cd88fd"
-  cloudflare_tunnel_id      = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
-  cloudflare_tunnel_cname   = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
+  cloudflare_tunnel_id           = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
+  cloudflare_tunnel_cname        = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
 
   dns_inputs = {
     dns_records = {
