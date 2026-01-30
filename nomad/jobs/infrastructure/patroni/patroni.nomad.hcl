@@ -496,7 +496,25 @@ END
 CREATE DATABASE IF NOT EXISTS trivy OWNER {{ .Data.data.db_username }};
 {{ end }}
 
+-- Immich (requires pgvector extension)
+{{ with secret "secret/data/immich" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS immich OWNER {{ .Data.data.db_username }};
+{{ end }}
+
 SQL
+
+-- Enable pgvector extension for Immich (must be done after connecting to the database)
+{{ with secret "secret/data/immich" }}
+psql -h localhost -p {{ env "NOMAD_PORT_postgres" }} -U $PGUSER -d immich -c "CREATE EXTENSION IF NOT EXISTS vector;"
+psql -h localhost -p {{ env "NOMAD_PORT_postgres" }} -U $PGUSER -d immich -c "CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;"
+{{ end }}
 
 echo "Database initialization complete"
         EOF
