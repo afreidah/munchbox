@@ -1,8 +1,0 @@
-# --------------------------------------------------------------------
-# Consul ACL Policy: nomad-client
-# Grants Nomad clients enough to register nodes/services.
-# --------------------------------------------------------------------
-node_prefix ""    { policy = "write" }
-service_prefix "" { policy = "write" }
-agent_prefix ""   { policy = "read" }
-

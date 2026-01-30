@@ -1,8 +1,0 @@
-# grafana.yml
-name: nomad-grafana
-audiences: ["vault.io"]
-policies: ["cdktf-grafana-read"]
-bound_claims:
-  nomad_namespace: default
-  nomad_job_id: grafana
-token_period: 3600s

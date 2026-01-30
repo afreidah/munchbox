@@ -1,6 +1,0 @@
-name: prometheus-sd
-description: Prometheus Consul SD token
-local: true
-policies: ["prometheus-sd-read"]           
-roles: []                                 
-kv_path: monitoring/prometheus/consul_token 

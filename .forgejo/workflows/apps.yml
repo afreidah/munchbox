@@ -206,7 +206,7 @@ jobs:
           make push
 
   # -------------------------------------------------------------------------
-  # Build Debian packages (matrix)
+  # Build and publish Debian packages (matrix)
   # -------------------------------------------------------------------------
 
   build-deb:
@@ -222,6 +222,8 @@ jobs:
       matrix:
         app: ${{ fromJson(needs.detect.outputs.apps_to_deb) }}
       fail-fast: false
+    env:
+      APTLY_PASS: ${{ secrets.APTLY_PASS }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -241,6 +243,11 @@ jobs:
           cd ${{ matrix.app }}
           make build-deb
           make build-deb-arm64
+
+      - name: Publish to Aptly
+        run: |
+          cd ${{ matrix.app }}
+          make publish-deb
 
       - name: Upload Debian packages
         uses: actions/upload-artifact@v3

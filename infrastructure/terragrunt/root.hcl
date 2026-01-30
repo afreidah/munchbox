@@ -839,6 +839,35 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
+  # FORGEJO-SECRETS MODULE INPUTS
+  # ---------------------------------------------------------------------------
+  # Syncs secrets from Vault to Forgejo for CI/CD pipelines
+
+  forgejo_secrets_inputs = {
+    vault_mount      = "secret"
+    repository_owner = "alex"
+    repository_name  = "munchbox"
+
+    secrets = {
+      "aptly-pass" = {
+        vault_path  = "aptly"
+        vault_field = "password"
+        secret_name = "APTLY_PASS"
+      }
+      "nomad-token" = {
+        vault_path  = "nomad/management-token"
+        vault_field = "token"
+        secret_name = "NOMAD_TOKEN"
+      }
+      "consul-token" = {
+        vault_path  = "consul/bootstrap-token"
+        vault_field = "token"
+        secret_name = "CONSUL_HTTP_TOKEN"
+      }
+    }
+  }
+
+  # ---------------------------------------------------------------------------
   # BOOTSTRAP MODULE INPUTS
   # ---------------------------------------------------------------------------
   # These get merged with node-specific config in the env_helper
@@ -951,6 +980,10 @@ generate "providers" {
           source  = "maxlaverse/bitwarden"
           version = "~> 0.12"
         }
+        forgejo = {
+          source  = "svalabs/forgejo"
+          version = "~> 1.1"
+        }
       }
     }
 
@@ -998,6 +1031,11 @@ generate "providers" {
       server          = "https://vaultwarden.munchbox.cc"
       email           = "alex.freidah@gmail.com"
       master_password = "${get_env("VAULTWARDEN_MASTER_PASSWORD", "")}"
+    }
+
+    provider "forgejo" {
+      host      = "http://forgejo.service.consul:30028"
+      api_token = "${get_env("FORGEJO_API_TOKEN", "")}"
     }
   EOF
 }
