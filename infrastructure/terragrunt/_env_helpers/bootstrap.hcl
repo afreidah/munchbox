@@ -10,7 +10,7 @@
 
 terraform {
   # Double-slash copies entire modules dir but uses bootstrap as root
-  source = "${get_repo_root()}/infrastructure/terraform/modules//bootstrap"
+  source = "${get_repo_root()}/infrastructure/modules//bootstrap"
 }
 
 locals {

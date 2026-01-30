@@ -8,7 +8,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules/vaultwarden-secrets"
+  source = "${get_repo_root()}/infrastructure/modules/vaultwarden-secrets"
 }
 
 locals {

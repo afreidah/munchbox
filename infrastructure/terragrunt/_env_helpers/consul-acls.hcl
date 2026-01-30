@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules//consul-acls"
+  source = "${get_repo_root()}/infrastructure/modules//consul-acls"
 }
 
 locals {

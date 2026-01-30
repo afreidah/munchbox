@@ -8,7 +8,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules/forgejo-secrets"
+  source = "${get_repo_root()}/infrastructure/modules/forgejo-secrets"
 }
 
 locals {

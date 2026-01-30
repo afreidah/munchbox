@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules//kms-oci"
+  source = "${get_repo_root()}/infrastructure/modules//kms-oci"
 }
 
 locals {

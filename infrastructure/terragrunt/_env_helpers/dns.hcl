@@ -8,7 +8,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules/dns"
+  source = "${get_repo_root()}/infrastructure/modules/dns"
 }
 
 locals {
