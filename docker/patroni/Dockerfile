@@ -73,3 +73,4 @@ WORKDIR /home/postgres
 # --- Default entrypoint ---
 ENTRYPOINT ["patroni"]
 CMD ["/etc/patroni/patroni.yml"]
+
