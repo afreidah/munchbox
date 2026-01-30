@@ -4,6 +4,7 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Builds and tests Docker images on PRs. Pushes to registry on merge to main.
+# Uses git diff-tree for change detection to handle merge commits correctly.
 # -------------------------------------------------------------------------------
 
 name: Docker Images
@@ -19,12 +20,52 @@ on:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # Detect changed images
+  # ---------------------------------------------------------------------------
+
+  detect:
+    runs-on: docker
+    outputs:
+      ops_build_image: ${{ steps.detect.outputs.ops_build_image }}
+      patroni: ${{ steps.detect.outputs.patroni }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        id: detect
+        run: |
+          # Use diff-tree which works correctly for both regular and merge commits
+          CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)
+          echo "Changed files:"
+          echo "$CHANGED"
+          echo ""
+
+          if echo "$CHANGED" | grep -q "^docker/ops-build-image"; then
+            echo "ops_build_image=true" >> $GITHUB_OUTPUT
+            echo "ops-build-image: changed"
+          else
+            echo "ops_build_image=false" >> $GITHUB_OUTPUT
+            echo "ops-build-image: no changes"
+          fi
+
+          if echo "$CHANGED" | grep -q "^docker/patroni"; then
+            echo "patroni=true" >> $GITHUB_OUTPUT
+            echo "patroni: changed"
+          else
+            echo "patroni=false" >> $GITHUB_OUTPUT
+            echo "patroni: no changes"
+          fi
+
+  # ---------------------------------------------------------------------------
   # ops-build-image
   # ---------------------------------------------------------------------------
 
   build-ops-build-image:
     runs-on: docker
-    if: contains(github.event.head_commit.modified, 'docker/ops-build-image') || contains(github.event.head_commit.added, 'docker/ops-build-image') || github.event_name == 'workflow_dispatch'
+    needs: detect
+    if: needs.detect.outputs.ops_build_image == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - name: Build ops-build-image
@@ -34,8 +75,12 @@ jobs:
 
   push-ops-build-image:
     runs-on: docker
-    needs: build-ops-build-image
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [detect, build-ops-build-image]
+    if: |
+      always() &&
+      (needs.build-ops-build-image.result == 'success') &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
       - name: Push ops-build-image
@@ -49,7 +94,8 @@ jobs:
 
   build-patroni:
     runs-on: docker
-    if: contains(github.event.head_commit.modified, 'docker/patroni') || contains(github.event.head_commit.added, 'docker/patroni') || github.event_name == 'workflow_dispatch'
+    needs: detect
+    if: needs.detect.outputs.patroni == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - name: Build patroni
@@ -59,8 +105,12 @@ jobs:
 
   push-patroni:
     runs-on: docker
-    needs: build-patroni
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [detect, build-patroni]
+    if: |
+      always() &&
+      (needs.build-patroni.result == 'success') &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
       - name: Push patroni
