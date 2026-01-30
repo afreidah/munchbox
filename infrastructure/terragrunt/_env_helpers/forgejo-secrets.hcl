@@ -1,18 +1,18 @@
 # -----------------------------------------------------------------------------
-# DNS ENV HELPER
+# FORGEJO SECRETS ENV HELPER
 # -----------------------------------------------------------------------------
 #
-# Configures Cloudflare DNS records, tunnel routing, and rate limiting.
+# Syncs secrets from Vault to Forgejo repository action secrets for CI/CD.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules/dns"
+  source = "${get_repo_root()}/infrastructure/modules/forgejo-secrets"
 }
 
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 }
 
-inputs = local.root.locals.dns_inputs
+inputs = local.root.locals.forgejo_secrets_inputs

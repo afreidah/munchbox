@@ -1,6 +1,0 @@
-name: traefik-catalog
-description: Traefik Consul Catalog token
-local: true
-policies: ["traefik-catalog-read"]
-roles: []
-kv_path: monitoring/traefik/consul_token

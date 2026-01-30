@@ -17,7 +17,7 @@ include "root" {
 }
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules//object-storage-oci"
+  source = "${get_repo_root()}/infrastructure/modules//object-storage-oci"
 }
 
 locals {

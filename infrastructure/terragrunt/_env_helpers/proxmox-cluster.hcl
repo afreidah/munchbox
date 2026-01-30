@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules/proxmox-cluster"
+  source = "${get_repo_root()}/infrastructure/modules/proxmox-cluster"
 }
 
 locals {

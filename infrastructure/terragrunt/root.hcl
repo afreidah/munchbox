@@ -63,7 +63,7 @@ locals {
   # SSH CONFIGURATION
   # ---------------------------------------------------------------------------
 
-  ssh_public_key = get_env("MUNCHBOX_SSH_PUBKEY", file("~/.ssh/id_ed25519.pub"))
+  ssh_public_key = get_env("MUNCHBOX_SSH_PUBKEY", fileexists("~/.ssh/id_ed25519.pub") ? file("~/.ssh/id_ed25519.pub") : "")
 
   # ---------------------------------------------------------------------------
   # PROVIDER-SPECIFIC DEFAULTS
@@ -665,11 +665,11 @@ locals {
   # ---------------------------------------------------------------------------
   # Cloudflare DNS records, tunnel configuration, and rate limiting
 
-  cloudflare_account_id     = "02e53aa2113dc76e57f9598af2f74939"
+  cloudflare_account_id          = "02e53aa2113dc76e57f9598af2f74939"
   cloudflare_alexfreidah_zone_id = "79e647e591f69cc27254bf4771464619"
   cloudflare_munchbox_zone_id    = "bd3f7236466255155ab59b9d21cd88fd"
-  cloudflare_tunnel_id      = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
-  cloudflare_tunnel_cname   = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
+  cloudflare_tunnel_id           = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
+  cloudflare_tunnel_cname        = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
 
   dns_inputs = {
     dns_records = {
@@ -839,6 +839,35 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
+  # FORGEJO-SECRETS MODULE INPUTS
+  # ---------------------------------------------------------------------------
+  # Syncs secrets from Vault to Forgejo for CI/CD pipelines
+
+  forgejo_secrets_inputs = {
+    vault_mount      = "secret"
+    repository_owner = "alex"
+    repository_name  = "munchbox"
+
+    secrets = {
+      "aptly-pass" = {
+        vault_path  = "aptly"
+        vault_field = "password"
+        secret_name = "APTLY_PASS"
+      }
+      "nomad-token" = {
+        vault_path  = "nomad/management-token"
+        vault_field = "token"
+        secret_name = "NOMAD_TOKEN"
+      }
+      "consul-token" = {
+        vault_path  = "consul/bootstrap-token"
+        vault_field = "token"
+        secret_name = "CONSUL_HTTP_TOKEN"
+      }
+    }
+  }
+
+  # ---------------------------------------------------------------------------
   # BOOTSTRAP MODULE INPUTS
   # ---------------------------------------------------------------------------
   # These get merged with node-specific config in the env_helper
@@ -951,6 +980,10 @@ generate "providers" {
           source  = "maxlaverse/bitwarden"
           version = "~> 0.12"
         }
+        forgejo = {
+          source  = "svalabs/forgejo"
+          version = "~> 1.1"
+        }
       }
     }
 
@@ -998,6 +1031,11 @@ generate "providers" {
       server          = "https://vaultwarden.munchbox.cc"
       email           = "alex.freidah@gmail.com"
       master_password = "${get_env("VAULTWARDEN_MASTER_PASSWORD", "")}"
+    }
+
+    provider "forgejo" {
+      host      = "http://forgejo.service.consul:30028"
+      api_token = "${get_env("FORGEJO_API_TOKEN", "")}"
     }
   EOF
 }

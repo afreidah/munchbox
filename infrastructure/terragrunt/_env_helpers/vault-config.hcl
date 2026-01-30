@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/terraform/modules/vault-config"
+  source = "${get_repo_root()}/infrastructure/modules/vault-config"
 }
 
 locals {

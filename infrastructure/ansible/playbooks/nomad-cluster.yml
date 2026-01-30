@@ -24,28 +24,6 @@
       setup:
 
 # -------------------------------------------------------------------------
-# Common Configuration
-# -------------------------------------------------------------------------
-
-- name: Configure common settings on all nodes
-  hosts: nomad_cluster
-  become: true
-  roles:
-    - common
-  tags: [common]
-
-# -------------------------------------------------------------------------
-# DNS Integration
-# -------------------------------------------------------------------------
-
-- name: Configure DNS for Consul integration
-  hosts: nomad_cluster
-  become: true
-  roles:
-    - dns
-  tags: [dns]
-
-# -------------------------------------------------------------------------
 # Consul Installation and Configuration
 # -------------------------------------------------------------------------
 

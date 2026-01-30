@@ -4,8 +4,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Configures existing Proxmox VE cluster (installed from ISO) with Ceph storage
-# and cluster formation. Assumes Proxmox VE is already installed on all nodes.
+# Verifies Proxmox VE cluster connectivity. Assumes Proxmox VE is already
+# installed on all nodes.
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
@@ -32,35 +32,3 @@
       debug:
         msg: "Proxmox VE {{ pve_version.stdout }} detected"
 
-# -------------------------------------------------------------------------
-# Proxmox Cluster Formation
-# -------------------------------------------------------------------------
-
-- name: Configure Proxmox cluster
-  hosts: proxmox_hosts
-  become: true
-  roles:
-    - proxmox-cluster
-  tags: [cluster]
-
-# -------------------------------------------------------------------------
-# Ceph Storage Setup
-# -------------------------------------------------------------------------
-
-- name: Configure Ceph storage cluster
-  hosts: proxmox_hosts
-  become: true
-  roles:
-    - ceph-cluster
-  tags: [ceph]
-
-# -------------------------------------------------------------------------
-# Storage Configuration
-# -------------------------------------------------------------------------
-
-- name: Configure shared storage
-  hosts: proxmox_hosts
-  become: true
-  roles:
-    - storage
-  tags: [storage]
