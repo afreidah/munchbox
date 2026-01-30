@@ -182,7 +182,7 @@ jobs:
           done
 
   # -------------------------------------------------------------------------
-  # Push Docker images (matrix)
+  # Push Docker images
   # -------------------------------------------------------------------------
 
   push:
@@ -194,21 +194,23 @@ jobs:
       (needs.test.result == 'success' || needs.test.result == 'skipped') &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push'
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.detect.outputs.apps_to_push) }}
-      fail-fast: false
-      max-parallel: 2
     steps:
       - uses: actions/checkout@v4
 
-      - name: Push ${{ matrix.app }}
+      - name: Push apps
+        env:
+          APPS_TO_PUSH: ${{ needs.detect.outputs.apps_to_push }}
         run: |
-          cd ${{ matrix.app }}
-          make push
+          echo "Apps to push: $APPS_TO_PUSH"
+          echo "$APPS_TO_PUSH" | jq -r '.[]' | while read -r app; do
+            echo "=== Pushing: $app ==="
+            cd "$app"
+            make push
+            cd - > /dev/null
+          done
 
   # -------------------------------------------------------------------------
-  # Build and publish Debian packages (matrix)
+  # Build and publish Debian packages
   # -------------------------------------------------------------------------
 
   build-deb:
@@ -220,10 +222,6 @@ jobs:
       (needs.test.result == 'success' || needs.test.result == 'skipped') &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push'
-    strategy:
-      matrix:
-        app: ${{ fromJson(needs.detect.outputs.apps_to_deb) }}
-      fail-fast: false
     env:
       APTLY_PASS: ${{ secrets.APTLY_PASS }}
     steps:
@@ -240,21 +238,16 @@ jobs:
         run: |
           go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
 
-      - name: Build Debian packages for ${{ matrix.app }}
+      - name: Build and publish Debian packages
+        env:
+          APPS_TO_DEB: ${{ needs.detect.outputs.apps_to_deb }}
         run: |
-          cd ${{ matrix.app }}
-          make build-deb
-          make build-deb-arm64
-
-      - name: Publish to Aptly
-        run: |
-          cd ${{ matrix.app }}
-          make publish-deb
-
-      - name: Upload Debian packages
-        uses: actions/upload-artifact@v3
-        with:
-          name: deb-${{ matrix.app }}
-          path: ${{ matrix.app }}/dist/*.deb
-          retention-days: 30
-        continue-on-error: true  # Artifact uploads may fail on Forgejo
+          echo "Apps to build debs: $APPS_TO_DEB"
+          echo "$APPS_TO_DEB" | jq -r '.[]' | while read -r app; do
+            echo "=== Building debs for: $app ==="
+            cd "$app"
+            make build-deb
+            make build-deb-arm64
+            make publish-deb
+            cd - > /dev/null
+          done
