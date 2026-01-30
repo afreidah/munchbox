@@ -36,8 +36,9 @@ jobs:
       - name: Detect changes
         id: detect
         run: |
-          # Use diff-tree which works correctly for both regular and merge commits
-          CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null || true)
+          # For merge commits, compare against first parent (previous main)
+          # For regular commits, HEAD^1 is just the previous commit
+          CHANGED=$(git diff --name-only HEAD^1 HEAD 2>/dev/null || true)
           echo "Changed files:"
           echo "$CHANGED"
           echo ""
