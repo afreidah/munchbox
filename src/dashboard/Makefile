@@ -83,3 +83,4 @@ clean: ## Remove the local dashboard image
 
 .PHONY: help builder build push run clean
 .DEFAULT_GOAL := help
+
