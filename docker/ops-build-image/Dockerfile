@@ -35,7 +35,7 @@ ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go
 
 # --- Terraform ---
 RUN set -eux; \
-  TF_VERSION="1.10.3"; \
+  TF_VERSION="1.14.4"; \
   curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/tf.zip; \
   unzip -o -d /tmp /tmp/tf.zip; \
   install -m0755 /tmp/terraform /tmp/bin/terraform; \
@@ -51,7 +51,7 @@ RUN set -eux; \
 
 # --- Terragrunt ---
 RUN set -eux; \
-  TG_VERSION="0.69.1"; \
+  TG_VERSION="0.91.5"; \
   curl -fsSL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_${ARCH_DL}" -o /tmp/bin/terragrunt; \
   chmod +x /tmp/bin/terragrunt
 
@@ -142,13 +142,14 @@ COPY --from=builder /tmp/bin/ /usr/local/bin/
 COPY --from=builder /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:/usr/local/bin:$PATH GOPATH=/go
 
-# --- Ansible ---
+# --- Ansible + ansible-lint ---
 ENV PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=cache,target=/root/.cache/pipx \
     set -eux; \
   mkdir -p "$PIPX_HOME"; \
-  pipx install --include-deps ansible
+  pipx install --include-deps ansible; \
+  pipx install ansible-lint
 
 # --- Sanity check ---
 RUN set -eux; \
@@ -165,6 +166,7 @@ RUN set -eux; \
   go version && \
   node --version && \
   ansible --version | head -n1 && \
+  ansible-lint --version && \
   echo "==================="
 
 # --- Non-root user ---

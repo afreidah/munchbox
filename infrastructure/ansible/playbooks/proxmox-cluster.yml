@@ -43,24 +43,3 @@
     - proxmox-cluster
   tags: [cluster]
 
-# -------------------------------------------------------------------------
-# Ceph Storage Setup
-# -------------------------------------------------------------------------
-
-- name: Configure Ceph storage cluster
-  hosts: proxmox_hosts
-  become: true
-  roles:
-    - ceph-cluster
-  tags: [ceph]
-
-# -------------------------------------------------------------------------
-# Storage Configuration
-# -------------------------------------------------------------------------
-
-- name: Configure shared storage
-  hosts: proxmox_hosts
-  become: true
-  roles:
-    - storage
-  tags: [storage]
