@@ -31,6 +31,7 @@ RUN set -eux; \
         procps \
         iputils-ping \
         dnsutils \
+        postgresql-18-pgvector \
     ; \
     rm -rf /var/lib/apt/lists/*
 
