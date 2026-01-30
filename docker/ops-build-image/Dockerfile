@@ -33,69 +33,39 @@ RUN set -eux; \
   tar -C /usr/local -xzf /tmp/go.tgz; rm -f /tmp/go.tgz
 ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go
 
-# --- Terraform ---
+# --- Download all binaries in parallel (much faster) ---
 RUN set -eux; \
   TF_VERSION="1.14.4"; \
-  curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/tf.zip; \
-  unzip -o -d /tmp /tmp/tf.zip; \
-  install -m0755 /tmp/terraform /tmp/bin/terraform; \
-  rm -f /tmp/terraform /tmp/tf.zip
-
-# --- TFLint ---
-RUN set -eux; \
-  TFLINT_VERSION="0.54.0"; \
-  curl -sSfL "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" -o /tmp/tflint.zip; \
-  unzip /tmp/tflint.zip -d /tmp; \
-  install -m0755 /tmp/tflint /tmp/bin/tflint; \
-  rm -f /tmp/tflint.zip /tmp/tflint
-
-# --- Terragrunt ---
-RUN set -eux; \
   TG_VERSION="0.91.5"; \
-  curl -fsSL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_${ARCH_DL}" -o /tmp/bin/terragrunt; \
-  chmod +x /tmp/bin/terragrunt
-
-# --- Nomad ---
-RUN set -eux; \
   NOMAD_VERSION="1.11.1"; \
-  curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/nomad.zip; \
-  unzip -o -d /tmp /tmp/nomad.zip; \
-  install -m0755 /tmp/nomad /tmp/bin/nomad; \
-  rm -f /tmp/nomad /tmp/nomad.zip
-
-# --- Nomad Pack ---
-RUN set -eux; \
   PACK_VERSION="0.1.2"; \
-  curl -fsSL "https://releases.hashicorp.com/nomad-pack/${PACK_VERSION}/nomad-pack_${PACK_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/pack.zip; \
-  unzip -o -d /tmp /tmp/pack.zip; \
-  install -m0755 /tmp/nomad-pack /tmp/bin/nomad-pack; \
-  rm -f /tmp/nomad-pack /tmp/pack.zip
-
-# --- Consul ---
-RUN set -eux; \
   CONSUL_VERSION="1.20.1"; \
-  curl -fsSL "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/consul.zip; \
-  unzip -o -d /tmp /tmp/consul.zip; \
-  install -m0755 /tmp/consul /tmp/bin/consul; \
-  rm -f /tmp/consul /tmp/consul.zip
-
-# --- Vault ---
-RUN set -eux; \
   VAULT_VERSION="1.18.3"; \
-  curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/vault.zip; \
-  unzip -o -d /tmp /tmp/vault.zip; \
-  install -m0755 /tmp/vault /tmp/bin/vault; \
-  rm -f /tmp/vault /tmp/vault.zip
+  TFLINT_VERSION="0.54.0"; \
+  TRIVY_VERSION="0.58.0"; \
+  if [ "$ARCH_DL" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="64bit"; fi; \
+  \
+  curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/tf.zip & \
+  curl -fsSL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_${ARCH_DL}" -o /tmp/bin/terragrunt & \
+  curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/nomad.zip & \
+  curl -fsSL "https://releases.hashicorp.com/nomad-pack/${PACK_VERSION}/nomad-pack_${PACK_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/pack.zip & \
+  curl -fsSL "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/consul.zip & \
+  curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/vault.zip & \
+  curl -fsSL "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" -o /tmp/tflint.zip & \
+  curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" -o /tmp/trivy.tgz & \
+  wait; \
+  \
+  chmod +x /tmp/bin/terragrunt; \
+  unzip -o -d /tmp /tmp/tf.zip && install -m0755 /tmp/terraform /tmp/bin/terraform; \
+  unzip -o -d /tmp /tmp/nomad.zip && install -m0755 /tmp/nomad /tmp/bin/nomad; \
+  unzip -o -d /tmp /tmp/pack.zip && install -m0755 /tmp/nomad-pack /tmp/bin/nomad-pack; \
+  unzip -o -d /tmp /tmp/consul.zip && install -m0755 /tmp/consul /tmp/bin/consul; \
+  unzip -o -d /tmp /tmp/vault.zip && install -m0755 /tmp/vault /tmp/bin/vault; \
+  unzip -o -d /tmp /tmp/tflint.zip && install -m0755 /tmp/tflint /tmp/bin/tflint; \
+  tar -xzf /tmp/trivy.tgz -C /tmp trivy && install -m0755 /tmp/trivy /tmp/bin/trivy; \
+  rm -f /tmp/*.zip /tmp/*.tgz /tmp/terraform /tmp/nomad /tmp/nomad-pack /tmp/consul /tmp/vault /tmp/tflint /tmp/trivy
 
-# --- hclfmt ---
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
-    set -eux; \
-  GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 \
-  go install github.com/hashicorp/hcl/v2/cmd/hclfmt@latest; \
-  install -m0755 /go/bin/hclfmt /tmp/bin/hclfmt
-
-# --- Go linting/testing tools (pre-compiled) ---
+# --- Go linting/testing tools ---
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     set -eux; \
@@ -106,15 +76,6 @@ RUN --mount=type=cache,target=/go/pkg/mod \
   install -m0755 /go/bin/staticcheck /tmp/bin/staticcheck && \
   install -m0755 /go/bin/gotest /tmp/bin/gotest && \
   install -m0755 /go/bin/golangci-lint /tmp/bin/golangci-lint
-
-# --- Trivy ---
-RUN set -eux; \
-  TRIVY_VERSION="0.58.0"; \
-  if [ "$ARCH_DL" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="64bit"; fi; \
-  curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" -o /tmp/trivy.tgz; \
-  tar -xzf /tmp/trivy.tgz -C /tmp trivy; \
-  install -m0755 /tmp/trivy /tmp/bin/trivy; \
-  rm -f /tmp/trivy /tmp/trivy.tgz
 
 # ------------------------------------------------------------------------------
 # Stage 2: final - slim runtime image
