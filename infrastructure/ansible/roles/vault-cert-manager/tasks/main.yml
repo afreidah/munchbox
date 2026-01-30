@@ -12,26 +12,15 @@
 # Installation
 # -------------------------------------------------------------------------------
 
-- name: Determine package architecture
-  set_fact:
-    vault_cert_manager_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
-
-- name: Copy .deb package to target
-  copy:
-    src: "{{ vault_cert_manager_deb_path }}"
-    dest: "/tmp/vault-cert-manager.deb"
-    mode: "0644"
+- name: Setup Munchbox apt repository
+  include_role:
+    name: munchbox-repo
 
 - name: Install vault-cert-manager package
-  command: dpkg -i --force-confold /tmp/vault-cert-manager.deb
-  register: dpkg_result
-  changed_when: "'Setting up vault-cert-manager' in dpkg_result.stdout"
+  apt:
+    name: vault-cert-manager
+    state: present
   notify: Restart vault-cert-manager
-
-- name: Remove temporary .deb file
-  file:
-    path: /tmp/vault-cert-manager.deb
-    state: absent
 
 # -------------------------------------------------------------------------------
 # Configuration

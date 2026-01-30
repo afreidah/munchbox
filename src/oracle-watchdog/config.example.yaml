@@ -1,0 +1,35 @@
+# -------------------------------------------------------------------------------
+# Oracle Watchdog - Example Configuration
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Copy to /etc/oracle-watchdog/config.yaml and fill in OCI instance details.
+# -------------------------------------------------------------------------------
+
+# How long a node must be unresponsive before triggering restart
+timeout: 5m
+
+# How often to check for missing node sessions
+check_interval: 30s
+
+# Consul connection
+consul_address: consul.service.consul:8500
+
+# OCI authentication
+oci:
+  config_path: /etc/oracle-watchdog/oci-config
+  profile: DEFAULT
+
+# Oracle nodes to monitor
+nodes:
+  - name: oraclenode1
+    instance_id: ocid1.instance.oc1.iad.xxx
+    compartment_id: ocid1.compartment.oc1..xxx
+
+  - name: oracle-arm-1
+    instance_id: ocid1.instance.oc1.iad.xxx
+    compartment_id: ocid1.compartment.oc1..xxx
+
+  - name: oracle-arm-2
+    instance_id: ocid1.instance.oc1.iad.xxx
+    compartment_id: ocid1.compartment.oc1..xxx

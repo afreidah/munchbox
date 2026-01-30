@@ -482,3 +482,51 @@ scrape_configs:
         target_label: "instance"
       - target_label: "service"
         replacement: "vault-cert-manager"
+
+  # -----------------------------------------------------------------------
+  # Oracle Watchdog - Oracle Cloud node health monitoring
+  # -----------------------------------------------------------------------
+  - job_name: "oracle-watchdog"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["oracle-watchdog"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_address", "__meta_consul_service_port"]
+        separator: ":"
+        regex: "([^:]+):(.*)"
+        replacement: "$1:$2"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "oracle-watchdog"
+
+  # -----------------------------------------------------------------------
+  # Aptly - Debian package repository metrics
+  # -----------------------------------------------------------------------
+  - job_name: "aptly"
+    metrics_path: "/api/metrics"
+    basic_auth:
+      username: "admin"
+      password: "{{ with secret "secret/data/aptly" }}{{ .Data.data.password }}{{ end }}"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["aptly"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "aptly"

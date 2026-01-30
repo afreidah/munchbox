@@ -152,6 +152,12 @@ services:
         tag: git
         icon: forgejo.png
 
+      - name: Aptly
+        subtitle: Debian package repository
+        url: https://apt.munchbox.cc/ui/
+        tag: packages
+        icon: aptly.png
+
   # -------------------------------------------------------------------------
   # Routing and Monitoring
   # -------------------------------------------------------------------------

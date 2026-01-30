@@ -1,0 +1,22 @@
+---
+# -------------------------------------------------------------------------------
+# Oracle Watchdog Role - Handlers
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Service handlers for oracle-watchdog.
+# -------------------------------------------------------------------------------
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: true
+
+- name: Restart oracle-watchdog
+  systemd:
+    name: oracle-watchdog
+    state: restarted
+
+- name: Reload Consul
+  systemd:
+    name: consul
+    state: reloaded

@@ -1,0 +1,10 @@
+#!/bin/sh
+# -------------------------------------------------------------------------------
+# Pre-remove script for oracle-watchdog
+# -------------------------------------------------------------------------------
+set -e
+
+if [ -d /run/systemd/system ]; then
+    systemctl stop oracle-watchdog >/dev/null 2>&1 || true
+    systemctl disable oracle-watchdog >/dev/null 2>&1 || true
+fi

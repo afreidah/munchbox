@@ -1,0 +1,13 @@
+#!/bin/sh
+# -------------------------------------------------------------------------------
+# Post-install script for oracle-watchdog
+# -------------------------------------------------------------------------------
+set -e
+
+if [ -d /run/systemd/system ]; then
+    systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+
+echo "oracle-watchdog installed successfully."
+echo "Start the monitor service with:"
+echo "  systemctl enable --now oracle-watchdog"

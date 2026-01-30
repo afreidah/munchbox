@@ -1,0 +1,33 @@
+# -------------------------------------------------------------------------------
+# Oracle Watchdog Systemd Service
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Systemd unit file for oracle-watchdog monitor mode on Oracle nodes.
+# -------------------------------------------------------------------------------
+
+[Unit]
+Description=Oracle Watchdog Monitor
+Documentation=https://github.com/afreidah/oracle-watchdog
+After=network-online.target consul.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/oracle-watchdog -mode monitor
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=true
+ProtectHome=true
+PrivateTmp=true
+
+# Environment for Consul connection
+Environment=CONSUL_HTTP_ADDR=consul.service.consul:8500
+
+[Install]
+WantedBy=multi-user.target

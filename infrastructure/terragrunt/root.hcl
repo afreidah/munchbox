@@ -254,6 +254,14 @@ locals {
           session_prefix "" { policy = "write" }
         EOT
       }
+
+      "oracle-watchdog" = {
+        description = "Oracle Watchdog - node health monitoring via sessions"
+        rules       = <<-EOT
+          session_prefix "" { policy = "write" }
+          key_prefix "oracle-watchdog/" { policy = "write" }
+        EOT
+      }
     }
 
     # --- ACL Tokens ---
@@ -289,6 +297,10 @@ locals {
       "terraform-ci" = {
         description = "Token for CI/CD terraform state management"
         policies    = ["terraform-ci"]
+      }
+      "oracle-watchdog" = {
+        description = "Token for Oracle Watchdog node monitors"
+        policies    = ["oracle-watchdog"]
       }
     }
 
@@ -330,6 +342,10 @@ locals {
       "terraform-ci" = {
         vault_path = "consul/terraform-ci-token"
         token_key  = "terraform-ci"
+      }
+      "oracle-watchdog" = {
+        vault_path = "consul/oracle-watchdog-token"
+        token_key  = "oracle-watchdog"
       }
     }
   }
@@ -597,7 +613,9 @@ locals {
       "patroni",
       "oauth2-proxy",
       "traefik-log-dashboard",
-      "maxmind"
+      "maxmind",
+      "oracle-watchdog",
+      "aptly"
     ]
 
     # --- Database Roles (disabled by default) ---
@@ -808,6 +826,14 @@ locals {
         password_field = "web_password"
         folder_key     = "shared"
         notes          = "Synced from HashiCorp Vault - Shared with family"
+      }
+      aptly = {
+        name           = "Aptly Package Repo"
+        uri            = "https://apt.munchbox.cc/ui/"
+        vault_path     = "aptly"
+        username       = "admin"
+        password_field = "password"
+        folder_key     = "admin"
       }
     }
   }

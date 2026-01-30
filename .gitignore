@@ -8,6 +8,7 @@
 
 # --- Terraform & CDKTF ---
 .terraform
+.terragrunt-cache
 cdktf.out
 cdktf.log
 *.tfstate

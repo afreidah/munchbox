@@ -12,13 +12,9 @@
 # Installation
 # -------------------------------------------------------------------------------
 
-vault_cert_manager_version: "latest"
 vault_cert_manager_config_dir: /etc/vault-cert-manager
 vault_cert_manager_user: root
 vault_cert_manager_group: root
-
-# Path to .deb package (set in playbook based on architecture)
-# vault_cert_manager_deb_path: /path/to/vault-cert-manager_x.x.x_amd64.deb
 
 # -------------------------------------------------------------------------------
 # Vault Connection

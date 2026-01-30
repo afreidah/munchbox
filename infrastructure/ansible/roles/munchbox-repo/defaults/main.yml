@@ -1,0 +1,11 @@
+---
+# -------------------------------------------------------------------------------
+# Munchbox Repo Role - Default Variables
+#
+# Project: Munchbox / Author: Alex Freidah
+# -------------------------------------------------------------------------------
+
+munchbox_repo_url: "https://apt.munchbox.cc"
+munchbox_repo_gpg_url: "{{ munchbox_repo_url }}/pubkey.asc"
+munchbox_repo_distribution: "stable"
+munchbox_repo_component: "main"

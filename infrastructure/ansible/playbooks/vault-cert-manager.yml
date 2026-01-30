@@ -8,8 +8,7 @@
 # the node's role memberships (consul_client, consul_server, nomad_client, etc.)
 #
 # Prerequisites:
-#   1. Build .deb packages: cd src/vault-cert-manager && make build-deb build-deb-arm64
-#   2. Ensure AppRole credentials exist in ~/.munchbox/vault/approle.json
+#   1. Ensure AppRole credentials exist in ~/.munchbox/vault/approle.json
 #
 # Usage:
 #   ansible-playbook playbooks/vault-cert-manager.yml
@@ -20,10 +19,6 @@
   hosts: consul_clients:consul_servers:nomad_clients:nomad_servers
   become: true
   vars:
-    # Package versioning
-    _git_version: "{{ lookup('pipe', 'cd ' + playbook_dir + '/../../../src/vault-cert-manager && git describe --tags --always --dirty 2>/dev/null || echo dev') }}"
-    vault_cert_manager_version: "{{ _git_version if _git_version is match('^[0-9]') else '0.0.0+' + _git_version }}"
-    vault_cert_manager_deb_path: "{{ playbook_dir }}/../../../src/vault-cert-manager/dist/vault-cert-manager_{{ vault_cert_manager_version }}-1_{{ vault_cert_manager_arch }}.deb"
     vault_cert_manager_pki_mount: pki_int
     vault_cert_manager_skip_verify: true
 

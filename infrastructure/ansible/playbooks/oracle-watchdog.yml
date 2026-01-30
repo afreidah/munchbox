@@ -1,0 +1,26 @@
+---
+# -------------------------------------------------------------------------------
+# Deploy Oracle Watchdog
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Deploys oracle-watchdog monitor mode to all Oracle Cloud nodes. The monitor
+# maintains a Consul session heartbeat that the agent uses to detect node health.
+#
+# Usage:
+#   ansible-playbook playbooks/oracle-watchdog.yml
+#   ansible-playbook playbooks/oracle-watchdog.yml --limit oracle-arm-1
+# -------------------------------------------------------------------------------
+
+- name: Deploy oracle-watchdog
+  hosts: oracle-node-1:oracle-node-2:oracle-arm-1:oracle-arm-2
+  become: true
+
+  tasks:
+    - name: Show target node info
+      debug:
+        msg: "Deploying oracle-watchdog to {{ inventory_hostname }} ({{ ansible_architecture }})"
+
+    - name: Include oracle-watchdog role
+      include_role:
+        name: oracle-watchdog

@@ -1,0 +1,10 @@
+oracle-watchdog (1.0.0-1) stable; urgency=medium
+
+  * Initial release
+  * Monitor mode: Consul session heartbeat on Oracle nodes
+  * Agent mode: Watches for missing sessions and triggers OCI restart
+  * Self-healing design: never crashes on connection issues
+  * Prometheus metrics for monitoring
+  * OpenTelemetry tracing support
+
+ -- Alex Freidah <alex.freidah@gmail.com>  Tue, 28 Jan 2025 00:00:00 +0000
