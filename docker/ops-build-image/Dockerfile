@@ -142,3 +142,4 @@ RUN set -eux; \
 
 WORKDIR /workspace
 USER $USERNAME
+
