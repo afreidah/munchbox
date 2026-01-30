@@ -44,15 +44,17 @@ jobs:
       - name: Detect changed apps
         id: detect
         run: |
-          git fetch origin main --depth=1 || true
+          # Use diff-tree which works correctly for both regular and merge commits
+          # It shows all files changed in HEAD regardless of parent structure
+          CHANGED=$(git diff-tree --no-commit-id --name-only -r HEAD -- src/ 2>/dev/null || true)
 
-          # Get changed files in src/ (including submodule pointer changes)
-          # On merge to main, origin/main..HEAD is empty, so compare against previous commit
-          CHANGED=$(git diff --name-only origin/main..HEAD -- src/ 2>/dev/null || true)
+          # Fallback: compare against origin/main for PRs
           if [ -z "$CHANGED" ]; then
-            echo "No changes vs origin/main, comparing against previous commit..."
-            CHANGED=$(git diff --name-only HEAD~1 -- src/ 2>/dev/null || true)
+            echo "diff-tree empty, comparing against origin/main..."
+            git fetch origin main --depth=1 || true
+            CHANGED=$(git diff --name-only origin/main...HEAD -- src/ 2>/dev/null || true)
           fi
+
           echo "Changed files:"
           echo "$CHANGED"
           echo ""
