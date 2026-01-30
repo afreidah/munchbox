@@ -9,7 +9,7 @@
 
 .PHONY: help build build-linux build-linux-arm64 build-all clean \
         build-deb build-deb-arm64 lint-deb prep-changelog \
-        docker-build docker-push publish-deb
+        docker-build docker-push publish-deb test
 
 # --- Build variables ---
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "1.0.0")
@@ -38,6 +38,7 @@ help:
 	@echo "  build-linux       Build for Linux amd64"
 	@echo "  build-linux-arm64 Build for Linux arm64"
 	@echo "  build-all         Build for all Linux platforms"
+	@echo "  test              Run all tests"
 	@echo "  build-deb         Build Debian package for amd64"
 	@echo "  build-deb-arm64   Build Debian package for arm64"
 	@echo "  lint-deb          Run lintian on built packages"
@@ -63,6 +64,14 @@ build-linux-arm64:
 
 # Build for all platforms
 build-all: build-linux build-linux-arm64
+
+# -------------------------------------------------------------------------
+# TESTING
+# -------------------------------------------------------------------------
+
+# Run all tests
+test:
+	$(GOCMD) test -v ./...
 
 # -------------------------------------------------------------------------
 # DEBIAN PACKAGING
