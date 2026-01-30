@@ -63,7 +63,7 @@ locals {
   # SSH CONFIGURATION
   # ---------------------------------------------------------------------------
 
-  ssh_public_key = get_env("MUNCHBOX_SSH_PUBKEY", file("~/.ssh/id_ed25519.pub"))
+  ssh_public_key = get_env("MUNCHBOX_SSH_PUBKEY", fileexists("~/.ssh/id_ed25519.pub") ? file("~/.ssh/id_ed25519.pub") : "")
 
   # ---------------------------------------------------------------------------
   # PROVIDER-SPECIFIC DEFAULTS

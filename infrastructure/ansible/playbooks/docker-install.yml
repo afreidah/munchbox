@@ -62,6 +62,30 @@
         state: present
         update_cache: true
 
+    - name: Create Docker config directory
+      ansible.builtin.file:
+        path: /etc/docker
+        state: directory
+        mode: '0755'
+
+    - name: Configure Docker daemon (cloud nodes use homelab DNS via WireGuard)
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+              "dns": {{ dns_servers | to_json }},
+              "dns-search": ["."],
+              "log-driver": "json-file",
+              "log-opts": {
+                  "max-file": "3",
+                  "max-size": "10m"
+              },
+              "storage-driver": "overlay2"
+          }
+        mode: '0644'
+      when: inventory_hostname in groups['cloud_nodes']
+      notify: Restart Docker
+
     - name: Enable and start Docker
       ansible.builtin.systemd:
         name: docker
@@ -81,6 +105,11 @@
         state: restarted
 
   handlers:
+    - name: Restart Docker
+      ansible.builtin.systemd:
+        name: docker
+        state: restarted
+
     - name: Restart Nomad
       ansible.builtin.systemd:
         name: nomad
