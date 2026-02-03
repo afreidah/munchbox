@@ -39,11 +39,11 @@ tags = [
   "docker",
   "ui",
   "infrastructure",
-  "traefik.http.routers.registry-ui.middlewares=oauth2-proxy@file,umami-tracking@file",
+  "traefik.http.routers.registry-ui.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.registry-ui-http.rule=Host(`registry-ui.munchbox.cc`)",
   "traefik.http.routers.registry-ui-http.entrypoints=web",
-  "traefik.http.routers.registry-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
+  "traefik.http.routers.registry-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file"
 ]
 
 # --- Termination ---

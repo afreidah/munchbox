@@ -78,11 +78,11 @@ job "deluge" {
         "traefik.http.routers.deluge.rule=Host(`deluge.munchbox.cc`)",
         "traefik.http.routers.deluge.entrypoints=websecure",
         "traefik.http.routers.deluge.tls=true",
-        "traefik.http.routers.deluge.middlewares=oauth2-proxy@file,umami-tracking@file",
+        "traefik.http.routers.deluge.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
         "traefik.http.services.deluge.loadbalancer.server.port=8112",
         "traefik.http.routers.deluge-http.rule=Host(`deluge.munchbox.cc`)",
         "traefik.http.routers.deluge-http.entrypoints=web",
-        "traefik.http.routers.deluge-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file",
+        "traefik.http.routers.deluge-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
         "deluge",
         "torrent",
         "media"

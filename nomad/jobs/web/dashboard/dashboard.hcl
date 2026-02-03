@@ -31,9 +31,9 @@ tags = [
   "hugo",
   "traefik.http.routers.dashboard.tls=true",
   "traefik.http.routers.dashboard.tls.certresolver=letsencrypt",
-  "traefik.http.routers.dashboard.middlewares=oauth2-proxy@file,umami-tracking@file",
+  "traefik.http.routers.dashboard.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.dashboard-http.rule=Host(`dashboard.munchbox.cc`)",
   "traefik.http.routers.dashboard-http.entrypoints=web",
-  "traefik.http.routers.dashboard-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file",
+  "traefik.http.routers.dashboard-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
 ]

@@ -113,7 +113,7 @@ job "vaultwarden" {
           "traefik.http.routers.vaultwarden.entrypoints=websecure",
           "traefik.http.routers.vaultwarden.tls=true",
           "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt",
-          "traefik.http.routers.vaultwarden.middlewares=oauth2-proxy@file,umami-tracking@file",
+          "traefik.http.routers.vaultwarden.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
           "traefik.http.routers.vaultwarden.priority=10",
           # --- HTTP router for API (Cloudflare tunnel, no Authentik) ---
           "traefik.http.routers.vaultwarden-api-http.rule=Host(`vaultwarden.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/identity`) || PathPrefix(`/icons`) || PathPrefix(`/notifications`))",
@@ -123,7 +123,7 @@ job "vaultwarden" {
           # --- HTTP router for Web UI (Cloudflare tunnel, with Authentik) ---
           "traefik.http.routers.vaultwarden-http.rule=Host(`vaultwarden.munchbox.cc`)",
           "traefik.http.routers.vaultwarden-http.entrypoints=web",
-          "traefik.http.routers.vaultwarden-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file",
+          "traefik.http.routers.vaultwarden-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
           "traefik.http.routers.vaultwarden-http.priority=10"
         ]
 

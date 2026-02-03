@@ -47,9 +47,9 @@ tags = [
   "prowlarr",
   "media",
   "arr",
-  "traefik.http.routers.prowlarr.middlewares=oauth2-proxy@file,umami-tracking@file",
+  "traefik.http.routers.prowlarr.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.prowlarr-http.rule=Host(`prowlarr.munchbox.cc`)",
   "traefik.http.routers.prowlarr-http.entrypoints=web",
-  "traefik.http.routers.prowlarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy@file,umami-tracking@file"
+  "traefik.http.routers.prowlarr-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file"
 ]

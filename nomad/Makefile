@@ -109,7 +109,7 @@ endef
 # --- Check if job uses any variables from shared.vars.hcl ---
 # Extracts var names from shared.vars.hcl and checks if job declares any of them
 define uses_shared_vars
-$(shell vars=$$(grep -oE '^[a-z_]+' "$(SHARED_VARS)" 2>/dev/null | tr '\n' '|' | sed 's/|$$//'); \
+$(shell vars=$$(grep -oE '^[a-z][a-z_0-9]*' "$(SHARED_VARS)" 2>/dev/null | tr '\n' '|' | sed 's/|$$//'); \
 	if [ -n "$$vars" ] && grep -qE "variable \"($$vars)\"" "$(1)" 2>/dev/null; then \
 		echo "yes"; \
 	else \
