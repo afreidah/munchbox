@@ -829,6 +829,9 @@ locals {
       "vault-ui"        = { domain = "vault-ui.munchbox.cc",        ip = local.traefik_vip }
       "vault"           = { domain = "vault.munchbox.cc",           ip = local.traefik_vip }
       "vaultwarden"     = { domain = "vaultwarden.munchbox.cc",     ip = local.traefik_vip }
+      "pihole"          = { domain = "pihole.munchbox.cc",          ip = local.traefik_vip }
+      "pihole-green"    = { domain = "pihole-green.munchbox.cc",    ip = local.traefik_vip }
+      "pihole-logan"    = { domain = "pihole-logan.munchbox.cc",    ip = local.traefik_vip }
     }
 
     cname_records = {}
@@ -865,14 +868,14 @@ locals {
       }
       pihole_green = {
         name           = "Pi-hole (green)"
-        uri            = "https://green.munchbox.cc/admin"
+        uri            = "https://pihole-green.munchbox.cc/admin"
         vault_path     = "pihole/green"
         password_field = "password"
         folder_key     = "admin"
       }
       pihole_logan = {
         name           = "Pi-hole (logan)"
-        uri            = "https://logan.munchbox.cc/admin"
+        uri            = "https://pihole-logan.munchbox.cc/admin"
         vault_path     = "pihole/logan"
         password_field = "password"
         folder_key     = "admin"
