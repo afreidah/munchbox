@@ -94,6 +94,20 @@ job "deluge" {
         interval = "30s"
         timeout  = "5s"
       }
+
+      check {
+        name     = "vpn-tunnel"
+        type     = "http"
+        port     = "gluetun"
+        path     = "/v1/openvpn/status"
+        interval = "30s"
+        timeout  = "5s"
+
+        check_restart {
+          limit = 3
+          grace = "90s"
+        }
+      }
     }
 
     # -------------------------------------------------------------------------
