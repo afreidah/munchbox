@@ -1,0 +1,100 @@
+{{template "base" .}}
+
+{{define "title"}}Phlebotomy Study - Home{{end}}
+
+{{define "content"}}
+<div class="home">
+    <h1>Phlebotomy Flashcard Game</h1>
+    <p class="subtitle">Study blood collection tube order of draw, colors, names, and contents</p>
+
+    <div class="mode-grid">
+        <a href="/quiz" class="mode-card">
+            <div class="mode-icon">?</div>
+            <h2>Multiple Choice Quiz</h2>
+            <p>Answer questions about tube colors, names, contents, and draw order</p>
+        </a>
+
+        <a href="/order" class="mode-card">
+            <div class="mode-icon">#</div>
+            <h2>Order of Draw</h2>
+            <p>Drag and drop tubes into the correct order of draw sequence</p>
+        </a>
+
+        <a href="/matching" class="mode-card">
+            <div class="mode-icon">~</div>
+            <h2>Matching Game</h2>
+            <p>Memory-style matching of tube colors to names and contents</p>
+        </a>
+    </div>
+
+    <div class="tube-reference">
+        <h2>Order of Draw Reference</h2>
+        <div class="tube-list">
+            <div class="tube-item" style="--tube-color: #dc2626">
+                <span class="tube-order">1</span>
+                <span class="tube-color-box dual"></span>
+                <div class="tube-info">
+                    <strong>Blood Culture</strong>
+                    <span>Blue and red bottles - SPS</span>
+                </div>
+            </div>
+            <div class="tube-item" style="--tube-color: #3b82f6">
+                <span class="tube-order">2</span>
+                <span class="tube-color-box light-blue"></span>
+                <div class="tube-info">
+                    <strong>Coagulation Tube</strong>
+                    <span>Light blue - Sodium citrate</span>
+                </div>
+            </div>
+            <div class="tube-item" style="--tube-color: #dc2626">
+                <span class="tube-order">3</span>
+                <span class="tube-color-box red"></span>
+                <div class="tube-info">
+                    <strong>Non-additive Tube</strong>
+                    <span>Red - None</span>
+                </div>
+            </div>
+            <div class="tube-item" style="--tube-color: #eab308">
+                <span class="tube-order">4</span>
+                <span class="tube-color-box gold"></span>
+                <div class="tube-info">
+                    <strong>SST</strong>
+                    <span>Gold/tiger top - Clot activator and gel</span>
+                </div>
+            </div>
+            <div class="tube-item" style="--tube-color: #22c55e">
+                <span class="tube-order">5</span>
+                <span class="tube-color-box light-green"></span>
+                <div class="tube-info">
+                    <strong>PST</strong>
+                    <span>Light green - Lithium heparin</span>
+                </div>
+            </div>
+            <div class="tube-item" style="--tube-color: #16a34a">
+                <span class="tube-order">5</span>
+                <span class="tube-color-box dark-green"></span>
+                <div class="tube-info">
+                    <strong>Heparin Tube</strong>
+                    <span>Dark green - Sodium heparin</span>
+                </div>
+            </div>
+            <div class="tube-item" style="--tube-color: #a855f7">
+                <span class="tube-order">6</span>
+                <span class="tube-color-box lavender"></span>
+                <div class="tube-info">
+                    <strong>EDTA Tube</strong>
+                    <span>Lavender - Potassium EDTA</span>
+                </div>
+            </div>
+            <div class="tube-item" style="--tube-color: #6b7280">
+                <span class="tube-order">7</span>
+                <span class="tube-color-box grey"></span>
+                <div class="tube-info">
+                    <strong>Glycolytic Inhibitor</strong>
+                    <span>Grey - Potassium oxalate and sodium fluoride</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,45 @@
+{{template "base" .}}
+
+{{define "title"}}Multiple Choice Quiz - Phlebotomy Study{{end}}
+
+{{define "content"}}
+<div class="game-container">
+    <div class="game-header">
+        <h1>Multiple Choice Quiz</h1>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="score-display">
+            Score: <span id="score">0</span> / <span id="total">0</span>
+        </div>
+    </div>
+
+    <div id="quiz-area" class="quiz-area">
+        <div class="question-card" id="question-card">
+            <p class="question-text" id="question-text">Loading...</p>
+            <div class="options" id="options"></div>
+        </div>
+
+        <div class="feedback" id="feedback"></div>
+
+        <div class="quiz-controls">
+            <button class="btn btn-primary" id="next-btn" disabled>Next Question</button>
+        </div>
+    </div>
+
+    <div id="results" class="results hidden">
+        <h2>Quiz Complete!</h2>
+        <div class="final-score">
+            <span class="score-value" id="final-score">0</span>
+            <span class="score-label">out of <span id="final-total">0</span></span>
+        </div>
+        <div class="score-percentage" id="score-percentage">0%</div>
+        <button class="btn btn-primary" onclick="startQuiz()">Play Again</button>
+        <a href="/" class="btn btn-secondary">Back to Menu</a>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/quiz.js"></script>
+{{end}}

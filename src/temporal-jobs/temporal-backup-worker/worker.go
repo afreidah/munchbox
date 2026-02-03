@@ -104,6 +104,8 @@ func initTracer(ctx context.Context) func(context.Context) error {
 //   - TakePostgresBackup: Activity to backup all PostgreSQL databases
 //   - TakeRegistryBackup: Activity to backup container registry data
 //   - CleanupOldBackups: Activity to remove snapshots older than retention period
+//   - TrivyScanWorkflow: Vulnerability scanning for container images
+//   - CleanupOrphanedDataWorkflow: Cleanup orphaned job data directories from nodes
 func runWorker() {
 	ctx := context.Background()
 
@@ -150,6 +152,11 @@ func runWorker() {
 	w.RegisterActivity(GetRunningImages)
 	w.RegisterActivity(ScanImage)
 	w.RegisterActivity(SaveScanToPostgres)
+
+	// Register orphaned data cleanup workflow and activities
+	w.RegisterWorkflow(CleanupOrphanedDataWorkflow)
+	w.RegisterActivity(GetAllNomadClientNodes)
+	w.RegisterActivity(CleanupNodeViaSSH)
 
 	log.Println("Temporal worker starting...")
 	log.Printf("Connected to Temporal at %s", temporalAddr)

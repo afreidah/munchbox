@@ -42,6 +42,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"go.temporal.io/sdk/client"
@@ -56,6 +57,7 @@ import (
 // Supported workflows (via WORKFLOW_NAME env var):
 //   - "backup" (default): BackupWorkflow for infrastructure backups
 //   - "trivy": TrivyScanWorkflow for vulnerability scanning
+//   - "cleanup": CleanupOrphanedDataWorkflow for orphaned data cleanup
 //
 // Exit codes:
 //   - 0: Workflow completed successfully
@@ -93,8 +95,10 @@ func runTrigger() {
 		runBackupWorkflow(c, workflowOptions)
 	case "trivy":
 		runTrivyWorkflow(c, workflowOptions)
+	case "cleanup":
+		runCleanupWorkflow(c, workflowOptions)
 	default:
-		log.Fatalf("Unknown workflow: %s (supported: backup, trivy)\n", workflowName)
+		log.Fatalf("Unknown workflow: %s (supported: backup, trivy, cleanup)\n", workflowName)
 	}
 }
 
@@ -145,4 +149,50 @@ func runTrivyWorkflow(c client.Client, opts client.StartWorkflowOptions) {
 	}
 
 	log.Println("Trivy scan complete! Check /mnt/gdrive/trivy-reports for results.")
+}
+
+// runCleanupWorkflow executes the orphaned data cleanup workflow and logs results.
+//
+//nolint:unused // Called from runTrigger (build tag: trigger)
+func runCleanupWorkflow(c client.Client, opts client.StartWorkflowOptions) {
+	// Default config runs in dry-run mode - set DRY_RUN=false to actually delete
+	// Docker prune is enabled by default when not in dry-run mode
+	config := CleanupConfig{
+		DataDir:     os.Getenv("CLEANUP_DATA_DIR"),
+		GraceDays:   7,
+		DryRun:      os.Getenv("DRY_RUN") != "false",
+		DockerPrune: os.Getenv("DOCKER_PRUNE") == "true",
+	}
+
+	if days := os.Getenv("GRACE_DAYS"); days != "" {
+		if d, err := strconv.Atoi(days); err == nil && d > 0 {
+			config.GraceDays = d
+		}
+	}
+
+	we, err := c.ExecuteWorkflow(context.Background(), opts, CleanupOrphanedDataWorkflow, config)
+	if err != nil {
+		log.Fatalln("Unable to start workflow", err)
+	}
+
+	log.Printf("Started cleanup workflow: %s (RunID: %s)\n", we.GetID(), we.GetRunID())
+	log.Printf("View in UI: http://temporal.service.consul:8080/namespaces/default/workflows/%s/%s\n",
+		we.GetID(), we.GetRunID())
+	log.Printf("Config: DataDir=%s, GraceDays=%d, DryRun=%v, DockerPrune=%v\n", config.DataDir, config.GraceDays, config.DryRun, config.DockerPrune)
+
+	log.Println("Waiting for result...")
+	var results []CleanupResult
+	err = we.Get(context.Background(), &results)
+	if err != nil {
+		log.Fatalf("Workflow failed: %v\n", err)
+	}
+
+	log.Println("Cleanup complete!")
+	for _, r := range results {
+		log.Printf("  Node %s: scanned=%d, orphaned=%d, deleted=%d, skipped=%d, docker_freed=%s",
+			r.NodeName, r.Scanned, r.Orphaned, r.Deleted, r.Skipped, r.DockerSpaceFreed)
+		if len(r.Errors) > 0 {
+			log.Printf("    Errors: %v", r.Errors)
+		}
+	}
 }

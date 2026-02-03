@@ -1,0 +1,50 @@
+[
+  {
+    "order": 1,
+    "color": "blue and red bottles",
+    "name": "blood culture",
+    "contents": "sodium polyanethol sulfonate (SPS)"
+  },
+  {
+    "order": 2,
+    "color": "light blue",
+    "name": "coagulation tube",
+    "contents": "sodium citrate"
+  },
+  {
+    "order": 3,
+    "color": "red",
+    "name": "non-additive tube",
+    "contents": "none"
+  },
+  {
+    "order": 4,
+    "color": "gold/tiger top",
+    "name": "SST",
+    "contents": "clot activator and gel"
+  },
+  {
+    "order": 5,
+    "color": "light green",
+    "name": "PST",
+    "contents": "lithium heparin"
+  },
+  {
+    "order": 5,
+    "color": "dark green",
+    "name": "heparin tube",
+    "contents": "sodium heparin"
+  },
+  {
+    "order": 6,
+    "color": "lavender",
+    "name": "EDTA tube",
+    "contents": "potassium EDTA"
+  },
+  {
+    "order": 7,
+    "color": "grey",
+    "name": "glycolytic inhibitor tube",
+    "contents": "potassium oxalate and sodium fluoride"
+  }
+]

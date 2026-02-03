@@ -7,3 +7,6 @@
 [submodule "src/resume"]
 	path = src/resume
 	url = https://github.com/afreidah/resume.git
+[submodule "infrastructure/providers/terraform-provider-pihole"]
+	path = infrastructure/providers/terraform-provider-pihole
+	url = https://github.com/ryanwholey/terraform-provider-pihole.git

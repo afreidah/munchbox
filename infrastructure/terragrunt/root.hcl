@@ -63,7 +63,14 @@ locals {
   # SSH CONFIGURATION
   # ---------------------------------------------------------------------------
 
-  ssh_public_key = get_env("MUNCHBOX_SSH_PUBKEY", fileexists("~/.ssh/id_ed25519.pub") ? file("~/.ssh/id_ed25519.pub") : "")
+  # Local workstation key (ed25519)
+  ssh_public_key_local = get_env("MUNCHBOX_SSH_PUBKEY", fileexists("~/.ssh/id_ed25519.pub") ? trimspace(file("~/.ssh/id_ed25519.pub")) : "")
+
+  # Stabler (WireGuard gateway) key - allows SSH from within the cluster
+  ssh_public_key_stabler = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD58AJEEPLCyHpvCrTN+vUaAZfiqeIqE3B+q1qiNz2zNVRgJc9+0uzBzGcC9dDbwb/8a9+LeIDRAgIMtPZbzyU6/bZzXFk+cP3hdbyzBrpExksr0J/USBl1b9X+LRG85NoN8fHnjASXQz4yxV5KXn+8LtZowzS92ymwI5tjrePtMYYyzsKwoYDUQTAsjt9HCdXjcQO8CSUvGZMMCT3Cigfm3rK6c/Rt6CU+RX29X/QIK7GJ0Bd0XafGFecKR/voBcDs/0eJItyUcl5KBkOFZINIHHEvLEj/UroJtpcCtSf5WYbPTXV2Ul5Oqk3eOGmbSzyFe5gLDHjz/mHOwPTsBV041FroDpLBXq+EznmaMb2CEvVgWAztLie3MDG7khuh8JCAgR4a6w3f6gVqztULp57HP0Uchr/LvkvoHgaPg/kq+TrPFcVUDk6yt2n1MslOgaJqWOBfutnp4xxvRCMH3jc/M1cy9iexdamhyKELJVBia8mAmIaPgpncuFo/ROVWEAu6yhKsSJhVvujy+Tii8m1lS0jYRUTrptGp7i9S5FM1f2Jxj05r/ZsZG1+SnPc+h6Z4c2AXWFZJbl0VLPxzzJs4xBpULRbK0qcwFAImuBSRGV+DrvlI5jiWzAGWB1Sr6EYegKhlfhYAWQZz9EYTzP+e5fxzGAKi4lnWKm/gGzysDQ== root@stabler"
+
+  # Combined keys for cloud instances (newline-separated)
+  ssh_public_key = "${local.ssh_public_key_local}\n${local.ssh_public_key_stabler}"
 
   # ---------------------------------------------------------------------------
   # PROVIDER-SPECIFIC DEFAULTS
@@ -615,7 +622,9 @@ locals {
       "traefik-log-dashboard",
       "maxmind",
       "oracle-watchdog",
-      "aptly"
+      "aptly",
+      "immich",
+      "redis"
     ]
 
     # --- Database Roles (disabled by default) ---
@@ -774,6 +783,55 @@ locals {
         }
       ]
     }
+  }
+
+  # ---------------------------------------------------------------------------
+  # PI-HOLE DNS MODULE INPUTS
+  # ---------------------------------------------------------------------------
+  # Local DNS records for split-horizon DNS. Routes internal traffic directly
+  # to services without going through Cloudflare tunnel.
+
+  pihole_primary_url   = "http://192.168.68.62"  # green
+  pihole_secondary_url = "http://192.168.68.64"  # logan
+  traefik_vip          = "192.168.68.60"
+
+  pihole_dns_inputs = {
+    # Local DNS A records pointing to Traefik VIP
+    dns_records = {
+      "alertmanager"    = { domain = "alertmanager.munchbox.cc",    ip = local.traefik_vip }
+      "analytics"       = { domain = "analytics.munchbox.cc",       ip = local.traefik_vip }
+      "apt"             = { domain = "apt.munchbox.cc",             ip = local.traefik_vip }
+      "auth"            = { domain = "auth.munchbox.cc",            ip = local.traefik_vip }
+      "consul"          = { domain = "consul.munchbox.cc",          ip = local.traefik_vip }
+      "dashboard"       = { domain = "dashboard.munchbox.cc",       ip = local.traefik_vip }
+      "deluge"          = { domain = "deluge.munchbox.cc",          ip = local.traefik_vip }
+      "ersatz"          = { domain = "ersatz.munchbox.cc",          ip = local.traefik_vip }
+      "git"             = { domain = "git.munchbox.cc",             ip = local.traefik_vip }
+      "grafana"         = { domain = "grafana.munchbox.cc",         ip = local.traefik_vip }
+      "jellyfin"        = { domain = "jellyfin.munchbox.cc",        ip = local.traefik_vip }
+      "kavita"          = { domain = "kavita.munchbox.cc",          ip = local.traefik_vip }
+      "lidarr"          = { domain = "lidarr.munchbox.cc",          ip = local.traefik_vip }
+      "nextcloud"       = { domain = "nextcloud.munchbox.cc",       ip = local.traefik_vip }
+      "nomad"           = { domain = "nomad.munchbox.cc",           ip = local.traefik_vip }
+      "photos"          = { domain = "photos.munchbox.cc",          ip = local.traefik_vip }
+      "prometheus"      = { domain = "prometheus.munchbox.cc",      ip = local.traefik_vip }
+      "prowlarr"        = { domain = "prowlarr.munchbox.cc",        ip = local.traefik_vip }
+      "radarr"          = { domain = "radarr.munchbox.cc",          ip = local.traefik_vip }
+      "readarr"         = { domain = "readarr.munchbox.cc",         ip = local.traefik_vip }
+      "registry-ui"     = { domain = "registry-ui.munchbox.cc",     ip = local.traefik_vip }
+      "registry"        = { domain = "registry.munchbox.cc",        ip = local.traefik_vip }
+      "sonarr"          = { domain = "sonarr.munchbox.cc",          ip = local.traefik_vip }
+      "temporal"        = { domain = "temporal.munchbox.cc",        ip = local.traefik_vip }
+      "themes"          = { domain = "themes.munchbox.cc",          ip = local.traefik_vip }
+      "traefik-logs"    = { domain = "traefik-logs.munchbox.cc",    ip = local.traefik_vip }
+      "traefik"         = { domain = "traefik.munchbox.cc",         ip = local.traefik_vip }
+      "trivy-dashboard" = { domain = "trivy-dashboard.munchbox.cc", ip = local.traefik_vip }
+      "vault-ui"        = { domain = "vault-ui.munchbox.cc",        ip = local.traefik_vip }
+      "vault"           = { domain = "vault.munchbox.cc",           ip = local.traefik_vip }
+      "vaultwarden"     = { domain = "vaultwarden.munchbox.cc",     ip = local.traefik_vip }
+    }
+
+    cname_records = {}
   }
 
   # ---------------------------------------------------------------------------
@@ -984,6 +1042,10 @@ generate "providers" {
           source  = "svalabs/forgejo"
           version = "~> 1.1"
         }
+        pihole = {
+          source  = "ryanwholey/pihole"
+          version = "~> 0.2"
+        }
       }
     }
 
@@ -1036,6 +1098,18 @@ generate "providers" {
     provider "forgejo" {
       host      = "http://forgejo.service.consul:30028"
       api_token = "${get_env("FORGEJO_API_TOKEN", "")}"
+    }
+
+    provider "pihole" {
+      alias    = "primary"
+      url      = "http://192.168.68.62"
+      password = "${get_env("TF_VAR_pihole_password_primary", "")}"
+    }
+
+    provider "pihole" {
+      alias    = "secondary"
+      url      = "http://192.168.68.64"
+      password = "${get_env("TF_VAR_pihole_password_secondary", "")}"
     }
   EOF
 }

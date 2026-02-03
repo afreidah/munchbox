@@ -113,6 +113,9 @@ RUN mkdir -p /mnt/gdrive/nomad-snapshots \
     && mkdir -p /mnt/gdrive/registry-backups \
     && mkdir -p /mnt/gdrive/trivy-reports
 
+# Create SSH directory for cleanup workflow (SSH key mounted at runtime)
+RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
+
 # Copy entrypoint script
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

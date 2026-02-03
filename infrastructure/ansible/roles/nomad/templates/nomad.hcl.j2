@@ -48,6 +48,8 @@ client {
   }
 {% endif %}
   enabled = true
+  gc_disk_usage_threshold = {{ nomad_gc_disk_usage_threshold | default(80) }}
+  gc_inode_usage_threshold = {{ nomad_gc_inode_usage_threshold | default(70) }}
 {% if nomad_servers | length > 0 %}
   servers = {{ nomad_servers | to_json }}
 {% endif %}

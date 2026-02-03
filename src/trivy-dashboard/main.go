@@ -373,10 +373,23 @@ func initTemporal() error {
 		temporalAddr = "temporal-server.service.consul:7233"
 	}
 
+	// Retry connection with exponential backoff (container DNS may not be ready immediately)
 	var err error
-	temporalClient, err = client.Dial(client.Options{
-		HostPort: temporalAddr,
-	})
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		temporalClient, err = client.Dial(client.Options{
+			HostPort: temporalAddr,
+		})
+		if err == nil {
+			log.Printf("Connected to Temporal at %s (attempt %d)", temporalAddr, i+1)
+			return nil
+		}
+		if i < maxRetries-1 {
+			delay := time.Duration(1<<uint(i)) * time.Second // 1s, 2s, 4s, 8s
+			log.Printf("Failed to connect to Temporal (attempt %d/%d): %v, retrying in %v", i+1, maxRetries, err, delay)
+			time.Sleep(delay)
+		}
+	}
 	return err
 }
 

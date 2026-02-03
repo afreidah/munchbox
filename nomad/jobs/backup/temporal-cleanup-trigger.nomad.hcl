@@ -1,27 +1,39 @@
 # -------------------------------------------------------------------------------
-# Temporal Trivy Scan Trigger — Scheduled Vulnerability Scanner
+# Temporal Cleanup Trigger — Scheduled Orphaned Data Cleanup
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Periodic batch job that triggers the Temporal Trivy scan workflow weekly.
-# Scans all running container images in the cluster for vulnerabilities.
+# Periodic batch job that triggers the Temporal cleanup workflow weekly.
+# Removes orphaned job data directories that no longer correspond to running
+# allocations on the local node.
+#
+# By default runs in DRY_RUN mode - set DRY_RUN=false to actually delete.
 # -------------------------------------------------------------------------------
 
-job "temporal-trivy-trigger" {
+job "temporal-cleanup-trigger" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "batch"
   node_pool   = "all"
-  priority    = 40
+  priority    = 30
 
   # ---------------------------------------------------------------------------
-  # Periodic Scheduling - Daily at 3 AM
+  # Periodic Scheduling - Daily at 5 AM (after backups and trivy)
   # ---------------------------------------------------------------------------
 
   periodic {
-    cron             = "0 3 * * *"
+    cron             = "0 5 * * *"
     time_zone        = "America/Los_Angeles"
     prohibit_overlap = true
+  }
+
+  # ---------------------------------------------------------------------------
+  # Placement - require x86_64 nodes (image not built for ARM)
+  # ---------------------------------------------------------------------------
+
+  constraint {
+    attribute = "${attr.cpu.arch}"
+    value     = "amd64"
   }
 
   # ---------------------------------------------------------------------------
@@ -66,12 +78,16 @@ job "temporal-trivy-trigger" {
       }
 
       env {
-        TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
-        WORKFLOW_NAME               = "trivy"
+        TEMPORAL_ADDRESS = "temporal-server.service.consul:7233"
+        WORKFLOW_NAME    = "cleanup"
+        # Cleanup configuration
+        DRY_RUN          = "false"  # Actually delete orphaned directories
+        GRACE_DAYS       = "7"      # Only delete directories older than 7 days
+        DOCKER_PRUNE     = "true"   # Also prune unused Docker images
         # OpenTelemetry tracing to Tempo (gRPC)
         OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
         OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
-        OTEL_SERVICE_NAME           = "temporal-trivy-trigger"
+        OTEL_SERVICE_NAME           = "temporal-cleanup-trigger"
       }
 
       # --- Resources ---
@@ -87,13 +103,7 @@ job "temporal-trivy-trigger" {
   }
 
   meta = {
-    managed_by             = "nomad-pack"
-    "pack.deployment_name" = "munchbox-service"
-    "pack.job"             = "temporal-trivy-trigger"
-    "pack.name"            = "munchbox-service"
-    "pack.path"            = "/home/afreidah/tools/munchbox/nomad/packs/registry/munchbox-service"
-    "pack.registry"        = "<<local folder>>"
-    "pack.version"         = "<<none>>"
-    project                = "munchbox"
+    managed_by = "nomad"
+    project    = "munchbox"
   }
 }

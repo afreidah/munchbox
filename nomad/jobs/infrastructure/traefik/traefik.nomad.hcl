@@ -25,7 +25,7 @@ job "traefik" {
   meta {
     managed_by  = "nomad"
     project     = "munchbox"
-    version     = "3.6.6"
+    version     = "3.6.7"
     tier        = "tier-0"
   }
 
@@ -115,7 +115,7 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.6.6"
+        image        = "traefik:v3.6.7"
         network_mode = "host"
         ports        = ["http", "https", "dashboard", "gitssh"]
         volumes      = [
