@@ -176,7 +176,7 @@ func TakePostgresBackup(ctx context.Context) (string, error) {
 	// Create the dump command piped to gzip
 	// Use bash with pipefail so we catch pg_dumpall errors even when piped to gzip
 	cmd := exec.CommandContext(ctx, "bash", "-c",
-		fmt.Sprintf("set -o pipefail; pg_dumpall -h postgres-shared.service.consul -U postgres | gzip > %s", filename))
+		fmt.Sprintf("set -o pipefail; pg_dumpall -h postgres-primary.service.consul -U postgres | gzip > %s", filename))
 
 	cmd.Env = append(os.Environ(),
 		"PGPASSWORD="+os.Getenv("PGPASSWORD"),

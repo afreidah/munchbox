@@ -1,0 +1,27 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{block "title" .}}Phlebotomy Study{{end}}</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="nav-brand">Phlebotomy Study</a>
+        <div class="nav-links">
+            <a href="/quiz" class="nav-link">Quiz</a>
+            <a href="/order" class="nav-link">Order</a>
+            <a href="/matching" class="nav-link">Matching</a>
+        </div>
+    </nav>
+    <main class="container">
+        {{block "content" .}}{{end}}
+    </main>
+    <script src="/static/game.js"></script>
+    {{block "scripts" .}}{{end}}
+</body>
+</html>
+{{end}}

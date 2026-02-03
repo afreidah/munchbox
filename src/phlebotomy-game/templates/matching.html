@@ -1,0 +1,54 @@
+{{template "base" .}}
+
+{{define "title"}}Matching Game - Phlebotomy Study{{end}}
+
+{{define "content"}}
+<div class="game-container">
+    <div class="game-header">
+        <h1>Matching Game</h1>
+        <div class="match-stats">
+            <span>Moves: <span id="moves">0</span></span>
+            <span>Matches: <span id="matches">0</span> / <span id="total-matches">0</span></span>
+            <span>Time: <span id="timer">0:00</span></span>
+        </div>
+    </div>
+
+    <div class="match-mode-select" id="mode-select">
+        <h2>Select Match Type</h2>
+        <div class="match-modes">
+            <button class="mode-btn" data-mode="color-name">
+                Color to Name
+            </button>
+            <button class="mode-btn" data-mode="name-contents">
+                Name to Contents
+            </button>
+            <button class="mode-btn" data-mode="color-contents">
+                Color to Contents
+            </button>
+        </div>
+    </div>
+
+    <div id="matching-area" class="matching-area hidden">
+        <div class="card-grid" id="card-grid"></div>
+    </div>
+
+    <div class="match-controls">
+        <button class="btn btn-secondary" id="restart-btn" onclick="showModeSelect()">Change Mode</button>
+    </div>
+
+    <div id="results" class="results hidden">
+        <h2>Game Complete!</h2>
+        <div class="match-results">
+            <p>Total Moves: <span id="final-moves">0</span></p>
+            <p>Time: <span id="final-time">0:00</span></p>
+        </div>
+        <button class="btn btn-primary" onclick="restartGame()">Play Again</button>
+        <button class="btn btn-secondary" onclick="showModeSelect()">Change Mode</button>
+        <a href="/" class="btn btn-secondary">Back to Menu</a>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/matching.js"></script>
+{{end}}

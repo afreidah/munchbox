@@ -103,7 +103,7 @@ job "cloudflared-tunnel" {
       }
 
       config {
-        image              = "cloudflare/cloudflared:2025.11.1"
+        image              = "cloudflare/cloudflared:2026.1.2"
         image_pull_timeout = "10m"
         ports              = ["metrics"]
         network_mode       = "host"

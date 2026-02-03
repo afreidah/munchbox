@@ -173,6 +173,29 @@ provider "registry.terraform.io/oracle/oci" {
   ]
 }
 
+provider "registry.terraform.io/svalabs/forgejo" {
+  version     = "1.1.0"
+  constraints = "~> 1.1"
+  hashes = [
+    "h1:90zQJSRfwq45W1N92Wmvv+JbOrKcQAEVMmdyz9k78e0=",
+    "zh:2a4b5b723adb72961d707b3095a880d330f2c519c881ce195d04fd0bd048a9fc",
+    "zh:2e871e8d4e2e5cf9ff2f1687a9beeb82cf335501311ee5c39806d1601f9ae9ac",
+    "zh:33e3ebeae42f22ab71c89d42789efdfebaa45d42187abd9a2fd4115cd34fa3c3",
+    "zh:3dd7116ab83ee44675e44a8c0b0eea8b8bc8f8ca087684d397e84d3c38c331fb",
+    "zh:472d1698a93d9b72a0584fb21ae1a6a7de8baec4a660a62dc6e8c5510ea536a4",
+    "zh:543444a33051513bfb51a3f009601492d25e5b28cef7c12340c15e4575c7937e",
+    "zh:5e7e7bb895e60aef891c263cce876538b270240f03bb88a503890ee9e7a1767f",
+    "zh:87379a7a9c52d7c02c836cf1b34c22d4773bbd8c0de419afe6aec16cb2efab89",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:a15b420601feba71f9d6eac91d959704ae098ef15b947067d03e3d4f0c415c03",
+    "zh:c18b749ad03d0701acd5680092c5a2808fd5a83fb920bbb2f166229790bb6fca",
+    "zh:cda14374fb63d2a0212a757441ac0d153147998bddccbf1eab0c17b7acce37f4",
+    "zh:d8ccdaf7274e826b7e0b9ade922830786ee7e434a9d7c7408718770a05926b2f",
+    "zh:e8fdbd9f041ece828172750c6bda7e104f27cb8c9f0976ffce2f5995376dc6c7",
+    "zh:fe1a7b09cdfbd374343acbe354f7ecf26dfbd6f8272708e03282491ef7d90816",
+  ]
+}
+
 provider "registry.terraform.io/telmate/proxmox" {
   version     = "3.0.2-rc07"
   constraints = "3.0.2-rc07"

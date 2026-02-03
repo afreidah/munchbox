@@ -32,18 +32,11 @@ job "immich" {
   # Placement — On-prem only, prefer GPU node
   # ---------------------------------------------------------------------------
 
-  # Exclude Oracle cloud nodes
-  constraint {
-    attribute = "${meta.cloud}"
-    operator  = "!="
-    value     = "oracle"
-  }
-
   # Strong preference for nomad-client-04 (has NVIDIA GPU)
-  affinity {
+  constraint {
     attribute = "${node.unique.name}"
+    operator  = "="
     value     = "nomad-client-04"
-    weight    = 100
   }
 
   # ---------------------------------------------------------------------------
@@ -67,6 +60,12 @@ job "immich" {
     network {
       mode = "bridge"
       port "http" { to = 2283 }
+
+      dns {
+        servers  = ["${attr.unique.network.ip-address}"]
+        searches = ["service.consul"]
+        options  = ["ndots:1", "timeout:2", "attempts:2"]
+      }
     }
 
     restart {
@@ -84,10 +83,14 @@ job "immich" {
 
       tags = [
         "traefik.enable=true",
+        # HTTPS router (direct access)
         "traefik.http.routers.immich.rule=Host(`photos.munchbox.cc`)",
         "traefik.http.routers.immich.entrypoints=websecure",
         "traefik.http.routers.immich.tls=true",
-        "traefik.http.services.immich.loadbalancer.server.port=2283",
+        # HTTP router (Cloudflare tunnel)
+        "traefik.http.routers.immich-http.rule=Host(`photos.munchbox.cc`) && HeaderRegexp(`CF-Connecting-IP`, `.+`)",
+        "traefik.http.routers.immich-http.entrypoints=web",
+        "traefik.http.routers.immich-http.middlewares=cf-tunnel-https@file",
         "media",
         "photos"
       ]
@@ -95,7 +98,7 @@ job "immich" {
       check {
         name     = "immich-health"
         type     = "http"
-        path     = "/api/server-info/ping"
+        path     = "/api/server/ping"
         interval = "30s"
         timeout  = "5s"
       }
@@ -149,9 +152,6 @@ job "immich" {
           "/mnt/gdrive/immich:/usr/src/app/upload",
           "/etc/localtime:/etc/localtime:ro"
         ]
-
-        # DNS for Consul service discovery
-        dns_servers = ["172.17.0.1"]
       }
 
       # --- Vault Identity ---
@@ -178,7 +178,7 @@ DB_PORT=5432
 
 REDIS_HOSTNAME=redis-primary.service.consul
 REDIS_PORT=6379
-{{ with secret "secret/data/redis" }}
+{{ with secret "secret/data/redis-shared" }}
 REDIS_PASSWORD={{ .Data.data.password }}
 {{ end }}
 
@@ -190,7 +190,7 @@ TZ=America/Los_Angeles
 
       resources {
         cpu    = 512
-        memory = 1024
+        memory = 2048
       }
     }
 

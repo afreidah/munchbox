@@ -30,10 +30,14 @@ job "temporal-backup-trigger" {
   }
 
   # ---------------------------------------------------------------------------
-  # Placement
+  # Placement - pin to bare metal nodes (Oracle cloud has unreliable WAN)
   # ---------------------------------------------------------------------------
 
-  # No constraint - can run on any node
+  constraint {
+    attribute = "${node.unique.name}"
+    operator  = "set_contains_any"
+    value     = "goren,stabler.munchbox.cc"
+  }
 
   # ---------------------------------------------------------------------------
   # Task Group: trigger

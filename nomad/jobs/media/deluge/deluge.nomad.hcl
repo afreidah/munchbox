@@ -119,7 +119,7 @@ job "deluge" {
       }
 
       config {
-        image      = "qmcgaw/gluetun:v3.39"
+        image      = "qmcgaw/gluetun:v3.41.0"
         privileged = true
 
         cap_add = ["NET_ADMIN"]

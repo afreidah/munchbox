@@ -117,9 +117,11 @@ job "temporal-backup-worker" {
         network_mode       = "host"
         volumes            = [
           "/mnt/gdrive:/mnt/gdrive",
+          "/opt/nomad/data:/opt/nomad/data",
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/vault-ca.pem:ro",
-          "secrets/postgres-ca.crt:/etc/ssl/postgres/ca.crt:ro"
+          "secrets/postgres-ca.crt:/etc/ssl/postgres/ca.crt:ro",
+          "/root/.ssh:/root/.ssh:ro"
         ]
       }
 

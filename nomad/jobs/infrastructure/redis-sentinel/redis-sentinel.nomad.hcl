@@ -148,6 +148,27 @@ job "redis-sentinel" {
       }
     }
 
+    # --- Generic Redis Service (for bootstrap discovery) ---
+    service {
+      name     = "redis"
+      port     = "redis"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+        "database",
+        "redis"
+      ]
+
+      check {
+        name     = "redis-tcp"
+        type     = "tcp"
+        port     = "redis"
+        interval = "10s"
+        timeout  = "3s"
+      }
+    }
+
     # --- Sentinel Service ---
     service {
       name     = "redis-sentinel"
@@ -272,13 +293,10 @@ appendfsync everysec
 
 # Memory
 maxmemory 512mb
-maxmemory-policy allkeys-lru
+maxmemory-policy noeviction
 
 # Logging
 loglevel warning
-
-# Disable config rewriting (config managed by Nomad)
-config-rewrite-period 0
 
 # Replication - first allocation (index 0) is initial master, others replicate via Consul
 # Sentinel handles failover if master goes down
@@ -303,8 +321,8 @@ REDIS_PASSWORD={{ .Data.data.password }}
 
       # --- Resources ---
       resources {
-        cpu    = 200
-        memory = 256
+        cpu    = 300
+        memory = 640
       }
 
       # --- Termination ---
@@ -358,14 +376,16 @@ daemonize no
 # ALLOC_INDEX=0 is the initial master, so monitor locally
 # Other allocations monitor via Consul once master is healthy
 {{ with secret "secret/data/redis-shared" }}
+{{ $password := .Data.data.password }}
 {{ if eq (env "NOMAD_ALLOC_INDEX") "0" }}
 sentinel monitor munchbox-redis 127.0.0.1 6379 2
+sentinel auth-pass munchbox-redis {{ $password }}
 {{ else }}
 {{ range service "redis-primary" }}
 sentinel monitor munchbox-redis {{ .Address }} 6379 2
+sentinel auth-pass munchbox-redis {{ $password }}
 {{ end }}
 {{ end }}
-sentinel auth-pass munchbox-redis {{ .Data.data.password }}
 {{ end }}
 
 # Timing settings
@@ -508,16 +528,23 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
         change_mode = "restart"
         data        = <<-EOF
 # Sentinel Quorum Configuration (standalone - no local Redis)
+#
+# Bootstrap Strategy: Connect to any redis instance and let sentinel discover the master.
+# The "redis" service is healthy on ALL instances (master or replica) via TCP check.
+#
 port {{ env "NOMAD_PORT_sentinel" }}
 dir /tmp
 daemonize no
 
-# Monitor the Redis master via Consul service discovery
 {{ with secret "secret/data/redis-shared" }}
-{{ range service "redis-primary" }}
-sentinel monitor munchbox-redis {{ .Address }} 6379 2
+{{ $password := .Data.data.password }}
+# Bootstrap from any available redis instance - sentinel will discover the actual master
+{{ range $i, $svc := service "redis" }}
+{{ if eq $i 0 }}
+sentinel monitor munchbox-redis {{ $svc.Address }} {{ $svc.Port }} 2
+sentinel auth-pass munchbox-redis {{ $password }}
 {{ end }}
-sentinel auth-pass munchbox-redis {{ .Data.data.password }}
+{{ end }}
 {{ end }}
 
 sentinel down-after-milliseconds munchbox-redis 5000

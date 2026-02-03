@@ -1,0 +1,58 @@
+{{template "base" .}}
+
+{{define "title"}}Order of Draw - Phlebotomy Study{{end}}
+
+{{define "content"}}
+<div class="game-container">
+    <div class="game-header">
+        <h1>Order of Draw</h1>
+        <p class="instructions">Drag the tubes into the correct order of draw (1-7)</p>
+    </div>
+
+    <div class="order-game">
+        <div class="drop-zones" id="drop-zones">
+            <div class="drop-zone" data-order="1">
+                <span class="zone-label">1st</span>
+            </div>
+            <div class="drop-zone" data-order="2">
+                <span class="zone-label">2nd</span>
+            </div>
+            <div class="drop-zone" data-order="3">
+                <span class="zone-label">3rd</span>
+            </div>
+            <div class="drop-zone" data-order="4">
+                <span class="zone-label">4th</span>
+            </div>
+            <div class="drop-zone" data-order="5">
+                <span class="zone-label">5th</span>
+            </div>
+            <div class="drop-zone" data-order="6">
+                <span class="zone-label">6th</span>
+            </div>
+            <div class="drop-zone" data-order="7">
+                <span class="zone-label">7th</span>
+            </div>
+        </div>
+
+        <div class="tube-bank" id="tube-bank"></div>
+    </div>
+
+    <div class="order-controls">
+        <button class="btn btn-primary" id="check-btn" disabled>Check Order</button>
+        <button class="btn btn-secondary" id="reset-btn">Reset</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div id="results" class="results hidden">
+        <h2 id="results-title">Results</h2>
+        <p id="results-message"></p>
+        <button class="btn btn-primary" onclick="initOrderGame()">Try Again</button>
+        <a href="/" class="btn btn-secondary">Back to Menu</a>
+    </div>
+</div>
+{{end}}
+
+{{define "scripts"}}
+<script src="/static/order.js"></script>
+{{end}}

@@ -26,6 +26,12 @@ services:
         tag: security
         icon: oauth2-proxy.png
 
+      - name: Immich
+        subtitle: Photo Management
+        url: https://photos.munchbox.cc
+        tag: cloud
+        icon: immich.png
+
       - name: Nextcloud
         subtitle: Files, calendar, contacts
         url: https://nextcloud.munchbox.cc
