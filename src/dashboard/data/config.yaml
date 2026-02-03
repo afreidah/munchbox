@@ -184,13 +184,13 @@ services:
 
       - name: Pi-hole (green)
         subtitle: Primary DNS
-        url: http://green/admin
+        url: https://pihole-green.munchbox.cc/admin
         tag: dns
         icon: pi-hole.png
 
       - name: Pi-hole (logan)
         subtitle: Secondary DNS
-        url: http://logan/admin
+        url: https://pihole-logan.munchbox.cc/admin
         tag: dns
         icon: pi-hole.png
 
