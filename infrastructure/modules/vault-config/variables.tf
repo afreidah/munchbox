@@ -53,6 +53,12 @@ variable "policies_enabled" {
   default     = true
 }
 
+variable "transit_enabled" {
+  description = "Enable Transit secrets engine for encryption and signing"
+  type        = bool
+  default     = false
+}
+
 # -------------------------------------------------------------------------
 # KV CONFIGURATION
 # -------------------------------------------------------------------------
@@ -164,6 +170,22 @@ variable "vault_policies" {
   description = "Map of Vault policies to create"
   type = map(object({
     policy = string
+  }))
+  default = {}
+}
+
+# -------------------------------------------------------------------------
+# SERVICE TOKENS
+# -------------------------------------------------------------------------
+
+variable "service_tokens" {
+  description = "Map of service tokens to create and store in KV"
+  type = map(object({
+    policies   = list(string)
+    vault_path = string
+    ttl        = optional(string, "8760h")
+    renewable  = optional(bool, true)
+    extra_data = optional(map(string), {})
   }))
   default = {}
 }

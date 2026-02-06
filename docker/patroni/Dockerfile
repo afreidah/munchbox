@@ -5,6 +5,7 @@
 #
 # Minimal Patroni image with PostgreSQL 18 and Consul DCS support.
 # Based on official postgres:18 image with Patroni installed via pip.
+# Images are signed with cosign using Vault Transit.
 # -------------------------------------------------------------------------------
 
 FROM postgres:18-bookworm

@@ -60,3 +60,29 @@ path "consul/creds/*" {
 }
 EOT
 }
+
+# -------------------------------------------------------------------------
+# IMAGE SIGNING POLICY (for CI runners using cosign)
+# -------------------------------------------------------------------------
+
+resource "vault_policy" "image_signing" {
+  count = var.policies_enabled && var.transit_enabled ? 1 : 0
+  name  = "image-signing"
+
+  policy = <<EOT
+# Allow reading the cosign public key
+path "transit/keys/cosign" {
+  capabilities = ["read"]
+}
+
+# Allow signing with the cosign key
+path "transit/sign/cosign" {
+  capabilities = ["create", "update"]
+}
+
+# Allow verifying signatures (for image verification)
+path "transit/verify/cosign" {
+  capabilities = ["create", "update"]
+}
+EOT
+}

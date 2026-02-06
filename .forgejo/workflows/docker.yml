@@ -82,12 +82,23 @@ jobs:
       (needs.build-ops-build-image.result == 'success') &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push'
+    env:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+      VAULT_SKIP_VERIFY: "true"
     steps:
       - uses: actions/checkout@v4
       - name: Push ops-build-image
         run: |
           cd docker/ops-build-image
           make push
+      - name: Sign image with cosign
+        run: |
+          cd docker/ops-build-image
+          VERSION=$(grep '^VERSION' Makefile | cut -d'=' -f2 | tr -d ' ?')
+          IMAGE="registry.munchbox.cc/ops-build-image:${VERSION}"
+          echo "Signing ${IMAGE}"
+          cosign sign --yes --key hashivault://cosign "${IMAGE}"
 
   # ---------------------------------------------------------------------------
   # patroni (PostgreSQL 18 + Patroni HA)
@@ -112,9 +123,18 @@ jobs:
       (needs.build-patroni.result == 'success') &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push'
+    env:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+      VAULT_SKIP_VERIFY: "true"
     steps:
       - uses: actions/checkout@v4
       - name: Push patroni
         run: |
           cd docker/patroni
           make push
+      - name: Sign image with cosign
+        run: |
+          # Sign both tags
+          cosign sign --yes --key hashivault://cosign registry.munchbox.cc/patroni:latest
+          cosign sign --yes --key hashivault://cosign registry.munchbox.cc/patroni:pg18

@@ -501,6 +501,7 @@ locals {
     database_secrets_enabled = false
     pki_roles_enabled        = true
     policies_enabled         = true
+    transit_enabled          = true
 
     # Consul secrets engine
     consul_bootstrap_token = get_env("CONSUL_HTTP_TOKEN", "")
@@ -646,6 +647,18 @@ locals {
           "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"{{name}}\";",
           "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"{{name}}\";"
         ]
+      }
+    }
+
+    # --- Service Tokens ---
+    service_tokens = {
+      "ci-runner" = {
+        policies   = ["image-signing"]
+        vault_path = "ci-runner"
+        ttl        = "8760h"
+        extra_data = {
+          addr = "https://vault.munchbox.cc:8200"
+        }
       }
     }
   }
@@ -924,6 +937,16 @@ locals {
         vault_path  = "consul/bootstrap-token"
         vault_field = "token"
         secret_name = "CONSUL_HTTP_TOKEN"
+      }
+      "vault-token" = {
+        vault_path  = "ci-runner"
+        vault_field = "token"
+        secret_name = "VAULT_TOKEN"
+      }
+      "vault-addr" = {
+        vault_path  = "ci-runner"
+        vault_field = "addr"
+        secret_name = "VAULT_ADDR"
       }
     }
   }
