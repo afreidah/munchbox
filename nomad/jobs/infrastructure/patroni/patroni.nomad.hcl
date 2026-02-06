@@ -373,13 +373,8 @@ postgresql:
   pg_hba:
     - local all all trust
     - host all all 127.0.0.1/32 scram-sha-256
+    # Require TLS for all remote connections
     - hostssl all all 0.0.0.0/0 scram-sha-256
-    # Allow non-TLS from internal cluster (Temporal doesn't support SQL_TLS_ENABLED)
-    - host all all 192.168.68.0/24 scram-sha-256
-    # Allow non-TLS from Docker bridge networks (Nomad containers in bridge mode)
-    - host all all 172.26.64.0/18 scram-sha-256
-    # Allow non-TLS from WireGuard tunnel (Oracle Cloud nodes)
-    - host all all 10.200.0.0/24 scram-sha-256
     - hostssl replication {{ with secret "secret/data/postgres-shared/replication" }}{{ .Data.data.username }}{{ end }} 0.0.0.0/0 scram-sha-256
 
 # --- Bootstrap Configuration (for new cluster) ---

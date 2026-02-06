@@ -43,6 +43,7 @@ RUN set -eux; \
   VAULT_VERSION="1.18.3"; \
   TFLINT_VERSION="0.54.0"; \
   TRIVY_VERSION="0.58.0"; \
+  COSIGN_VERSION="2.4.1"; \
   if [ "$ARCH_DL" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="64bit"; fi; \
   \
   curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/tf.zip & \
@@ -53,9 +54,10 @@ RUN set -eux; \
   curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/vault.zip & \
   curl -fsSL "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" -o /tmp/tflint.zip & \
   curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" -o /tmp/trivy.tgz & \
+  curl -fsSL "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${ARCH_DL}" -o /tmp/bin/cosign & \
   wait; \
   \
-  chmod +x /tmp/bin/terragrunt; \
+  chmod +x /tmp/bin/terragrunt /tmp/bin/cosign; \
   unzip -o -d /tmp /tmp/tf.zip && install -m0755 /tmp/terraform /tmp/bin/terraform; \
   unzip -o -d /tmp /tmp/nomad.zip && install -m0755 /tmp/nomad /tmp/bin/nomad; \
   unzip -o -d /tmp /tmp/pack.zip && install -m0755 /tmp/nomad-pack /tmp/bin/nomad-pack; \
@@ -123,6 +125,7 @@ RUN set -eux; \
   tflint --version && \
   terragrunt --version && \
   trivy --version && \
+  cosign version && \
   golangci-lint version --format short && \
   go version && \
   node --version && \

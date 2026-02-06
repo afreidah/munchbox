@@ -36,12 +36,8 @@ Write traffic routes to `postgres-primary.service.consul:5432`. Read traffic
 can target either the primary or `postgres-replica.service.consul:5432`.
 Streaming replication flows from primary to replica over the PostgreSQL
 replication protocol (wal_keep_size: 256MB). All external client connections
-use SCRAM-SHA-256 authentication. TLS is enforced for connections outside the
-internal cluster CIDRs via Vault PKI certificates (pki_int/issue/postgres).
-
-Non-TLS entries exist in pg_hba for the internal cluster CIDR, Docker bridge
-network, and WireGuard tunnel because some clients (Temporal) do not support
-TLS connections to PostgreSQL.
+use SCRAM-SHA-256 authentication. TLS is required for all remote connections
+via Vault PKI certificates (pki_int/issue/postgres).
 
 ## Failure Modes
 

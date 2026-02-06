@@ -39,6 +39,7 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 // CleanupConfig holds configuration for the cleanup workflow
@@ -264,13 +265,25 @@ func CleanupNodeViaSSH(ctx context.Context, node NodeInfo, config CleanupConfig)
 		return result, err
 	}
 
+	// Determine known_hosts file path
+	knownHostsPath := os.Getenv("SSH_KNOWN_HOSTS")
+	if knownHostsPath == "" {
+		knownHostsPath = "/root/.ssh/known_hosts"
+	}
+
+	hostKeyCallback, err := knownhosts.New(knownHostsPath)
+	if err != nil {
+		result.Errors = append(result.Errors, fmt.Sprintf("failed to load known_hosts from %s: %v", knownHostsPath, err))
+		return result, err
+	}
+
 	// SSH client config
 	sshConfig := &ssh.ClientConfig{
 		User: sshUser,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeys(signer),
 		},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: Use known_hosts in production
+		HostKeyCallback: hostKeyCallback,
 		Timeout:         30 * time.Second,
 	}
 
