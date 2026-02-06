@@ -175,6 +175,7 @@ DB_DATABASE_NAME=immich
 {{ end }}
 DB_HOSTNAME=postgres-primary.service.consul
 DB_PORT=5432
+DB_SSL_MODE=require
 
 REDIS_HOSTNAME=redis-primary.service.consul
 REDIS_PORT=6379

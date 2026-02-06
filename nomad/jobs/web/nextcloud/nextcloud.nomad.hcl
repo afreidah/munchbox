@@ -167,6 +167,7 @@ job "nextcloud" {
       env {
         POSTGRES_HOST        = "postgres-primary.service.consul"
         POSTGRES_DB          = "nextcloud"
+        PGSSLMODE            = "require"
         REDIS_HOST           = "redis-primary.service.consul"
         REDIS_PORT           = "6379"
         REDIS_HOST_PORT      = "6379"

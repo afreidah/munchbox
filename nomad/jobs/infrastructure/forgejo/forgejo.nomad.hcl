@@ -222,7 +222,7 @@ HOST = postgres-primary.service.consul:5432
 NAME = forgejo
 USER = {{ .db_username }}
 PASSWD = {{ .db_password }}
-SSL_MODE = disable
+SSL_MODE = require
 LOG_SQL = false
 
 [security]
