@@ -59,7 +59,8 @@ job "forgejo" {
     network {
       mode = "bridge"
       port "http" {
-        to = 3000
+        static = 30028
+        to     = 3000
       }
       port "ssh" {
         static = 2222
