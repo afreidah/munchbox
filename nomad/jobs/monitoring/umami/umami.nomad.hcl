@@ -171,7 +171,7 @@ job "umami" {
 
       # --- Container Configuration ---
       config {
-        image              = "ghcr.io/umami-software/umami:latest"
+        image              = "ghcr.io/umami-software/umami:v2.20.2"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
