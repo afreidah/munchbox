@@ -20,11 +20,11 @@ on:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Pull latest ops-build-image on host (ensures fresh image)
+  # Pull latest ops-build-image (via mounted docker socket)
   # ---------------------------------------------------------------------------
 
   refresh-runner-image:
-    runs-on: self-hosted
+    runs-on: docker
     steps:
       - name: Pull latest ops-build-image
         run: docker pull registry.munchbox.cc/ops-build-image:latest
