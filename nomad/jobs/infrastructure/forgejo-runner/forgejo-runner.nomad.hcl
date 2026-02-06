@@ -130,6 +130,7 @@ runner:
     - "docker:docker://catthehacker/ubuntu:act-latest"
     - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
     - "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
+    - "ops:docker://registry.munchbox.cc/ops-build-image:latest"
 
 cache:
   enabled: true
@@ -155,7 +156,7 @@ GITEA_INSTANCE_URL=http://{{ range service "forgejo" }}{{ .Address }}:{{ .Port }
 GITEA_RUNNER_REGISTRATION_TOKEN={{ .Data.data.registration_token }}
 {{- end }}
 GITEA_RUNNER_NAME=munchbox-runner-{{ env "NOMAD_ALLOC_INDEX" }}
-GITEA_RUNNER_LABELS=self-hosted:host,docker:docker://catthehacker/ubuntu:act-latest,ubuntu-latest:docker://catthehacker/ubuntu:act-latest,ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04
+GITEA_RUNNER_LABELS=self-hosted:host,docker:docker://catthehacker/ubuntu:act-latest,ubuntu-latest:docker://catthehacker/ubuntu:act-latest,ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04,ops:docker://registry.munchbox.cc/ops-build-image:latest
 EOF
         destination = "secrets/runner.env"
         env         = true

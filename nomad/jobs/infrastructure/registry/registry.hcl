@@ -15,7 +15,7 @@ port  = 5000
 static_port = 5000
 host_network = true
 node = "stabler.munchbox.cc"
-size = "medium"
+size = "large"
 
 # --- Storage ---
 storage      = "ephemeral"
