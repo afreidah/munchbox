@@ -50,15 +50,11 @@ job "umami" {
   group "umami" {
     count = 1
 
-    # --- Run on large Oracle Cloud nodes ---
+    # --- Run on on-prem nodes (Oracle nodes have connectivity issues to postgres) ---
     constraint {
       attribute = "${meta.cloud}"
+      operator  = "!="
       value     = "oracle"
-    }
-
-    constraint {
-      attribute = "${meta.size}"
-      value     = "large"
     }
 
     # --- Network Configuration ---
@@ -140,7 +136,7 @@ job "umami" {
       }
 
       config {
-        image   = "alpine/curl:8.11.1"
+        image   = "alpine/curl:8.17.0"
         command = "/bin/sh"
         args    = ["-c", "cd /alloc/data && curl -sL \"https://download.db-ip.com/free/dbip-city-lite-$(date +%Y-%m).mmdb.gz\" | gunzip > dbip-city-lite.mmdb && ls -la"]
       }
@@ -171,9 +167,20 @@ job "umami" {
 
       # --- Container Configuration ---
       config {
-        image              = "ghcr.io/umami-software/umami:v2.20.2"
+        image              = "ghcr.io/umami-software/umami:3.0.3"
         image_pull_timeout = "10m"
         ports              = ["http"]
+      }
+
+      # --- Vault CA Certificate Chain for PostgreSQL TLS ---
+      template {
+        destination = "secrets/ca.crt"
+        change_mode = "restart"
+        perms       = "0644"
+        data        = <<-EOF
+{{ with secret "pki_int/cert/ca" }}{{ .Data.certificate }}{{ end }}
+{{ with secret "pki/cert/ca" }}{{ .Data.certificate }}{{ end }}
+        EOF
       }
 
       # --- Environment Variables from Vault ---
@@ -183,9 +190,11 @@ job "umami" {
         change_mode = "restart"
         data        = <<EOH
 {{ with secret "secret/data/umami" }}
-DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-primary.service.consul:5432/umami
+DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-primary.service.consul:5432/umami?sslmode=require
 APP_SECRET={{ .Data.data.app_secret }}
 {{ end }}
+# Vault CA cert for PostgreSQL TLS verification
+NODE_EXTRA_CA_CERTS={{ env "NOMAD_SECRETS_DIR" }}/ca.crt
 # App URL for external access
 APP_URL=https://analytics.munchbox.cc
 # GeoIP database for city-level geolocation (DB-IP free database, downloaded by prestart task)
@@ -199,8 +208,8 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 256
-        memory = 256
+        cpu    = 512
+        memory = 512
       }
 
       # --- Termination ---
