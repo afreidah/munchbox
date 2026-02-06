@@ -20,11 +20,22 @@ on:
 
 jobs:
   # ---------------------------------------------------------------------------
+  # Pull latest ops-build-image on host (ensures fresh image)
+  # ---------------------------------------------------------------------------
+
+  refresh-runner-image:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest ops-build-image
+        run: docker pull registry.munchbox.cc/ops-build-image:latest
+
+  # ---------------------------------------------------------------------------
   # Detect changed images
   # ---------------------------------------------------------------------------
 
   detect:
-    runs-on: docker
+    runs-on: ops
+    needs: refresh-runner-image
     outputs:
       ops_build_image: ${{ steps.detect.outputs.ops_build_image }}
       patroni: ${{ steps.detect.outputs.patroni }}
@@ -64,7 +75,7 @@ jobs:
   # ---------------------------------------------------------------------------
 
   build-ops-build-image:
-    runs-on: docker
+    runs-on: ops
     needs: detect
     if: needs.detect.outputs.ops_build_image == 'true' || github.event_name == 'workflow_dispatch'
     steps:
@@ -75,7 +86,7 @@ jobs:
           make build-multiarch
 
   push-ops-build-image:
-    runs-on: docker
+    runs-on: ops
     needs: [detect, build-ops-build-image]
     if: |
       always() &&
@@ -105,7 +116,7 @@ jobs:
   # ---------------------------------------------------------------------------
 
   build-patroni:
-    runs-on: docker
+    runs-on: ops
     needs: detect
     if: needs.detect.outputs.patroni == 'true' || github.event_name == 'workflow_dispatch'
     steps:
@@ -116,7 +127,7 @@ jobs:
           make build-multiarch
 
   push-patroni:
-    runs-on: docker
+    runs-on: ops
     needs: [detect, build-patroni]
     if: |
       always() &&
