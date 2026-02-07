@@ -35,7 +35,7 @@ tags = [
   "infrastructure",
   "themes",
   "css",
-  # Internal only - no auth needed for CSS files
-  "traefik.http.routers.theme-server.rule=Host(`themes.munchbox.cc`)",
-  "traefik.http.routers.theme-server.entrypoints=web,websecure"
+  # Allow HTTP access for CSS injection from containers
+  "traefik.http.routers.theme-server-http.rule=Host(`themes.munchbox.cc`)",
+  "traefik.http.routers.theme-server-http.entrypoints=web"
 ]

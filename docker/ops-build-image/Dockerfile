@@ -98,6 +98,14 @@ RUN set -eux; \
     python3 python3-pip pipx nodejs npm; \
   rm -rf /var/lib/apt/lists/*
 
+# --- Docker CLI (official static binary) ---
+ARG DOCKER_VERSION="27.5.1"
+RUN set -eux; \
+  curl -fsSL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${DOCKER_VERSION}.tgz" -o /tmp/docker.tgz; \
+  tar -xzf /tmp/docker.tgz -C /tmp; \
+  install -m0755 /tmp/docker/docker /usr/local/bin/docker; \
+  rm -rf /tmp/docker /tmp/docker.tgz
+
 # --- Copy all binaries from builder ---
 COPY --from=builder /tmp/bin/ /usr/local/bin/
 
@@ -126,6 +134,7 @@ RUN set -eux; \
   terragrunt --version && \
   trivy --version && \
   cosign version && \
+  docker --version && \
   golangci-lint version --format short && \
   go version && \
   node --version && \

@@ -148,21 +148,20 @@ job "deluge" {
         ]
       }
 
-      # Mullvad VPN credentials from Vault
+      # Mullvad VPN credentials from Vault (WireGuard - OpenVPN certs expired)
       template {
         data = <<-EOF
 VPN_SERVICE_PROVIDER=mullvad
-VPN_TYPE=openvpn
+VPN_TYPE=wireguard
 {{- with secret "secret/data/mullvad" }}
-OPENVPN_USER={{ .Data.data.account }}
+WIREGUARD_PRIVATE_KEY={{ .Data.data.wg_private_key }}
+WIREGUARD_ADDRESSES={{ .Data.data.wg_address }}
 {{- end }}
-SERVER_HOSTNAMES=us-lax-ovpn-101
-OPENVPN_ENDPOINT_IP=198.44.129.162
+SERVER_CITIES=Los Angeles CA
 FIREWALL_VPN_INPUT_PORTS=6881
 FIREWALL_OUTBOUND_SUBNETS=192.168.68.0/24,10.200.0.0/24
 HTTP_CONTROL_SERVER_ADDRESS=:8000
 TZ=America/Los_Angeles
-HEALTH_VPN_DURATION_INITIAL=30s
 EOF
         destination = "secrets/gluetun.env"
         env         = true
@@ -199,7 +198,7 @@ EOF
         volumes = [
           "/opt/nomad/data/deluge:/config",
           "/tank:/data",
-          "local/web.conf:/config/web.conf:ro"
+          "local/web.conf:/config/web.conf"
         ]
       }
 
