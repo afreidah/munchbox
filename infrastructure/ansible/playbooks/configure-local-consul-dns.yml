@@ -10,7 +10,7 @@
 #         ┌──────────────────┴──────────────────┐
 #         │ .consul queries    │ other queries  │
 #         ↓                    ↓                │
-#   Consul (8600)        CoreDNS (5353)         │
+#   Consul (8600)        CoreDNS (5354)         │
 #                              ↓                │
 #                        Pi-holes (round-robin) │
 #                              ↓                │
@@ -34,14 +34,14 @@
     dnsmasq_host_ip: "{{ ansible_default_ipv4.address }}"
     consul_dns_port: 8600
     # Local CoreDNS (runs as system job on every node)
-    coredns_port: 5353
+    coredns_port: 5354
     # Direct Pi-hole access for fallback if CoreDNS is down
     pihole_servers:
       - "192.168.68.62"  # pihole-01 (green)
       - "192.168.68.64"  # pihole-02 (logan)
 
   tasks:
-    - name: Disable avahi-daemon (conflicts with CoreDNS on port 5353)
+    - name: Disable avahi-daemon (conflicts with mDNS on port 5353)
       ansible.builtin.systemd:
         name: avahi-daemon
         state: stopped

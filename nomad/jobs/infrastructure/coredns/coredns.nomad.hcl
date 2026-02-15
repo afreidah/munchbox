@@ -7,7 +7,7 @@
 # servers (green and logan). Runs as a system job on every node so each node
 # has local DNS with round-robin distribution, health checks, and caching.
 #
-# Each node's dnsmasq points to localhost:5353 for non-Consul queries.
+# Each node's dnsmasq points to localhost:5354 for non-Consul queries.
 # -------------------------------------------------------------------------------
 
 # --- Shared Variables (from shared.vars.hcl) ---
@@ -24,6 +24,7 @@ job "coredns" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "system"
+  node_pool   = "all"
   priority    = 80
 
   # ---------------------------------------------------------------------------
@@ -54,7 +55,7 @@ job "coredns" {
     network {
       mode = "host"
       port "dns" {
-        static = 5353
+        static = 5354
       }
       port "metrics" {
         static = 9153
@@ -137,7 +138,7 @@ job "coredns" {
 # CoreDNS Configuration - DNS Load Balancer for Pi-holes
 # Forwards to pihole_1 and pihole_2 with round-robin and health checks
 
-.:5353 {
+.:5354 {
     # Health endpoint on 8053 (avoid 8080 conflicts)
     health :8053 {
         lameduck 5s
@@ -170,6 +171,14 @@ job "coredns" {
 
     # Query logging (comment out if too verbose)
     # log
+}
+
+# Forward .consul queries to local Consul agent DNS
+# Prevents .consul lookups (e.g. from trace plugin) from leaking to Pi-holes
+consul:5354 {
+    forward . 127.0.0.1:8600
+    cache 30
+    errors
 }
 EOH
       }
