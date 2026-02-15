@@ -21,6 +21,9 @@ extra_ports = [
   { name = "cluster", port = 9094 }
 ]
 
+# --- Placement ---
+node = "nomad-client-01"
+
 # --- Traefik routing ---
 traefik      = true
 traefik_host = "alertmanager.munchbox.cc"

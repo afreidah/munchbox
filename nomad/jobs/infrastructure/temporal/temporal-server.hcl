@@ -18,7 +18,7 @@ image = "temporalio/server:1.29.1"
 port  = 7233
 static_port = 7233
 host_network = true
-node = "stabler.munchbox.cc"
+node = "nomad-client-03"
 size = "large"
 storage = "ephemeral"
 

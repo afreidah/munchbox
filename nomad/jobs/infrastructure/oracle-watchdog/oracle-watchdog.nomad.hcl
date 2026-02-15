@@ -50,6 +50,19 @@ job "oracle-watchdog" {
       value     = "oracle"
     }
 
+    # --- amd64 only (image built for x86_64) ---
+    constraint {
+      attribute = "${attr.cpu.arch}"
+      value     = "amd64"
+    }
+
+    # --- Keep off GPU node ---
+    constraint {
+      attribute = "${node.unique.name}"
+      operator  = "!="
+      value     = "nomad-client-04"
+    }
+
     network {
       mode = "host"
       port "metrics" {

@@ -17,6 +17,9 @@ host_network = true
 size         = "medium"
 vault        = true
 
+# --- Placement ---
+node = "nomad-client-05"
+
 # --- Traefik routing ---
 traefik      = true
 traefik_host = "grafana.munchbox.cc"
@@ -37,6 +40,7 @@ env = {
 }
 
 # --- Host volume mounts ---
+storage      = "ephemeral"
 volumes = [
   "/mnt/gdrive/munchbox-data/grafana:/var/lib/grafana"
 ]

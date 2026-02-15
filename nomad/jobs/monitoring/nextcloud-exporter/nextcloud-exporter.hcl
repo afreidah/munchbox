@@ -15,6 +15,9 @@ static_port = 9205
 size        = "tiny"
 vault       = true
 
+# --- Placement ---
+node = "nomad-client-02"
+
 # --- Traefik routing ---
 traefik = false
 

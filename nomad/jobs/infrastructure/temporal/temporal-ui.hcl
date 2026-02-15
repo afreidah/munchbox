@@ -17,6 +17,9 @@ host_network = true
 size = "small"
 storage = "ephemeral"
 
+# --- Placement ---
+node = "nomad-client-01"
+
 # --- Environment variables ---
 env = {
   TZ                                    = "UTC"

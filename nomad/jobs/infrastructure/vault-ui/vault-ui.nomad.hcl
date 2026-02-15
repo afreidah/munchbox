@@ -33,7 +33,8 @@ job "vault-ui" {
 
   constraint {
     attribute = "${node.unique.name}"
-    value     = "nomad-client-01"
+    operator  = "set_contains_any"
+    value     = "oraclenode1,oraclenode2"
   }
 
   # ---------------------------------------------------------------------------
