@@ -49,6 +49,7 @@ poolstatecssclassmap = OFFLINE:text-warning REMOVED:text-error FAULTED:text-erro
 devstatecssclassmap = OFFLINE:text-warning REMOVED:text-error FAULTED:text-error SPLIT:text-warning UNAVAIL:text-error DEGRADED:text-warning ONLINE:text-success UNKNOWN:text-error INUSE:text-success AVAIL:text-success
 usedstatecssclassmap = none:success info:success notice:info err:warning crit:important
 
-[wwwuser "root"]
+; Proxy user for Traefik passthrough (real auth handled by OAuth2-proxy)
+[wwwuser "{{ zfswatcher_proxy_user }}"]
 enable = true
-password = $1$fNF5/E3q$TEYvY1AQae/7rzHQ5fVgD1
+password = {{ zfswatcher_proxy_hash }}

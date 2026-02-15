@@ -676,7 +676,8 @@ locals {
       "aptly",
       "immich",
       "redis",
-      "haproxy"
+      "haproxy",
+      "zfswatcher"
     ]
 
     # --- Database Roles (disabled by default) ---

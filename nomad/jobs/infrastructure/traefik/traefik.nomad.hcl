@@ -405,7 +405,7 @@ EOH
     rule        = "Host(`zfs.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "zfswatcher"
-    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "umami-tracking"]
+    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "zfswatcher-auth", "umami-tracking"]
     [http.routers.zfswatcher.tls]
 
   # --- ZFS Watcher (HTTP, for CF tunnel) ---
@@ -413,7 +413,7 @@ EOH
     rule        = "Host(`zfs.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "zfswatcher"
-    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "umami-tracking"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "zfswatcher-auth", "umami-tracking"]
 
   # --- Health check endpoint (no auth) ---
   [http.routers.ping]
@@ -561,6 +561,13 @@ EOH
   [http.middlewares.cf-tunnel-https.headers]
     [http.middlewares.cf-tunnel-https.headers.customRequestHeaders]
       X-Forwarded-Proto = "https"
+
+  # --- ZFS Watcher Basic Auth passthrough (real auth handled by OAuth2-proxy) ---
+  [http.middlewares.zfswatcher-auth.headers]
+    [http.middlewares.zfswatcher-auth.headers.customRequestHeaders]
+{{ with secret "secret/data/zfswatcher" -}}
+      Authorization = "Basic {{ printf "%s:%s" .Data.data.proxy_user .Data.data.proxy_password | base64Encode }}"
+{{- end }}
 
   # --- Vault CSS injection (Catppuccin Mocha theme) ---
   [http.middlewares.vault-theme.plugin.rewritebody]

@@ -20,8 +20,30 @@
     zfswatcher_config_dir: "/etc/zfswatcher"
     zfswatcher_web_port: 8800
     zfswatcher_user: "root"
+    vault_addr: "{{ lookup('env', 'VAULT_ADDR') }}"
+    vault_token: "{{ lookup('env', 'VAULT_TOKEN') }}"
 
   tasks:
+    # -------------------------------------------------------------------------
+    # Vault Secrets
+    # -------------------------------------------------------------------------
+    - name: Fetch proxy credentials from Vault
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/secret/data/zfswatcher"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        validate_certs: false
+        return_content: true
+      register: vault_zfswatcher
+      delegate_to: localhost
+      become: false
+
+    - name: Set proxy credential facts
+      ansible.builtin.set_fact:
+        zfswatcher_proxy_user: "{{ vault_zfswatcher.json.data.data.proxy_user }}"
+        zfswatcher_proxy_hash: "{{ vault_zfswatcher.json.data.data.proxy_password_hash }}"
+
     # -------------------------------------------------------------------------
     # Install Dependencies
     # -------------------------------------------------------------------------
