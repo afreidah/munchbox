@@ -433,7 +433,7 @@ sentinel announce-port {{ env "NOMAD_PORT_sentinel" }}
       }
 
       config {
-        image        = "oliver006/redis_exporter:v1.66.0"
+        image        = "oliver006/redis_exporter:v1.80.1"
         network_mode = "host"
       }
 
@@ -446,7 +446,6 @@ REDIS_ADDR=redis://127.0.0.1:{{ env "NOMAD_PORT_redis" }}
 REDIS_PASSWORD={{ .Data.data.password }}
 {{ end }}
 REDIS_EXPORTER_WEB_LISTEN_ADDRESS=:{{ env "NOMAD_PORT_metrics" }}
-REDIS_EXPORTER_CHECK_KEYS=*
 REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
         EOF
       }
@@ -466,6 +465,12 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
 
   group "sentinel-quorum" {
     count = 1
+
+    # --- Pin to nomad-client-04 (needs Consul ACL access for service queries) ---
+    constraint {
+      attribute = "${node.unique.name}"
+      value     = "nomad-client-04"
+    }
 
     # --- Network Configuration ---
     network {
