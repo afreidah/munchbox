@@ -165,12 +165,13 @@ job "nextcloud" {
 
       # --- Environment Variables (static) ---
       env {
-        POSTGRES_HOST        = "postgres-primary.service.consul"
+        POSTGRES_HOST        = "haproxy-postgres.service.consul"
+        POSTGRES_PORT        = "5433"
         POSTGRES_DB          = "nextcloud"
         PGSSLMODE            = "require"
-        REDIS_HOST           = "redis-primary.service.consul"
-        REDIS_PORT           = "6379"
-        REDIS_HOST_PORT      = "6379"
+        REDIS_HOST           = "haproxy-redis.service.consul"
+        REDIS_PORT           = "6380"
+        REDIS_HOST_PORT      = "6380"
         REDIS_HOST_DB        = "0"
         TRUSTED_PROXIES      = "172.26.64.0/18"
         OVERWRITEPROTOCOL    = "https"

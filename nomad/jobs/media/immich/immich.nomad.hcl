@@ -173,12 +173,12 @@ DB_USERNAME={{ .Data.data.db_username }}
 DB_PASSWORD={{ .Data.data.db_password }}
 DB_DATABASE_NAME=immich
 {{ end }}
-DB_HOSTNAME=postgres-primary.service.consul
-DB_PORT=5432
+DB_HOSTNAME=haproxy-postgres.service.consul
+DB_PORT=5433
 DB_SSL_MODE=require
 
-REDIS_HOSTNAME=redis-primary.service.consul
-REDIS_PORT=6379
+REDIS_HOSTNAME=haproxy-redis.service.consul
+REDIS_PORT=6380
 {{ with secret "secret/data/redis-shared" }}
 REDIS_PASSWORD={{ .Data.data.password }}
 {{ end }}

@@ -102,7 +102,6 @@ job "umami" {
         "traefik.http.routers.umami.rule=Host(`analytics.munchbox.cc`) || Host(`analytics.alexfreidah.com`)",
         "traefik.http.routers.umami.entrypoints=websecure",
         "traefik.http.routers.umami.tls=true",
-        "traefik.http.routers.umami.tls.certresolver=letsencrypt",
         # HTTP router (Cloudflare tunnel)
         "traefik.http.routers.umami-http.rule=Host(`analytics.munchbox.cc`) || Host(`analytics.alexfreidah.com`)",
         "traefik.http.routers.umami-http.entrypoints=web",
@@ -190,7 +189,7 @@ job "umami" {
         change_mode = "restart"
         data        = <<EOH
 {{ with secret "secret/data/umami" }}
-DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@postgres-primary.service.consul:5432/umami?sslmode=require
+DATABASE_URL=postgresql://{{ .Data.data.db_username }}:{{ .Data.data.db_password }}@haproxy-postgres.service.consul:5433/umami?sslmode=require
 APP_SECRET={{ .Data.data.app_secret }}
 {{ end }}
 # Vault CA cert for PostgreSQL TLS verification

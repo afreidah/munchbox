@@ -30,8 +30,17 @@ job "trivy-dashboard" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement - no constraint, can run on any node
+  # Placement
   # -------------------------------------------------------------------------
+  constraint {
+    attribute = "${attr.cpu.arch}"
+    value     = "amd64"
+  }
+
+  constraint {
+    attribute = "${node.unique.name}"
+    value     = "nomad-client-05"
+  }
 
   # ---------------------------------------------------------------------------
   # Task Group: dashboard
@@ -121,8 +130,8 @@ job "trivy-dashboard" {
 
       env {
         PORT                        = "8080"
-        TRIVY_DB_HOST               = "postgres-primary.service.consul"
-        TRIVY_DB_PORT               = "5432"
+        TRIVY_DB_HOST               = "haproxy-postgres.service.consul"
+        TRIVY_DB_PORT               = "5433"
         TRIVY_DB_USER               = "${secret.trivy_db.db_username}"
         TRIVY_DB_PASSWORD           = "${secret.trivy_db.db_password}"
         TRIVY_DB_NAME               = "trivy"

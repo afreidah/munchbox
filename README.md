@@ -93,7 +93,7 @@ Built on the HashiCorp stack (Nomad, Consul, Vault) and managed through Infrastr
 
 - **Edge Access**: Cloudflare Tunnel for secure external access
 - **Container Registry**: Private Docker registry with web UI
-- **Database HA**: Patroni for PostgreSQL, Redis Sentinel for Redis
+- **Database HA**: Patroni for PostgreSQL, Redis Sentinel for Redis, HAProxy for failover-safe connection routing
 - **Certificate Management**: vault-cert-manager for automated PKI lifecycle
 - **Logging**: Loki + Promtail for log aggregation
 - **Alerting**: Alertmanager with Telegram notifications
@@ -369,6 +369,13 @@ Jobs using the pack define variables (`.hcl` files), while complex jobs use pure
 - Sentinel quorum for automatic failover
 - Dynamic master discovery via Consul DNS
 
+**HAProxy Database Proxy:**
+- TCP proxy in front of both Patroni and Redis Sentinel
+- Applications connect to `haproxy-postgres.service.consul:5433` and `haproxy-redis.service.consul:6380`
+- Health-checks Patroni REST API and Redis replication role to route to the current primary
+- On failover, immediately kills stale connections (`on-marked-down shutdown-sessions`) so apps reconnect to the new primary without manual restart
+- Backends discovered via HAProxy DNS resolver against Consul DNS
+
 ### Security Scanning
 
 Trivy server provides continuous vulnerability scanning:
@@ -488,6 +495,7 @@ ansible-playbook playbooks/vault-cert-manager.yml   # Deploy cert manager
 - `oauth2-proxy` - Authentication proxy for services
 - `patroni` - HA PostgreSQL with Patroni orchestration
 - `redis-sentinel` - HA Redis with Sentinel failover
+- `haproxy` - Database failover proxy for Patroni and Redis
 - `postgres-shared` / `postgres-replica` - Standalone PostgreSQL instances
 - `redis-shared` - Standalone Redis instance
 - `temporal` - Workflow orchestration (for backups, scans)

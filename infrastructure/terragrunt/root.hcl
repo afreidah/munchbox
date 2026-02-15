@@ -164,6 +164,38 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
+  # PROXMOX USERS & ROLES
+  # ---------------------------------------------------------------------------
+  # Service accounts for monitoring, backups, etc.
+
+  proxmox_roles = {
+    "prometheus-exporter" = {
+      privileges = [
+        "Sys.Audit",
+        "SDN.Audit",
+        "Datastore.Audit",
+        "Pool.Audit",
+        "VM.Audit",
+      ]
+    }
+  }
+
+  proxmox_users = {
+    "prometheus" = {
+      user_id = "prometheus@pve"
+      comment = "PVE Exporter service account"
+      # Password managed manually (API tokens can't change passwords)
+      # Password stored in Vault at secret/proxmox for pve-exporter
+      acls = [
+        {
+          path    = "/"
+          role_id = "prometheus-exporter"
+        }
+      ]
+    }
+  }
+
+  # ---------------------------------------------------------------------------
   # CONSUL-ACLS MODULE INPUTS
   # ---------------------------------------------------------------------------
   # Consul ACL policies, tokens, and Vault secret storage configuration
@@ -245,6 +277,14 @@ locals {
         EOT
       }
 
+      "haproxy" = {
+        description = "HAProxy - database failover proxy service discovery"
+        rules       = <<-EOT
+          service_prefix "" { policy = "read" }
+          node_prefix "" { policy = "read" }
+        EOT
+      }
+
       "health-checks" = {
         description = "Health checks - service and Vault startup operations"
         rules       = <<-EOT
@@ -301,6 +341,10 @@ locals {
         description = "Token for Patroni PostgreSQL HA cluster"
         policies    = ["patroni"]
       }
+      "haproxy" = {
+        description = "Token for HAProxy database failover proxy"
+        policies    = ["haproxy"]
+      }
       "terraform-ci" = {
         description = "Token for CI/CD terraform state management"
         policies    = ["terraform-ci"]
@@ -344,6 +388,11 @@ locals {
       "patroni" = {
         vault_path       = "patroni"
         token_key        = "patroni"
+        token_field_name = "consul_token"
+      }
+      "haproxy" = {
+        vault_path       = "haproxy"
+        token_key        = "haproxy"
         token_field_name = "consul_token"
       }
       "terraform-ci" = {
@@ -523,6 +572,7 @@ locals {
         allowed_domains = [
           "postgres-primary.service.consul",
           "postgres-replica.service.consul",
+          "haproxy-postgres.service.consul",
           "postgres.service.consul",
           "node.consul"
         ]
@@ -625,7 +675,8 @@ locals {
       "oracle-watchdog",
       "aptly",
       "immich",
-      "redis"
+      "redis",
+      "haproxy"
     ]
 
     # --- Database Roles (disabled by default) ---

@@ -43,8 +43,11 @@ has not yet completed.
 
 ## Data Flow
 
-Write traffic routes to `redis-primary.service.consul:6379`. Read traffic
-can target either the primary or `redis-replica.service.consul:6379`.
+Application traffic routes through HAProxy at
+`haproxy-redis.service.consul:6380`, which checks `INFO replication` on each
+Redis instance and forwards to the current master on port 6379. On failover,
+HAProxy kills stale connections and re-routes to the new master automatically.
+
 Replication is asynchronous from master to replica. Persistence uses both
 RDB snapshots (every 60s if at least 1 key changed) and AOF with everysec
 fsync.
@@ -73,7 +76,8 @@ down-after-milliseconds of 5s.
 - Vault (Redis password at `secret/data/redis-shared`)
 
 **Required by:**
-- OAuth2-Proxy (session storage)
+- HAProxy (proxies connections from apps to the current master)
+- Nextcloud, Forgejo, Immich, Trivy Server (via HAProxy)
 
 ## Notable Configuration
 

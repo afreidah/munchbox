@@ -219,7 +219,7 @@ OFFLINE_MODE = false
 
 [database]
 DB_TYPE = postgres
-HOST = postgres-primary.service.consul:5432
+HOST = haproxy-postgres.service.consul:5433
 NAME = forgejo
 USER = {{ .db_username }}
 PASSWD = {{ .db_password }}
@@ -238,18 +238,18 @@ JWT_SECRET = {{ .jwt_secret }}
 {{ with .Data.data }}
 [cache]
 ADAPTER = redis
-HOST = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
+HOST = redis://default:{{ .password }}@haproxy-redis.service.consul:6380/2
 ITEM_TTL = 16h
 
 [session]
 PROVIDER = redis
-PROVIDER_CONFIG = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
+PROVIDER_CONFIG = redis://default:{{ .password }}@haproxy-redis.service.consul:6380/2
 COOKIE_SECURE = true
 SAME_SITE = lax
 
 [queue]
 TYPE = redis
-CONN_STR = redis://default:{{ .password }}@redis-primary.service.consul:6379/2
+CONN_STR = redis://default:{{ .password }}@haproxy-redis.service.consul:6380/2
 {{ end }}{{ end }}
 
 [indexer]

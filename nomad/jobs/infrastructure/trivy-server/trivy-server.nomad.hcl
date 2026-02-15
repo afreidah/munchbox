@@ -30,6 +30,14 @@ job "trivy-server" {
   }
 
   # ---------------------------------------------------------------------------
+  # Placement
+  # ---------------------------------------------------------------------------
+  constraint {
+    attribute = "${node.unique.name}"
+    value     = "nomad-client-05"
+  }
+
+  # ---------------------------------------------------------------------------
   # Task Group: server
   # ---------------------------------------------------------------------------
 
@@ -100,7 +108,7 @@ job "trivy-server" {
       template {
         data = <<-EOF
         {{ with secret "secret/data/redis-shared" }}
-        TRIVY_CACHE_BACKEND=redis://:{{ .Data.data.password }}@redis-primary.service.consul:6379
+        TRIVY_CACHE_BACKEND=redis://:{{ .Data.data.password }}@haproxy-redis.service.consul:6380
         {{ end }}
         EOF
         destination = "secrets/secrets.env"

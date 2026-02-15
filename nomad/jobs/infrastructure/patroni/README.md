@@ -32,8 +32,12 @@ where the directory may not exist yet.
 
 ## Data Flow
 
-Write traffic routes to `postgres-primary.service.consul:5432`. Read traffic
-can target either the primary or `postgres-replica.service.consul:5432`.
+Application traffic routes through HAProxy at
+`haproxy-postgres.service.consul:5433`, which health-checks the Patroni REST
+API and forwards to the current primary on port 5432. On failover, HAProxy
+kills stale connections and re-routes to the new primary automatically. Read
+traffic can also target `postgres-replica.service.consul:5432` directly.
+
 Streaming replication flows from primary to replica over the PostgreSQL
 replication protocol (wal_keep_size: 256MB). All external client connections
 use SCRAM-SHA-256 authentication. TLS is required for all remote connections
@@ -61,7 +65,8 @@ via Vault PKI certificates (pki_int/issue/postgres).
   TLS certificates via `pki_int/issue/postgres`)
 
 **Required by:**
-- Nextcloud, Temporal Server, Forgejo, Umami, Trivy Dashboard, Immich
+- HAProxy (proxies connections from apps to the current primary)
+- Nextcloud, Temporal Server, Forgejo, Umami, Trivy Dashboard, Immich (via HAProxy)
 
 ## Notable Configuration
 
