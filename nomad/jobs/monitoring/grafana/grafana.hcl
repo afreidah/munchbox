@@ -3,22 +3,21 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Visualization platform for Prometheus metrics and Loki logs. Uses persistent
-# storage on Google Drive mount for dashboard and configuration retention across
-# restarts. Integrates with Vault for admin credentials.
+# Visualization platform for Prometheus metrics and Loki logs. Uses PostgreSQL
+# on the shared Patroni cluster for state persistence. All dashboards and
+# datasources are provisioned from version-controlled files.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
 name         = "grafana"
 image        = "grafana/grafana:12.3.0"
 port         = 3030
-static_port  = 3030
-host_network = true
+host_network = false
 size         = "medium"
 vault        = true
 
 # --- Placement ---
-node = "nomad-client-05"
+node = "any"
 
 # --- Traefik routing ---
 traefik      = true
@@ -39,20 +38,27 @@ env = {
   GF_TRACING_OPENTELEMETRY_OTLP_PROPAGATION  = "w3c"
 }
 
-# --- Host volume mounts ---
-storage      = "ephemeral"
-volumes = [
-  "/mnt/gdrive/munchbox-data/grafana:/var/lib/grafana"
-]
+# --- Storage ---
+storage = "ephemeral"
 
 # --- Configuration templates ---
 templates = [
   { src = "grafana.env.tpl", dest = "/secrets/grafana.env", env = true, vault = true },
   { src = "datasources.yml", dest = "/etc/grafana/provisioning/datasources/datasources.yml", vault = false },
   { src = "dashboards.yml", dest = "/etc/grafana/provisioning/dashboards/dashboards.yml", vault = false },
+  # Custom dashboards
   { src = "dashboards/infrastructure-services.json", dest = "/etc/grafana/provisioning/dashboards/json/infrastructure-services.json", vault = false },
   { src = "dashboards/nomad-cluster-overview.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-cluster-overview.json", vault = false },
-  { src = "dashboards/certificate-management.json", dest = "/etc/grafana/provisioning/dashboards/json/certificate-management.json", vault = false }
+  { src = "dashboards/nomad-workloads.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-workloads.json", vault = false },
+  { src = "dashboards/certificate-management.json", dest = "/etc/grafana/provisioning/dashboards/json/certificate-management.json", vault = false },
+  # Community dashboards
+  { src = "dashboards/hashicorp-nomad.json", dest = "/etc/grafana/provisioning/dashboards/json/hashicorp-nomad.json", vault = false },
+  { src = "dashboards/hashicorp-vault.json", dest = "/etc/grafana/provisioning/dashboards/json/hashicorp-vault.json", vault = false },
+  { src = "dashboards/node-exporter-full.json", dest = "/etc/grafana/provisioning/dashboards/json/node-exporter-full.json", vault = false },
+  { src = "dashboards/nomad-clients.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-clients.json", vault = false },
+  { src = "dashboards/prometheus-blackbox-exporter.json", dest = "/etc/grafana/provisioning/dashboards/json/prometheus-blackbox-exporter.json", vault = false },
+  { src = "dashboards/proxmox-via-prometheus.json", dest = "/etc/grafana/provisioning/dashboards/json/proxmox-via-prometheus.json", vault = false },
+  { src = "dashboards/traefik-official-standalone-dashboard.json", dest = "/etc/grafana/provisioning/dashboards/json/traefik-official-standalone-dashboard.json", vault = false },
 ]
 
 # --- Service tags ---

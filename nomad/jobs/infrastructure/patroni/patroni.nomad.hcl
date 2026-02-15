@@ -491,6 +491,18 @@ END
 CREATE DATABASE IF NOT EXISTS trivy OWNER {{ .Data.data.db_username }};
 {{ end }}
 
+-- Grafana
+{{ with secret "secret/data/grafana" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS grafana OWNER {{ .Data.data.db_username }};
+{{ end }}
+
 -- Immich (requires pgvector extension)
 {{ with secret "secret/data/immich" }}
 DO \$\$
