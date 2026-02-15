@@ -1,0 +1,16 @@
+---
+# -------------------------------------------------------------------------------
+# SSH CA Role Defaults
+# -------------------------------------------------------------------------------
+
+ssh_ca_vault_addr: "{{ vault_api_addr | default('https://vault.service.consul:8200') }}"
+ssh_ca_host_signer_path: "ssh-host-signer"
+ssh_ca_client_signer_path: "ssh-client-signer"
+ssh_ca_host_role: "host-signer"
+ssh_ca_host_cert_ttl: "8760h"
+ssh_ca_host_key_path: "/etc/ssh/ssh_host_ed25519_key"
+ssh_ca_host_cert_path: "/etc/ssh/ssh_host_ed25519_key-cert.pub"
+ssh_ca_trusted_user_ca_path: "/etc/ssh/trusted-user-ca-keys.pem"
+ssh_ca_principals_dir: "/etc/ssh/authorized_principals"
+ssh_ca_client_role: "client-service"
+ssh_ca_client_cert_ttl: "8760h"

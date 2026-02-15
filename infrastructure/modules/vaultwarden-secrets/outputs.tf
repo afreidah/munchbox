@@ -26,3 +26,14 @@ output "login_item_ids" {
     for key, login in bitwarden_item_login.logins : key => login.id
   }
 }
+
+# -----------------------------------------------------------------------------
+# SECURE NOTE ITEMS
+# -----------------------------------------------------------------------------
+
+output "secure_note_item_ids" {
+  description = "Map of secure note item keys to item IDs"
+  value = {
+    for key, item in bitwarden_item_secure_note.secure_notes : key => item.id
+  }
+}

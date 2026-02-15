@@ -39,7 +39,6 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 // CleanupConfig holds configuration for the cleanup workflow
@@ -112,6 +111,7 @@ func CleanupOrphanedDataWorkflow(ctx workflow.Context, config CleanupConfig) ([]
 
 	// Clean up each node via SSH
 	var results []CleanupResult
+	var failedNodes []string
 	for _, node := range nodes {
 		logger.Info("Cleaning up node", "node", node.Name, "address", node.Address)
 
@@ -124,6 +124,9 @@ func CleanupOrphanedDataWorkflow(ctx workflow.Context, config CleanupConfig) ([]
 				NodeAddr: node.Address,
 				Errors:   []string{err.Error()},
 			}
+			failedNodes = append(failedNodes, node.Name)
+		} else if len(result.Errors) > 0 {
+			failedNodes = append(failedNodes, node.Name)
 		}
 		results = append(results, result)
 	}
@@ -140,7 +143,12 @@ func CleanupOrphanedDataWorkflow(ctx workflow.Context, config CleanupConfig) ([]
 		"nodes", len(results),
 		"totalOrphaned", totalOrphaned,
 		"totalDeleted", totalDeleted,
+		"failedNodes", len(failedNodes),
 		"dryRun", config.DryRun)
+
+	if len(failedNodes) > 0 {
+		return results, fmt.Errorf("cleanup failed on %d node(s): %s", len(failedNodes), strings.Join(failedNodes, ", "))
+	}
 
 	return results, nil
 }
@@ -265,25 +273,58 @@ func CleanupNodeViaSSH(ctx context.Context, node NodeInfo, config CleanupConfig)
 		return result, err
 	}
 
-	// Determine known_hosts file path
-	knownHostsPath := os.Getenv("SSH_KNOWN_HOSTS")
-	if knownHostsPath == "" {
-		knownHostsPath = "/root/.ssh/known_hosts"
+	// Build auth methods - prefer cert auth, fall back to plain key
+	var authMethods []ssh.AuthMethod
+
+	sshCertPath := os.Getenv("SSH_CERT_PATH")
+	if sshCertPath == "" {
+		sshCertPath = "/root/.ssh/id_ed25519-cert.pub"
 	}
 
-	hostKeyCallback, err := knownhosts.New(knownHostsPath)
+	certData, err := os.ReadFile(sshCertPath)
+	if err == nil {
+		pubKey, _, _, _, err := ssh.ParseAuthorizedKey(certData)
+		if err == nil {
+			cert, ok := pubKey.(*ssh.Certificate)
+			if ok {
+				certSigner, err := ssh.NewCertSigner(cert, signer)
+				if err == nil {
+					authMethods = append(authMethods, ssh.PublicKeys(certSigner))
+				}
+			}
+		}
+	}
+	authMethods = append(authMethods, ssh.PublicKeys(signer))
+
+	// Load host CA public key for certificate verification
+	hostCAPath := os.Getenv("SSH_HOST_CA_PATH")
+	if hostCAPath == "" {
+		hostCAPath = "/root/.ssh/ssh-host-ca.pub"
+	}
+
+	hostCAData, err := os.ReadFile(hostCAPath)
 	if err != nil {
-		result.Errors = append(result.Errors, fmt.Sprintf("failed to load known_hosts from %s: %v", knownHostsPath, err))
+		result.Errors = append(result.Errors, fmt.Sprintf("failed to read host CA key from %s: %v", hostCAPath, err))
 		return result, err
+	}
+
+	hostCAKey, _, _, _, err := ssh.ParseAuthorizedKey(hostCAData)
+	if err != nil {
+		result.Errors = append(result.Errors, fmt.Sprintf("failed to parse host CA key: %v", err))
+		return result, err
+	}
+
+	certChecker := &ssh.CertChecker{
+		IsHostAuthority: func(auth ssh.PublicKey, address string) bool {
+			return bytes.Equal(auth.Marshal(), hostCAKey.Marshal())
+		},
 	}
 
 	// SSH client config
 	sshConfig := &ssh.ClientConfig{
-		User: sshUser,
-		Auth: []ssh.AuthMethod{
-			ssh.PublicKeys(signer),
-		},
-		HostKeyCallback: hostKeyCallback,
+		User:            sshUser,
+		Auth:            authMethods,
+		HostKeyCallback: certChecker.CheckHostKey,
 		Timeout:         30 * time.Second,
 	}
 
@@ -390,9 +431,8 @@ for ca in /etc/nomad.d/tls/ca.crt /opt/nomad/tls/vault-intermediate-ca.pem; do
 done
 
 if [ -z "$NOMAD_CA" ]; then
-  echo "WARNING: Could not find Nomad CA certificate"
-  echo "RESULT: scanned=0 orphaned=0 deleted=0 skipped=0"
-  exit 0
+  echo "ERROR: Could not find Nomad CA certificate"
+  exit 1
 fi
 
 RUNNING_JOBS=$(%scurl -sf --cacert "$NOMAD_CA" \
@@ -401,9 +441,8 @@ RUNNING_JOBS=$(%scurl -sf --cacert "$NOMAD_CA" \
   %sjq -r '.[] | select(.ClientStatus == "running") | .JobID' 2>/dev/null | sort -u || echo "")
 
 if [ -z "$RUNNING_JOBS" ]; then
-  echo "WARNING: Could not get running jobs from local Nomad agent"
-  echo "RESULT: scanned=0 orphaned=0 deleted=0 skipped=0"
-  exit 0
+  echo "ERROR: Could not get running jobs from local Nomad agent at ${NOMAD_HTTP_ADDR}"
+  exit 1
 fi
 
 echo "Running jobs on this node:"

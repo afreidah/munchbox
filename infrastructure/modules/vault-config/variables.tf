@@ -59,6 +59,12 @@ variable "transit_enabled" {
   default     = false
 }
 
+variable "ssh_ca_enabled" {
+  description = "Enable SSH certificate authority for host and client signing"
+  type        = bool
+  default     = false
+}
+
 # -------------------------------------------------------------------------
 # KV CONFIGURATION
 # -------------------------------------------------------------------------

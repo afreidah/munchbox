@@ -6,6 +6,7 @@
 #   - Vault: Vault connection settings
 #   - Folders: Vaultwarden folder definitions
 #   - Logins: Login item mappings
+#   - Secure Notes: Secure note item mappings
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -44,6 +45,22 @@ variable "login_items" {
     username_field = optional(string)
     folder_key     = optional(string)
     notes          = optional(string)
+  }))
+  default = {}
+}
+
+# -----------------------------------------------------------------------------
+# SECURE NOTE ITEMS
+# -----------------------------------------------------------------------------
+
+variable "secure_note_items" {
+  description = "Map of secure note items to sync from Vault to Vaultwarden"
+  type = map(object({
+    name          = string
+    vault_path    = string
+    content_field = string
+    folder_key    = optional(string)
+    notes         = optional(string)
   }))
   default = {}
 }

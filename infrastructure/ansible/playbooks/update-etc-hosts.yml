@@ -1,0 +1,88 @@
+---
+# -------------------------------------------------------------------------------
+# Update /etc/hosts - Cluster Node Resolution
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Pushes a managed block of cluster node entries to /etc/hosts on all nodes.
+# Uses static_ip (WireGuard for Oracle nodes, LAN for on-prem) so nodes can
+# resolve each other by hostname within the cluster.
+#
+# Also disables cloud-init's manage_etc_hosts so entries survive reboots.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/update-etc-hosts.yml
+#   ansible-playbook -i inventory/hosts.yml playbooks/update-etc-hosts.yml --limit nomad-client-01
+# -------------------------------------------------------------------------------
+
+- name: Update /etc/hosts on all cluster nodes
+  hosts: nomad_servers:nomad_clients:proxmox_hosts
+  become: true
+  serial: 5
+
+  vars:
+    cluster_hosts:
+      # --- Nomad servers (bare metal Pi5s) ---
+      - ip: 192.168.68.61
+        names: stabler stabler.munchbox.cc
+      - ip: 192.168.68.60
+        names: goren goren.munchbox.cc
+      # --- Nomad clients (Proxmox VMs) ---
+      - ip: 192.168.68.58
+        names: nomad-server-03 nomad-server-03.munchbox.cc
+      - ip: 192.168.68.67
+        names: nomad-client-01 nomad-client-01.munchbox.cc
+      - ip: 192.168.68.72
+        names: nomad-client-02 nomad-client-02.munchbox.cc
+      - ip: 192.168.68.71
+        names: nomad-client-03 nomad-client-03.munchbox.cc
+      - ip: 192.168.68.73
+        names: nomad-client-04 nomad-client-04.munchbox.cc
+      - ip: 192.168.68.74
+        names: nomad-client-05 nomad-client-05.munchbox.cc
+      # --- Oracle nodes (WireGuard IPs) ---
+      - ip: 10.200.0.11
+        names: oracle-node-1 oracle-node-1.munchbox.cc
+      - ip: 10.200.0.12
+        names: oracle-node-2 oracle-node-2.munchbox.cc
+      - ip: 10.200.0.13
+        names: oracle-arm-1 oracle-arm-1.munchbox.cc
+      - ip: 10.200.0.14
+        names: oracle-arm-2 oracle-arm-2.munchbox.cc
+      # --- Proxmox hosts ---
+      - ip: 192.168.68.59
+        names: cabot cabot.munchbox.cc
+      - ip: 192.168.68.63
+        names: mccoy mccoy.munchbox.cc
+      - ip: 192.168.68.65
+        names: fontana fontana.munchbox.cc
+      - ip: 192.168.68.69
+        names: rubirosa rubirosa.munchbox.cc
+      # --- DNS servers ---
+      - ip: 192.168.68.62
+        names: green green.munchbox.cc
+      - ip: 192.168.68.64
+        names: logan logan.munchbox.cc
+
+  tasks:
+    - name: Disable cloud-init manage_etc_hosts
+      ansible.builtin.copy:
+        content: |
+          # Prevent cloud-init from overwriting /etc/hosts on reboot
+          manage_etc_hosts: false
+        dest: /etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg
+        owner: root
+        group: root
+        mode: "0644"
+      when: ansible_service_mgr is defined
+      failed_when: false
+
+    - name: Add cluster host entries to /etc/hosts
+      ansible.builtin.blockinfile:
+        path: /etc/hosts
+        marker: "# {mark} MUNCHBOX CLUSTER HOSTS"
+        block: |
+          {% for host in cluster_hosts %}
+          {{ "%-16s" | format(host.ip) }}{{ host.names }}
+          {% endfor %}
+        state: present

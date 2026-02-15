@@ -121,7 +121,9 @@ job "temporal-backup-worker" {
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/vault-ca.pem:ro",
           "secrets/postgres-ca.crt:/etc/ssl/postgres/ca.crt:ro",
-          "/root/.ssh:/root/.ssh:ro"
+          "secrets/ssh-key:/root/.ssh/id_ed25519:ro",
+          "secrets/ssh-client-cert.pub:/root/.ssh/id_ed25519-cert.pub:ro",
+          "secrets/ssh-host-ca.pub:/root/.ssh/ssh-host-ca.pub:ro"
         ]
       }
 
@@ -133,6 +135,39 @@ job "temporal-backup-worker" {
 {{ with secret "pki_int/cert/ca" }}
 {{ .Data.certificate }}
 {{ end }}
+        EOF
+      }
+
+      # SSH CA - backup worker private key from Vault KV
+      template {
+        destination = "secrets/ssh-key"
+        perms       = "0600"
+        data        = <<-EOF
+{{ with secret "secret/data/ssh/backup-worker" }}
+{{ .Data.data.private_key }}
+{{ end }}
+        EOF
+      }
+
+      # SSH CA - host CA public key (replaces known_hosts)
+      template {
+        destination = "secrets/ssh-host-ca.pub"
+        perms       = "0644"
+        data        = <<-EOF
+{{ with secret "ssh-host-signer/config/ca" }}
+{{ .Data.public_key }}
+{{ end }}
+        EOF
+      }
+
+      # SSH CA - signed client certificate for backup worker
+      template {
+        destination   = "secrets/ssh-client-cert.pub"
+        perms         = "0644"
+        data          = <<-EOF
+{{ with secret "secret/data/ssh/backup-worker" }}{{ $pub := .Data.data.public_key }}{{ with secret "ssh-client-signer/sign/client-service" (printf "public_key=%s" $pub) "valid_principals=root,ubuntu" }}
+{{ .Data.signed_key }}
+{{ end }}{{ end }}
         EOF
       }
 
@@ -162,6 +197,9 @@ job "temporal-backup-worker" {
         NOMAD_ADDR        = "https://nomad.service.consul:4646"
         NOMAD_CACERT      = "/etc/ssl/certs/nomad-ca.pem"
         VAULT_CACERT      = "/etc/ssl/certs/vault-ca.pem"
+        SSH_KEY_PATH      = "/root/.ssh/id_ed25519"
+        SSH_CERT_PATH     = "/root/.ssh/id_ed25519-cert.pub"
+        SSH_HOST_CA_PATH  = "/root/.ssh/ssh-host-ca.pub"
         TRIVY_DB_HOST     = "haproxy-postgres.service.consul"
         TRIVY_DB_PORT     = "5433"
         TRIVY_DB_NAME     = "trivy"

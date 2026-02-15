@@ -551,6 +551,7 @@ locals {
     pki_roles_enabled        = true
     policies_enabled         = true
     transit_enabled          = true
+    ssh_ca_enabled           = true
 
     # Consul secrets engine
     consul_bootstrap_token = get_env("CONSUL_HTTP_TOKEN", "")
@@ -631,12 +632,32 @@ locals {
           path "pki_int/cert/ca" {
             capabilities = ["read"]
           }
+          path "ssh-host-signer/sign/host-signer" {
+            capabilities = ["create", "update"]
+          }
+          path "ssh-host-signer/config/ca" {
+            capabilities = ["read"]
+          }
+          path "ssh-client-signer/config/ca" {
+            capabilities = ["read"]
+          }
         EOT
       }
 
       "backup-worker" = {
         policy = <<-EOT
           path "sys/storage/raft/snapshot" {
+            capabilities = ["read"]
+          }
+        EOT
+      }
+
+      "ssh-client-user" = {
+        policy = <<-EOT
+          path "ssh-client-signer/sign/client-user" {
+            capabilities = ["create", "update"]
+          }
+          path "ssh-host-signer/config/ca" {
             capabilities = ["read"]
           }
         EOT
@@ -677,7 +698,8 @@ locals {
       "immich",
       "redis",
       "haproxy",
-      "zfswatcher"
+      "zfswatcher",
+      "ssh/backup-worker"
     ]
 
     # --- Database Roles (disabled by default) ---
@@ -960,6 +982,16 @@ locals {
         username       = "admin"
         password_field = "password"
         folder_key     = "admin"
+      }
+    }
+
+    secure_note_items = {
+      break_glass = {
+        name          = "SSH Break-Glass Key"
+        vault_path    = "ssh/break-glass"
+        content_field = "private_key"
+        folder_key    = "admin"
+        notes         = "Emergency SSH access to all cluster nodes when Vault/certs are unavailable. Save to file (chmod 600), then: ssh -i /path/to/key root@<node>"
       }
     }
   }

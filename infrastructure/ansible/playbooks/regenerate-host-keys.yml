@@ -1,0 +1,39 @@
+---
+# -------------------------------------------------------------------------------
+# Regenerate SSH Host Keys
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Regenerates SSH host keys on nodes that share duplicate keys (e.g., cloned
+# from the same Proxmox VM template). Runs one node at a time to allow
+# updating local known_hosts between each.
+#
+# Usage:
+#   ansible-playbook -i inventory/hosts.yml playbooks/regenerate-host-keys.yml \
+#     --limit nomad-client-01
+# -------------------------------------------------------------------------------
+
+- name: Regenerate SSH host keys
+  hosts: nomad-client-01,nomad-client-02,nomad-client-03
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Remove existing host keys
+      ansible.builtin.shell: rm -f /etc/ssh/ssh_host_*
+
+    - name: Regenerate all host key types
+      ansible.builtin.command: ssh-keygen -A
+
+    - name: Restart sshd
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+
+    - name: Display new host key fingerprint
+      ansible.builtin.command: ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+      register: fingerprint
+
+    - name: Show fingerprint
+      ansible.builtin.debug:
+        msg: "New ed25519 fingerprint for {{ inventory_hostname }}: {{ fingerprint.stdout }}"

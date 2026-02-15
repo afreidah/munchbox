@@ -235,6 +235,29 @@
           path "pki_int/roles/*" {
             capabilities = ["read"]
           }
+
+          # SSH CA - sign host keys
+          path "ssh-host-signer/sign/host-signer" {
+            capabilities = ["create", "update"]
+          }
+
+          # SSH CA - sign client keys (inter-node SSH)
+          path "ssh-client-signer/sign/client-service" {
+            capabilities = ["create", "update"]
+          }
+
+          # SSH CA - read CA public keys
+          path "ssh-host-signer/config/ca" {
+            capabilities = ["read"]
+          }
+          path "ssh-client-signer/config/ca" {
+            capabilities = ["read"]
+          }
+
+          # SSH CA - read break-glass key
+          path "secret/data/ssh/break-glass" {
+            capabilities = ["read"]
+          }
         dest: /tmp/pki-ansible-policy.hcl
         mode: "0644"
 

@@ -58,6 +58,21 @@ path "${var.pki_backend_path}/cert/ca" {
 path "consul/creds/*" {
   capabilities = ["read"]
 }
+
+# --- SSH Client Certificate Signing ---
+%{if var.ssh_ca_enabled~}
+path "ssh-client-signer/sign/client-service" {
+  capabilities = ["create", "update"]
+}
+
+path "ssh-client-signer/config/ca" {
+  capabilities = ["read"]
+}
+
+path "ssh-host-signer/config/ca" {
+  capabilities = ["read"]
+}
+%{endif~}
 EOT
 }
 

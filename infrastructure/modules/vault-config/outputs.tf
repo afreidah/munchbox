@@ -75,3 +75,17 @@ output "database_role_names" {
   description = "Map of created database role names"
   value       = { for k, v in vault_database_secret_backend_role.role : k => v.name }
 }
+
+# -------------------------------------------------------------------------
+# SSH CA
+# -------------------------------------------------------------------------
+
+output "ssh_host_signer_path" {
+  description = "Path to SSH host signer secrets engine"
+  value       = var.ssh_ca_enabled ? vault_mount.ssh_host_signer[0].path : null
+}
+
+output "ssh_client_signer_path" {
+  description = "Path to SSH client signer secrets engine"
+  value       = var.ssh_ca_enabled ? vault_mount.ssh_client_signer[0].path : null
+}
