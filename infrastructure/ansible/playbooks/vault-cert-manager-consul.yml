@@ -9,7 +9,7 @@
 # -------------------------------------------------------------------------------
 
 - name: Deploy vault-cert-manager aggregator
-  hosts: consul_servers
+  hosts: consul_servers:!nomad-server-03
   become: true
   vars:
     aggregator_port: 9102

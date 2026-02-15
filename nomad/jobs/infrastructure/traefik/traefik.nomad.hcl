@@ -121,7 +121,6 @@ job "traefik" {
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
-          # Let's Encrypt certs from shared NFS (managed by certbot job)
           "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.crt:/etc/traefik/certs/munchbox.crt:ro",
           "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.key:/etc/traefik/certs/munchbox.key:ro",
           "/etc/nomad.d/tls/ca-chain.crt:/etc/traefik/certs/ca-chain.crt:ro"
@@ -615,7 +614,7 @@ EOH
   # --- OAuth2 Proxy Sign-in (for error redirect) ---
   [http.services.oauth2-proxy-signin.loadBalancer]
     [[http.services.oauth2-proxy-signin.loadBalancer.servers]]
-      url = "http://192.168.68.73:4180"
+      url = "http://oauth2-proxy.service.consul:4180"
 
   # --- ZFS Watcher (on rubirosa) ---
   [http.services.zfswatcher.loadBalancer]

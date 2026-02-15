@@ -130,10 +130,7 @@
             Address: "192.168.68.69"
             Port: "{{ zfswatcher_web_port | int }}"
             Tags:
-              - "traefik.enable=true"
-              - "traefik.http.routers.zfswatcher.rule=Host(`zfs.munchbox.cc`)"
-              - "traefik.http.routers.zfswatcher.entrypoints=websecure"
-              - "traefik.http.routers.zfswatcher.tls.certresolver=cloudflare"
+              - "traefik.enable=false"
         status_code: [200]
       delegate_to: localhost
       vars:
