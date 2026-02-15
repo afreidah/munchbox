@@ -38,11 +38,11 @@ services:
         tag: cloud
         icon: nextcloud.png
 
-      - name: Jellyfin
-        subtitle: Media server
+      - name: Munch TV
+        subtitle: TV/Movie Media server
         url: https://jellyfin.munchbox.cc
         tag: media
-        icon: jellyfin.png
+        icon: munchbox_pixels.png
 
       - name: Kavita
         subtitle: Book Reader
