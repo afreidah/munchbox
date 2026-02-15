@@ -37,10 +37,6 @@ job "trivy-dashboard" {
     value     = "amd64"
   }
 
-  constraint {
-    attribute = "${node.unique.name}"
-    value     = "nomad-client-05"
-  }
 
   # ---------------------------------------------------------------------------
   # Task Group: dashboard

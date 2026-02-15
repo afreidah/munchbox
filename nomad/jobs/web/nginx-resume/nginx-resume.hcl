@@ -12,10 +12,16 @@ name  = "nginx-resume"
 type  = "service"
 image = "registry.munchbox.cc/alex-resume:latest"
 port  = 80
-node  = "nomad-client-02"
-host_network = true
+node  = "any"
+host_network = false
 size  = "tiny"
+count = 3
 storage = "ephemeral"
+
+# --- Placement: one instance per node ---
+constraints = [
+  { attribute = "", operator = "distinct_hosts", value = "true" }
+]
 
 # --- Vault integration ---
 vault = false

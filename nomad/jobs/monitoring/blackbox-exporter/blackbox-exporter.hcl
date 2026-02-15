@@ -43,4 +43,4 @@ templates = [
 tags = ["monitoring", "blackbox-exporter", "probes"]
 
 # --- Placement ---
-node = "nomad-client-02"
+node = "any"

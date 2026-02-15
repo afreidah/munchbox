@@ -13,13 +13,17 @@ Traefik's `oauth2-proxy` middleware redirects them to `auth.munchbox.cc`
 for Google OAuth login. After authentication, a session cookie grants
 access to all `*.munchbox.cc` services sharing the cookie domain.
 
+Runs as a system job on both ingress nodes for redundancy. Traefik
+discovers instances via Consul DNS (`oauth2-proxy.service.consul:4180`),
+so both instances are available for forward auth requests automatically.
+
 Services that handle their own authentication (Vaultwarden API, Forgejo
 git operations, Nextcloud sync clients, Immich) bypass oauth2-proxy
 using higher-priority Traefik router rules.
 
 ## Notable Configuration
 
-- Colocated with Traefik on goren to minimize forward auth latency
+- System job constrained to `meta.role = "ingress"` nodes
 - Static upstream (`static://202`) -- oauth2-proxy only validates auth,
   never proxies actual traffic
 - Cookie domain set to `.munchbox.cc` for cross-subdomain SSO

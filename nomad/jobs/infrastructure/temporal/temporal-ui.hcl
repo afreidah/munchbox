@@ -18,7 +18,7 @@ size = "small"
 storage = "ephemeral"
 
 # --- Placement ---
-node = "nomad-client-01"
+node = "any"
 
 # --- Environment variables ---
 env = {

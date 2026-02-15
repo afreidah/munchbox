@@ -16,7 +16,7 @@ size        = "tiny"
 vault       = true
 
 # --- Placement ---
-node = "nomad-client-01"
+node = "any"
 
 # --- Traefik routing ---
 traefik = false

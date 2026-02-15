@@ -14,8 +14,13 @@ image = "prom/prometheus:v3.8.0"
 port  = 9090
 static_port = 9090
 host_network = true
-node  = "goren"
+type  = "system"
 size  = "medium"
+
+# --- Placement: ingress nodes only ---
+constraints = [
+  { attribute = "$${meta.role}", operator = "=", value = "ingress" }
+]
 vault = true
 
 # --- Storage ---

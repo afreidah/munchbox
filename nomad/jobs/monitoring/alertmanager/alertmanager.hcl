@@ -21,8 +21,11 @@ extra_ports = [
   { name = "cluster", port = 9094 }
 ]
 
-# --- Placement ---
-node = "nomad-client-01"
+# --- Placement: ingress nodes only ---
+type = "system"
+constraints = [
+  { attribute = "$${meta.role}", operator = "=", value = "ingress" }
+]
 
 # --- Traefik routing ---
 traefik      = true
@@ -46,6 +49,7 @@ args = [
   "--storage.path=/alertmanager",
   "--web.listen-address=0.0.0.0:9093",
   "--cluster.listen-address=0.0.0.0:9094",
+  "--cluster.peer=alertmanager.service.consul:9094",
   "--web.external-url=https://alertmanager.munchbox.cc"
 ]
 
