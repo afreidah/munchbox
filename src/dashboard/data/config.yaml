@@ -56,6 +56,12 @@ services:
         tag: security
         icon: vaultwarden.png
 
+      - name: Home Assistant
+        subtitle: Home automation
+        url: https://homeassistant.munchbox.cc
+        tag: automation
+        icon: home-assistant.png
+
   # -------------------------------------------------------------------------
   # Media
   # -------------------------------------------------------------------------
@@ -170,6 +176,12 @@ services:
   - name: Routing and Monitoring
     icon: fa-solid fa-chart-line
     items:
+      - name: HAProxy
+        subtitle: Database failover proxy
+        url: http://goren:8405/stats
+        tag: infra
+        icon: haproxy.png
+
       - name: Traefik
         subtitle: Reverse proxy and load balancer
         url: https://traefik.munchbox.cc
