@@ -36,7 +36,7 @@ help:
 builder: ## Ensure the Buildx builder exists and is ready
 	@echo "Ensuring Buildx builder exists"
 	docker buildx inspect munchbox-builder >/dev/null 2>&1 || \
-		docker buildx create --name munchbox-builder --use
+		docker buildx create --name munchbox-builder --driver-opt network=host --use
 	docker buildx inspect --bootstrap
 
 # -------------------------------------------------------------------------

@@ -33,6 +33,7 @@ EOF
 
   docker buildx create \
     --driver docker-container \
+    --driver-opt network=host \
     --name "$BUILDER_NAME" \
     --use \
     --config /tmp/buildkitd.toml \

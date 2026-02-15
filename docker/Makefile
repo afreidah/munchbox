@@ -158,7 +158,7 @@ buildx-setup: ## Set up Docker BuildKit for multi-arch builds
 	@printf '[registry."%s"]\n  http = true\n  insecure = true\n' "$(REGISTRY)" > $(BUILDKITD_CONFIG)
 	@docker buildx rm $(BUILDER_NAME) >/dev/null 2>&1 || true
 	@docker run --privileged --rm tonistiigi/binfmt --install all >/dev/null 2>&1 || true
-	@docker buildx create --driver docker-container --name $(BUILDER_NAME) --use --config $(BUILDKITD_CONFIG) >/dev/null
+	@docker buildx create --driver docker-container --driver-opt network=host --name $(BUILDER_NAME) --use --config $(BUILDKITD_CONFIG) >/dev/null
 	@docker buildx inspect --bootstrap >/dev/null
 	@echo "✅ BuildKit ready for $(PLATFORMS)"
 
