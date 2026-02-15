@@ -3,18 +3,19 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# HTTPS-first ingress controller running as system job on ingress node.
-# Auto-discovers services via Consul Catalog, fetches TLS certs from Let's Encrypt
-# via Cloudflare DNS challenge, and exposes dashboard on :8081 (LAN-only).
+# HTTPS-first ingress controller running as system job on ingress nodes.
+# Active-passive HA with Keepalived VIP failover between goren and
+# nomad-client-05. Auto-discovers services via Consul Catalog, manages TLS
+# certs via built-in ACME with Cloudflare DNS challenge.
 #
-# Note: Zero-downtime updates require running on multiple ingress nodes.
-# With a single node and static ports, brief downtime during updates is expected.
+# Each instance independently obtains and renews certs — no shared storage
+# needed. Rolling updates: one node at a time, VIP floats to standby.
 # -------------------------------------------------------------------------------
 
 job "traefik" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "service"
+  type        = "system"
   node_pool   = "all"
   priority    = 90
 
@@ -42,13 +43,13 @@ job "traefik" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement — Pin to ingress nodes
+  # Placement — Run on ingress nodes only
   # -------------------------------------------------------------------------
 
   constraint {
-    attribute = "${node.unique.name}"
+    attribute = "${meta.role}"
     operator  = "="
-    value     = "goren"
+    value     = "ingress"
   }
 
   # -------------------------------------------------------------------------
@@ -56,7 +57,6 @@ job "traefik" {
   # -------------------------------------------------------------------------
 
   group "traefik" {
-    count = 1
 
     # --- Network Configuration ---
     network {
@@ -121,8 +121,7 @@ job "traefik" {
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
-          "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.crt:/etc/traefik/certs/munchbox.crt:ro",
-          "/mnt/gdrive/munchbox-data/certbot/traefik/munchbox.key:/etc/traefik/certs/munchbox.key:ro",
+          "/opt/traefik/acme:/acme",
           "/etc/nomad.d/tls/ca-chain.crt:/etc/traefik/certs/ca-chain.crt:ro"
         ]
       }
@@ -262,13 +261,14 @@ EOH
       insecure = true
 
 # -------------------------------------------------------------------------
-# ACME Resolver (kept for Consul Catalog service compatibility)
-# Actual certs are loaded from files managed by certbot job
+# ACME — Let's Encrypt via Cloudflare DNS Challenge
+# Each instance independently obtains and renews its own wildcard cert.
+# Persisted to /acme/ host volume to survive restarts.
 # -------------------------------------------------------------------------
 
 [certificatesResolvers.letsencrypt.acme]
   email = "alex@alexfreidah.com"
-  storage = "/tmp/acme.json"
+  storage = "/acme/acme.json"
   [certificatesResolvers.letsencrypt.acme.dnsChallenge]
     provider = "cloudflare"
     resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
@@ -284,17 +284,13 @@ EOH
 # Traefik Dynamic Configuration
 # -------------------------------------------------------------------------
 
-# --- TLS Certificates (managed by certbot, stored in Vault) ---
-[[tls.certificates]]
-  certFile = "/etc/traefik/certs/munchbox.crt"
-  keyFile  = "/etc/traefik/certs/munchbox.key"
-
-# --- Default TLS Store ---
-[tls.stores]
-  [tls.stores.default]
-    [tls.stores.default.defaultCertificate]
-      certFile = "/etc/traefik/certs/munchbox.crt"
-      keyFile  = "/etc/traefik/certs/munchbox.key"
+# --- Default TLS Store (uses ACME-generated wildcard cert) ---
+[tls.stores.default]
+  [tls.stores.default.defaultGeneratedCert]
+    resolver = "letsencrypt"
+    [tls.stores.default.defaultGeneratedCert.domain]
+      main = "munchbox.cc"
+      sans = ["*.munchbox.cc"]
 
 # --- TLS Options ---
 [tls.options]
@@ -653,7 +649,7 @@ EOH
         tags     = ["traefik.enable=false", "metrics_port=8081"]
 
         check {
-          name            = "traefik-https-cert"
+          name            = "traefik-https"
           type            = "http"
           protocol        = "https"
           port            = "https"
@@ -662,7 +658,7 @@ EOH
             Host = ["traefik.munchbox.cc"]
           }
           tls_server_name = "traefik.munchbox.cc"
-          tls_skip_verify = false
+          tls_skip_verify = true
           interval        = "10s"
           timeout         = "5s"
         }

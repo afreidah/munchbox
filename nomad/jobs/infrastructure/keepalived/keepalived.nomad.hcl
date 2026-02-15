@@ -3,12 +3,11 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Provides active-active load distribution with automatic failover using dual
-# VIPs. Each ingress node is primary for one VIP and backup for the other.
-# Health checks monitor Traefik to trigger failover on service failure.
+# Active-passive failover with a single VIP. goren is the primary ingress node;
+# nomad-client-05 is the standby. Health checks monitor Traefik to trigger
+# automatic failover on service failure.
 #
-# VIP1: 192.168.68.50 (stabler primary, goren backup)
-# VIP2: 192.168.68.51 (goren primary, stabler backup)
+# VIP: 192.168.68.50 (goren primary, nomad-client-05 backup)
 # -------------------------------------------------------------------------------
 
 job "keepalived" {
@@ -88,21 +87,20 @@ job "keepalived" {
       driver = "docker"
 
       config {
-        image        = "osixia/keepalived:2.0.20"
+        image        = "alpine:3.21"
         network_mode = "host"
 
         # Required for VRRP and VIP management
         privileged = true
-        cap_add    = ["NET_ADMIN", "NET_BROADCAST", "NET_RAW"]
+        cap_add    = ["NET_ADMIN", "NET_RAW"]
+
+        entrypoint = ["/bin/sh", "-c"]
+        args       = ["apk add --no-cache keepalived curl > /dev/null 2>&1 && exec keepalived -f /etc/keepalived/keepalived.conf --dont-fork --log-console"]
 
         volumes = [
-          "local/keepalived.conf:/container/service/keepalived/assets/keepalived.conf:ro",
+          "local/keepalived.conf:/etc/keepalived/keepalived.conf:ro",
           "local/check_traefik.sh:/etc/keepalived/check_traefik.sh:ro"
         ]
-      }
-
-      env {
-        KEEPALIVED_INTERFACE = "eth0"
       }
 
       # --- Keepalived Configuration ---
@@ -128,12 +126,12 @@ vrrp_script check_traefik {
   rise 2
 }
 
-# VIP1: 192.168.68.50 (stabler primary)
-vrrp_instance VI_1 {
-  state {{ if eq (env "node.unique.name") "stabler.munchbox.cc" }}MASTER{{ else }}BACKUP{{ end }}
-  interface eth0
+# VIP: 192.168.68.50 (goren primary, nomad-client-05 backup)
+vrrp_instance VI_TRAEFIK {
+  state {{ if eq (env "node.unique.name") "goren" }}MASTER{{ else }}BACKUP{{ end }}
+  interface {{ env "meta.vrrp_interface" }}
   virtual_router_id 50
-  priority {{ if eq (env "node.unique.name") "stabler.munchbox.cc" }}101{{ else }}100{{ end }}
+  priority {{ if eq (env "node.unique.name") "goren" }}101{{ else }}100{{ end }}
   advert_int 1
   nopreempt
 
@@ -144,29 +142,6 @@ vrrp_instance VI_1 {
 
   virtual_ipaddress {
     192.168.68.50/24
-  }
-
-  track_script {
-    check_traefik
-  }
-}
-
-# VIP2: 192.168.68.51 (goren primary)
-vrrp_instance VI_2 {
-  state {{ if eq (env "node.unique.name") "goren" }}MASTER{{ else }}BACKUP{{ end }}
-  interface eth0
-  virtual_router_id 51
-  priority {{ if eq (env "node.unique.name") "goren" }}101{{ else }}100{{ end }}
-  advert_int 1
-  nopreempt
-
-  authentication {
-    auth_type PASS
-    auth_pass munchbox51
-  }
-
-  virtual_ipaddress {
-    192.168.68.51/24
   }
 
   track_script {
@@ -191,7 +166,7 @@ exit $?
 
       resources {
         cpu    = 50
-        memory = 32
+        memory = 64
       }
 
       kill_timeout = "10s"
