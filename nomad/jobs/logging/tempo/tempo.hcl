@@ -14,9 +14,9 @@ image        = "grafana/tempo:2.9.1"
 port         = 3200
 static_port  = 3200
 host_network = true
-node         = "nomad-client-02"  # Same node as Loki for observability stack
+node         = "nomad-client-02"
 size         = "medium"
-memory       = 700
+memory       = 1024
 cpu          = 400
 
 # --- Storage (trace data) ---

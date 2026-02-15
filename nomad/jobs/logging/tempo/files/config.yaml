@@ -51,8 +51,8 @@ metrics_generator:
   processor:
     local_blocks:
       max_live_traces: 100000
-      flush_check_period: 10s
-      complete_block_timeout: 30s
+      flush_check_period: 30s
+      complete_block_timeout: 120s
     service_graphs:
       dimensions: [http.method, http.status_code]
       enable_client_server_prefix: true
@@ -74,4 +74,4 @@ querier:
 overrides:
   defaults:
     metrics_generator:
-      processors: [local-blocks, service-graphs, span-metrics]
+      processors: [service-graphs, span-metrics]
