@@ -67,7 +67,7 @@ Built on the HashiCorp stack (Nomad, Consul, Vault) and managed through Infrastr
 | **Secrets Management** | HashiCorp Vault with workload identity and PKI certificate automation |
 | **Certificate Lifecycle** | vault-cert-manager for automated PKI cert issuance, renewal, and health monitoring |
 | **Service Discovery** | Consul for service discovery, health checking, and DNS |
-| **High Availability** | Patroni for PostgreSQL HA, Redis Sentinel for Redis HA |
+| **High Availability** | Active-passive ingress with keepalived VIP, Patroni for PostgreSQL HA, Redis Sentinel for Redis HA |
 | **Full Observability** | Prometheus, Grafana, Loki, Tempo, Alertmanager with Telegram notifications |
 | **Security Scanning** | Trivy for container and infrastructure vulnerability scanning |
 | **CI/CD** | Forgejo with self-hosted act_runner for GitHub Actions-compatible workflows |
@@ -91,12 +91,16 @@ Built on the HashiCorp stack (Nomad, Consul, Vault) and managed through Infrastr
 
 ### Infrastructure Services
 
-- **Edge Access**: Cloudflare Tunnel for secure external access
+- **Ingress HA**: Traefik on two ingress nodes with keepalived VIP (192.168.68.50) for automatic failover
+- **Edge Access**: Cloudflare Tunnel with redundant connectors on both ingress nodes
+- **Authentication**: OAuth2 Proxy on both ingress nodes for Google SSO
 - **Container Registry**: Private Docker registry with web UI
 - **Database HA**: Patroni for PostgreSQL, Redis Sentinel for Redis, HAProxy for failover-safe connection routing
-- **Certificate Management**: vault-cert-manager for automated PKI lifecycle
+- **Certificate Management**: vault-cert-manager for automated PKI lifecycle, ACME for public TLS
+- **SSH Certificate Authority**: Vault-backed SSH CA for host and client certificate signing
 - **Logging**: Loki + Promtail for log aggregation
-- **Alerting**: Alertmanager with Telegram notifications
+- **Alerting**: Clustered Alertmanager with Telegram notifications (deduplication across instances)
+- **Monitoring**: Dual Prometheus instances on ingress nodes for metric collection redundancy
 - **Backup**: Temporal workflows for automated backup orchestration
 - **DNS**: CoreDNS with dnsmasq for Consul DNS forwarding
 
@@ -239,6 +243,7 @@ Consul (8600)        CoreDNS (5353)         │
 
 - **Vulnerability Scanning**: Trivy for containers and infrastructure
 - **TLS**: Vault PKI with vault-cert-manager for automated rotation
+- **SSH CA**: Vault-backed SSH certificate authority for host and client cert signing
 - **ACLs**: Fine-grained access control across Nomad, Consul, Vault
 - **Encryption**: Gossip encryption, mTLS for service communication
 - **Secrets**: Vault workload identity, no hardcoded credentials
@@ -344,6 +349,19 @@ Automated certificate lifecycle management for infrastructure services:
 - **Post-Change Hooks**: Configurable scripts for service reloads
 
 Deployed via Ansible to all cluster nodes, manages Consul and Nomad TLS certificates.
+
+### Ingress High Availability
+
+The ingress layer runs on two dedicated nodes (goren and nomad-client-05) with full redundancy:
+
+- **Keepalived**: Manages VIP 192.168.68.50 with VRRP active-passive failover (~6s failover time)
+- **Traefik**: System job on both ingress nodes, each independently managing ACME wildcard certificates via Cloudflare DNS challenge
+- **OAuth2-Proxy**: System job on both ingress nodes, discovered via Consul DNS
+- **Cloudflared Tunnel**: System job on both ingress nodes; Cloudflare distributes and fails over across connectors
+- **Prometheus**: Dual independent scrapers on ingress nodes for metrics redundancy
+- **Alertmanager**: Clustered on ingress nodes with gossip-based deduplication
+
+All stateless services are unpinned from specific nodes, allowing Nomad to reschedule them automatically on any healthy node if their current host fails.
 
 ### Nomad Pack Templates
 
@@ -487,12 +505,11 @@ ansible-playbook playbooks/vault-cert-manager.yml   # Deploy cert manager
 
 **Purpose**: Core infrastructure required for cluster operation
 
-- `traefik` - Reverse proxy and load balancer
-- `cloudflared-tunnel` - Secure edge access via Cloudflare
+- `traefik` - HA reverse proxy and load balancer (system job on ingress nodes)
+- `cloudflared-tunnel` - HA edge access via Cloudflare (system job on ingress nodes)
 - `coredns` - DNS resolution for service discovery
-- `keepalived` - Virtual IP failover
-- `certbot` - Let's Encrypt certificate management
-- `oauth2-proxy` - Authentication proxy for services
+- `keepalived` - Virtual IP failover for Traefik HA
+- `oauth2-proxy` - HA authentication proxy (system job on ingress nodes)
 - `patroni` - HA PostgreSQL with Patroni orchestration
 - `redis-sentinel` - HA Redis with Sentinel failover
 - `haproxy` - Database failover proxy for Patroni and Redis
@@ -510,9 +527,10 @@ ansible-playbook playbooks/vault-cert-manager.yml   # Deploy cert manager
 
 **Purpose**: Metrics collection, visualization, and alerting
 
-- `prometheus` - Metrics collection and alerting rules
+- `prometheus` - HA metrics collection and alerting (system job on ingress nodes)
 - `grafana` - Metrics visualization and dashboards
-- `alertmanager` - Alert routing and notifications
+- `alertmanager` - HA alert routing with clustering (system job on ingress nodes)
+- `pve-exporter` - Proxmox VE hypervisor metrics
 - `node-exporter` - System metrics (runs on all nodes)
 - `blackbox-exporter` - External endpoint monitoring
 - `postgres-exporter` / `postgres-replica-exporter` - PostgreSQL metrics
@@ -594,6 +612,7 @@ Management Token (admin)
 **In Transit**:
 - TLS for all HTTP/RPC communication
 - mTLS for server-to-server communication (via vault-cert-manager)
+- SSH certificate authentication via Vault CA (host and client certs)
 - Gossip encryption for Consul/Nomad
 
 **At Rest**:

@@ -9,6 +9,12 @@ failures.
 Two separate jobs deploy the server and UI independently, allowing the UI
 to be updated without affecting running workflows.
 
+## Notable Configuration
+
+- The UI is unpinned from any specific node; Nomad schedules it on the
+  best available node (excluding Oracle nodes) and reschedules
+  automatically on failure
+
 ## Dependencies
 
 - **Patroni** -- persistence backend (temporal and temporal_visibility databases)

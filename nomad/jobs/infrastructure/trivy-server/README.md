@@ -10,6 +10,8 @@ database downloads and enables concurrent scanning.
 - Uses Redis as the vulnerability database cache backend, sharing the
   cluster-wide Redis Sentinel instance
 - Canary deployment with auto-promote ensures zero-downtime updates
+- Unpinned from any specific node; Nomad schedules it on the best
+  available node and reschedules automatically on failure
 
 ## Dependencies
 

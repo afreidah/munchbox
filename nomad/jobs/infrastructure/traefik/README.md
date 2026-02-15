@@ -2,19 +2,24 @@
 
 HTTPS-first reverse proxy and ingress controller for the entire cluster.
 Auto-discovers services via Consul Catalog, terminates TLS using wildcard
-certificates from Let's Encrypt (managed by the certbot job), and defines
-all shared middleware chains (oauth2-proxy, security headers, rate limiting,
-Umami analytics injection). Every HTTP-accessible service in the cluster
-routes through Traefik.
+certificates from Let's Encrypt (ACME with Cloudflare DNS challenge), and
+defines all shared middleware chains (oauth2-proxy, security headers, rate
+limiting, Umami analytics injection). Every HTTP-accessible service in the
+cluster routes through Traefik.
 
 ## Architecture
 
-Single-instance service on the ingress node (goren) using host networking
-with static ports. The static configuration defines entrypoints and provider
-settings. The dynamic configuration (file provider) defines routers,
-middlewares, and services for infrastructure UIs that are not registered in
-Consul (Consul, Nomad, Vault, Proxmox, ZFS Watcher). All other services
-register themselves via Consul Catalog tags in their own job definitions.
+Runs as a system job on ingress-role nodes (goren and nomad-client-05) with
+host networking on static ports. Keepalived manages VIP 192.168.68.50 for
+DNS-based failover between the two instances. Each instance independently
+obtains and renews wildcard certificates for `munchbox.cc` and `*.munchbox.cc`
+via ACME, persisted locally at `/opt/traefik/acme/acme.json`.
+
+The static configuration defines entrypoints and provider settings. The
+dynamic configuration (file provider) defines routers, middlewares, and
+services for infrastructure UIs that are not registered in Consul (Consul,
+Nomad, Vault, Proxmox, ZFS Watcher). All other services register themselves
+via Consul Catalog tags in their own job definitions.
 
 Two traffic paths exist: direct HTTPS from the LAN, and HTTP from the
 Cloudflare tunnel (cloudflared-tunnel job). The `cf-tunnel-https` middleware
@@ -40,30 +45,29 @@ shared via the alloc directory.
 
 External traffic: Internet -> Cloudflare -> cloudflared tunnel -> Traefik
 HTTP entrypoint (port 80). LAN traffic: Client -> Traefik HTTPS entrypoint
-(port 443). Keepalived manages the VIP (192.168.68.60) that DNS points to.
+(port 443). Keepalived manages the VIP (192.168.68.50) that DNS points to.
 
 Traefik routes requests based on Host headers and path rules. Consul Catalog
 provider refreshes service discovery every 5s. Services opt in to Traefik
 routing via `traefik.enable=true` in their Consul tags.
 
-TLS certificates are loaded from files on an NFS mount, managed by the
-certbot job. The ACME resolver in the config exists only for backward
-compatibility with Consul Catalog service tags that reference it.
+TLS certificates are managed by Traefik's built-in ACME resolver using the
+Cloudflare DNS-01 challenge. The `defaultGeneratedCert` in the dynamic
+configuration ensures all `*.munchbox.cc` routes use the ACME-issued wildcard.
 
 ## Failure Modes
 
-- **Traefik crash**: All HTTP traffic stops. Nomad restarts within 15s
-  (restart policy). Brief downtime is expected since there is only one
-  ingress node.
-- **Cert expiry**: Certbot job renews certificates on the NFS mount.
-  Traefik reads certs at startup; a job restart picks up renewed certs.
+- **Single node failure**: Keepalived fails over the VIP to the surviving
+  ingress node within approximately six seconds. Brief blip during ARP
+  propagation, then traffic resumes on the backup.
+- **Traefik crash**: Keepalived health check detects the failure and demotes
+  the node's VRRP priority, triggering VIP failover to the healthy node.
 - **Consul unavailable**: Consul Catalog services become unroutable.
   File-provider services (Nomad, Consul, Vault, Proxmox) continue working.
 
 ## Dependencies
 
 **Requires:**
-- Certbot (TLS certificates on NFS mount)
 - Consul (service discovery via Catalog provider)
 - Vault (Consul token, Cloudflare API token, Nomad UI token)
 - Keepalived (VIP for DNS)
@@ -74,6 +78,8 @@ compatibility with Consul Catalog service tags that reference it.
 
 ## Notable Configuration
 
+- System job constrained to `meta.role = "ingress"` with `max_parallel = 1`
+  for rolling updates with zero downtime
 - Priority 90 (highest in the cluster after system services) ensures Traefik
   starts before any services that depend on HTTP routing
 - The rewritebody plugin injects CSS (Vault theme, Umami analytics) into

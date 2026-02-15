@@ -8,16 +8,21 @@ by Terraform in `infrastructure/terraform/dns/main.tf` via the
 
 ## Architecture
 
+Runs as a system job on both ingress nodes. Cloudflare natively supports
+multiple connectors per tunnel, distributing traffic across them and
+failing over automatically if one connector goes down. Each instance
+forwards incoming requests to the local Traefik HTTP entrypoint.
+
 The connector authenticates with a token stored in Vault that includes
 the tunnel ID and credentials. Cloudflare's edge network routes incoming
-requests through this tunnel to Traefik's HTTP entrypoint, where services
-are reached via their standard Traefik routing rules. The tunnel token is
-the only secret; ingress configuration is fetched from the Cloudflare API
-at runtime.
+requests through the tunnel to Traefik, where services are reached via
+their standard Traefik routing rules. The tunnel token is the only
+secret; ingress configuration is fetched from the Cloudflare API at
+runtime.
 
 ## Notable Configuration
 
-- Pinned to goren (primary ingress node) for stable external connectivity
+- System job constrained to `meta.role = "ingress"` nodes
 - Metrics exposed on port 2000 for health monitoring
 - Tunnel routing changes require a Terraform apply, not a job redeploy
 

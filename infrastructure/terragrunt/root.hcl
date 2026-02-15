@@ -694,6 +694,7 @@ locals {
       "traefik-log-dashboard",
       "maxmind",
       "oracle-watchdog",
+      "proxmox",
       "aptly",
       "immich",
       "redis",

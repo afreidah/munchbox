@@ -11,6 +11,8 @@ for alerting on vulnerability counts.
 - Connects to PostgreSQL with TLS verification using the Vault PKI CA
 - Queries the Temporal server API for recent workflow execution status
 - Protected by oauth2-proxy for access control
+- Constrained to amd64 nodes; unpinned from any specific node so Nomad
+  reschedules automatically on failure
 
 ## Dependencies
 

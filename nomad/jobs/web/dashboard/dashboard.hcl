@@ -14,7 +14,7 @@ type         = "service"
 image        = "registry.munchbox.cc/dash:latest"
 port         = 80
 host_network = false
-node         = "nomad-client-01"
+node         = "any"
 size         = "tiny"
 storage      = "ephemeral"
 
