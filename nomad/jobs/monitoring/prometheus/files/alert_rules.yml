@@ -817,3 +817,94 @@ groups:
         annotations:
           summary: "Certificate renewal failures: {{"{{"}} $labels.name {{"}}"}}"
           description: "Certificate {{"{{"}} $labels.name {{"}}"}} on {{"{{"}} $labels.instance {{"}}"}} has had renewal failures in the last hour. Check Vault connectivity and PKI role permissions."
+
+  # ---------------------------------------------------------------------------
+  # Hardware Temperature Monitoring
+  # ---------------------------------------------------------------------------
+  - name: hardware-temperature
+    interval: 30s
+    rules:
+      # Thermal zone alerts (Raspberry Pi, ARM devices)
+      - alert: HighCPUTemperature
+        expr: node_thermal_zone_temp > 70
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU temperature on {{"{{"}} $labels.instance {{"}}"}}"
+          description: "Thermal zone {{"{{"}} $labels.zone {{"}}"}} is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C on {{"{{"}} $labels.instance {{"}}"}}."
+
+      - alert: CriticalCPUTemperature
+        expr: node_thermal_zone_temp > 80
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU temperature on {{"{{"}} $labels.instance {{"}}"}}"
+          description: "Thermal zone {{"{{"}} $labels.zone {{"}}"}} is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C on {{"{{"}} $labels.instance {{"}}"}}. CPU throttling likely occurring."
+
+      # Hwmon alerts (x86 CPUs, Proxmox hosts)
+      - alert: HighHwmonTemperature
+        expr: node_hwmon_temp_celsius > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High hardware temperature on {{"{{"}} $labels.instance {{"}}"}}"
+          description: "Sensor {{"{{"}} $labels.sensor {{"}}"}} ({{"{{"}} $labels.chip {{"}}"}}) is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C on {{"{{"}} $labels.instance {{"}}"}}."
+
+      - alert: CriticalHwmonTemperature
+        expr: node_hwmon_temp_celsius > 95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical hardware temperature on {{"{{"}} $labels.instance {{"}}"}}"
+          description: "Sensor {{"{{"}} $labels.sensor {{"}}"}} ({{"{{"}} $labels.chip {{"}}"}}) is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C on {{"{{"}} $labels.instance {{"}}"}}. Hardware damage risk."
+
+      # GPU temperature (for rubirosa with RTX A1000)
+      - alert: HighGPUTemperature
+        expr: node_hwmon_temp_celsius{chip=~".*nvidia.*"} > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High GPU temperature on {{"{{"}} $labels.instance {{"}}"}}"
+          description: "GPU is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C on {{"{{"}} $labels.instance {{"}}"}}."
+
+      - alert: CriticalGPUTemperature
+        expr: node_hwmon_temp_celsius{chip=~".*nvidia.*"} > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical GPU temperature on {{"{{"}} $labels.instance {{"}}"}}"
+          description: "GPU is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C on {{"{{"}} $labels.instance {{"}}"}}. GPU throttling or shutdown imminent."
+
+      # Proxmox VE hypervisor temperature alerts
+      - alert: ProxmoxHighTemperature
+        expr: pve_cpu_temperature_celsius > 75
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU temperature on Proxmox host {{"{{"}} $labels.instance {{"}}"}}"
+          description: "Proxmox host {{"{{"}} $labels.instance {{"}}"}} CPU is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C."
+
+      - alert: ProxmoxCriticalTemperature
+        expr: pve_cpu_temperature_celsius > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical CPU temperature on Proxmox host {{"{{"}} $labels.instance {{"}}"}}"
+          description: "Proxmox host {{"{{"}} $labels.instance {{"}}"}} CPU is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}°C. Hardware damage risk."
+
+      - alert: ProxmoxHostDown
+        expr: pve_up{id=~"node/.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Proxmox host {{"{{"}} $labels.instance {{"}}"}} is down"
+          description: "Cannot connect to Proxmox API on {{"{{"}} $labels.instance {{"}}"}}."
