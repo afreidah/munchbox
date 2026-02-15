@@ -28,6 +28,7 @@ jobs:
     runs-on: docker
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     outputs:
       apps_to_test: ${{ steps.detect.outputs.apps_to_test }}
       apps_to_push: ${{ steps.detect.outputs.apps_to_push }}
@@ -38,8 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          submodules: recursive
+          fetch-depth: 2
 
       - name: Detect changed apps
         id: detect
@@ -156,6 +156,7 @@ jobs:
     runs-on: docker
     container:
       image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
     needs: detect
     if: needs.detect.outputs.has_tests == 'true'
     steps:
