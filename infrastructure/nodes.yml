@@ -83,7 +83,6 @@ bare_metal:
       - nomad_client
       - consul_server
       - vault_server
-      - ingress
     notes: "Raspberry Pi 5 - primary Vault server"
 
   goren:
@@ -178,7 +177,8 @@ vms:
     roles:
       - nomad_client
       - consul_client
-    notes: "High-performance general workload client"
+      - ingress
+    notes: "High-performance general workload client + Traefik standby"
 
 # -------------------------------------------------------------------------------
 # Cloud Nodes (Oracle Cloud Free Tier)

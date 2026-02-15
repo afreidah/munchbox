@@ -4,26 +4,47 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Lightweight forward auth proxy using Google OAuth. Allows specific email
-# addresses to access protected services via Traefik forward auth.
+# addresses to access protected services via Traefik forward auth. Runs on
+# all ingress nodes for HA — Traefik discovers instances via Consul DNS.
 # -------------------------------------------------------------------------------
 
 job "oauth2-proxy" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "service"
+  type        = "system"
   node_pool   = "all"
+
+  # ---------------------------------------------------------------------------
+  # Metadata
+  # ---------------------------------------------------------------------------
+
+  meta {
+    managed_by = "nomad"
+    project    = "munchbox"
+    tier       = "tier-0"
+  }
 
   # ---------------------------------------------------------------------------
   # Update Strategy
   # ---------------------------------------------------------------------------
 
   update {
-    max_parallel      = 1
-    health_check      = "checks"
-    min_healthy_time  = "10s"
-    healthy_deadline  = "5m"
-    progress_deadline = "10m"
-    auto_revert       = true
+    max_parallel     = 1
+    health_check     = "checks"
+    min_healthy_time = "10s"
+    healthy_deadline = "5m"
+    auto_revert      = true
+    stagger          = "30s"
+  }
+
+  # ---------------------------------------------------------------------------
+  # Placement — Run on ingress nodes only
+  # ---------------------------------------------------------------------------
+
+  constraint {
+    attribute = "${meta.role}"
+    operator  = "="
+    value     = "ingress"
   }
 
   # ---------------------------------------------------------------------------
@@ -31,14 +52,6 @@ job "oauth2-proxy" {
   # ---------------------------------------------------------------------------
 
   group "oauth2-proxy" {
-    count = 1
-
-    # --- Colocate with Traefik on goren for minimal latency ---
-    constraint {
-      attribute = "${node.unique.name}"
-      operator  = "="
-      value     = "goren"
-    }
 
     # --- Network Configuration ---
     network {
@@ -54,16 +67,6 @@ job "oauth2-proxy" {
       interval = "5m"
       delay    = "15s"
       mode     = "fail"
-    }
-
-    # --- Reschedule Policy ---
-    reschedule {
-      attempts       = 3
-      interval       = "1h"
-      delay          = "30s"
-      delay_function = "exponential"
-      max_delay      = "10m"
-      unlimited      = false
     }
 
     # --- Service Registration ---

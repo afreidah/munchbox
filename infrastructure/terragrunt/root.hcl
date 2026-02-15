@@ -880,7 +880,7 @@ locals {
 
   pihole_primary_url   = "http://192.168.68.62"  # green
   pihole_secondary_url = "http://192.168.68.64"  # logan
-  traefik_vip          = "192.168.68.60"
+  traefik_vip          = "192.168.68.50"
 
   pihole_dns_inputs = {
     # Local DNS A records pointing to Traefik VIP

@@ -1,11 +1,13 @@
 # -------------------------------------------------------------------------------
-# cloudflared-tunnel — Munchbox Deployment
+# cloudflared-tunnel — Cloudflare Tunnel Connector
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Runs cloudflared connector using token-based auth. Tunnel ingress configuration
-# is managed by Terraform (infrastructure/terraform/dns/main.tf) via the
-# cloudflare_tunnel_config resource. This job just runs the connector.
+# Runs cloudflared connector using token-based auth on all ingress nodes.
+# Cloudflare natively supports multiple connectors per tunnel for HA.
+# Tunnel ingress configuration is managed by Terraform
+# (infrastructure/terraform/dns/main.tf) via the cloudflare_tunnel_config
+# resource. This job just runs the connector.
 #
 # To update tunnel routing: modify Terraform, not this file.
 # -------------------------------------------------------------------------------
@@ -13,9 +15,19 @@
 job "cloudflared-tunnel" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "service"
+  type        = "system"
   node_pool   = "all"
   priority    = 50
+
+  # ---------------------------------------------------------------------------
+  # Metadata
+  # ---------------------------------------------------------------------------
+
+  meta {
+    managed_by = "nomad"
+    project    = "munchbox"
+    tier       = "tier-0"
+  }
 
   # ---------------------------------------------------------------------------
   # Update Strategy
@@ -30,14 +42,13 @@ job "cloudflared-tunnel" {
   }
 
   # -------------------------------------------------------------------------
-  # Placement
+  # Placement — Run on ingress nodes only
   # -------------------------------------------------------------------------
 
-  # --- Pin to goren ---
   constraint {
-    attribute = "${node.unique.name}"
+    attribute = "${meta.role}"
     operator  = "="
-    value     = "goren"
+    value     = "ingress"
   }
 
   # ---------------------------------------------------------------------------
@@ -45,7 +56,6 @@ job "cloudflared-tunnel" {
   # ---------------------------------------------------------------------------
 
   group "cloudflared-tunnel" {
-    count = 1
 
     # --- Network Configuration ---
     network {
@@ -139,10 +149,5 @@ EOH
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
     }
-  }
-
-  meta = {
-    managed_by = "nomad"
-    project    = "munchbox"
   }
 }

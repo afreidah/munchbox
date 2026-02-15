@@ -1,12 +1,8 @@
 # -------------------------------------------------------------------------------
-# Host Variables - goren
+# Host Variables - nomad-client-05
 #
 # Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
-
-vault_api_addr: "https://192.168.68.60:8200"
-vault_cluster_addr: "https://192.168.68.60:8201"
-vault_cluster_address: "192.168.68.60:8201"
 
 nomad_client_meta:
   vrrp_interface: "eth0"
