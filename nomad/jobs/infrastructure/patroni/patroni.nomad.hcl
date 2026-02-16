@@ -503,6 +503,18 @@ END
 CREATE DATABASE IF NOT EXISTS grafana OWNER {{ .Data.data.db_username }};
 {{ end }}
 
+-- Vaultwarden
+{{ with secret "secret/data/vaultwarden" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS vaultwarden OWNER {{ .Data.data.db_username }};
+{{ end }}
+
 -- Immich (requires pgvector extension)
 {{ with secret "secret/data/immich" }}
 DO \$\$

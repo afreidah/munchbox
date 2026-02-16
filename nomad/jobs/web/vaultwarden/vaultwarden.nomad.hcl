@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Vaultwarden provides a self-hosted password management solution compatible
-# with Bitwarden clients. Stores encrypted vault data on gdrive-secondary
-# shared storage with Traefik ingress for HTTPS access.
+# with Bitwarden clients. Uses PostgreSQL on the shared Patroni cluster for
+# state persistence with Traefik ingress for HTTPS access.
 # -------------------------------------------------------------------------------
 
 job "vaultwarden" {
@@ -33,8 +33,8 @@ job "vaultwarden" {
   # ---------------------------------------------------------------------------
 
   constraint {
-    attribute = "${node.unique.name}"
-    value     = "nomad-client-05"
+    attribute = "${attr.cpu.arch}"
+    value     = "amd64"
   }
 
   # ---------------------------------------------------------------------------
@@ -97,9 +97,6 @@ job "vaultwarden" {
         image              = "vaultwarden/server:1.35.2"
         image_pull_timeout = "10m"
         ports              = ["http"]
-        volumes            = [
-          "/mnt/gdrive-secondary/vaultwarden:/data",
-        ]
       }
 
       # --- Service Registration ---
@@ -153,13 +150,30 @@ job "vaultwarden" {
         }
       }
 
+      # --- RSA Key (injected from Vault for JWT signing, stored base64-encoded) ---
+      template {
+        data        = <<-EOF
+{{ with secret "secret/data/vaultwarden" }}{{ .Data.data.rsa_key | base64Decode }}{{ end }}
+        EOF
+        destination = "secrets/rsa_key.pem"
+      }
+
       # --- Environment Variables ---
       env {
         ADMIN_TOKEN         = "${secret.vaultwarden.admin_token}"
         SIGNUPS_ALLOWED     = "${secret.vaultwarden.signups_allowed}"
+        DATABASE_URL        = "postgresql://${secret.vaultwarden.db_username}:${secret.vaultwarden.db_password}@haproxy-postgres.service.consul:5433/vaultwarden?sslmode=require"
+        RSA_KEY_FILENAME    = "/secrets/rsa_key"
+        I_REALLY_WANT_VOLATILE_STORAGE = "true"
         DOMAIN              = "https://vaultwarden.munchbox.cc"
         INVITATIONS_ALLOWED = "true"
         WEBSOCKET_ENABLED   = "true"
+        SMTP_HOST           = "${secret.vaultwarden.smtp_host}"
+        SMTP_PORT           = "${secret.vaultwarden.smtp_port}"
+        SMTP_SECURITY       = "${secret.vaultwarden.smtp_security}"
+        SMTP_USERNAME       = "${secret.vaultwarden.smtp_username}"
+        SMTP_PASSWORD       = "${secret.vaultwarden.smtp_password}"
+        SMTP_FROM           = "${secret.vaultwarden.smtp_from}"
       }
 
 
