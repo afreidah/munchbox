@@ -13,7 +13,10 @@ server:
   virtual_bucket: "unified"
 
 auth:
-  # Leave empty for local testing, set for production
+  # AWS SigV4 credentials (for S3 client compatibility)
+  access_key_id: "${S3_PROXY_ACCESS_KEY}"
+  secret_access_key: "${S3_PROXY_SECRET_KEY}"
+  # Legacy token auth (optional, for simple clients)
   token: "${S3_PROXY_TOKEN}"
 
 database:
