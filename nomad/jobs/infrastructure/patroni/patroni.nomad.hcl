@@ -527,6 +527,18 @@ END
 CREATE DATABASE IF NOT EXISTS immich OWNER {{ .Data.data.db_username }};
 {{ end }}
 
+-- S3 Proxy
+{{ with secret "secret/data/s3-proxy" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS s3proxy OWNER {{ .Data.data.db_username }};
+{{ end }}
+
 SQL
 
 -- Enable pgvector extension for Immich (must be done after connecting to the database)

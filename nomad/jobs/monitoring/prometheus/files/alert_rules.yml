@@ -908,3 +908,63 @@ groups:
         annotations:
           summary: "Proxmox host {{"{{"}} $labels.instance {{"}}"}} is down"
           description: "Cannot connect to Proxmox API on {{"{{"}} $labels.instance {{"}}"}}."
+
+  # ---------------------------------------------------------------------------
+  # S3 Proxy Health
+  # ---------------------------------------------------------------------------
+  - name: s3-proxy-health
+    interval: 30s
+    rules:
+      - alert: S3ProxyDown
+        expr: up{job="s3-proxy"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "S3 Proxy is down"
+          description: "S3 Proxy is not responding to metrics scrapes."
+
+      - alert: S3ProxyHighErrorRate
+        expr: sum(rate(s3proxy_requests_total{status_code=~"5.."}[5m])) / sum(rate(s3proxy_requests_total[5m])) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Proxy high error rate"
+          description: "{{"{{"}} $value | printf \"%.1f\" {{"}}"}}% of S3 Proxy requests are returning 5xx errors."
+
+      - alert: S3ProxyBackendFailures
+        expr: rate(s3proxy_backend_requests_total{status="error"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Proxy backend failures"
+          description: "Backend {{"{{"}} $labels.backend {{"}}"}} is seeing {{"{{"}} $value | printf \"%.1f\" {{"}}"}} failed {{"{{"}} $labels.operation {{"}}"}} operations/sec."
+
+      - alert: S3ProxyQuotaHigh
+        expr: s3proxy_quota_bytes_used / s3proxy_quota_bytes_limit * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Proxy quota nearly full"
+          description: "Backend {{"{{"}} $labels.backend {{"}}"}} is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}% quota usage."
+
+      - alert: S3ProxyQuotaCritical
+        expr: s3proxy_quota_bytes_used / s3proxy_quota_bytes_limit * 100 > 98
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "S3 Proxy quota critical"
+          description: "Backend {{"{{"}} $labels.backend {{"}}"}} is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}% quota usage. Uploads will fail when full."
+
+      - alert: S3ProxyHighLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(s3proxy_request_duration_seconds_bucket[5m]))) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Proxy high request latency"
+          description: "95th percentile request latency is {{"{{"}} $value | printf \"%.1f\" {{"}}"}} seconds."
