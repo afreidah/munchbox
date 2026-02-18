@@ -10,3 +10,6 @@
 [submodule "infrastructure/providers/terraform-provider-pihole"]
 	path = infrastructure/providers/terraform-provider-pihole
 	url = https://github.com/ryanwholey/terraform-provider-pihole.git
+[submodule "src/s3-proxy"]
+	path = src/s3-proxy
+	url = https://github.com/afreidah/s3-proxy.git

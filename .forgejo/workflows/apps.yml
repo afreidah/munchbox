@@ -31,9 +31,12 @@ jobs:
       options: --dns 192.168.68.64 --dns 192.168.68.62
     outputs:
       apps_to_test: ${{ steps.detect.outputs.apps_to_test }}
+      apps_to_lint: ${{ steps.detect.outputs.apps_to_lint }}
       apps_to_push: ${{ steps.detect.outputs.apps_to_push }}
       apps_to_deb: ${{ steps.detect.outputs.apps_to_deb }}
+      go_version: ${{ steps.detect.outputs.go_version }}
       has_tests: ${{ steps.detect.outputs.has_tests }}
+      has_lints: ${{ steps.detect.outputs.has_lints }}
       has_pushes: ${{ steps.detect.outputs.has_pushes }}
       has_debs: ${{ steps.detect.outputs.has_debs }}
     steps:
@@ -62,8 +65,10 @@ jobs:
           # Find all app directories with Makefiles
           # Use simple space-separated lists, convert to JSON at the end
           TEST_APPS=""
+          LINT_APPS=""
           PUSH_APPS=""
           DEB_APPS=""
+          GO_VERSION=""
 
           echo "Checking for jq..."
           which jq && jq --version || echo "WARNING: jq not found!"
@@ -99,6 +104,22 @@ jobs:
               TEST_APPS="$TEST_APPS $APP_DIR"
               echo "    - test target"
             fi
+
+            if grep -q "^lint:" "$makefile"; then
+              LINT_APPS="$LINT_APPS $APP_DIR"
+              echo "    - lint target"
+            fi
+
+            # Detect Go version from go.mod (use highest found across apps)
+            if [ -f "$APP_DIR/go.mod" ]; then
+              APP_GO_VER=$(grep '^go ' "$APP_DIR/go.mod" | awk '{print $2}')
+              if [ -n "$APP_GO_VER" ]; then
+                echo "    - go version: $APP_GO_VER"
+                if [ -z "$GO_VERSION" ] || printf '%s\n' "$GO_VERSION" "$APP_GO_VER" | sort -V | tail -1 | grep -q "$APP_GO_VER"; then
+                  GO_VERSION="$APP_GO_VER"
+                fi
+              fi
+            fi
           done
 
           # Convert space-separated lists to JSON arrays
@@ -112,28 +133,45 @@ jobs:
           }
 
           APPS_TO_TEST=$(to_json_array "$TEST_APPS")
+          APPS_TO_LINT=$(to_json_array "$LINT_APPS")
           APPS_TO_PUSH=$(to_json_array "$PUSH_APPS")
           APPS_TO_DEB=$(to_json_array "$DEB_APPS")
+
+          # Default Go version fallback
+          if [ -z "$GO_VERSION" ]; then
+            GO_VERSION="1.23"
+          fi
 
           echo ""
           echo "Final results:"
           echo "  TEST_APPS: '$TEST_APPS'"
           echo "  APPS_TO_TEST: $APPS_TO_TEST"
+          echo "  LINT_APPS: '$LINT_APPS'"
+          echo "  APPS_TO_LINT: $APPS_TO_LINT"
           echo "  PUSH_APPS: '$PUSH_APPS'"
           echo "  APPS_TO_PUSH: $APPS_TO_PUSH"
           echo "  DEB_APPS: '$DEB_APPS'"
           echo "  APPS_TO_DEB: $APPS_TO_DEB"
+          echo "  GO_VERSION: $GO_VERSION"
 
           # Set outputs
           echo "apps_to_test=$APPS_TO_TEST" >> $GITHUB_OUTPUT
+          echo "apps_to_lint=$APPS_TO_LINT" >> $GITHUB_OUTPUT
           echo "apps_to_push=$APPS_TO_PUSH" >> $GITHUB_OUTPUT
           echo "apps_to_deb=$APPS_TO_DEB" >> $GITHUB_OUTPUT
+          echo "go_version=$GO_VERSION" >> $GITHUB_OUTPUT
 
           # Set boolean flags - check for non-empty JSON arrays
           if [ "$APPS_TO_TEST" != "[]" ] && [ -n "$APPS_TO_TEST" ]; then
             echo "has_tests=true" >> $GITHUB_OUTPUT
           else
             echo "has_tests=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$APPS_TO_LINT" != "[]" ] && [ -n "$APPS_TO_LINT" ]; then
+            echo "has_lints=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_lints=false" >> $GITHUB_OUTPUT
           fi
 
           if [ "$APPS_TO_PUSH" != "[]" ] && [ -n "$APPS_TO_PUSH" ]; then
@@ -167,7 +205,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: ${{ needs.detect.outputs.go_version }}
 
       - name: Run tests
         env:
@@ -183,16 +221,53 @@ jobs:
           done
 
   # -------------------------------------------------------------------------
+  # Run linter (matrix)
+  # -------------------------------------------------------------------------
+
+  lint:
+    runs-on: docker
+    container:
+      image: registry.munchbox.cc/ops-build-image:v3
+      options: --dns 192.168.68.64 --dns 192.168.68.62
+    needs: detect
+    if: needs.detect.outputs.has_lints == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ needs.detect.outputs.go_version }}
+
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Run linter
+        env:
+          APPS_TO_LINT: ${{ needs.detect.outputs.apps_to_lint }}
+        run: |
+          echo "Apps to lint: $APPS_TO_LINT"
+          echo "$APPS_TO_LINT" | jq -r '.[]' | while read -r app; do
+            echo "=== Linting: $app ==="
+            cd "$app"
+            make lint
+            cd -
+          done
+
+  # -------------------------------------------------------------------------
   # Push Docker images
   # -------------------------------------------------------------------------
 
   push:
     runs-on: docker
-    needs: [detect, test]
+    needs: [detect, test, lint]
     if: |
       always() &&
       needs.detect.outputs.has_pushes == 'true' &&
       (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push'
     steps:
@@ -216,11 +291,12 @@ jobs:
 
   build-deb:
     runs-on: docker
-    needs: [detect, test]
+    needs: [detect, test, lint]
     if: |
       always() &&
       needs.detect.outputs.has_debs == 'true' &&
       (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      (needs.lint.result == 'success' || needs.lint.result == 'skipped') &&
       github.ref == 'refs/heads/main' &&
       github.event_name == 'push'
     env:
@@ -233,7 +309,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: ${{ needs.detect.outputs.go_version }}
 
       - name: Install nfpm
         run: |
