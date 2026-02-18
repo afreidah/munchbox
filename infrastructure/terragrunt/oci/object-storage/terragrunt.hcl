@@ -1,10 +1,10 @@
 # -------------------------------------------------------------------------------
-# OCI Object Storage - S3 Proxy Backend
+# OCI Object Storage - S3 Orchestrator Backend
 #
 # Project: Munchbox / Author: Alex Freidah
 #
 # Deploys an OCI Object Storage bucket for use as a backend in the unified S3
-# proxy. Creates S3-compatible credentials via Customer Secret Keys for access.
+# orchestrator. Creates S3-compatible credentials via Customer Secret Keys for access.
 #
 # Required environment variables:
 #   OCI_COMPARTMENT_ID - OCI compartment OCID
@@ -35,6 +35,6 @@ inputs = {
   metadata = {
     project    = "munchbox"
     managed_by = "terragrunt"
-    purpose    = "s3-proxy-backend"
+    purpose    = "s3-orchestrator-backend"
   }
 }

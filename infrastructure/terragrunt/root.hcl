@@ -688,7 +688,7 @@ locals {
       "forgejo",
       "forgejo-runner",
       "umami",
-      "s3-proxy",
+      "s3-orchestrator",
       "patroni",
       "oauth2-proxy",
       "traefik-log-dashboard",

@@ -165,7 +165,7 @@ Consul (8600)        CoreDNS (5353)         │
 │   │   └── temporal-backup-worker/
 │   ├── dashboard/               # Hugo-based link dashboard
 │   ├── resume/                  # Personal resume site
-│   ├── s3-proxy/                # S3 proxy service (Go)
+│   ├── s3-orchestrator/         # S3 orchestrator service (Go)
 │   └── theme-server/            # Theme server for dashboards
 │
 ├── nomad/                       # Nomad workload definitions

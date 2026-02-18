@@ -1,16 +1,16 @@
 # -------------------------------------------------------------------------------
-# S3 Proxy -- Unified S3 Endpoint with Quota Management
+# S3 Orchestrator -- Unified S3 Endpoint with Quota Management
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# S3-compatible proxy that routes objects to OCI Object Storage backends with
-# per-backend quota tracking. Stores metadata in PostgreSQL on the shared
+# S3-compatible orchestrator that routes objects to OCI Object Storage backends
+# with per-backend quota tracking. Stores metadata in PostgreSQL on the shared
 # Patroni cluster. Exposes Prometheus metrics and OpenTelemetry traces.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name  = "s3-proxy"
-image = "registry.munchbox.cc/s3-proxy:latest"
+name  = "s3-orchestrator"
+image = "registry.munchbox.cc/s3-orchestrator:latest"
 port  = 9000
 size  = "small"
 vault = true
@@ -35,4 +35,4 @@ templates = [
 ]
 
 # --- Service tags ---
-tags = ["infrastructure", "s3-proxy", "storage"]
+tags = ["infrastructure", "s3-orchestrator", "storage"]

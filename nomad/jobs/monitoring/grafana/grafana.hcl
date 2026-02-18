@@ -51,7 +51,7 @@ templates = [
   { src = "dashboards/nomad-cluster-overview.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-cluster-overview.json", vault = false },
   { src = "dashboards/nomad-workloads.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-workloads.json", vault = false },
   { src = "dashboards/certificate-management.json", dest = "/etc/grafana/provisioning/dashboards/json/certificate-management.json", vault = false },
-  { src = "dashboards/s3-proxy.json", dest = "/etc/grafana/provisioning/dashboards/json/s3-proxy.json", vault = false },
+  { src = "dashboards/s3-orchestrator.json", dest = "/etc/grafana/provisioning/dashboards/json/s3-orchestrator.json", vault = false },
   # Community dashboards
   { src = "dashboards/hashicorp-nomad.json", dest = "/etc/grafana/provisioning/dashboards/json/hashicorp-nomad.json", vault = false },
   { src = "dashboards/hashicorp-vault.json", dest = "/etc/grafana/provisioning/dashboards/json/hashicorp-vault.json", vault = false },

@@ -1,4 +1,4 @@
-{{ with secret "secret/data/s3-proxy" }}
+{{ with secret "secret/data/s3-orchestrator" }}
 server:
   listen_addr: "0.0.0.0:9000"
   virtual_bucket: "unified"

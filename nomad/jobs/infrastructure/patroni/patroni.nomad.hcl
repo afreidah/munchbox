@@ -527,8 +527,8 @@ END
 CREATE DATABASE IF NOT EXISTS immich OWNER {{ .Data.data.db_username }};
 {{ end }}
 
--- S3 Proxy
-{{ with secret "secret/data/s3-proxy" }}
+-- S3 Orchestrator
+{{ with secret "secret/data/s3-orchestrator" }}
 DO \$\$
 BEGIN
   IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN

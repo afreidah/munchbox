@@ -1,7 +1,7 @@
 {
-  "uid": "munchbox-s3-proxy",
-  "title": "S3 Proxy",
-  "tags": ["infrastructure", "s3-proxy", "storage"],
+  "uid": "munchbox-s3-orchestrator",
+  "title": "S3 Orchestrator",
+  "tags": ["infrastructure", "s3-orchestrator", "storage"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
