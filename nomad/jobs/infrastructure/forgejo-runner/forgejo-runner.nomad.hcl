@@ -12,7 +12,7 @@ job "forgejo-runner" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
-  node_pool   = "all"
+  node_pool   = "oracle"
 
   # ---------------------------------------------------------------------------
   # Update Strategy
@@ -33,15 +33,11 @@ job "forgejo-runner" {
   group "forgejo-runner" {
     count = 2
 
-    # Run on large Oracle Cloud free tier nodes
+    # Run on Oracle ARM nodes (exclude micro-tier nodes)
     constraint {
-      attribute = "${meta.cloud}"
-      value     = "oracle"
-    }
-
-    constraint {
-      attribute = "${meta.size}"
-      value     = "large"
+      attribute = "${meta.tier}"
+      operator  = "!="
+      value     = "micro"
     }
 
     # Force allocations onto different nodes

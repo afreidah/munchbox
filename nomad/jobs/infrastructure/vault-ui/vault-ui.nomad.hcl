@@ -12,7 +12,7 @@ job "vault-ui" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
-  node_pool   = "all"
+  node_pool   = "oracle"
 
   # ---------------------------------------------------------------------------
   # Update Strategy

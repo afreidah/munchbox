@@ -569,3 +569,23 @@ scrape_configs:
         target_label: "instance"
       - target_label: "__address__"
         replacement: "pve-exporter.service.consul:9221"
+
+  # -----------------------------------------------------------------------
+  # S3 Orchestrator - Unified S3 endpoint metrics
+  # -----------------------------------------------------------------------
+  - job_name: "s3-orchestrator"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["s3-orchestrator"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "s3-orchestrator"

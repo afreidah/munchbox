@@ -908,3 +908,63 @@ groups:
         annotations:
           summary: "Proxmox host {{"{{"}} $labels.instance {{"}}"}} is down"
           description: "Cannot connect to Proxmox API on {{"{{"}} $labels.instance {{"}}"}}."
+
+  # ---------------------------------------------------------------------------
+  # S3 Orchestrator Health
+  # ---------------------------------------------------------------------------
+  - name: s3-orchestrator-health
+    interval: 30s
+    rules:
+      - alert: S3OrchestratorDown
+        expr: up{job="s3-orchestrator"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "S3 Orchestrator is down"
+          description: "S3 Orchestrator is not responding to metrics scrapes."
+
+      - alert: S3OrchestratorHighErrorRate
+        expr: sum(rate(s3proxy_requests_total{status_code=~"5.."}[5m])) / sum(rate(s3proxy_requests_total[5m])) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Orchestrator high error rate"
+          description: "{{"{{"}} $value | printf \"%.1f\" {{"}}"}}% of S3 Orchestrator requests are returning 5xx errors."
+
+      - alert: S3OrchestratorBackendFailures
+        expr: rate(s3proxy_backend_requests_total{status="error"}[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Orchestrator backend failures"
+          description: "Backend {{"{{"}} $labels.backend {{"}}"}} is seeing {{"{{"}} $value | printf \"%.1f\" {{"}}"}} failed {{"{{"}} $labels.operation {{"}}"}} operations/sec."
+
+      - alert: S3OrchestratorQuotaHigh
+        expr: s3proxy_quota_bytes_used / s3proxy_quota_bytes_limit * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Orchestrator quota nearly full"
+          description: "Backend {{"{{"}} $labels.backend {{"}}"}} is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}% quota usage."
+
+      - alert: S3OrchestratorQuotaCritical
+        expr: s3proxy_quota_bytes_used / s3proxy_quota_bytes_limit * 100 > 98
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "S3 Orchestrator quota critical"
+          description: "Backend {{"{{"}} $labels.backend {{"}}"}} is at {{"{{"}} $value | printf \"%.1f\" {{"}}"}}% quota usage. Uploads will fail when full."
+
+      - alert: S3OrchestratorHighLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(s3proxy_request_duration_seconds_bucket[5m]))) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "S3 Orchestrator high request latency"
+          description: "95th percentile request latency is {{"{{"}} $value | printf \"%.1f\" {{"}}"}} seconds."
