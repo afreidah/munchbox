@@ -35,10 +35,14 @@ server {
 # Client Configuration
 # -------------------------------------------------------------------------------
 client {
-{% if 'ingress' in group_names or nomad_client_meta is defined %}
+  node_pool = "{{ nomad_node_pool }}"
   meta {
+    arch = "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 {% if 'ingress' in group_names %}
     role = "ingress"
+{% endif %}
+{% if 'gpu_nodes' in group_names %}
+    gpu = "true"
 {% endif %}
 {% if nomad_client_meta is defined %}
 {% for key, value in nomad_client_meta.items() %}
@@ -46,7 +50,6 @@ client {
 {% endfor %}
 {% endif %}
   }
-{% endif %}
   enabled = true
   gc_disk_usage_threshold = {{ nomad_gc_disk_usage_threshold | default(80) }}
   gc_inode_usage_threshold = {{ nomad_gc_inode_usage_threshold | default(70) }}

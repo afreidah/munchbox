@@ -43,6 +43,7 @@ nomad_bootstrap_expect: "{{ groups['nomad_servers'] | length }}"
 nomad_server_join: "{{ groups['nomad_servers'] | map('extract', hostvars, 'ansible_host') | reject('equalto', ansible_default_ipv4.address) | map('regex_replace', '$', ':4648') | list }}"
 
 nomad_client_enabled: "{{ 'nomad_clients' in group_names }}"
+nomad_node_pool: "default"
 
 # Network interface for bridge networking (empty = auto-detect)
 # Set to "wg0" for nodes that should use WireGuard for service registration

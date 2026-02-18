@@ -124,9 +124,10 @@ nomad_tls_rpc: true
 # Nomad Client Metadata
 # -------------------------------------------------------------------------------
 
+nomad_node_pool: "oracle"
+
 nomad_client_meta:
   cloud: "oracle"
-  size: "large"
 
 # Vault CA file for TLS verification over WireGuard
 nomad_vault_ca_file: "/opt/nomad/tls/vault-intermediate-ca.pem"

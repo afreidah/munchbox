@@ -1,0 +1,9 @@
+# -------------------------------------------------------------------------------
+# Host Variables - oracle-node-2
+#
+# Project: Munchbox / Author: Alex Freidah
+# -------------------------------------------------------------------------------
+
+nomad_client_meta:
+  cloud: "oracle"
+  tier: "micro"

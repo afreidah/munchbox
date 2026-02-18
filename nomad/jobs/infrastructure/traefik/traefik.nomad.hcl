@@ -10,6 +10,10 @@
 #
 # Each instance independently obtains and renews certs — no shared storage
 # needed. Rolling updates: one node at a time, VIP floats to standby.
+#
+# Cloudflare tunnel connector runs as a poststart sidecar so its lifecycle
+# is tied to Traefik — if Traefik dies, the connector stops and Cloudflare
+# routes all traffic to the healthy connector on the other ingress node.
 # -------------------------------------------------------------------------------
 
 job "traefik" {
@@ -84,6 +88,10 @@ job "traefik" {
 
       port "log-dashboard" {
         static = 3000
+      }
+
+      port "cloudflared-metrics" {
+        static = 2000
       }
     }
 
@@ -685,7 +693,7 @@ EOH
       # --- Resources ---
       resources {
         cpu    = 300
-        memory = 256
+        memory = 512
       }
 
       # --- Termination ---
@@ -888,6 +896,94 @@ EOH
         path     = "/"
         interval = "30s"
         timeout  = "5s"
+      }
+    }
+
+    # -----------------------------------------------------------------------
+    # Task: cloudflared-tunnel (poststart sidecar)
+    # Cloudflare tunnel connector — tied to Traefik lifecycle so the
+    # connector stops when Traefik dies, preventing Cloudflare from routing
+    # traffic to a node with no working reverse proxy.
+    # Tunnel ingress configuration is managed by Terraform
+    # (infrastructure/terraform/dns/main.tf) via cloudflare_tunnel_config.
+    # -----------------------------------------------------------------------
+
+    task "cloudflared-tunnel" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image              = "cloudflare/cloudflared:2026.1.2"
+        image_pull_timeout = "10m"
+        ports              = ["cloudflared-metrics"]
+        network_mode       = "host"
+        args = [
+          "tunnel",
+          "--metrics", "0.0.0.0:2000",
+          "run",
+          "--token", "${TUNNEL_TOKEN}"
+        ]
+      }
+
+      # --- Tunnel token from Vault ---
+      template {
+        data        = <<EOH
+{{ with secret "secret/data/cloudflared" }}
+TUNNEL_TOKEN={{ .Data.data.tunnel_token }}
+{{ end }}
+EOH
+        destination = "secrets/cloudflared.env"
+        env         = true
+        change_mode = "restart"
+      }
+
+      resources {
+        cpu    = 100
+        memory = 128
+      }
+
+      kill_timeout = "30s"
+      kill_signal  = "SIGTERM"
+    }
+
+    # -----------------------------------------------------------------------
+    # Service: cloudflared-tunnel
+    # -----------------------------------------------------------------------
+
+    service {
+      name     = "cloudflared-tunnel"
+      port     = "cloudflared-metrics"
+      provider = "consul"
+
+      tags = [
+        "traefik.enable=false",
+        "infrastructure",
+        "cloudflare",
+        "tunnel",
+        "ingress",
+      ]
+
+      check {
+        name     = "cloudflared-tunnel-health"
+        type     = "http"
+        path     = "/ready"
+        port     = "cloudflared-metrics"
+        interval = "10s"
+        timeout  = "3s"
       }
     }
   }
