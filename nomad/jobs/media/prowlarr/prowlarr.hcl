@@ -15,7 +15,9 @@ port         = 9696
 static_port  = 9696
 host_network = true
 size         = "medium"
-node         = "goren"
+constraints = [
+  { attribute = "$${meta.gpu}", operator = "=", value = "true" }
+]
 memory       = 300
 cpu          = 1000
 

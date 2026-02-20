@@ -14,7 +14,9 @@ image = "jellyfin/jellyfin:10.11.6"
 port  = 8096
 static_port = 8096
 host_network = true
-node = "nomad-client-04"
+constraints = [
+  { attribute = "$${meta.gpu}", operator = "=", value = "true" }
+]
 cpu    = 3500
 memory = 4000
 

@@ -14,7 +14,9 @@ image        = "linuxserver/sonarr:4.0.16"
 port         = 8989
 static_port  = 8989
 host_network = true
-node         = "nomad-client-01"
+constraints = [
+  { attribute = "$${meta.gpu}", operator = "=", value = "true" }
+]
 size         = "medium"
 cpu          = 1000
 

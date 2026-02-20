@@ -14,7 +14,9 @@ type         = "service"
 image        = "linuxserver/readarr:0.4.19-nightly"
 port         = 8787
 static_port  = 8787
-node         = "nomad-client-01"
+constraints = [
+  { attribute = "$${meta.gpu}", operator = "=", value = "true" }
+]
 size         = "medium"
 
 # --- Health check (use /ping to avoid auth failures in logs) ---

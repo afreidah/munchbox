@@ -34,9 +34,9 @@ job "immich" {
 
   # Strong preference for nomad-client-04 (has NVIDIA GPU)
   constraint {
-    attribute = "${node.unique.name}"
+    attribute = "${meta.gpu}"
     operator  = "="
-    value     = "nomad-client-04"
+    value     = "true"
   }
 
   # ---------------------------------------------------------------------------

@@ -1,12 +1,13 @@
 {{ with secret "secret/data/s3-orchestrator" }}
 server:
   listen_addr: "0.0.0.0:9000"
-  virtual_bucket: "unified"
 
-auth:
-  access_key_id: "{{ .Data.data.access_key }}"
-  secret_access_key: "{{ .Data.data.secret_key }}"
-  token: "{{ .Data.data.token }}"
+buckets:
+  - name: "unified"
+    credentials:
+      - access_key_id: "{{ .Data.data.access_key }}"
+        secret_access_key: "{{ .Data.data.secret_key }}"
+        token: "{{ .Data.data.token }}"
 
 database:
   host: "haproxy-postgres.service.consul"

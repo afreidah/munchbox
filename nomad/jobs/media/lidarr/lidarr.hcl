@@ -14,7 +14,9 @@ image        = "linuxserver/lidarr:3.1.0"
 port         = 8686
 static_port  = 8686
 host_network = true
-node         = "nomad-client-02"
+constraints = [
+  { attribute = "$${meta.gpu}", operator = "=", value = "true" }
+]
 size         = "medium"
 
 # --- Health check (use /ping to avoid auth failures in logs) ---

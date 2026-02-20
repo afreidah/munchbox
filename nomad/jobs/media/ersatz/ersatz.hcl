@@ -14,7 +14,9 @@ image = "jasongdove/ersatztv:v25.9.0"
 port  = 8409
 static_port = 8409
 host_network = true
-node = "nomad-client-04"
+constraints = [
+  { attribute = "$${meta.gpu}", operator = "=", value = "true" }
+]
 cpu    = 3500
 memory = 4000
 

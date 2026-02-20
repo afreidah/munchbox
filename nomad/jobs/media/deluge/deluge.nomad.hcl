@@ -19,8 +19,9 @@ job "deluge" {
   # ---------------------------------------------------------------------------
 
   constraint {
-    attribute = "${node.unique.name}"
-    value     = "nomad-client-04"
+    attribute = "${meta.gpu}"
+    operator  = "="
+    value     = "true"
   }
 
   # ---------------------------------------------------------------------------

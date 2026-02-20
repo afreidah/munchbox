@@ -13,7 +13,9 @@ type         = "service"
 image        = "linuxserver/radarr:6.0.4"
 port         = 7878
 static_port  = 7878
-node         = "nomad-client-01"
+constraints = [
+  { attribute = "$${meta.gpu}", operator = "=", value = "true" }
+]
 size         = "medium"
 
 # --- Health check (use /ping to avoid auth failures in logs) ---
