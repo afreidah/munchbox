@@ -11,8 +11,9 @@
 # --- Core job configuration ---
 name  = "s3-orchestrator"
 image = "registry.munchbox.cc/s3-orchestrator:latest"
-port  = 9000
-size  = "small"
+port         = 9000
+host_network = true
+size         = "medium"
 vault = true
 
 # --- Traefik routing ---

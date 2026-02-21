@@ -63,11 +63,11 @@ job "haproxy" {
       value    = "true"
     }
 
-    # --- Pin to infrastructure nodes (same as Patroni) ---
+    # --- Pin to database nodes (same as Patroni) ---
     constraint {
       attribute = "${node.unique.name}"
       operator  = "set_contains_any"
-      value     = "goren,stabler.munchbox.cc"
+      value     = "stabler.munchbox.cc,nomad-client-05"
     }
 
     # --- Network Configuration ---

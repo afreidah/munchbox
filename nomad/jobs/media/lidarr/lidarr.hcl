@@ -23,21 +23,33 @@ size         = "medium"
 health_path  = "/ping"
 
 # --- Storage ---
-storage      = "local"
-storage_path = "/config"
+storage      = "ephemeral"
 volumes = [
   "/tank:/data"
 ]
 
+# --- Vault (for PostgreSQL credentials) ---
+vault = true
+
 # --- Traefik routing ---
 traefik      = true
 traefik_host = "lidarr.munchbox.cc"
+
+# --- PostgreSQL configuration ---
+templates = [
+  { src = "postgres.env.tpl", dest = "secrets/postgres.env", vault = "true", env = "true" }
+]
 
 # --- Environment variables ---
 env = {
   PUID = "1001"
   PGID = "1001"
   TZ   = "America/Los_Angeles"
+  # PostgreSQL connection (credentials injected via template)
+  LIDARR__POSTGRES__HOST   = "haproxy-postgres.service.consul"
+  LIDARR__POSTGRES__PORT   = "5433"
+  LIDARR__POSTGRES__MAINDB = "lidarr_main"
+  LIDARR__POSTGRES__LOGDB  = "lidarr_log"
   # Custom Catppuccin Mocha theme via theme-server
   DOCKER_MODS   = "ghcr.io/themepark-dev/theme.park:lidarr"
   TP_COMMUNITY_THEME = "true"

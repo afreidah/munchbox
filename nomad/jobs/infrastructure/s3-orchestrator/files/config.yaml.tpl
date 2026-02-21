@@ -1,18 +1,18 @@
 {{ with secret "secret/data/s3-orchestrator" }}
 server:
   listen_addr: "0.0.0.0:9000"
+  backend_timeout: "5m"
 
 buckets:
   - name: "unified"
     credentials:
       - access_key_id: "{{ .Data.data.access_key }}"
         secret_access_key: "{{ .Data.data.secret_key }}"
-        token: "{{ .Data.data.token }}"
 
 database:
   host: "haproxy-postgres.service.consul"
   port: 5433
-  database: "s3proxy"
+  database: "s3_orchestrator"
   user: "{{ .Data.data.db_username }}"
   password: "{{ .Data.data.db_password }}"
   ssl_mode: "require"
@@ -25,7 +25,7 @@ backends:
     access_key_id: "{{ .Data.data.oci_s3_access_key }}"
     secret_access_key: "{{ .Data.data.oci_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 21474836480
+    quota_bytes: 10737418240
 
 telemetry:
   metrics:

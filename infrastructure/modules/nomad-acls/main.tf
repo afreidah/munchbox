@@ -43,16 +43,10 @@ resource "nomad_acl_policy" "policy" {
 resource "nomad_acl_token" "token" {
   for_each = var.tokens
 
-  name     = each.key
-  type     = each.value.type
-  policies = each.value.policies
-
-  dynamic "expiration_ttl" {
-    for_each = each.value.expiration != null ? [each.value.expiration] : []
-    content {
-      # Nomad ACL token expiration is set via expiration_time attribute
-    }
-  }
+  name           = each.key
+  type           = each.value.type
+  policies       = each.value.type == "management" ? [] : each.value.policies
+  expiration_ttl = each.value.expiration
 
   depends_on = [nomad_acl_policy.policy]
 }

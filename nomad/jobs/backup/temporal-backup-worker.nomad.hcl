@@ -175,6 +175,8 @@ job "temporal-backup-worker" {
         data = <<-EOF
         {{ with secret "secret/data/backup-worker" }}
         NOMAD_TOKEN={{ .Data.data.nomad_token }}
+        {{ end }}
+        {{ with secret "secret/data/consul/backup-worker-token" }}
         CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
         {{ end }}
         {{ with secret "secret/data/postgres-shared/root" }}
@@ -186,6 +188,10 @@ job "temporal-backup-worker" {
         {{ end }}
         {{ with secret "secret/data/redis-shared" }}
         REDIS_PASSWORD={{ .Data.data.password }}
+        {{ end }}
+        {{ with secret "secret/data/s3-orchestrator" }}
+        S3_ACCESS_KEY={{ .Data.data.access_key }}
+        S3_SECRET_KEY={{ .Data.data.secret_key }}
         {{ end }}
         EOF
         destination = "secrets/secrets.env"
@@ -205,6 +211,11 @@ job "temporal-backup-worker" {
         TRIVY_DB_NAME     = "trivy"
         DB_SSLMODE        = "verify-ca"
         DB_SSLROOTCERT    = "/etc/ssl/postgres/ca.crt"
+        # S3 off-site backup configuration
+        S3_ENDPOINT        = "http://s3-orchestrator.service.consul:9000"
+        S3_BUCKET           = "unified"
+        S3_RETENTION_DAYS   = "30"
+        LOCAL_RETENTION_DAYS = "7"
         # OpenTelemetry tracing to Tempo (gRPC)
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
         OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"

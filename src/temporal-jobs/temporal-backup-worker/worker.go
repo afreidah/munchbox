@@ -146,6 +146,8 @@ func runWorker() {
 	w.RegisterActivity(TakePostgresBackup)
 	w.RegisterActivity(TakeRegistryBackup)
 	w.RegisterActivity(CleanupOldBackups)
+	w.RegisterActivity(UploadToS3)
+	w.RegisterActivity(CleanupOldS3Backups)
 
 	// Register trivy scanner workflow and activities
 	w.RegisterWorkflow(TrivyScanWorkflow)

@@ -309,6 +309,19 @@ locals {
           key_prefix "oracle-watchdog/" { policy = "write" }
         EOT
       }
+
+      "backup-worker" = {
+        description = "Backup worker - Consul snapshot access"
+        rules       = <<-EOT
+          acl = "write"
+          key_prefix "" { policy = "read" }
+          node_prefix "" { policy = "read" }
+          service_prefix "" { policy = "read" }
+          session_prefix "" { policy = "read" }
+          agent_prefix "" { policy = "read" }
+          operator = "read"
+        EOT
+      }
     }
 
     # --- ACL Tokens ---
@@ -352,6 +365,10 @@ locals {
       "oracle-watchdog" = {
         description = "Token for Oracle Watchdog node monitors"
         policies    = ["oracle-watchdog"]
+      }
+      "backup-worker" = {
+        description = "Token for backup worker Consul snapshots"
+        policies    = ["backup-worker"]
       }
     }
 
@@ -403,6 +420,12 @@ locals {
         vault_path = "consul/oracle-watchdog-token"
         token_key  = "oracle-watchdog"
       }
+      "backup-worker" = {
+        vault_path          = "consul/backup-worker-token"
+        token_key           = "backup-worker"
+        token_field_name    = "consul_token"
+        include_accessor_id = false
+      }
     }
   }
 
@@ -414,11 +437,6 @@ locals {
   nomad_acls_inputs = {
     nomad_bootstrap_token = get_env("NOMAD_TOKEN", "")
     vault_mount           = "secret"
-
-    # Extra values to inject into vault secrets (cross-module dependencies)
-    extra_secret_values = {
-      backup_consul_token = get_env("BACKUP_CONSUL_TOKEN", "")
-    }
 
     # --- ACL Policies ---
     policies = {
@@ -461,15 +479,6 @@ locals {
       }
 
       # Service Policies (tokens generated for automated services)
-      "hashi-ui" = {
-        description = "Hashi-UI dashboard - read-only cluster visibility"
-        rules_hcl   = <<-EOT
-          namespace "*" { policy = "read" }
-          node { policy = "read" }
-          agent { policy = "read" }
-        EOT
-      }
-
       "backup-worker" = {
         description = "Temporal backup worker - snapshot and read access"
         rules_hcl   = <<-EOT
@@ -492,34 +501,35 @@ locals {
 
     # --- ACL Tokens (only for services, not operators) ---
     tokens = {
-      "hashi-ui" = {
-        policies = ["hashi-ui"]
-      }
       "backup-worker" = {
-        policies = ["backup-worker"]
+        type     = "management"
+        policies = []
       }
       "prometheus" = {
         policies = ["prometheus"]
+      }
+      "nomad-ui" = {
+        type     = "management"
+        policies = []
       }
     }
 
     # --- Vault Secret Storage ---
     vault_secrets = {
-      "hashi-ui" = {
-        vault_path       = "hashiuisecret"
-        token_key        = "hashi-ui"
-        token_field_name = "token"
-      }
       "backup-worker" = {
         vault_path       = "backup-worker"
         token_key        = "backup-worker"
         token_field_name = "nomad_token"
-        extra_data       = { consul_token = "backup_consul_token" }
       }
       "prometheus" = {
         vault_path       = "prometheus-nomad"
         token_key        = "prometheus"
         token_field_name = "nomad_token"
+      }
+      "nomad-ui" = {
+        vault_path       = "nomad-ui"
+        token_key        = "nomad-ui"
+        token_field_name = "token"
       }
     }
   }
@@ -704,7 +714,6 @@ locals {
       "prometheus",
       "prometheus-nomad",
       "nomad-ui",
-      "hashiuisecret",
       "alertmanager",
       "redis-shared",
       "postgres-shared/root",
@@ -732,7 +741,13 @@ locals {
       "redis",
       "haproxy",
       "zfswatcher",
-      "ssh/backup-worker"
+      "consul/backup-worker-token",
+      "ssh/backup-worker",
+      "sonarr",
+      "radarr",
+      "lidarr",
+      "readarr",
+      "prowlarr"
     ]
 
     # --- Database Roles (disabled by default) ---

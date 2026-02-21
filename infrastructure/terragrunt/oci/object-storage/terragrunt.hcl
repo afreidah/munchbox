@@ -28,7 +28,7 @@ inputs = {
   compartment_id     = get_env("OCI_COMPARTMENT_ID")
   user_ocid          = get_env("OCI_USER_OCID")
   region             = get_env("OCI_REGION", "us-ashburn-1")
-  bucket_name        = "munchbox-s3-proxy"
+  bucket_name        = "munchbox-s3-orchestrator"
   storage_tier       = "Standard"
   versioning_enabled = false
 

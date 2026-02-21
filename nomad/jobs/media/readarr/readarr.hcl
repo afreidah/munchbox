@@ -23,22 +23,34 @@ size         = "medium"
 health_path  = "/ping"
 
 # --- Storage ---
-storage      = "local"
-storage_path = "/config"
+storage      = "ephemeral"
 volumes = [
   "/tank:/data",
   "/mnt/gdrive-secondary/Books:/books"
 ]
 
+# --- Vault (for PostgreSQL credentials) ---
+vault = true
+
 # --- Traefik routing ---
 traefik      = true
 traefik_host = "readarr.munchbox.cc"
+
+# --- PostgreSQL configuration ---
+templates = [
+  { src = "postgres.env.tpl", dest = "secrets/postgres.env", vault = "true", env = "true" }
+]
 
 # --- Environment variables ---
 env = {
   PUID = "1001"
   PGID = "1001"
   TZ   = "America/Los_Angeles"
+  # PostgreSQL connection (credentials injected via template)
+  READARR__POSTGRES__HOST   = "haproxy-postgres.service.consul"
+  READARR__POSTGRES__PORT   = "5433"
+  READARR__POSTGRES__MAINDB = "readarr_main"
+  READARR__POSTGRES__LOGDB  = "readarr_log"
   # Custom Catppuccin Mocha theme via theme-server
   DOCKER_MODS        = "ghcr.io/themepark-dev/theme.park:readarr"
   TP_COMMUNITY_THEME = "true"

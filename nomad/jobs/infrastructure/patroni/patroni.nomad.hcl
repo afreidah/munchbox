@@ -59,11 +59,11 @@ job "patroni" {
       value    = "true"
     }
 
-    # --- Pin to nodes with existing data ---
+    # --- Pin to database nodes ---
     constraint {
       attribute = "${node.unique.name}"
       operator  = "set_contains_any"
-      value     = "goren,stabler.munchbox.cc"
+      value     = "stabler.munchbox.cc,nomad-client-05"
     }
 
     # --- Network Configuration ---
@@ -536,7 +536,73 @@ BEGIN
   END IF;
 END
 \$\$;
-CREATE DATABASE IF NOT EXISTS s3proxy OWNER {{ .Data.data.db_username }};
+CREATE DATABASE IF NOT EXISTS s3_orchestrator OWNER {{ .Data.data.db_username }};
+{{ end }}
+
+-- Sonarr
+{{ with secret "secret/data/sonarr" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS sonarr_main OWNER {{ .Data.data.db_username }};
+CREATE DATABASE IF NOT EXISTS sonarr_log OWNER {{ .Data.data.db_username }};
+{{ end }}
+
+-- Radarr
+{{ with secret "secret/data/radarr" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS radarr_main OWNER {{ .Data.data.db_username }};
+CREATE DATABASE IF NOT EXISTS radarr_log OWNER {{ .Data.data.db_username }};
+{{ end }}
+
+-- Lidarr
+{{ with secret "secret/data/lidarr" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS lidarr_main OWNER {{ .Data.data.db_username }};
+CREATE DATABASE IF NOT EXISTS lidarr_log OWNER {{ .Data.data.db_username }};
+{{ end }}
+
+-- Readarr
+{{ with secret "secret/data/readarr" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS readarr_main OWNER {{ .Data.data.db_username }};
+CREATE DATABASE IF NOT EXISTS readarr_log OWNER {{ .Data.data.db_username }};
+CREATE DATABASE IF NOT EXISTS "readarr-cache" OWNER {{ .Data.data.db_username }};
+{{ end }}
+
+-- Prowlarr
+{{ with secret "secret/data/prowlarr" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS prowlarr_main OWNER {{ .Data.data.db_username }};
+CREATE DATABASE IF NOT EXISTS prowlarr_log OWNER {{ .Data.data.db_username }};
 {{ end }}
 
 SQL
