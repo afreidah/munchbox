@@ -3,6 +3,8 @@ server:
   listen_addr: "0.0.0.0:9000"
   backend_timeout: "5m"
 
+routing_strategy: "spread"
+
 buckets:
   - name: "unified"
     credentials:
@@ -26,6 +28,17 @@ backends:
     secret_access_key: "{{ .Data.data.oci_s3_secret_key }}"
     force_path_style: true
     quota_bytes: 10737418240
+    api_request_limit: 50000
+    egress_byte_limit: 10737418240
+  - name: "r2"
+    endpoint: "{{ .Data.data.r2_s3_endpoint }}"
+    region: "auto"
+    bucket: "{{ .Data.data.r2_s3_bucket }}"
+    access_key_id: "{{ .Data.data.r2_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.r2_s3_secret_key }}"
+    force_path_style: true
+    quota_bytes: 10737418240
+    api_request_limit: 1000000
 
 ui:
   enabled: true

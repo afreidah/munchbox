@@ -815,6 +815,16 @@ locals {
   cloudflare_tunnel_id           = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
   cloudflare_tunnel_cname        = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
 
+  # ---------------------------------------------------------------------------
+  # CLOUDFLARE R2 MODULE INPUTS
+  # ---------------------------------------------------------------------------
+  # Cloudflare R2 object storage bucket configuration
+
+  cloudflare_r2_inputs = {
+    account_id  = local.cloudflare_account_id
+    bucket_name = "munchbox-backups"
+  }
+
   dns_inputs = {
     dns_records = {
       "alexfreidah-apex" = {
