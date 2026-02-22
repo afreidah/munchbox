@@ -27,6 +27,9 @@ backends:
     force_path_style: true
     quota_bytes: 10737418240
 
+ui:
+  enabled: true
+
 telemetry:
   metrics:
     enabled: true

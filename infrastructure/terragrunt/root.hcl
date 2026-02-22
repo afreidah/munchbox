@@ -967,6 +967,7 @@ locals {
       "pihole"          = { domain = "pihole.munchbox.cc",          ip = local.traefik_vip }
       "pihole-green"    = { domain = "pihole-green.munchbox.cc",    ip = local.traefik_vip }
       "pihole-logan"    = { domain = "pihole-logan.munchbox.cc",    ip = local.traefik_vip }
+      "s3"              = { domain = "s3.munchbox.cc",              ip = local.traefik_vip }
     }
 
     cname_records = {}

@@ -164,6 +164,12 @@ services:
         tag: git
         icon: forgejo.png
 
+      - name: S3 Orchestrator
+        subtitle: Unified S3 storage endpoint
+        url: https://s3.munchbox.cc/ui/
+        tag: storage
+        icon: s3-orchestrator.svg
+
       - name: Aptly
         subtitle: Debian package repository
         url: https://apt.munchbox.cc/ui/
