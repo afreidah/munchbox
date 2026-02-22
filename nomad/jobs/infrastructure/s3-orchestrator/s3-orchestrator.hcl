@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name  = "s3-orchestrator"
-image = "registry.munchbox.cc/s3-orchestrator:v0.4.0"
+image = "registry.munchbox.cc/s3-orchestrator:v0.5.0"
 port         = 9000
 host_network = true
 size         = "medium"
