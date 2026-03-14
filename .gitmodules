@@ -16,3 +16,6 @@
 [submodule "src/cloudflare-log-collector"]
 	path = src/cloudflare-log-collector
 	url = https://github.com/afreidah/cloudflare-log-collector.git
+[submodule "src/oracle-watchdog"]
+	path = src/oracle-watchdog
+	url = https://github.com/afreidah/oracle-watchdog.git
