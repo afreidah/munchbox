@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "nginx-resume"
 type  = "service"
-image = "registry.munchbox.cc/alex-resume:latest"
+image = "registry.munchbox.cc/alex-resume:v0.0.1"
 port  = 80
 node  = "any"
 host_network = false

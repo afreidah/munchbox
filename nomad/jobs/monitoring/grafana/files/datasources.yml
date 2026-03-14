@@ -31,6 +31,7 @@ datasources:
     url: http://loki.service.consul:3100
     editable: false
     jsonData:
+      httpHeaderName1: X-Scope-OrgID
       maxLines: 1000
       derivedFields:
         - name: TraceID
@@ -38,6 +39,8 @@ datasources:
           url: '$${__value.raw}'
           datasourceUid: tempo
           urlDisplayLabel: View Trace
+    secureJsonData:
+      httpHeaderValue1: fake
 
   # -------------------------------------------------------------------------
   # Tempo (Traces)

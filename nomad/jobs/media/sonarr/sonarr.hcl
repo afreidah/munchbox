@@ -24,7 +24,9 @@ cpu          = 1000
 health_path  = "/ping"
 
 # --- Storage ---
-storage      = "ephemeral"
+storage       = "local"
+storage_path  = "/config"
+storage_owner = "1001:1001"
 volumes = [
   "/tank:/data"
 ]

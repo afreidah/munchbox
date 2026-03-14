@@ -100,7 +100,7 @@ job "deluge" {
         name     = "vpn-tunnel"
         type     = "http"
         port     = "gluetun"
-        path     = "/v1/openvpn/status"
+        path     = "/v1/vpn/status"
         interval = "30s"
         timeout  = "5s"
 
@@ -108,6 +108,36 @@ job "deluge" {
           limit = 3
           grace = "90s"
         }
+      }
+    }
+
+    # -------------------------------------------------------------------------
+    # Task: cleanup-vpn (remove stale tun/wg interfaces from prior dirty exit)
+    # -------------------------------------------------------------------------
+
+    task "cleanup-vpn" {
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      driver = "docker"
+
+      config {
+        image      = "alpine:3.21"
+        privileged = true
+        network_mode = "host"
+        command    = "/bin/sh"
+        args       = ["-c", "ip link delete tun0 2>/dev/null; ip link delete wg0 2>/dev/null; true"]
+
+        volumes = [
+          "/var/run/docker.sock:/var/run/docker.sock",
+        ]
+      }
+
+      resources {
+        cpu    = 50
+        memory = 32
       }
     }
 

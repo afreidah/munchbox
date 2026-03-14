@@ -164,6 +164,7 @@ job "temporal-backup-worker" {
       template {
         destination   = "secrets/ssh-client-cert.pub"
         perms         = "0644"
+        change_mode   = "noop"
         data          = <<-EOF
 {{ with secret "secret/data/ssh/backup-worker" }}{{ $pub := .Data.data.public_key }}{{ with secret "ssh-client-signer/sign/client-service" (printf "public_key=%s" $pub) "valid_principals=root,ubuntu" }}
 {{ .Data.signed_key }}
@@ -200,8 +201,9 @@ job "temporal-backup-worker" {
 
       env {
         TEMPORAL_ADDRESS  = "temporal-server.service.consul:7233"
-        NOMAD_ADDR        = "https://nomad.service.consul:4646"
-        NOMAD_CACERT      = "/etc/ssl/certs/nomad-ca.pem"
+        NOMAD_ADDR            = "https://192.168.68.61:4646"
+        NOMAD_TLS_SERVER_NAME = "server.global.nomad"
+        NOMAD_CACERT          = "/etc/ssl/certs/nomad-ca.pem"
         VAULT_CACERT      = "/etc/ssl/certs/vault-ca.pem"
         SSH_KEY_PATH      = "/root/.ssh/id_ed25519"
         SSH_CERT_PATH     = "/root/.ssh/id_ed25519-cert.pub"

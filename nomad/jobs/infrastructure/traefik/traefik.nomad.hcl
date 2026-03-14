@@ -30,7 +30,7 @@ job "traefik" {
   meta {
     managed_by  = "nomad"
     project     = "munchbox"
-    version     = "3.6.7"
+    version     = "3.6.9"
     tier        = "tier-0"
   }
 
@@ -123,7 +123,7 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.6.7"
+        image        = "traefik:v3.6.9"
         network_mode = "host"
         ports        = ["http", "https", "dashboard", "gitssh"]
         volumes      = [
@@ -436,6 +436,7 @@ EOH
   [http.middlewares.oauth2-proxy.forwardAuth]
     address              = "http://oauth2-proxy.service.consul:4180/oauth2/auth"
     trustForwardHeader   = true
+    maxResponseBodySize  = 1048576
     authResponseHeaders  = [
       "X-Auth-Request-User",
       "X-Auth-Request-Email",

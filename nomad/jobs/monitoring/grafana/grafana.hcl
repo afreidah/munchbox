@@ -10,9 +10,9 @@
 
 # --- Core job configuration ---
 name         = "grafana"
-image        = "grafana/grafana:12.3.0"
+image        = "grafana/grafana:12.4.1"
 port         = 3030
-host_network = false
+host_network = true
 size         = "medium"
 vault        = true
 

@@ -723,6 +723,7 @@ locals {
       "pia",
       "mullvad",
       "cloudflared",
+      "cloudflare",
       "vaultwarden",
       "temporal",
       "trivy-dashboard",
@@ -769,6 +770,16 @@ locals {
           "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO \"{{name}}\";",
           "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO \"{{name}}\";"
         ]
+      }
+    }
+
+    # --- Workload Vault Roles (per-job JWT auth) ---
+    workload_vault_roles = {
+      "s3-orchestrator" = {
+        policies = ["nomad-workloads", "s3-orchestrator-transit"]
+        bound_claims = {
+          nomad_job_id = "s3-orchestrator"
+        }
       }
     }
 
@@ -1215,6 +1226,10 @@ generate "providers" {
           source  = "ryanwholey/pihole"
           version = "~> 0.2"
         }
+        ibm = {
+          source  = "IBM-Cloud/ibm"
+          version = "~> 1.89"
+        }
       }
     }
 
@@ -1279,6 +1294,11 @@ generate "providers" {
       alias    = "secondary"
       url      = "http://192.168.68.64"
       password = "${get_env("TF_VAR_pihole_password_secondary", "")}"
+    }
+
+    provider "ibm" {
+      # Uses IC_API_KEY env var
+      region = "${get_env("IBM_REGION", "us-south")}"
     }
   EOF
 }

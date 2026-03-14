@@ -161,33 +161,9 @@ scrape_configs:
         replacement: "vault"
 
   # -----------------------------------------------------------------------
-  # Node Exporter - Dynamic discovery via Consul
+  # Node Exporter - now handled by Alloy via prometheus.exporter.unix
+  # and remote_write to Prometheus (job_name=node-exporter preserved)
   # -----------------------------------------------------------------------
-  - job_name: "node-exporter"
-    scrape_interval: 15s
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "192.168.68.61:8500"
-        scheme: "http"
-        services: ["node-exporter"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      # First, set address from node address (fallback)
-      - source_labels: ["__meta_consul_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      # Override with service address if it exists (non-empty)
-      - source_labels:
-          ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        regex: "([^:]+):(.*)"
-        replacement: "$1:$2"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - source_labels: ["__meta_consul_dc"]
-        target_label: "consul_dc"
 
   # -----------------------------------------------------------------------
   # Cloudflared Tunnel metrics - Consul service discovery
@@ -356,7 +332,8 @@ scrape_configs:
           - "https://resume.alexfreidah.com/"
           - "https://k3s-status.alexfreidah.com/"
           # Public munchbox.cc services (via Cloudflare tunnel, no Authentik)
-          - "https://jellyfin.munchbox.cc/"
+          - "https://jellyfin.munchbox.cc/web/"
+          - "https://s3-orchestrator.munchbox.cc/"
     relabel_configs:
       - source_labels: ["__address__"]
         target_label: "__param_target"

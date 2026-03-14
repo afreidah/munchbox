@@ -181,6 +181,21 @@ variable "vault_policies" {
 }
 
 # -------------------------------------------------------------------------
+# WORKLOAD VAULT ROLES
+# -------------------------------------------------------------------------
+
+variable "workload_vault_roles" {
+  description = "Map of dedicated JWT auth roles for specific Nomad workloads"
+  type = map(object({
+    policies      = list(string)
+    bound_claims  = optional(map(string), {})
+    token_ttl     = optional(number, 3600)
+    token_max_ttl = optional(number, 86400)
+  }))
+  default = {}
+}
+
+# -------------------------------------------------------------------------
 # SERVICE TOKENS
 # -------------------------------------------------------------------------
 

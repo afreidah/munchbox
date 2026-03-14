@@ -19,8 +19,7 @@ size         = "tiny"
 
 # --- Run on large Oracle Cloud nodes ---
 constraints = [
-  { attribute = "$${meta.cloud}", value = "oracle" },
-  { attribute = "$${meta.size}", value = "large" }
+  { attribute = "$${meta.cloud}", value = "oracle" }
 ]
 
 # --- Health check ---

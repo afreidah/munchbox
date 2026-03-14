@@ -155,7 +155,18 @@ job "haproxy" {
       provider = "consul"
 
       tags = [
-        "traefik.enable=false",
+        "traefik.enable=true",
+        # HTTPS router (direct LAN access)
+        "traefik.http.routers.haproxy-stats.rule=Host(`haproxy.munchbox.cc`)",
+        "traefik.http.routers.haproxy-stats.entrypoints=websecure",
+        "traefik.http.routers.haproxy-stats.tls=true",
+        "traefik.http.routers.haproxy-stats.tls.certresolver=letsencrypt",
+        "traefik.http.routers.haproxy-stats.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
+        # HTTP router (Cloudflare tunnel)
+        "traefik.http.routers.haproxy-stats-http.rule=Host(`haproxy.munchbox.cc`)",
+        "traefik.http.routers.haproxy-stats-http.entrypoints=web",
+        "traefik.http.routers.haproxy-stats-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file",
+        "traefik.http.services.haproxy-stats.loadbalancer.server.port=8405",
         "haproxy",
         "stats"
       ]
@@ -240,7 +251,7 @@ global
 resolvers consul
     nameserver consul 127.0.0.1:8600
     accepted_payload_size 8192
-    hold valid 5s
+    hold valid 30s
     resolve_retries 3
     timeout resolve 1s
     timeout retry 1s
@@ -262,6 +273,7 @@ defaults
 frontend stats
     mode http
     bind *:{{ env "NOMAD_PORT_stats" }}
+    no log
     http-request use-service prometheus-exporter if { path /metrics }
     stats enable
     stats uri /stats
@@ -278,7 +290,7 @@ frontend postgres_frontend
 backend postgres_backend
     option httpchk GET /primary
     http-check expect status 200
-    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+    default-server inter 10s fall 3 rise 2 on-marked-down shutdown-sessions
     server-template pg 2 patroni.service.consul:5432 resolvers consul resolve-prefer ipv4 check port 8008 init-addr none
 
 # -----------------------------------------------------------------------

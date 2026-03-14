@@ -20,6 +20,15 @@ variable "pihole_2" {
   default = "192.168.68.64"
 }
 
+variable "cloudflare" {
+  type    = string
+  default = "1.1.1.1"
+}
+variable "google" {
+  type    = string
+  default = "8.8.8.8"
+}
+
 job "coredns" {
   region      = "global"
   datacenters = ["munchbox"]

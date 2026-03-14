@@ -92,3 +92,32 @@ resource "vault_jwt_auth_backend_role" "nomad_workloads" {
   token_max_ttl  = 86400
   token_policies = ["nomad-workloads"]
 }
+
+# -------------------------------------------------------------------------
+# WORKLOAD-SPECIFIC JWT ROLES
+# -------------------------------------------------------------------------
+# Per-job JWT roles with bound_claims so only the named Nomad job receives
+# the additional policies (e.g. Transit encrypt/decrypt).
+
+resource "vault_jwt_auth_backend_role" "workload" {
+  for_each = var.jwt_auth_enabled ? var.workload_vault_roles : {}
+
+  backend                 = vault_jwt_auth_backend.nomad[0].path
+  role_name               = each.key
+  role_type               = "jwt"
+  bound_audiences         = ["vault.io"]
+  user_claim              = "/nomad_job_id"
+  user_claim_json_pointer = true
+  bound_claims            = each.value.bound_claims
+
+  claim_mappings = {
+    "nomad_namespace" = "nomad_namespace"
+    "nomad_job_id"    = "nomad_job_id"
+    "nomad_task"      = "nomad_task"
+  }
+
+  token_type     = "service"
+  token_ttl      = each.value.token_ttl
+  token_max_ttl  = each.value.token_max_ttl
+  token_policies = each.value.policies
+}

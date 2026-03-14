@@ -1,0 +1,31 @@
+I, [2026-03-08T17:22:29.119224 #1756625]  INFO -- Kitchen: -----> Starting Test Kitchen (v3.9.0)
+E, [2026-03-08T17:22:29.119958 #1756625] ERROR -- Kitchen: ------Exception-------
+E, [2026-03-08T17:22:29.120285 #1756625] ERROR -- Kitchen: Class: Kitchen::UserError
+E, [2026-03-08T17:22:29.120296 #1756625] ERROR -- Kitchen: Message: Kitchen YAML file /home/afreidah/tools/munchbox/nomad/kitchen.yml does not exist.
+E, [2026-03-08T17:22:29.120303 #1756625] ERROR -- Kitchen: ----------------------
+E, [2026-03-08T17:22:29.120310 #1756625] ERROR -- Kitchen: ------Backtrace-------
+E, [2026-03-08T17:22:29.120317 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/loader/yaml.rb:65:in 'Kitchen::Loader::YAML#read'
+E, [2026-03-08T17:22:29.120323 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/config.rb:153:in 'Kitchen::Config#data'
+E, [2026-03-08T17:22:29.120330 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/config.rb:131:in 'Kitchen::Config#suites'
+E, [2026-03-08T17:22:29.120336 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/config.rb:183:in 'Kitchen::Config#filter_instances'
+E, [2026-03-08T17:22:29.120343 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/config.rb:142:in 'Kitchen::Config#build_instances'
+E, [2026-03-08T17:22:29.120350 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/config.rb:116:in 'Kitchen::Config#instances'
+E, [2026-03-08T17:22:29.120356 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/command.rb:109:in 'Kitchen::Command::Base#filtered_instances'
+E, [2026-03-08T17:22:29.120362 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/command.rb:139:in 'Kitchen::Command::Base#parse_subcommand'
+E, [2026-03-08T17:22:29.120368 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/command/action.rb:34:in 'block in Kitchen::Command::Action#call'
+E, [2026-03-08T17:22:29.120822 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/benchmark-0.4.1/lib/benchmark.rb:305:in 'Benchmark.measure'
+E, [2026-03-08T17:22:29.120844 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/command/action.rb:33:in 'Kitchen::Command::Action#call'
+E, [2026-03-08T17:22:29.120961 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/cli.rb:52:in 'Kitchen::CLI::PerformCommand#perform'
+E, [2026-03-08T17:22:29.120971 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/cli.rb:198:in 'block (2 levels) in <class:CLI>'
+E, [2026-03-08T17:22:29.120978 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/thor-1.4.0/lib/thor/command.rb:28:in 'Thor::Command#run'
+E, [2026-03-08T17:22:29.121152 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/thor-1.4.0/lib/thor/invocation.rb:127:in 'Thor::Invocation#invoke_command'
+E, [2026-03-08T17:22:29.121162 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/thor-1.4.0/lib/thor.rb:538:in 'Thor.dispatch'
+E, [2026-03-08T17:22:29.121175 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/thor-1.4.0/lib/thor/base.rb:584:in 'Thor::Base::ClassMethods#start'
+E, [2026-03-08T17:22:29.121184 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/bin/kitchen:11:in 'block in <top (required)>'
+E, [2026-03-08T17:22:29.121365 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/lib/kitchen/errors.rb:183:in 'Kitchen.with_friendly_errors'
+E, [2026-03-08T17:22:29.121378 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/gems/test-kitchen-3.9.0/bin/kitchen:11:in '<top (required)>'
+E, [2026-03-08T17:22:29.121385 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/bin/kitchen:25:in 'Kernel#load'
+E, [2026-03-08T17:22:29.121400 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/bin/kitchen:25:in '<main>'
+E, [2026-03-08T17:22:29.121407 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/bin/ruby_executable_hooks:22:in 'Kernel#eval'
+E, [2026-03-08T17:22:29.121414 #1756625] ERROR -- Kitchen: /home/afreidah/.rvm/gems/ruby-3.4.5/bin/ruby_executable_hooks:22:in '<main>'
+E, [2026-03-08T17:22:29.121420 #1756625] ERROR -- Kitchen: ----End Backtrace-----
