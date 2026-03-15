@@ -1,16 +1,16 @@
 # -------------------------------------------------------------------------------
-# s3-orchestrator-webpage — Project Documentation Website
+# personal-site — Landing Page for alexfreidah.com
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Serves the s3-orchestrator Hugo project website. Public-facing via
-# Cloudflare tunnel, no oauth2-proxy.
+# Serves the personal landing page. Public-facing via Cloudflare tunnel.
+# Replaces the previous apex domain redirect to resume.alexfreidah.com.
 # -------------------------------------------------------------------------------
 
 # --- General Settings ---
-name  = "s3-orchestrator-webpage"
+name  = "personal-site"
 type  = "service"
-image = "registry.munchbox.cc/s3-orchestrator-web:v0.17.12"
+image = "registry.munchbox.cc/personal-site:v0.0.1"
 port  = 80
 node  = "any"
 host_network = false
@@ -33,11 +33,10 @@ health_path = "/"
 # --- Service tags ---
 tags = [
   "web",
-  "s3-orchestrator",
-  "documentation",
-  "traefik.http.routers.s3orch-web.rule=Host(`s3-orchestrator.munchbox.cc`)",
-  "traefik.http.routers.s3orch-web.entrypoints=web",
-  "traefik.http.routers.s3orch-web.service=s3-orchestrator-webpage",
-  "traefik.http.routers.s3orch-web.priority=100",
-  "traefik.http.routers.s3orch-web.middlewares=umami-tracking@file",
+  "personal",
+  "traefik.http.routers.alex-web.rule=Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)",
+  "traefik.http.routers.alex-web.entrypoints=web",
+  "traefik.http.routers.alex-web.service=personal-site",
+  "traefik.http.routers.alex-web.middlewares=resume-sec@file,umami-tracking@file",
+  "traefik.http.routers.alex-web.priority=101",
 ]

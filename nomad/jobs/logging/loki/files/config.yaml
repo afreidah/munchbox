@@ -39,6 +39,9 @@ schema_config:
 ingester:
   chunk_idle_period: 3m
   max_chunk_age: 1h
+  chunk_target_size: 1572864    # 1.5 MB target before flushing
+  wal:
+    replay_memory_ceiling: 512MB
 
 # Storage configuration
 storage_config:

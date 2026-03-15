@@ -3,8 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Serves static resume website with custom routing for both resume subdomain
-# and apex domain, all redirecting to canonical resume.alexfreidah.com.
+# Serves static resume website on resume.alexfreidah.com.
+# Apex domain (alexfreidah.com) is handled by the personal-site job.
 # -------------------------------------------------------------------------------
 
 # --- General Settings ---
@@ -41,10 +41,4 @@ tags = [
   "traefik.http.routers.resume-public.service=nginx-resume",
   "traefik.http.routers.resume-public.middlewares=redirect-resume-www@file,resume-sec@file,resume-ratelimit@file,umami-tracking@file",
   "traefik.http.routers.resume-public.priority=100",
-  # Apex domain
-  "traefik.http.routers.resume-apex.rule=Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)",
-  "traefik.http.routers.resume-apex.entrypoints=web",
-  "traefik.http.routers.resume-apex.service=nginx-resume",
-  "traefik.http.routers.resume-apex.middlewares=redirect-apex-to-resume@file,resume-sec@file,umami-tracking@file",
-  "traefik.http.routers.resume-apex.priority=101",
 ]

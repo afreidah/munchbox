@@ -16,8 +16,8 @@ static_port  = 3100
 host_network = true
 node         = "nomad-client-02"
 size         = "medium"
-memory       = 768
-memory_max   = 1536
+memory       = 1024
+memory_max   = 2048
 
 # --- Storage (manual pre-creation, no init task) ---
 volumes = [

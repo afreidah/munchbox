@@ -114,7 +114,7 @@ job "cloudflare-log-collector" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector:v0.1.1"
+        image              = "registry.munchbox.cc/cloudflare-log-collector:v0.1.7"
         image_pull_timeout = "5m"
         network_mode       = "host"
         args               = ["-config", "/secrets/config.yaml"]
@@ -130,8 +130,12 @@ job "cloudflare-log-collector" {
         data        = <<-EOF
 cloudflare:
   api_token: "{{ with secret "secret/data/cloudflare" }}{{ .Data.data.api_token }}{{ end }}"
-  zone_id: "{{ with secret "secret/data/cloudflare" }}{{ .Data.data.zone_id }}{{ end }}"
-  poll_interval: 5m
+  zones:
+    - id: "bd3f7236466255155ab59b9d21cd88fd"
+      name: "munchbox.cc"
+    - id: "79e647e591f69cc27254bf4771464619"
+      name: "alexfreidah.com"
+  poll_interval: 1m
   backfill_window: 1h
 
 loki:

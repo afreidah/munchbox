@@ -271,6 +271,24 @@ prometheus.relabel "node_instance" {
   }
 }
 
+// -------------------------------------------------------------------------
+// ORACLE WATCHDOG MONITOR METRICS
+// -------------------------------------------------------------------------
+
+// Only scrape the oracle-watchdog monitor on Oracle Cloud nodes where it
+// runs as a systemd service.
+{{ if eq (env "meta.cloud") "oracle" }}
+prometheus.scrape "oracle_watchdog" {
+  targets = [{
+    __address__ = "localhost:9104",
+  }]
+  forward_to      = [prometheus.relabel.node_instance.receiver]
+  scrape_interval = "15s"
+  scrape_timeout  = "5s"
+  job_name        = "oracle-watchdog"
+}
+{{ end }}
+
 prometheus.remote_write "prometheus" {
   endpoint {
     url = "http://prometheus.service.consul:9090/api/v1/write"

@@ -488,7 +488,7 @@ scrape_configs:
     consul_sd_configs:
       - server: "192.168.68.61:8500"
         scheme: "http"
-        services: ["oracle-watchdog"]
+        services: ["oracle-watchdog-agent"]
         datacenter: "munchbox"
         token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
@@ -504,6 +504,31 @@ scrape_configs:
         target_label: "instance"
       - target_label: "service"
         replacement: "oracle-watchdog"
+
+  # -----------------------------------------------------------------------
+  # Oracle Watchdog Monitor - Session heartbeat metrics from Oracle nodes
+  # -----------------------------------------------------------------------
+  - job_name: "oracle-watchdog-monitor"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["oracle-watchdog"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_address", "__meta_consul_service_port"]
+        separator: ":"
+        regex: "([^:]+):(.*)"
+        replacement: "$1:$2"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "oracle-watchdog-monitor"
 
   # -----------------------------------------------------------------------
   # Aptly - Debian package repository metrics
@@ -546,6 +571,26 @@ scrape_configs:
         target_label: "instance"
       - target_label: "__address__"
         replacement: "pve-exporter.service.consul:9221"
+
+  # -----------------------------------------------------------------------
+  # Cloudflare Log Collector - Analytics ingestion metrics
+  # -----------------------------------------------------------------------
+  - job_name: "cloudflare-log-collector"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "192.168.68.61:8500"
+        scheme: "http"
+        services: ["cloudflare-log-collector"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      - target_label: "service"
+        replacement: "cloudflare-log-collector"
 
   # -----------------------------------------------------------------------
   # S3 Orchestrator - Unified S3 endpoint metrics

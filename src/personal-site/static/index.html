@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alex Freidah</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 900px;
+      width: 100%;
+      padding: 3rem 2rem;
+    }
+
+    /* --- Header --- */
+    .header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 800;
+      font-size: 3.5rem;
+      color: #f8fafc;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .header .tagline {
+      font-size: 1.2rem;
+      color: #93c5fd;
+      margin-bottom: 1.5rem;
+    }
+
+    .header .links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .header .links a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 1.1rem;
+      transition: color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .header .links a:hover {
+      color: #93c5fd;
+    }
+
+    /* --- Sections --- */
+    hr {
+      border: none;
+      border-top: 1px solid #334155;
+      margin: 3rem 0;
+    }
+
+    h2 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.8rem;
+      color: #e2b07a;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    /* --- Project Cards --- */
+    .projects {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .project-card {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #e2e8f0;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .project-card:hover {
+      background: #263548;
+      border-color: #475569;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .project-card .logo-wrap {
+      width: 120px;
+      min-width: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+    }
+
+    .project-card img {
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .project-card .info strong {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #93c5fd;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .project-card .info p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    .project-card:hover .info p {
+      color: #cbd5e1;
+    }
+
+    /* --- Tech Stack --- */
+    .tech-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .tech-badge {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.9rem;
+      color: #94a3b8;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .tech-badge:hover {
+      border-color: #93c5fd;
+      color: #93c5fd;
+    }
+
+    /* --- Section Intro --- */
+    .section-intro {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 1.5rem;
+      color: #94a3b8;
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    /* --- Footer --- */
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding: 2rem 0;
+      color: #475569;
+      font-size: 0.85rem;
+    }
+
+    .footer a {
+      color: #64748b;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      color: #94a3b8;
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 600px) {
+      .header h1 { font-size: 2.5rem; }
+      .project-card { flex-direction: column; text-align: center; }
+      .project-card img { width: 60px; height: 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>Alex Freidah</h1>
+      <p class="tagline">Infrastructure &amp; Platform Engineering</p>
+      <div class="links">
+        <a href="https://resume.alexfreidah.com"><i class="fas fa-file-alt"></i> Resume</a>
+        <a href="https://github.com/afreidah"><i class="fab fa-github"></i> GitHub</a>
+        <a href="https://www.linkedin.com/in/alex-freidah/"><i class="fab fa-linkedin"></i> LinkedIn</a>
+      </div>
+    </div>
+
+    <hr>
+
+    <h2>Projects</h2>
+
+    <p class="section-intro">I run a hybrid homelab cluster that spans local bare-metal nodes and free-tier cloud VMs, orchestrated with Nomad, Consul, and Vault. These are tools I built in Go to help me get the most out of free-tier cloud resources I could add to my homelab cluster. The oracle-watchdog and cloudflare-log-collector are pretty simple, but the s3-orchestrator started simple and has since grown into a much larger project with larger goals.</p>
+
+    <div class="projects">
+      <a class="project-card" href="https://s3-orchestrator.munchbox.cc">
+        <div class="logo-wrap"><img src="/images/s3-orchestrator.png" alt="s3-orchestrator" style="width: 100px;"></div>
+        <div class="info">
+          <strong>s3-orchestrator</strong>
+          <p>Unified S3-compatible storage across multiple backends. Stack free-tier allocations from multiple providers into a single endpoint with per-backend quotas, cross-backend replication, and envelope encryption.</p>
+        </div>
+      </a>
+      <a class="project-card" href="https://cloudflare-log-collector.munchbox.cc">
+        <div class="logo-wrap"><img src="/images/cloudflare-log-collector.png" alt="cloudflare-log-collector" style="width: 180px;"></div>
+        <div class="info">
+          <strong>cloudflare-log-collector</strong>
+          <p>Cloudflare analytics collector for self-hosted observability stacks. Polls the GraphQL API for firewall events and HTTP traffic stats, ships them to Loki and Prometheus with OpenTelemetry tracing.</p>
+        </div>
+      </a>
+      <a class="project-card" href="https://oracle-watchdog.munchbox.cc">
+        <div class="logo-wrap"><img src="/images/oracle-watchdog.png" alt="oracle-watchdog" style="width: 200px;"></div>
+        <div class="info">
+          <strong>oracle-watchdog</strong>
+          <p>Distributed monitoring and recovery for Oracle Cloud free-tier instances. Detects unresponsive nodes via Consul session heartbeats and automatically triggers OCI stop/start cycles.</p>
+        </div>
+      </a>
+    </div>
+
+    <hr>
+
+    <h2>What I Work With</h2>
+
+    <div class="tech-grid">
+      <span class="tech-badge">Go</span>
+      <span class="tech-badge">Nomad</span>
+      <span class="tech-badge">Consul</span>
+      <span class="tech-badge">Vault</span>
+      <span class="tech-badge">Terraform</span>
+      <span class="tech-badge">Ansible</span>
+      <span class="tech-badge">Docker</span>
+      <span class="tech-badge">WireGuard</span>
+      <span class="tech-badge">Prometheus</span>
+      <span class="tech-badge">Grafana</span>
+      <span class="tech-badge">Loki</span>
+      <span class="tech-badge">Tempo</span>
+      <span class="tech-badge">PostgreSQL</span>
+      <span class="tech-badge">Traefik</span>
+      <span class="tech-badge">Cloudflare</span>
+      <span class="tech-badge">Oracle Cloud</span>
+      <span class="tech-badge">Proxmox</span>
+      <span class="tech-badge">Linux</span>
+    </div>
+
+    <div class="footer">
+      <p>Self-hosted on a hybrid homelab cluster &mdash; <a href="https://github.com/afreidah">afreidah</a></p>
+    </div>
+
+  </div>
+</body>
+</html>

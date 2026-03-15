@@ -1,16 +1,16 @@
 # -------------------------------------------------------------------------------
-# s3-orchestrator-webpage — Project Documentation Website
+# cloudflare-log-collector-webpage — Project Documentation Website
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Serves the s3-orchestrator Hugo project website. Public-facing via
+# Serves the cloudflare-log-collector Hugo project website. Public-facing via
 # Cloudflare tunnel, no oauth2-proxy.
 # -------------------------------------------------------------------------------
 
 # --- General Settings ---
-name  = "s3-orchestrator-webpage"
+name  = "cloudflare-log-collector-webpage"
 type  = "service"
-image = "registry.munchbox.cc/s3-orchestrator-web:v0.17.12"
+image = "registry.munchbox.cc/cloudflare-log-collector-web:v0.1.11"
 port  = 80
 node  = "any"
 host_network = false
@@ -33,11 +33,11 @@ health_path = "/"
 # --- Service tags ---
 tags = [
   "web",
-  "s3-orchestrator",
+  "cloudflare-log-collector",
   "documentation",
-  "traefik.http.routers.s3orch-web.rule=Host(`s3-orchestrator.munchbox.cc`)",
-  "traefik.http.routers.s3orch-web.entrypoints=web",
-  "traefik.http.routers.s3orch-web.service=s3-orchestrator-webpage",
-  "traefik.http.routers.s3orch-web.priority=100",
-  "traefik.http.routers.s3orch-web.middlewares=umami-tracking@file",
+  "traefik.http.routers.cflog-web.rule=Host(`cloudflare-log-collector.munchbox.cc`)",
+  "traefik.http.routers.cflog-web.entrypoints=web",
+  "traefik.http.routers.cflog-web.service=cloudflare-log-collector-webpage",
+  "traefik.http.routers.cflog-web.priority=100",
+  "traefik.http.routers.cflog-web.middlewares=umami-tracking@file",
 ]
