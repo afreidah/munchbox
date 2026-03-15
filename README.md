@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="munchbox.png" alt="munchbox" width="400">
+
 # Munchbox Cloud — Homelab Infrastructure Platform
 
 ### Production-Grade Self-Hosted Infrastructure on HashiCorp Stack
