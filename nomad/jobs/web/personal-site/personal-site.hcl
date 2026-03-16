@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "personal-site"
 type  = "service"
-image = "registry.munchbox.cc/personal-site:v0.0.2"
+image = "registry.munchbox.cc/personal-site:v0.0.3"
 port  = 80
 node  = "any"
 host_network = false
