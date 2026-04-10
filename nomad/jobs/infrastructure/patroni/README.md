@@ -66,7 +66,7 @@ via Vault PKI certificates (pki_int/issue/postgres).
 
 **Required by:**
 - HAProxy (proxies connections from apps to the current primary)
-- Nextcloud, Temporal Server, Forgejo, Umami, Trivy Dashboard, Immich (via HAProxy)
+- Nextcloud, Temporal Server, Forgejo, Umami, Trivy Dashboard, Immich, g3 (via HAProxy)
 
 ## Notable Configuration
 

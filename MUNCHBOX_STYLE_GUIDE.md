@@ -245,8 +245,11 @@ package main
 - File headers use 79-char dividers with `//`
 - Major sections use 73-char dividers with `//`
 - Single-line markers: `// --- description ---`
-- Standard Go doc comments for exported types/functions (placed directly above)
+- **Full godoc compliance** - every exported AND unexported function, method, type, and constant gets a `//` doc comment placed directly above the declaration
+- Doc comments start with the identifier name: `// PutObject uploads...`, `// wrapReader returns...`
+- Doc comments describe behavior and purpose, not implementation details
 - 1 tab indentation (Go standard)
+- Import groups: stdlib, internal packages, external packages (separated by blank lines)
 
 **Major Section Example:**
 ```go
@@ -254,6 +257,8 @@ package main
 // HTTP HANDLERS
 // -------------------------------------------------------------------------
 
+// handlePut processes an S3 PUT request and writes the object to the
+// selected backend.
 func (s *Server) handlePut(ctx context.Context, w http.ResponseWriter) {
     // ...
 }

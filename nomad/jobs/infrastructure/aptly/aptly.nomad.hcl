@@ -308,10 +308,10 @@ if ! curl -sf -u "$AUTH" "$API/publish/./stable" >/dev/null 2>&1; then
       "$API/repos/munchbox/snapshots"
   fi
 
-  # Publish snapshot
-  echo "Publishing snapshot..."
+  # Publish snapshot to S3
+  echo "Publishing snapshot to S3..."
   curl -sf -u "$AUTH" -X POST -H 'Content-Type: application/json' \
-    --data "{\"SourceKind\":\"snapshot\",\"Sources\":[{\"Name\":\"$SNAP\"}],\"Distribution\":\"stable\",\"Architectures\":[\"amd64\",\"arm64\"],\"Signing\":{\"Skip\":true}}" \
+    --data "{\"SourceKind\":\"snapshot\",\"Sources\":[{\"Name\":\"$SNAP\"}],\"Distribution\":\"stable\",\"Architectures\":[\"amd64\",\"arm64\"],\"Signing\":{\"Skip\":true},\"Storage\":\"s3:munchbox:\"}" \
     "$API/publish/:" || echo "Publish may already exist or GPG signing required"
 fi
 
@@ -377,7 +377,17 @@ echo "Setup complete"
   "ppaDistributorID": "ubuntu",
   "ppaCodename": "",
   "enableMetricsEndpoint": true,
-  "S3PublishEndpoints": {},
+  "S3PublishEndpoints": {
+    "munchbox": {
+      "region": "us-east-1",
+      "bucket": "aptly",
+      "endpoint": "http://s3-orchestrator.service.consul:9000",
+      "awsAccessKeyID": "{{ with secret "secret/data/aptly" }}{{ .Data.data.s3_access_key }}{{ end }}",
+      "awsSecretAccessKey": "{{ with secret "secret/data/aptly" }}{{ .Data.data.s3_secret_key }}{{ end }}",
+      "s3ForcePathStyle": true,
+      "disableMultiDel": false
+    }
+  },
   "SwiftPublishEndpoints": {}
 }
         EOF

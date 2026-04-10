@@ -13,6 +13,16 @@ terraform {
   source = "${get_repo_root()}/infrastructure/modules//bootstrap"
 }
 
+dependency "networking" {
+  config_path = "${dirname(get_original_terragrunt_dir())}/networking"
+
+  mock_outputs = {
+    subnet_id         = "mock-subnet-id"
+    security_group_id = "mock-security-group-id"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate"]
+}
+
 locals {
   # Get root config
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
@@ -64,10 +74,10 @@ inputs = merge(
     node_meta  = try(local.node_config.node_meta, {})
 
     # Network config
-    create_network              = try(local.node_config.create_network, true)
+    create_network              = try(local.node_config.create_network, false)
     vpc_cidr                    = try(local.node_config.vpc_cidr, local.root.locals.network_cidrs[local.provider_type])
-    existing_subnet_id          = try(local.node_config.existing_subnet_id, null)
-    existing_security_group_id  = try(local.node_config.existing_security_group_id, null)
+    existing_subnet_id          = dependency.networking.outputs.subnet_id
+    existing_security_group_id  = dependency.networking.outputs.security_group_id
     existing_security_group_ids = try(local.node_config.existing_security_group_ids, null)
 
     # Provider-specific configs

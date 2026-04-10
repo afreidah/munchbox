@@ -45,11 +45,11 @@ tags = [
   "temporal",
   "ui",
   "monitoring",
-  "traefik.http.routers.temporal-ui.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
+  "traefik.http.routers.temporal-ui.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.temporal-ui-http.rule=Host(`temporal.munchbox.cc`)",
   "traefik.http.routers.temporal-ui-http.entrypoints=web",
-  "traefik.http.routers.temporal-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file"
+  "traefik.http.routers.temporal-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file"
 ]
 
 # --- DNS configuration ---

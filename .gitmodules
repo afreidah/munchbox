@@ -19,3 +19,9 @@
 [submodule "src/oracle-watchdog"]
 	path = src/oracle-watchdog
 	url = https://github.com/afreidah/oracle-watchdog.git
+[submodule "nomad/src/nomad-temporal-jobs"]
+	path = nomad/src/nomad-temporal-jobs
+	url = https://github.com/afreidah/nomad-temporal-jobs
+[submodule "src/nomad-temporal-jobs"]
+	path = src/nomad-temporal-jobs
+	url = https://github.com/afreidah/nomad-temporal-jobs.git

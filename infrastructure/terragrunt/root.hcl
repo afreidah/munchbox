@@ -731,6 +731,7 @@ locals {
       "forgejo-runner",
       "umami",
       "s3-orchestrator",
+      "flight-fetcher",
       "patroni",
       "oauth2-proxy",
       "traefik-log-dashboard",
@@ -748,7 +749,8 @@ locals {
       "radarr",
       "lidarr",
       "readarr",
-      "prowlarr"
+      "prowlarr",
+      "g3"
     ]
 
     # --- Database Roles (disabled by default) ---
@@ -779,6 +781,12 @@ locals {
         policies = ["nomad-workloads", "s3-orchestrator-transit"]
         bound_claims = {
           nomad_job_id = "s3-orchestrator"
+        }
+      }
+      "flight-fetcher" = {
+        policies = ["nomad-workloads"]
+        bound_claims = {
+          nomad_job_id = "flight-fetcher"
         }
       }
     }

@@ -30,9 +30,8 @@ oci_config:
   availability_domain: "AD-1"
   shape: "VM.Standard.E2.1.Micro"
 
-# Network - this node creates the VCN
-create_network: true
-vpc_cidr: "10.100.0.0/16"
+# Network - managed by oci/networking
+create_network: false
 
 # Additional tags
 tags:

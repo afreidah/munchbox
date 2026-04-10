@@ -112,7 +112,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.17.11"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.39.13"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -120,7 +120,9 @@ job "s3-orchestrator" {
         volumes            = ["secrets/config.yaml:/secrets/config.yaml:ro", "secrets/vault-ca.pem:/secrets/vault-ca.pem:ro"]
       }
       env {
-        TZ = "America/Los_Angeles"
+        TZ         = "America/Los_Angeles"
+        GOMAXPROCS = "1"
+        GOMEMLIMIT = "900MiB"
       }
       template {
         data        = <<EOH
@@ -137,6 +139,10 @@ buckets:
     credentials:
       - access_key_id: "{{ .Data.data.access_key }}"
         secret_access_key: "{{ .Data.data.secret_key }}"
+  - name: "aptly"
+    credentials:
+      - access_key_id: "{{ .Data.data.aptly_access_key }}"
+        secret_access_key: "{{ .Data.data.aptly_secret_key }}"
 
 database:
   host: "haproxy-postgres.service.consul"
@@ -214,6 +220,14 @@ backends:
     quota_bytes: 10737418240       # 10 GB storage
     egress_byte_limit: 32212254720 # 30 GB/month egress (1 GB/day × 30)
     api_request_limit: 75000       # 2,500/day × 30 Class B/C
+  - name: "g3"
+    endpoint: "{{ .Data.data.g3_s3_endpoint }}"
+    region: "us-east-1"
+    bucket: "{{ .Data.data.g3_s3_bucket }}"
+    access_key_id: "{{ .Data.data.g3_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.g3_s3_secret_key }}"
+    force_path_style: true
+    quota_bytes: 16106127360      # 15 GB
 
 
 circuit_breaker:
@@ -226,30 +240,58 @@ backend_circuit_breaker:
   failure_threshold: 3
   open_timeout: 15s
 
+integrity:
+  enabled: true
+  verify_on_read: true
+  scrubber_interval: "24h"
+  scrubber_batch_size: 25
+
 encryption:
   enabled: true
   vault:
     address: "https://vault.service.consul:8200"
-    token: "${VAULT_TOKEN}"
+    token_file: "/secrets/vault_token"
     key_name: "s3-orchestrator"
     mount_path: "transit"
     ca_cert: "/secrets/vault-ca.pem"
 
 rate_limit:
   enabled: true
-  requests_per_sec: 100
-  burst: 200
+  requests_per_sec: 1500
+  burst: 2000
   trusted_proxies:
     - "10.0.0.0/8"
     - "172.16.0.0/12"
     - "192.168.0.0/16"
     - "127.0.0.1/32"
 
+admin:
+  token: "{{ .Data.data.admin_token }}"
+
+cache:
+  enabled: true
+  max_size: "256MB"
+  max_object_size: "5MB"
+  ttl: "5m"
+
+reconcile:
+  enabled: true
+  interval: "24h"
+
+cleanup_queue:
+  concurrency: 10
+  multipart_stale_timeout: "24h"
+
+replication:
+  factor: 2
+  batch_size: 50
+  worker_interval: "30s"
+
 ui:
   enabled: true
   admin_key: "{{ .Data.data.ui_admin_key }}"
   admin_secret: "{{ .Data.data.ui_admin_secret }}"
-
+  session_secret: "{{ .Data.data.session_secret }}"
   force_secure_cookies: true
 
 usage_flush:
@@ -284,11 +326,10 @@ EOH
 
       # --- Resources ---
   		resources {
- 		    cpu        = 1024
+ 		    cpu        = 4000
  		    memory     = 1024
  		    memory_max = 2048
  		  }
-
 
       # --- Termination ---
       kill_timeout = "30s"

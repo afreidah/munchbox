@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "oracle-watchdog-webpage"
 type  = "service"
-image = "registry.munchbox.cc/oracle-watchdog-web:v0.0.7"
+image = "registry.munchbox.cc/oracle-watchdog-web:v1.3.0"
 port  = 80
 node  = "any"
 host_network = false
@@ -39,5 +39,4 @@ tags = [
   "traefik.http.routers.owdog-web.entrypoints=web",
   "traefik.http.routers.owdog-web.service=oracle-watchdog-webpage",
   "traefik.http.routers.owdog-web.priority=100",
-  "traefik.http.routers.owdog-web.middlewares=umami-tracking@file",
 ]

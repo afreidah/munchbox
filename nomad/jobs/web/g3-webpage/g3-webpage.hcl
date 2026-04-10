@@ -1,0 +1,42 @@
+# -------------------------------------------------------------------------------
+# g3-webpage — Project Documentation Website
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Serves the g3 Hugo project website. Public-facing via Cloudflare tunnel,
+# no oauth2-proxy.
+# -------------------------------------------------------------------------------
+
+# --- General Settings ---
+name  = "g3-webpage"
+type  = "service"
+image = "registry.munchbox.cc/g3-web:v0.4.2"
+port  = 80
+node  = "any"
+host_network = false
+size  = "tiny"
+count = 3
+storage = "ephemeral"
+
+# --- Placement: one instance per node ---
+constraints = [
+  { attribute = "", operator = "distinct_hosts", value = "true" }
+]
+
+# --- Vault integration ---
+vault = false
+
+# --- Traefik integration ---
+traefik = true
+health_path = "/"
+
+# --- Service tags ---
+tags = [
+  "web",
+  "g3",
+  "documentation",
+  "traefik.http.routers.g3-web.rule=Host(`g3.munchbox.cc`)",
+  "traefik.http.routers.g3-web.entrypoints=web",
+  "traefik.http.routers.g3-web.service=g3-webpage",
+  "traefik.http.routers.g3-web.priority=100",
+]

@@ -36,6 +36,10 @@ env = {
   # OpenTelemetry tracing to Tempo
   GF_TRACING_OPENTELEMETRY_OTLP_ADDRESS      = "tempo.service.consul:4317"
   GF_TRACING_OPENTELEMETRY_OTLP_PROPAGATION  = "w3c"
+  # Disable phone-home analytics
+  GF_ANALYTICS_REPORTING_ENABLED             = "false"
+  GF_ANALYTICS_CHECK_FOR_UPDATES             = "false"
+  GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES      = "false"
 }
 
 # --- Storage ---
@@ -66,9 +70,9 @@ templates = [
 tags = [
   "monitoring",
   "grafana",
-  "traefik.http.routers.grafana.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file",
+  "traefik.http.routers.grafana.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.grafana-http.rule=Host(`grafana.munchbox.cc`)",
   "traefik.http.routers.grafana-http.entrypoints=web",
-  "traefik.http.routers.grafana-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file"
+  "traefik.http.routers.grafana-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file"
 ]

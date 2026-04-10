@@ -527,6 +527,18 @@ END
 CREATE DATABASE IF NOT EXISTS immich OWNER {{ .Data.data.db_username }};
 {{ end }}
 
+-- g3
+{{ with secret "secret/data/g3" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_user }}') THEN
+    CREATE USER {{ .Data.data.db_user }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS g3 OWNER {{ .Data.data.db_user }};
+{{ end }}
+
 -- S3 Orchestrator
 {{ with secret "secret/data/s3-orchestrator" }}
 DO \$\$
@@ -537,6 +549,18 @@ BEGIN
 END
 \$\$;
 CREATE DATABASE IF NOT EXISTS s3_orchestrator OWNER {{ .Data.data.db_username }};
+{{ end }}
+
+-- Flight Fetcher
+{{ with secret "secret/data/flight-fetcher" }}
+DO \$\$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
+    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
+  END IF;
+END
+\$\$;
+CREATE DATABASE IF NOT EXISTS flight_fetcher OWNER {{ .Data.data.db_username }};
 {{ end }}
 
 -- Sonarr

@@ -220,7 +220,7 @@ metrics_generator:
     service_graphs:
       dimensions: [http.method, http.status_code]
       enable_client_server_prefix: true
-      peer_attributes: [db.name, net.peer.name]
+      peer_attributes: [peer.service, db.name, net.peer.name, server.address]
     span_metrics:
       dimensions: [http.method, http.status_code]
       enable_target_info: true

@@ -133,7 +133,6 @@ vrrp_instance VI_TRAEFIK {
   virtual_router_id 50
   priority {{ if eq (env "node.unique.name") "goren" }}101{{ else }}100{{ end }}
   advert_int 1
-  nopreempt
 
   authentication {
     auth_type PASS

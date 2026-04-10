@@ -15,40 +15,16 @@ icon: munchbox
 
 services:
   # -------------------------------------------------------------------------
-  # Apps
+  # Apps & Media
   # -------------------------------------------------------------------------
-  - name: Apps
-    icon: fa-solid fa-cloud
+  - name: Apps & Media
+    icon: fa-solid fa-film
     items:
-      - name: OAuth2 Proxy
-        subtitle: SSO and identity provider
-        url: https://auth.munchbox.cc
-        tag: security
-        icon: oauth2-proxy.png
-
-      - name: Immich
-        subtitle: Photo Management
-        url: https://photos.munchbox.cc
-        tag: cloud
-        icon: immich.png
-
       - name: Nextcloud
         subtitle: Files, calendar, contacts
         url: https://nextcloud.munchbox.cc
         tag: cloud
         icon: nextcloud.png
-
-      - name: Munch TV
-        subtitle: TV/Movie Media server
-        url: https://jellyfin.munchbox.cc
-        tag: media
-        icon: munchbox_pixels.png
-
-      - name: Kavita
-        subtitle: Book Reader
-        url: https://kavita.munchbox.cc
-        tag: media
-        icon: kavita.png
 
       - name: Vaultwarden
         subtitle: Password manager
@@ -62,17 +38,23 @@ services:
         tag: automation
         icon: home-assistant.png
 
-  # -------------------------------------------------------------------------
-  # Media
-  # -------------------------------------------------------------------------
-  - name: Media
-    icon: fa-solid fa-film
-    items:
-      - name: Deluge
-        subtitle: Torrent client
-        url: https://deluge.munchbox.cc
-        tag: download
-        icon: deluge.png
+      - name: Immich
+        subtitle: Photo Management
+        url: https://photos.munchbox.cc
+        tag: cloud
+        icon: immich.png
+
+      - name: Munch TV
+        subtitle: TV/Movie Media server
+        url: https://jellyfin.munchbox.cc
+        tag: media
+        icon: munchbox_pixels.png
+
+      - name: Kavita
+        subtitle: Book Reader
+        url: https://kavita.munchbox.cc
+        tag: media
+        icon: kavita.png
 
       - name: Radarr
         subtitle: Movie management
@@ -80,17 +62,17 @@ services:
         tag: media
         icon: radarr.png
 
-      - name: Lidarr
-        subtitle: Music management
-        url: https://lidarr.munchbox.cc
-        tag: media
-        icon: lidarr.png
-
       - name: Sonarr
         subtitle: TV management
         url: https://sonarr.munchbox.cc
         tag: media
         icon: sonarr.png
+
+      - name: Lidarr
+        subtitle: Music management
+        url: https://lidarr.munchbox.cc
+        tag: media
+        icon: lidarr.png
 
       - name: Readarr
         subtitle: Book management
@@ -104,6 +86,12 @@ services:
         tag: media
         icon: prowlarr.png
 
+      - name: Deluge
+        subtitle: Torrent client
+        url: https://deluge.munchbox.cc
+        tag: download
+        icon: deluge.png
+
       - name: Ersatz
         subtitle: Backup media
         url: https://ersatz.munchbox.cc
@@ -111,9 +99,9 @@ services:
         icon: ersatz.png
 
   # -------------------------------------------------------------------------
-  # Platform and Developer Tools
+  # Infrastructure & Networking
   # -------------------------------------------------------------------------
-  - name: Platform and Developer Tools
+  - name: Infrastructure & Networking
     icon: fa-solid fa-server
     items:
       - name: Nomad
@@ -140,53 +128,11 @@ services:
         tag: virtualization
         icon: proxmox.png
 
-      - name: Oracle Cloud
-        subtitle: OCI console
-        url: https://cloud.oracle.com
-        tag: external
-        icon: oracle.png
-
-      - name: Temporal
-        subtitle: Workflow orchestration
-        url: https://temporal.munchbox.cc
-        tag: workflows
-        icon: temporal-ui.png
-
-      - name: Registry
-        subtitle: Docker container registry
-        url: https://registry-ui.munchbox.cc
-        tag: containers
-        icon: registry-ui.png
-
-      - name: Forgejo
-        subtitle: Git repository hosting
-        url: https://git.munchbox.cc
-        tag: git
-        icon: forgejo.png
-
-      - name: S3 Orchestrator
-        subtitle: Unified S3 storage endpoint
-        url: https://s3.munchbox.cc/ui/
-        tag: storage
-        icon: s3-orchestrator.png
-
-      - name: Aptly
-        subtitle: Debian package repository
-        url: https://apt.munchbox.cc/ui/
-        tag: packages
-        icon: aptly.png
-
-  # -------------------------------------------------------------------------
-  # Routing and Monitoring
-  # -------------------------------------------------------------------------
-  - name: Routing and Monitoring
-    icon: fa-solid fa-chart-line
-    items:
-      - name: HAProxy
-        subtitle: Database failover proxy
-        url: http://goren:8405/stats
-        tag: infra
-        icon: haproxy.png
+      - name: OAuth2 Proxy
+        subtitle: SSO and identity provider
+        url: https://auth.munchbox.cc
+        tag: security
+        icon: oauth2-proxy.png
 
       - name: Traefik
         subtitle: Reverse proxy and load balancer
@@ -194,11 +140,11 @@ services:
         tag: infra
         icon: traefik.png
 
-      - name: Traefik Log Dashboard
-        subtitle: Traefik Traffic Dashboard
-        url: https://traefik-logs.munchbox.cc/dashboard
+      - name: HAProxy
+        subtitle: Database failover proxy
+        url: https://haproxy.munchbox.cc/stats
         tag: infra
-        icon: traefik-log-dashboard.png
+        icon: haproxy.png
 
       - name: Pi-hole (green)
         subtitle: Primary DNS
@@ -212,23 +158,47 @@ services:
         tag: dns
         icon: pi-hole.png
 
-      - name: Cloudflare
-        subtitle: CDN, DNS, and tunnels
-        url: https://dash.cloudflare.com
-        tag: external
-        icon: cloudflare.png
+  # -------------------------------------------------------------------------
+  # Developer Tools
+  # -------------------------------------------------------------------------
+  - name: Developer Tools
+    icon: fa-solid fa-code
+    items:
+      - name: Temporal
+        subtitle: Workflow orchestration
+        url: https://temporal.munchbox.cc
+        tag: workflows
+        icon: temporal-ui.png
 
-      - name: Trivy Scanner
-        subtitle: Container vulnerability scans
-        url: https://trivy-dashboard.munchbox.cc
-        tag: security
-        icon: trivy.png
+      - name: Forgejo
+        subtitle: Git repository hosting
+        url: https://git.munchbox.cc
+        tag: git
+        icon: forgejo.png
 
-      - name: Vault Cert Manager
-        subtitle: Status and rotation of certs
-        url: http://vault-cert-manager-aggregator.service.consul:9102
-        tag: security
-        icon: vault.png
+      - name: Registry
+        subtitle: Docker container registry
+        url: https://registry-ui.munchbox.cc
+        tag: containers
+        icon: registry-ui.png
+
+      - name: Aptly
+        subtitle: Debian package repository
+        url: https://apt.munchbox.cc/ui/
+        tag: packages
+        icon: aptly.png
+
+  # -------------------------------------------------------------------------
+  # Observability
+  # -------------------------------------------------------------------------
+  - name: Observability
+    icon: fa-solid fa-chart-line
+    items:
+      - name: Grafana
+        subtitle: Dashboards and visualization
+        url: https://grafana.munchbox.cc
+        tag: monitoring
+        icon: grafana.png
 
       - name: Prometheus
         subtitle: Metrics collection
@@ -242,11 +212,17 @@ services:
         tag: alerts
         icon: alertmanager.png
 
-      - name: Grafana
-        subtitle: Dashboards and visualization
-        url: https://grafana.munchbox.cc
-        tag: monitoring
-        icon: grafana.png
+      - name: Traefik Log Dashboard
+        subtitle: Traefik Traffic Dashboard
+        url: https://traefik-logs.munchbox.cc/dashboard
+        tag: infra
+        icon: traefik-log-dashboard.png
+
+      - name: S3 Orchestrator
+        subtitle: Unified S3 storage endpoint
+        url: https://s3.munchbox.cc/ui/
+        tag: storage
+        icon: s3-orchestrator.png
 
       - name: OpenZFS
         subtitle: ZFS Pool Dashboard
@@ -254,8 +230,68 @@ services:
         tag: monitoring
         icon: openzfs.png
 
+      - name: Trivy Scanner
+        subtitle: Container vulnerability scans
+        url: https://trivy-dashboard.munchbox.cc
+        tag: security
+        icon: trivy.png
+
+      - name: Vault Cert Manager
+        subtitle: Status and rotation of certs
+        url: http://vault-cert-manager-aggregator.service.consul:9102
+        tag: security
+        icon: vault.png
+
       - name: Umami
         subtitle: Web analytics
         url: https://analytics.munchbox.cc
         tag: analytics
         icon: umami.png
+
+  # -------------------------------------------------------------------------
+  # Public Cloud Providers
+  # -------------------------------------------------------------------------
+  - name: Public Cloud Providers
+    icon: fa-solid fa-cloud
+    items:
+      - name: Oracle Cloud
+        subtitle: OCI console
+        url: https://cloud.oracle.com
+        tag: cloud
+        icon: oracle.png
+
+      - name: Cloudflare
+        subtitle: CDN, DNS, and tunnels
+        url: https://dash.cloudflare.com
+        tag: cloud
+        icon: cloudflare.png
+
+      - name: Google Cloud
+        subtitle: GCP console
+        url: https://console.cloud.google.com
+        tag: cloud
+        icon: gcp.png
+
+      - name: Backblaze B2
+        subtitle: Object storage
+        url: https://secure.backblaze.com/b2_buckets.htm
+        tag: storage
+        icon: backblaze.png
+
+      - name: IDrive E2
+        subtitle: Object storage
+        url: https://app.idrivee2.com
+        tag: storage
+        icon: idrive.png
+
+      - name: IBM Cloud
+        subtitle: Cloud services
+        url: https://cloud.ibm.com
+        tag: cloud
+        icon: ibm.png
+
+      - name: Google Search Console
+        subtitle: Search performance and indexing
+        url: https://search.google.com/search-console
+        tag: seo
+        icon: google-search-console.png

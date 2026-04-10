@@ -37,10 +37,11 @@
   include_role:
     name: munchbox-repo
 
-- name: Install oracle-watchdog package
+- name: Install/upgrade oracle-watchdog package
   apt:
     name: oracle-watchdog
-    state: present
+    state: latest
+    update_cache: true
   notify: Restart oracle-watchdog
 
 # -------------------------------------------------------------------------------

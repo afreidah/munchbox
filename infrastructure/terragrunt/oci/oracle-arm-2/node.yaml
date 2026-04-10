@@ -30,10 +30,8 @@ oci_config:
   availability_domain: "OGLq:PHX-AD-1"
   shape: "VM.Standard.A1.Flex"
 
-# Network - uses existing VCN from oracle-node-1
+# Network - managed by oci/networking
 create_network: false
-existing_subnet_id: "ocid1.subnet.oc1.phx.aaaaaaaa43c7zcepvappi2rp5ospvq5tus4mmm2jkrjofqlnvippuh5vshca"
-existing_security_group_id: "ocid1.securitylist.oc1.phx.aaaaaaaahkw4lgg5lnb6mhjle3ei2bqcwt2smfzox4doja2xyhqf3qthsg4a"
 
 # Additional tags
 tags:

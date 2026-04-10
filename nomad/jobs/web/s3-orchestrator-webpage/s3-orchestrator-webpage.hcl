@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "s3-orchestrator-webpage"
 type  = "service"
-image = "registry.munchbox.cc/s3-orchestrator-web:v0.17.12"
+image = "registry.munchbox.cc/s3-orchestrator-web:v0.39.13"
 port  = 80
 node  = "any"
 host_network = false
@@ -39,5 +39,4 @@ tags = [
   "traefik.http.routers.s3orch-web.entrypoints=web",
   "traefik.http.routers.s3orch-web.service=s3-orchestrator-webpage",
   "traefik.http.routers.s3orch-web.priority=100",
-  "traefik.http.routers.s3orch-web.middlewares=umami-tracking@file",
 ]

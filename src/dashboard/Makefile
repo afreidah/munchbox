@@ -58,11 +58,10 @@ push: builder ## Build and push amd64 and arm64 images to the registry
 	npm run build
 	@echo "Building and pushing $(FULL_TAG) for $(PLATFORMS)"
 	docker buildx build \
+	  --pull \
 	  --platform $(PLATFORMS) \
 	  -t $(FULL_TAG) \
-	  --cache-from type=registry,ref=$(CACHE_TAG) \
-	  --cache-to type=registry,ref=$(CACHE_TAG),mode=max \
-	  --output type=image,push=true,registry.insecure=true \
+	  --output type=image,push=true \
 	  .
 
 # -------------------------------------------------------------------------

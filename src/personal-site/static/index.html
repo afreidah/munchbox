@@ -11,8 +11,8 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0f172a;
-      color: #e2e8f0;
+      background: #1a1512;
+      color: #d4c8b8;
       font-family: 'Inter', sans-serif;
       font-size: 1.05rem;
       line-height: 1.7;
@@ -38,14 +38,14 @@
       font-family: 'Playfair Display', serif;
       font-weight: 800;
       font-size: 3.5rem;
-      color: #f8fafc;
+      color: #f5e6d3;
       letter-spacing: -0.02em;
       margin-bottom: 0.5rem;
     }
 
     .header .tagline {
       font-size: 1.2rem;
-      color: #93c5fd;
+      color: #c4956a;
       margin-bottom: 1.5rem;
     }
 
@@ -57,7 +57,7 @@
     }
 
     .header .links a {
-      color: #94a3b8;
+      color: #a89580;
       text-decoration: none;
       font-size: 1.1rem;
       transition: color 0.2s;
@@ -67,13 +67,13 @@
     }
 
     .header .links a:hover {
-      color: #93c5fd;
+      color: #d4a574;
     }
 
     /* --- Sections --- */
     hr {
       border: none;
-      border-top: 1px solid #334155;
+      border-top: 1px solid #3d3228;
       margin: 3rem 0;
     }
 
@@ -81,7 +81,7 @@
       font-family: 'Playfair Display', serif;
       font-weight: 700;
       font-size: 1.8rem;
-      color: #e2b07a;
+      color: #c4956a;
       text-align: center;
       margin-bottom: 1.5rem;
     }
@@ -98,18 +98,18 @@
       align-items: center;
       gap: 1.5rem;
       padding: 1.25rem 1.5rem;
-      background: #1e293b;
-      border: 1px solid #334155;
+      background: #241f1a;
+      border: 1px solid #3d3228;
       border-radius: 8px;
       text-decoration: none;
-      color: #e2e8f0;
+      color: #d4c8b8;
       transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
     }
 
     .project-card:hover {
-      background: #263548;
-      border-color: #475569;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      background: #2e2620;
+      border-color: #5a4a3a;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
     }
 
     .project-card .logo-wrap {
@@ -130,19 +130,53 @@
       font-family: 'Playfair Display', serif;
       font-size: 1.2rem;
       font-weight: 700;
-      color: #93c5fd;
+      color: #d4a574;
       display: block;
       margin-bottom: 0.25rem;
     }
 
-    .project-card .info p {
-      color: #94a3b8;
+    .project-card .info .oneliner {
+      color: #a89580;
       font-size: 0.95rem;
       margin: 0;
+      transition: color 0.2s;
     }
 
-    .project-card:hover .info p {
-      color: #cbd5e1;
+    .project-card .info .detail {
+      color: #9a8a7a;
+      font-size: 0.85rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height 0.4s ease, opacity 0.3s ease, margin 0.3s ease;
+    }
+
+    .project-card .info .detail li {
+      padding-left: 1em;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    .project-card .info .detail li::before {
+      content: "·";
+      position: absolute;
+      left: 0;
+      color: #5a4a3a;
+    }
+
+
+    .project-card:hover .info .oneliner {
+      color: #c4b8a8;
+    }
+
+    .project-card:hover .info .detail {
+      max-height: 200px;
+      opacity: 1;
+      margin-top: 0.5rem;
+      color: #9a8a7a;
     }
 
     /* --- Tech Stack --- */
@@ -154,28 +188,73 @@
     }
 
     .tech-badge {
-      background: #1e293b;
-      border: 1px solid #334155;
+      background: #241f1a;
+      border: 1px solid #3d3228;
       border-radius: 6px;
       padding: 0.4rem 0.9rem;
       font-size: 0.9rem;
-      color: #94a3b8;
+      color: #a89580;
       transition: border-color 0.2s, color 0.2s;
     }
 
     .tech-badge:hover {
-      border-color: #93c5fd;
-      color: #93c5fd;
+      border-color: #c4956a;
+      color: #d4a574;
     }
 
-    /* --- Section Intro --- */
-    .section-intro {
+    /* --- Munchbox Hero Section --- */
+    .munchbox-hero {
       text-align: center;
-      max-width: 700px;
+      margin-bottom: 2rem;
+    }
+
+    .munchbox-hero .logo {
+      width: 400px;
+      margin: -5.5rem auto -3rem;
+    }
+
+    .munchbox-hero p {
+      max-width: 680px;
       margin: 0 auto 1.5rem;
-      color: #94a3b8;
+      color: #b8a898;
       font-size: 1rem;
-      line-height: 1.7;
+      line-height: 1.8;
+    }
+
+    .munchbox-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1.4rem;
+      background: #241f1a;
+      border: 1px solid #3d3228;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #d4a574;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .munchbox-link:hover {
+      background: #2e2620;
+      border-color: #5a4a3a;
+    }
+
+    .munchbox-link img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+    }
+
+    /* --- Spinoff Section --- */
+    .spinoff-label {
+      text-align: center;
+      color: #7a6a5a;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      margin-bottom: 1.5rem;
     }
 
     /* --- Footer --- */
@@ -183,17 +262,17 @@
       text-align: center;
       margin-top: 3rem;
       padding: 2rem 0;
-      color: #475569;
+      color: #5a4a3a;
       font-size: 0.85rem;
     }
 
     .footer a {
-      color: #64748b;
+      color: #7a6a5a;
       text-decoration: none;
     }
 
     .footer a:hover {
-      color: #94a3b8;
+      color: #a89580;
     }
 
     /* --- Responsive --- */
@@ -219,37 +298,88 @@
 
     <hr>
 
-    <h2>Projects</h2>
+    <div class="munchbox-hero">
+      <img class="logo" src="/images/munchbox.png" alt="munchbox">
+      <h2>Munchbox</h2>
+      <p>A hybrid homelab platform built on HashiCorp Nomad, Consul, and Vault. The cluster spans bare-metal nodes, Proxmox VMs, and Oracle Cloud free-tier instances connected over WireGuard across amd64 and arm64 architectures. Managed with Terraform and Ansible, monitored with Prometheus, Grafana, Loki, and Tempo.</p>
+      <a class="munchbox-link" href="https://github.com/afreidah/munchbox">
+        <i class="fab fa-github"></i> View on GitHub
+      </a>
+    </div>
 
-    <p class="section-intro">I run a hybrid homelab cluster that spans local bare-metal nodes and free-tier cloud VMs, orchestrated with Nomad, Consul, and Vault. These are tools I built in Go to help me get the most out of free-tier cloud resources I could add to my homelab cluster. The oracle-watchdog and cloudflare-log-collector are pretty simple, but the s3-orchestrator started simple and has since grown into a much larger project with larger goals.</p>
+    <hr>
+
+    <p class="spinoff-label">Built for the munchbox</p>
 
     <div class="projects">
-      <a class="project-card" href="https://github.com/afreidah/munchbox">
-        <div class="logo-wrap"><img src="/images/munchbox.png" alt="munchbox" style="width: 200px; margin: -40px -40px -40px -40px;"></div>
-        <div class="info">
-          <strong>munchbox</strong>
-          <p>The homelab that started it all. A hybrid cloud infrastructure platform running Nomad, Consul, and Vault across local bare-metal nodes and free-tier Oracle Cloud VMs, connected over WireGuard. Everything else on this page grew out of this project.</p>
-        </div>
-      </a>
       <a class="project-card" href="https://s3-orchestrator.munchbox.cc">
         <div class="logo-wrap"><img src="/images/s3-orchestrator.png" alt="s3-orchestrator" style="width: 100px;"></div>
         <div class="info">
           <strong>s3-orchestrator</strong>
-          <p>Unified S3-compatible storage across multiple backends. Stack free-tier allocations from multiple providers into a single endpoint with per-backend quotas, cross-backend replication, and envelope encryption.</p>
+          <p class="oneliner">Combines multiple S3-compatible storage backends into a single unified endpoint with per-backend quota enforcement.</p>
+          <ul class="detail">
+            <li>Supports any S3-compatible backend (OCI, Backblaze B2, IDrive e2, MinIO, AWS, etc.)</li>
+            <li>Per-backend byte quotas and monthly API/ingress/egress quota enforcement</li>
+            <li>Configurable placement strategies (pack, spread)</li>
+            <li>Virtual buckets with isolated namespaces and independent credentials</li>
+            <li>Optional cross-backend replication/failover and envelope encryption</li>
+          </ul>
+        </div>
+      </a>
+      <a class="project-card" href="https://g3.munchbox.cc">
+        <div class="logo-wrap"><img src="/images/g3.png" alt="g3" style="width: 150px;"></div>
+        <div class="info">
+          <strong>g3</strong>
+          <p class="oneliner">An S3-compatible HTTP gateway that uses Gmail and Google Drive as the storage backend.</p>
+          <ul class="detail">
+            <li>Object data in Google Drive, metadata as Gmail emails with JSON pointers</li>
+            <li>Local SQLite or PostgreSQL index for zero-API-call metadata operations</li>
+            <li>Buckets map to Gmail labels, works with AWS CLI and any S3 SDK</li>
+            <li>Multipart upload support for large files</li>
+            <li>SigV4 authentication, Prometheus metrics, and OpenTelemetry tracing</li>
+          </ul>
+        </div>
+      </a>
+      <a class="project-card" href="https://nomad-temporal-jobs.munchbox.cc">
+        <div class="logo-wrap"><img src="/images/nomad-temporal-jobs.png" alt="nomad-temporal-jobs" style="width: 200px;"></div>
+        <div class="info">
+          <strong>nomad-temporal-jobs</strong>
+          <p class="oneliner">Temporal workflow workers that automate daily backups, Trivy vulnerability scanning, and stale allocation cleanup.</p>
+          <ul class="detail">
+            <li>Automated PostgreSQL/Consul/Nomad backups to S3</li>
+            <li>Trivy vulnerability scanning of all running container images</li>
+            <li>Stale allocation cleanup on Nomad client nodes via SSH</li>
+            <li>Transient vs. permanent error classification with configurable retry</li>
+            <li>OpenTelemetry tracing and Prometheus metrics</li>
+          </ul>
         </div>
       </a>
       <a class="project-card" href="https://cloudflare-log-collector.munchbox.cc">
         <div class="logo-wrap"><img src="/images/cloudflare-log-collector.png" alt="cloudflare-log-collector" style="width: 180px;"></div>
         <div class="info">
           <strong>cloudflare-log-collector</strong>
-          <p>Cloudflare analytics collector for self-hosted observability stacks. Polls the GraphQL API for firewall events and HTTP traffic stats, ships them to Loki and Prometheus with OpenTelemetry tracing.</p>
+          <p class="oneliner">Polls the Cloudflare GraphQL Analytics API for firewall events and HTTP traffic, then ships them into Loki, Prometheus, and Tempo.</p>
+          <ul class="detail">
+            <li>WAF/firewall event collection pushed to Loki as structured JSON</li>
+            <li>Aggregated HTTP traffic stats exposed as Prometheus gauges</li>
+            <li>Automatic log-trace correlation via injected trace_id/span_id</li>
+            <li>Cloudflare rate limit handling with Retry-After support</li>
+            <li>OpenTelemetry tracing per poll cycle</li>
+          </ul>
         </div>
       </a>
       <a class="project-card" href="https://oracle-watchdog.munchbox.cc">
         <div class="logo-wrap"><img src="/images/oracle-watchdog.png" alt="oracle-watchdog" style="width: 200px;"></div>
         <div class="info">
           <strong>oracle-watchdog</strong>
-          <p>Distributed monitoring and recovery for Oracle Cloud free-tier instances. Detects unresponsive nodes via Consul session heartbeats and automatically triggers OCI stop/start cycles.</p>
+          <p class="oneliner">Detects when Oracle Cloud reclaims free-tier instances and automatically stop/start cycles them back to life via the OCI API.</p>
+          <ul class="detail">
+            <li>Consul session heartbeats with configurable TTL</li>
+            <li>Automatic OCI stop/start cycle on missed heartbeats</li>
+            <li>Duplicate restart prevention via in-flight tracking</li>
+            <li>Configurable max consecutive restart attempts per node</li>
+            <li>Dry-run mode for testing</li>
+          </ul>
         </div>
       </a>
     </div>
@@ -272,6 +402,7 @@
       <span class="tech-badge">Loki</span>
       <span class="tech-badge">Tempo</span>
       <span class="tech-badge">PostgreSQL</span>
+      <span class="tech-badge">Temporal</span>
       <span class="tech-badge">Traefik</span>
       <span class="tech-badge">Cloudflare</span>
       <span class="tech-badge">Oracle Cloud</span>

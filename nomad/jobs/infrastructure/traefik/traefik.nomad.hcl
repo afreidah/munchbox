@@ -123,7 +123,7 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.6.9"
+        image        = "traefik:v3.6.11"
         network_mode = "host"
         ports        = ["http", "https", "dashboard", "gitssh"]
         volumes      = [
@@ -340,7 +340,7 @@ EOH
     rule        = "Host(`nomad.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "nomad-ui"
-    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "nomad-token", "umami-tracking"]
+    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "nomad-token"]
     [http.routers.nomad.tls]
 
   # --- Nomad UI (HTTP, for CF tunnel) ---
@@ -348,14 +348,14 @@ EOH
     rule        = "Host(`nomad.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "nomad-ui"
-    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "nomad-token", "umami-tracking"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "nomad-token"]
 
   # --- Traefik Dashboard (HTTPS, LAN-only) ---
   [http.routers.traefik-dashboard]
     rule        = "Host(`traefik.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "api@internal"
-    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "dashboard-redirect", "umami-tracking"]
+    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "dashboard-redirect"]
     [http.routers.traefik-dashboard.tls]
 
   # --- Traefik Dashboard (HTTP, for CF tunnel) ---
@@ -363,7 +363,7 @@ EOH
     rule        = "Host(`traefik.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "api@internal"
-    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "dashboard-redirect", "umami-tracking"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "dashboard-redirect"]
 
   # --- Traefik Dashboard fallback on :8081 ---
   [http.routers.traefik-fallback]
@@ -378,7 +378,7 @@ EOH
     rule        = "Host(`proxmox.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "proxmox-ui"
-    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "umami-tracking"]
+    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan"]
     [http.routers.proxmox.tls]
 
   # --- Proxmox UI (HTTP, for CF tunnel) ---
@@ -386,14 +386,14 @@ EOH
     rule        = "Host(`proxmox.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "proxmox-ui"
-    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "umami-tracking"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy"]
 
   # --- Vault UI (HTTPS, LAN-only) ---
   [http.routers.vault]
     rule        = "Host(`vault.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "vault-ui"
-    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "vault-theme", "umami-tracking"]
+    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "vault-theme"]
     [http.routers.vault.tls]
 
   # --- Vault UI (HTTP, for CF tunnel) ---
@@ -401,7 +401,7 @@ EOH
     rule        = "Host(`vault.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "vault-ui"
-    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "vault-theme", "umami-tracking"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "vault-theme"]
 
 
   # --- ZFS Watcher (HTTPS, LAN-only) ---
@@ -409,7 +409,7 @@ EOH
     rule        = "Host(`zfs.munchbox.cc`)"
     entryPoints = ["websecure"]
     service     = "zfswatcher"
-    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "zfswatcher-auth", "umami-tracking"]
+    middlewares = ["oauth2-proxy-errors", "oauth2-proxy", "dashboard-allowlan", "zfswatcher-auth"]
     [http.routers.zfswatcher.tls]
 
   # --- ZFS Watcher (HTTP, for CF tunnel) ---
@@ -417,7 +417,7 @@ EOH
     rule        = "Host(`zfs.munchbox.cc`)"
     entryPoints = ["web"]
     service     = "zfswatcher"
-    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "zfswatcher-auth", "umami-tracking"]
+    middlewares = ["cf-tunnel-https", "oauth2-proxy-errors", "oauth2-proxy", "zfswatcher-auth"]
 
   # --- Health check endpoint (no auth) ---
   [http.routers.ping]
@@ -581,14 +581,6 @@ EOH
       regex = "</head>"
       replacement = "<link rel=\"stylesheet\" href=\"http://themes.munchbox.cc/css/vault.css\"></head>"
 
-  # --- Umami Analytics Injection ---
-  # Injects Umami tracking script into HTML pages
-  # Add this middleware to services you want to track
-  [http.middlewares.umami-tracking.plugin.rewritebody]
-    lastModified = true
-    [[http.middlewares.umami-tracking.plugin.rewritebody.rewrites]]
-      regex = "</head>"
-      replacement = "<script defer src=\"https://analytics.munchbox.cc/script.js\" data-website-id=\"0ac921bc-72f6-4b31-9cf3-77de04fe6337\"></script></head>"
 
 # -------------------------------------------------------------------------
 # HTTP Services (non-Consul backends)
@@ -694,7 +686,8 @@ EOH
       # --- Resources ---
       resources {
         cpu    = 300
-        memory = 512
+        memory     = 768
+        memory_max = 1024
       }
 
       # --- Termination ---
@@ -884,11 +877,11 @@ EOH
         "traefik.http.routers.traefik-logs.rule=Host(`traefik-logs.munchbox.cc`)",
         "traefik.http.routers.traefik-logs.entrypoints=websecure",
         "traefik.http.routers.traefik-logs.tls=true",
-        "traefik.http.routers.traefik-logs.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,dashboard-allowlan@file,umami-tracking@file",
+        "traefik.http.routers.traefik-logs.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,dashboard-allowlan@file",
         # HTTP router (CF tunnel)
         "traefik.http.routers.traefik-logs-http.rule=Host(`traefik-logs.munchbox.cc`)",
         "traefik.http.routers.traefik-logs-http.entrypoints=web",
-        "traefik.http.routers.traefik-logs-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file,umami-tracking@file"
+        "traefik.http.routers.traefik-logs-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file"
       ]
 
       check {

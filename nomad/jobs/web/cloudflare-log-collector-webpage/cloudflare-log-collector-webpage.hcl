@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "cloudflare-log-collector-webpage"
 type  = "service"
-image = "registry.munchbox.cc/cloudflare-log-collector-web:v0.1.11"
+image = "registry.munchbox.cc/cloudflare-log-collector-web:v0.1.15"
 port  = 80
 node  = "any"
 host_network = false
@@ -39,5 +39,4 @@ tags = [
   "traefik.http.routers.cflog-web.entrypoints=web",
   "traefik.http.routers.cflog-web.service=cloudflare-log-collector-webpage",
   "traefik.http.routers.cflog-web.priority=100",
-  "traefik.http.routers.cflog-web.middlewares=umami-tracking@file",
 ]
