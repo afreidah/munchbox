@@ -729,6 +729,7 @@ locals {
       "trivy-dashboard",
       "forgejo",
       "forgejo-runner",
+      "github/moat-runner",
       "umami",
       "minio",
       "s3-orchestrator",
