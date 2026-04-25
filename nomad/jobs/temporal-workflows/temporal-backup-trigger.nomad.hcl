@@ -20,7 +20,7 @@ job "temporal-backup-trigger" {
   # ---------------------------------------------------------------------------
 
   periodic {
-    cron             = "0 2 * * *"
+    cron             = "0 1 * * *"
     time_zone        = "America/Los_Angeles"
     prohibit_overlap = true
   }

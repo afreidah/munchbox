@@ -730,6 +730,7 @@ locals {
       "forgejo",
       "forgejo-runner",
       "umami",
+      "minio",
       "s3-orchestrator",
       "flight-fetcher",
       "patroni",
@@ -1144,6 +1145,38 @@ locals {
       ManagedBy = "terragrunt"
     }
   }
+
+  # ---------------------------------------------------------------------------
+  # BLOCK-VOLUME-OCI MODULE INPUTS
+  # ---------------------------------------------------------------------------
+  # OCI block volumes attached to existing instances. Keyed by the terragrunt
+  # directory name (e.g. "minio-volume") so the env_helper can look up config
+  # from the directory path automatically.
+
+  block_volume_oci_configs = {
+    "minio-volume-1" = {
+      target_node = "oracle-arm-1"
+      purpose     = "minio-storage"
+      volumes = [
+        {
+          name        = "minio-data"
+          size_gb     = 80
+          vpus_per_gb = 10
+        }
+      ]
+    }
+    "minio-volume-2" = {
+      target_node = "oracle-arm-2"
+      purpose     = "minio-storage"
+      volumes = [
+        {
+          name        = "minio-data"
+          size_gb     = 80
+          vpus_per_gb = 10
+        }
+      ]
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -1243,6 +1276,11 @@ generate "providers" {
 
     provider "aws" {
       region = "us-east-1"
+
+      skip_credentials_validation = true
+      skip_requesting_account_id  = true
+      skip_metadata_api_check     = true
+      skip_region_validation      = true
 
       default_tags {
         tags = {

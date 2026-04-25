@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "g3-webpage"
 type  = "service"
-image = "registry.munchbox.cc/g3-web:v0.4.2"
+image = "registry.munchbox.cc/g3-web:v0.5.1"
 port  = 80
 node  = "any"
 host_network = false

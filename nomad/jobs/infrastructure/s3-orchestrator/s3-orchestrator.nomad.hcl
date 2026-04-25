@@ -112,7 +112,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.39.13"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.40.3"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -129,7 +129,9 @@ job "s3-orchestrator" {
 {{ with secret "secret/data/s3-orchestrator" }}
 server:
   listen_addr: "0.0.0.0:9000"
-  backend_timeout: "5m"
+  backend_timeout: "15m"
+  write_timeout: "20m"
+  read_timeout: "20m"
   shutdown_delay: "5s"
 
 routing_strategy: "spread"
@@ -224,10 +226,58 @@ backends:
     endpoint: "{{ .Data.data.g3_s3_endpoint }}"
     region: "us-east-1"
     bucket: "{{ .Data.data.g3_s3_bucket }}"
+    unsigned_payload: true
     access_key_id: "{{ .Data.data.g3_s3_access_key }}"
     secret_access_key: "{{ .Data.data.g3_s3_secret_key }}"
     force_path_style: true
     quota_bytes: 16106127360      # 15 GB
+  - name: "supabase"
+    endpoint: "{{ .Data.data.supabase_s3_endpoint }}"
+    region: "{{ .Data.data.supabase_s3_region }}"
+    bucket: "{{ .Data.data.supabase_s3_bucket }}"
+    access_key_id: "{{ .Data.data.supabase_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.supabase_s3_secret_key }}"
+    force_path_style: true
+    disable_checksum: true
+    quota_bytes: 1073741824        # 1 GB storage
+    max_object_size: 52428800      # 50 MB per-object limit
+    egress_byte_limit: 5368709120  # 5 GB/month egress
+  - name: "c2"
+    endpoint: "{{ .Data.data.c2_s3_endpoint }}"
+    region: "us-east-1"
+    bucket: "{{ .Data.data.c2_s3_bucket }}"
+    access_key_id: "{{ .Data.data.c2_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.c2_s3_secret_key }}"
+    force_path_style: true
+    quota_bytes: 16106127360       # 15 GB storage
+    egress_byte_limit: 16106127360 # 15 GB/month egress
+  - name: "tigris"
+    endpoint: "{{ .Data.data.tigris_s3_endpoint }}"
+    region: "{{ .Data.data.tigris_s3_region }}"
+    bucket: "{{ .Data.data.tigris_s3_bucket }}"
+    access_key_id: "{{ .Data.data.tigris_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.tigris_s3_secret_key }}"
+    force_path_style: true
+    quota_bytes: 5368709120        # 5 GB storage
+    api_request_limit: 110000      # 10K Class A + 100K Class B/month
+  - name: "minio"
+    endpoint: "{{ .Data.data.minio_s3_endpoint }}"
+    region: "us-east-1"
+    bucket: "{{ .Data.data.minio_s3_bucket }}"
+    access_key_id: "{{ .Data.data.minio_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.minio_s3_secret_key }}"
+    force_path_style: true
+    unsigned_payload: true
+    quota_bytes: 75161927680       # 70 GiB (75 GB avail on 80 GB volume, ~5 GB headroom)
+  - name: "minio-arm2"
+    endpoint: "{{ .Data.data.minio_arm2_s3_endpoint }}"
+    region: "us-east-1"
+    bucket: "{{ .Data.data.minio_arm2_s3_bucket }}"
+    access_key_id: "{{ .Data.data.minio_arm2_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.minio_arm2_s3_secret_key }}"
+    force_path_style: true
+    unsigned_payload: true
+    quota_bytes: 75161927680       # 70 GiB
 
 
 circuit_breaker:
@@ -242,9 +292,9 @@ backend_circuit_breaker:
 
 integrity:
   enabled: true
-  verify_on_read: true
+  verify_on_read: false
   scrubber_interval: "24h"
-  scrubber_batch_size: 25
+  scrubber_batch_size: 10
 
 encryption:
   enabled: true
@@ -272,20 +322,28 @@ cache:
   enabled: true
   max_size: "256MB"
   max_object_size: "5MB"
-  ttl: "5m"
+  ttl: "15m"
 
 reconcile:
   enabled: true
   interval: "24h"
 
 cleanup_queue:
-  concurrency: 10
+  concurrency: 4
   multipart_stale_timeout: "24h"
+
+rebalance:
+  enabled: true
+  strategy: "spread"
+  interval: "24h"
+  batch_size: 100
+  threshold: 0.1
+  concurrency: 2
 
 replication:
   factor: 2
-  batch_size: 50
-  worker_interval: "30s"
+  batch_size: 20
+  worker_interval: "5m"
 
 ui:
   enabled: true

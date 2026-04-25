@@ -62,6 +62,24 @@
 # Systemd Service
 # -------------------------------------------------------------------------------
 
+- name: Create systemd override directory
+  file:
+    path: /etc/systemd/system/vault-cert-manager.service.d
+    state: directory
+    mode: "0755"
+
+- name: Deploy systemd override for Restart=always
+  copy:
+    content: |
+      [Service]
+      Restart=always
+      RestartSec=15
+    dest: /etc/systemd/system/vault-cert-manager.service.d/restart.conf
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart vault-cert-manager
+
 - name: Enable and start vault-cert-manager
   systemd:
     name: vault-cert-manager

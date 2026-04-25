@@ -134,6 +134,17 @@ job "gitgogit" {
       template {
         data        = <<-EOF
 repos:
+  - name: munchbox
+    source:
+      url: https://github.com/afreidah/munchbox.git
+    mirrors:
+      - url: http://forgejo.service.consul:30028/alex/munchbox.git
+        push_strategy: branches+tags
+        force: true
+        auth:
+          type: token
+          env: FORGEJO_API_TOKEN
+
   - name: s3-orchestrator
     source:
       url: https://github.com/afreidah/s3-orchestrator.git

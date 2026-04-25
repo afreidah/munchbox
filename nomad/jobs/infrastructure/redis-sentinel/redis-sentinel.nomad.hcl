@@ -3,8 +3,10 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Redis with Sentinel for automatic failover. Runs 2 Redis instances (master +
-# replica) with 3 Sentinels for quorum. Replaces redis-shared with HA cluster.
+# Redis with Sentinel for automatic failover. Runs 2 Redis instances with 3
+# Sentinels for quorum. All instances start standalone — Sentinel manages
+# replication topology and persists role changes via CONFIG REWRITE.
+# No hard-coded master/replica assignment in Nomad templates.
 # -------------------------------------------------------------------------------
 
 job "redis-sentinel" {
@@ -261,21 +263,26 @@ job "redis-sentinel" {
         image              = "redis:8-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
-        command            = "redis-server"
-        args               = ["/etc/redis/redis.conf"]
+        command            = "/bin/sh"
+        args               = ["-c", "cp /etc/redis/redis.conf.tpl /data/redis.conf && redis-server /data/redis.conf"]
 
         volumes = [
           "/opt/nomad/data/redis-${NOMAD_ALLOC_INDEX}/redis:/data",
-          "local/redis.conf:/etc/redis/redis.conf:ro"
+          "local/redis.conf:/etc/redis/redis.conf.tpl:ro"
         ]
       }
 
       # --- Redis Configuration ---
+      # No replicaof directive — Sentinel manages replication topology.
+      # Redis starts standalone; Sentinel assigns it as replica of the
+      # current master via SLAVEOF at runtime. Config is writable at
+      # /data/redis.conf so Sentinel can CONFIG REWRITE to persist
+      # role changes across restarts.
       template {
         destination = "local/redis.conf"
         change_mode = "restart"
         data        = <<-EOF
-# Redis Sentinel Configuration
+# Redis Sentinel-Managed Configuration
 bind 0.0.0.0
 port {{ env "NOMAD_PORT_redis" }}
 dir /data
@@ -297,14 +304,6 @@ maxmemory-policy noeviction
 
 # Logging
 loglevel warning
-
-# Replication - first allocation (index 0) is initial master, others replicate via Consul
-# Sentinel handles failover if master goes down
-{{ if ne (env "NOMAD_ALLOC_INDEX") "0" }}
-{{ range service "redis-primary" }}
-replicaof {{ .Address }} 6379
-{{ end }}
-{{ end }}
         EOF
       }
 
@@ -363,6 +362,8 @@ REDIS_PASSWORD={{ .Data.data.password }}
       }
 
       # --- Sentinel Configuration ---
+      # Bootstrap from any available redis instance — Sentinel discovers
+      # the actual master automatically. No ALLOC_INDEX assumptions.
       template {
         destination = "local/sentinel.conf"
         change_mode = "restart"
@@ -372,17 +373,12 @@ port {{ env "NOMAD_PORT_sentinel" }}
 dir /data
 daemonize no
 
-# Monitor the Redis master
-# ALLOC_INDEX=0 is the initial master, so monitor locally
-# Other allocations monitor via Consul once master is healthy
 {{ with secret "secret/data/redis-shared" }}
 {{ $password := .Data.data.password }}
-{{ if eq (env "NOMAD_ALLOC_INDEX") "0" }}
-sentinel monitor munchbox-redis 127.0.0.1 6379 2
-sentinel auth-pass munchbox-redis {{ $password }}
-{{ else }}
-{{ range service "redis-primary" }}
-sentinel monitor munchbox-redis {{ .Address }} 6379 2
+# Bootstrap from any available redis instance
+{{ range $i, $svc := service "redis" }}
+{{ if eq $i 0 }}
+sentinel monitor munchbox-redis {{ $svc.Address }} {{ $svc.Port }} 2
 sentinel auth-pass munchbox-redis {{ $password }}
 {{ end }}
 {{ end }}

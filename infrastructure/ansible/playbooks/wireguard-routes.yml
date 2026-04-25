@@ -17,9 +17,13 @@
     wireguard_gateway: "192.168.68.61"  # stabler
 
   tasks:
-    - name: Skip if this is the WireGuard gateway
+    - name: Skip the WireGuard gateway and any cloud (WG-client) hosts
+      # Cloud nodes are themselves WireGuard clients (10.200.0.x); the static
+      # route via the home-network gateway is unreachable from inside the
+      # tunnel and is unnecessary because their WG interface already covers
+      # 10.200.0.0/24 via AllowedIPs.
       ansible.builtin.meta: end_host
-      when: ansible_host == wireguard_gateway
+      when: ansible_host == wireguard_gateway or 'cloud_nodes' in group_names
 
     - name: Add route immediately (if not present)
       ansible.builtin.command:
@@ -63,26 +67,18 @@
                         via: {{ wireguard_gateway }}
           notify: Apply netplan
 
-    - name: Check if interfaces.d exists
+    # Legacy interfaces.d-based config declared a duplicate `iface ... inet
+    # static` stanza, which ifupdown silently drops because the primary
+    # /etc/network/interfaces stanza already covers the interface — so the
+    # `up ip route add` hook never fired on boot. Remove it on every run.
+    - name: Remove broken interfaces.d wireguard-route file (legacy)
+      ansible.builtin.file:
+        path: /etc/network/interfaces.d/wireguard-route
+        state: absent
       when: not netplan_dir.stat.exists
-      ansible.builtin.stat:
-        path: /etc/network/interfaces.d
-      register: interfaces_d
 
-    - name: Configure persistent route via interfaces.d (Debian without netplan)
-      when: not netplan_dir.stat.exists and interfaces_d.stat.exists
-      ansible.builtin.copy:
-        dest: /etc/network/interfaces.d/wireguard-route
-        mode: "0644"
-        content: |
-          # WireGuard network route - managed by Ansible
-          auto {{ ansible_default_ipv4.interface }}
-          iface {{ ansible_default_ipv4.interface }} inet static
-              up ip route add {{ wireguard_network }} via {{ wireguard_gateway }} || true
-              down ip route del {{ wireguard_network }} via {{ wireguard_gateway }} || true
-
-    - name: Configure persistent route via systemd (fallback for Pi5/other)
-      when: not netplan_dir.stat.exists and not interfaces_d.stat.exists
+    - name: Configure persistent route via systemd (Debian/non-netplan hosts)
+      when: not netplan_dir.stat.exists
       block:
         - name: Create systemd service for WireGuard route
           ansible.builtin.copy:

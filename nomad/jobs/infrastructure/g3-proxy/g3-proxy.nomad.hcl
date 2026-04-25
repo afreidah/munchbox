@@ -122,7 +122,7 @@ job "g3-proxy" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/g3:v0.5.0"
+        image              = "registry.munchbox.cc/g3:v0.5.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -143,6 +143,8 @@ job "g3-proxy" {
 server:
   listen_addr: "0.0.0.0:9001"
   log_level: "info"
+  read_timeout: "20m"
+  write_timeout: "20m"
 
 gmail:
   client_id: "{{ .Data.data.client_id }}"

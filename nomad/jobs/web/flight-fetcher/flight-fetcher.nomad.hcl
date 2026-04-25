@@ -107,7 +107,7 @@ job "flight-fetcher" {
       }
 
       config {
-        image              = "registry.munchbox.cc/flight-fetcher:v0.9.23"
+        image              = "registry.munchbox.cc/flight-fetcher:v0.9.25"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -130,12 +130,18 @@ job "flight-fetcher" {
 location {
   lat       = 34.0928
   lon       = -118.3287
-  radius_km = 50.0
+  radius_km = 200.0
 }
 
 opensky {
-  id     = "{{ .Data.data.opensky_id }}"
-  secret = "{{ .Data.data.opensky_secret }}"
+  id            = "{{ .Data.data.opensky_id }}"
+  secret        = "{{ .Data.data.opensky_secret }}"
+  poll_interval = "120s"
+}
+
+dump1090 {
+  url           = "http://192.168.68.79/skyaware"
+  poll_interval = "5s"
 }
 
 airlabs {
@@ -146,7 +152,7 @@ flightaware {
   api_key = "{{ .Data.data.flightaware_api_key }}"
 }
 
-poll_interval      = "160s"
+poll_interval      = "30s"   # fallback default; both sources set their own
 enrichment_refresh = "5h"
 
 redis {
@@ -164,7 +170,7 @@ postgres {
 
 server {
   listen  = ":8080"
-  refresh = 10
+  refresh = 3
 }
 
 retention {

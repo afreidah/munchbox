@@ -13,6 +13,7 @@ type  = "service"
 image = "jvmilazz0/kavita:0.8.8"
 node  = "oraclearm2"
 port  = 5000
+host_network = true
 
 cpu    = 500
 memory = 512

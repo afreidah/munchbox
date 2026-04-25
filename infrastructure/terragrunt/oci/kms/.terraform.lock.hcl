@@ -127,6 +127,20 @@ provider "registry.terraform.io/hashicorp/vault" {
   ]
 }
 
+provider "registry.terraform.io/ibm-cloud/ibm" {
+  version     = "1.89.0"
+  constraints = "~> 1.89"
+  hashes = [
+    "h1:G0JEPama95IWN3EI5n5VoJX9Mz8VC9zZ1+Rcfq1U76c=",
+    "zh:05a524e828b1aef1527551f6744fcb6d76a9ed89c20affe29cd96cc93a3abb8d",
+    "zh:3e065f5f011b3e15a582639a481848543aa63b0e817161384994a484e7b8707a",
+    "zh:5df84c531de5ff3745b4fcd3108639879c4807ee26b4b83848200efca1b5ea78",
+    "zh:71a30eeb5f915849fb7846c68a67e6c292ded0535e1c585fb885c55cf5468142",
+    "zh:724a5d1287914d58c866ff71a3d699c90a7d1076a0c07141877f7bcdf08d13e4",
+    "zh:d3841cfbcdd881ffd1c2001ee97ebf0c2115f3a9ad67320871a120c2ed222798",
+  ]
+}
+
 provider "registry.terraform.io/maxlaverse/bitwarden" {
   version     = "0.17.1"
   constraints = "~> 0.12"
@@ -170,6 +184,49 @@ provider "registry.terraform.io/oracle/oci" {
     "zh:e12ec25cba44489dac966ecb5ea89b63e88aefad6c0d28b54bde3af79f1389d7",
     "zh:fe6aa72e82f9912b6c9893025bd58d967fad0f5864ea1151acc2d804ddbf7d70",
     "zh:ff703d90bb3afab257c660732c23269cc7f58167fe85d163b3fa29cd70010d3a",
+  ]
+}
+
+provider "registry.terraform.io/ryanwholey/pihole" {
+  version     = "0.2.0"
+  constraints = "~> 0.2"
+  hashes = [
+    "h1:W36nKuGXulE975bvwcRXUlib27z8b71INkvvXbAK/W0=",
+    "zh:340bf25085869ef0292ca4c4b916f509e7b3af9bf9c5b4dee9279fdf74287281",
+    "zh:4dbed1af421a2b9379e99e9d896898b6597ca874ff071e874c5116ba62f7706c",
+    "zh:532dc4ff9500c2f0225f12e2df53a2fc4da46713fc01756d1575783933dc51e0",
+    "zh:837a7030b30d5651c46307b687bc6c082aff191e2ea31f36914d585bb46ffc0d",
+    "zh:a678331326f465a4ca930d26e10d75e6e62e05ae9220ee406b34d4d1d77e0595",
+    "zh:a6e23c128d71061ab89e78c45ef7a878420a8201551136d3ecbd10ae620676e1",
+    "zh:b5133016ddd29f08f3719da3f7ee41680ed05a6d8f4c3f6b0bb89a6aa5f187da",
+    "zh:b59ce1807603f5cd95e8988f8203c9b03a7754f75dbf613909fee5abe687ecf2",
+    "zh:bd3fb3ea5d72468a08491c27ec4f32b1836533d4036f88f56728508644a9bcb2",
+    "zh:cf69c5127d89bdd8c094f169cdf3c93be2977abc48030c001616129f74f124ca",
+    "zh:e82a08e0be7437ef19b5ced837e76fd5014c490b803c2b479738a8db3a6ad933",
+    "zh:eef96671eba8c9e7d52586a0ef2adc0f92b13f46faf893b553d83366c01cc8ff",
+    "zh:f63758ad86ab442f29041f7d0de417efa594a0f0b2ade0651977ec8831ad9378",
+  ]
+}
+
+provider "registry.terraform.io/svalabs/forgejo" {
+  version     = "1.4.2"
+  constraints = "~> 1.1"
+  hashes = [
+    "h1:jA2BQVOpldQcMGUhAkfAYDmjOQMkAoWhZASq14nmaFc=",
+    "zh:034b4198ced58db8a074594fadcf72b8243b732187626cb764927b68e445f3c1",
+    "zh:2079e988b4e7f0186778abced584ac81e1a532f7b2df223ac14598349a66b59f",
+    "zh:21bd45803273c9a07ea41c931686c1e15a1352bc18be64b4315c6b4847223f41",
+    "zh:54616de04c965686907a07811c511a4fc8162b4bbffb65d5d4e275df1e6ed638",
+    "zh:7c94b88ef097e4a782e3105719d1a432a3ece217c3cce18873f29c840afa3694",
+    "zh:85dfb48cf20e985d435bc6b11052d65ccdff7e5813e582b51a9032b5deed0dcf",
+    "zh:890df766e9b839623b1f0437355032a3c006226a6c200cd911e15ee1a9014e9f",
+    "zh:9d68424deb0bcfb691560c0ed01e2962c0973df699b518f70eea1e077d72a23d",
+    "zh:ac9963f135f11fa44102388b97c3c606f8e0d01967b16fbb35d79c283a38b174",
+    "zh:c16e33623ea8227d478099c66ce7acbcea40107da19c8bc35dc2d367d2e42a3f",
+    "zh:c29abe5772481b2b9ca86ff73c856a2ef6ea03d121948b802c1f17ab6c7c2a70",
+    "zh:dbac630f62f3f00f6dfa8beb620ebe9b018512161197bc3a8f5003998bff48d4",
+    "zh:e33b275e8ab2f6eb46c27e82e72a305a9488e2e8e092583c2ecd59f5ab604b5b",
+    "zh:e67b5136334dc87ee85bd082386a382620ba816a9d4cbee21965faca2227d15c",
   ]
 }
 
