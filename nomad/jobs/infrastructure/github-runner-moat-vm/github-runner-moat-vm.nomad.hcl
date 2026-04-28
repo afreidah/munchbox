@@ -1,27 +1,25 @@
 # -------------------------------------------------------------------------------
-# GitHub Actions Runner — moat (private repo)
+# GitHub Actions Runner — moat (VM pool)
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Self-hosted GitHub Actions runners scoped to the private `moat` repo so its
-# CI pipeline can run without burning paid hosted-runner minutes. Runs on the
-# amd64 Proxmox VMs (nomad-client-0X) — moat's Packer/Kitchen/Cinc flows expect
-# native amd64; the arm64 .deb is produced via goreleaser cross-compile.
+# Sister pool to github-runner-moat. Identical except this pool advertises the
+# `vm,kvm` labels and gets /dev/kvm passed into the container so workflows
+# requiring real virtualization (Packer-qemu, kitchen-vagrant + vagrant-libvirt,
+# load tests) can run natively. Nested virt is already enabled on all amd64
+# nomad-client guests — confirmed via `/dev/kvm` + `vmx` flag.
 #
-# Registration token is fetched from Vault via workload identity (fine-grained
-# PAT with Administration: Read+Write on the moat repo). Docker socket is
-# mounted so workflow steps can build images and run containers.
+# Workflows that need this pool select it via:
+#   runs-on: [self-hosted, linux, x64, vm, moat]
+#
+# Plain CI keeps using the regular pool (no `vm` label).
 # -------------------------------------------------------------------------------
 
-job "github-runner-moat" {
+job "github-runner-moat-vm" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
   node_pool   = "default"
-
-  # ---------------------------------------------------------------------------
-  # Update Strategy
-  # ---------------------------------------------------------------------------
 
   update {
     max_parallel     = 1
@@ -31,15 +29,10 @@ job "github-runner-moat" {
     auto_revert      = true
   }
 
-  # ---------------------------------------------------------------------------
-  # Task Group
-  # ---------------------------------------------------------------------------
-
   group "runner" {
-    count = 2
+    count = 1
 
-    # Exclude the arm64 bare metal Pi5s — runners need native amd64 for
-    # moat's Packer/Kitchen/Cinc tooling.
+    # Exclude the arm64 bare metal Pi5s — moat CI is amd64.
     constraint {
       attribute = "${node.unique.name}"
       operator  = "!="
@@ -50,11 +43,6 @@ job "github-runner-moat" {
       attribute = "${node.unique.name}"
       operator  = "!="
       value     = "stabler.munchbox.cc"
-    }
-
-    # Spread allocations across distinct hosts.
-    constraint {
-      distinct_hosts = true
     }
 
     network {
@@ -76,7 +64,7 @@ job "github-runner-moat" {
     }
 
     service {
-      name     = "github-runner-moat"
+      name     = "github-runner-moat-vm"
       provider = "consul"
       task     = "runner"
 
@@ -84,7 +72,8 @@ job "github-runner-moat" {
         "ci",
         "github-actions",
         "runner",
-        "moat"
+        "moat",
+        "vm",
       ]
 
       check {
@@ -96,10 +85,6 @@ job "github-runner-moat" {
         timeout  = "5s"
       }
     }
-
-    # -------------------------------------------------------------------------
-    # Task: runner
-    # -------------------------------------------------------------------------
 
     task "runner" {
       driver = "docker"
@@ -116,9 +101,25 @@ job "github-runner-moat" {
       }
 
       config {
-        image          = "registry.munchbox.cc/moat-runner-standard:1.0.3"
+        image          = "registry.munchbox.cc/moat-runner-vm:1.0.3"
         privileged     = true
         cpu_hard_limit = true
+
+        # /dev/kvm gives the container native KVM acceleration. /dev/net/tun is
+        # needed for libvirt/vagrant networks. Both clients have nested virt
+        # enabled at the Proxmox layer.
+        devices = [
+          {
+            host_path          = "/dev/kvm"
+            container_path     = "/dev/kvm"
+            cgroup_permissions = "rwm"
+          },
+          {
+            host_path          = "/dev/net/tun"
+            container_path     = "/dev/net/tun"
+            cgroup_permissions = "rwm"
+          },
+        ]
 
         volumes = [
           "/var/run/docker.sock:/var/run/docker.sock"
@@ -131,7 +132,6 @@ job "github-runner-moat" {
         RUN_AS_ROOT          = "false"
       }
 
-      # --- Registration credentials from Vault ---
       template {
         data = <<-EOF
 {{- with secret "secret/data/github/moat-runner" }}
@@ -141,11 +141,11 @@ REPO_URL="{{ .Data.data.repo_url }}"
 RUNNER_GROUP="{{ .Data.data.runner_group }}"
 {{- end }}
 {{- end }}
-RUNNER_NAME=moat-runner-{{ env "NOMAD_ALLOC_ID" }}
+RUNNER_NAME=moat-runner-vm-{{ env "NOMAD_ALLOC_ID" }}
 RUNNER_WORKDIR=/tmp/runner-work
 RUNNER_SCOPE=repo
 EPHEMERAL=true
-LABELS=nomad,self-hosted,linux,x64,docker,moat
+LABELS=nomad,self-hosted,linux,x64,docker,kvm,vm
 RUNNER_VERSION=latest
 DISABLE_AUTO_UPDATE=true
 EOF
@@ -157,7 +157,7 @@ EOF
 
       resources {
         cpu    = 6000
-        memory = 4096
+        memory = 8192
       }
 
       kill_timeout = "120s"
