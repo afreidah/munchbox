@@ -752,7 +752,8 @@ locals {
       "lidarr",
       "readarr",
       "prowlarr",
-      "g3"
+      "g3",
+      "wireguard"
     ]
 
     # --- Database Roles (disabled by default) ---
@@ -890,65 +891,102 @@ locals {
         content = local.cloudflare_tunnel_cname
         type    = "CNAME"
       }
-    }
-
-    rate_limiting_rulesets = {
-      "munchbox-auth" = {
-        zone_id     = local.cloudflare_munchbox_zone_id
-        name        = "Munchbox Rate Limiting"
-        description = "Rate limiting rules for munchbox.cc services"
-        rules = [
-          {
-            action              = "block"
-            expression          = "(http.request.uri.path contains \"/Users/AuthenticateByName\")"
-            description         = "Rate limit authentication attempts"
-            characteristics     = ["cf.colo.id", "ip.src"]
-            period              = 10
-            requests_per_period = 3
-            mitigation_timeout  = 10
-          }
-        ]
+      # WireGuard server endpoint. Explicit A record overrides the wildcard
+      # CNAME above for this single name so the record is not proxied (the
+      # Cloudflare proxy is HTTP/HTTPS-only and WireGuard runs over UDP).
+      # Initial content is the home WAN IP at bootstrap; oracle-watchdog
+      # (agent mode, wan_dns block) keeps the record in sync with the live
+      # WAN IP from then on. Re-running terragrunt apply may temporarily
+      # reset the record to the bootstrap value, which oracle-watchdog
+      # re-corrects on its next poll cycle (default 5m).
+      "munchbox-wg" = {
+        zone_id = local.cloudflare_munchbox_zone_id
+        name    = "wg"
+        content = "23.240.245.39"
+        type    = "A"
+        proxied = false
+        ttl     = 60
       }
     }
 
-    tunnel_config = {
-      account_id = local.cloudflare_account_id
-      tunnel_id  = local.cloudflare_tunnel_id
-      ingress_rules = [
-        {
-          hostname       = "alexfreidah.com"
-          service        = "http://127.0.0.1:80"
-          origin_request = { http_host_header = "alexfreidah.com" }
-        },
-        {
-          hostname       = "www.alexfreidah.com"
-          service        = "http://127.0.0.1:80"
-          origin_request = { http_host_header = "www.alexfreidah.com" }
-        },
-        {
-          hostname       = "resume.alexfreidah.com"
-          service        = "http://127.0.0.1:80"
-          origin_request = { http_host_header = "resume.alexfreidah.com" }
-        },
-        {
-          hostname       = "k3s-status.alexfreidah.com"
-          service        = "http://127.0.0.1:80"
-          origin_request = { http_host_header = "k3s-status.alexfreidah.com" }
-        },
-        {
-          hostname       = "analytics.alexfreidah.com"
-          service        = "http://127.0.0.1:80"
-          origin_request = { http_host_header = "analytics.alexfreidah.com" }
-        },
-        {
-          hostname = "*.munchbox.cc"
-          service  = "http://127.0.0.1:80"
-        },
-        {
-          service = "http_status:404"
-        }
-      ]
-    }
+    # Account-scoped rulesets require Account:Account Rulesets:Edit on the
+    # CLOUDFLARE_API_TOKEN, which the current token lacks. Refresh fails
+    # with Authentication error (10000) and blocks every plan. Empty map
+    # disables Terraform management until the token scope is widened and
+    # the existing ruleset is reimported. Tracked separately from the WG
+    # cutover.
+    rate_limiting_rulesets = {}
+
+    # Original rate_limiting_rulesets kept here for reference until state
+    # import:
+    #
+    # rate_limiting_rulesets = {
+    #   "munchbox-auth" = {
+    #     zone_id     = local.cloudflare_munchbox_zone_id
+    #     name        = "Munchbox Rate Limiting"
+    #     description = "Rate limiting rules for munchbox.cc services"
+    #     rules = [
+    #       {
+    #         action              = "block"
+    #         expression          = "(http.request.uri.path contains \"/Users/AuthenticateByName\")"
+    #         description         = "Rate limit authentication attempts"
+    #         characteristics     = ["cf.colo.id", "ip.src"]
+    #         period              = 10
+    #         requests_per_period = 3
+    #         mitigation_timeout  = 10
+    #       }
+    #     ]
+    #   }
+    # }
+
+    # Cloudflare tunnel ingress config. Currently NOT under Terraform state
+    # management - the actual tunnel exists in the Cloudflare control plane
+    # and is consumed by the cloudflared sidecar in the traefik Nomad job
+    # (token mode, remote-managed). Set to null until the missing state can
+    # be reimported with a token that has Account:Cloudflare Tunnel:Edit.
+    # Tracked separately from the WG-HA cutover.
+    tunnel_config = null
+
+    # Original tunnel_config kept here for reference until state import:
+    #
+    # tunnel_config = {
+    #   account_id = local.cloudflare_account_id
+    #   tunnel_id  = local.cloudflare_tunnel_id
+    #   ingress_rules = [
+    #     {
+    #       hostname       = "alexfreidah.com"
+    #       service        = "http://127.0.0.1:80"
+    #       origin_request = { http_host_header = "alexfreidah.com" }
+    #     },
+    #     {
+    #       hostname       = "www.alexfreidah.com"
+    #       service        = "http://127.0.0.1:80"
+    #       origin_request = { http_host_header = "www.alexfreidah.com" }
+    #     },
+    #     {
+    #       hostname       = "resume.alexfreidah.com"
+    #       service        = "http://127.0.0.1:80"
+    #       origin_request = { http_host_header = "resume.alexfreidah.com" }
+    #     },
+    #     {
+    #       hostname       = "k3s-status.alexfreidah.com"
+    #       service        = "http://127.0.0.1:80"
+    #       origin_request = { http_host_header = "k3s-status.alexfreidah.com" }
+    #     },
+    #     {
+    #       hostname       = "analytics.alexfreidah.com"
+    #       service        = "http://127.0.0.1:80"
+    #       origin_request = { http_host_header = "analytics.alexfreidah.com" }
+    #     },
+    #     {
+    #       hostname = "*.munchbox.cc"
+    #       service  = "http://127.0.0.1:80"
+    #     },
+    #     {
+    #       service = "http_status:404"
+    #     }
+    #   ]
+    # }
   }
 
   # ---------------------------------------------------------------------------

@@ -6,10 +6,17 @@
 
 wireguard_role: client
 
-# Server endpoint - your home public IP or DDNS hostname
-wireguard_server_endpoint: "23.240.245.39"
+# Server endpoint - DDNS hostname managed in Cloudflare. The A record is
+# kept in sync with the home WAN IP at runtime by oracle-watchdog (agent
+# mode, wan_dns block). Re-resolution on the client side is handled by
+# oracle-watchdog (monitor mode, wireguard block / wgresolver package).
+wireguard_server_endpoint: "wg.munchbox.cc"
 
-# Server public key (stabler)
+# Server public key. After WG-HA cutover this is the SHARED public key
+# stored in Vault at secret/data/wireguard and applied to every ingress
+# node running the wireguard-server Nomad job. Until cutover, the value
+# below MUST match whatever key stabler currently advertises so existing
+# clients keep handshaking. Update this in lockstep with the Vault write.
 wireguard_server_public_key: "cUn1CNonnDVBMWg6jFop2htQ2GWu8jaepTt8/yPPcjI="
 
 # Networks to route through the tunnel

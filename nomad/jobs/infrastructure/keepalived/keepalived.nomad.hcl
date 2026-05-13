@@ -95,11 +95,12 @@ job "keepalived" {
         cap_add    = ["NET_ADMIN", "NET_RAW"]
 
         entrypoint = ["/bin/sh", "-c"]
-        args       = ["apk add --no-cache keepalived curl > /dev/null 2>&1 && exec keepalived -f /etc/keepalived/keepalived.conf --dont-fork --log-console"]
+        args       = ["apk add --no-cache keepalived curl wireguard-tools > /dev/null 2>&1 && exec keepalived -f /etc/keepalived/keepalived.conf --dont-fork --log-console"]
 
         volumes = [
           "local/keepalived.conf:/etc/keepalived/keepalived.conf:ro",
-          "local/check_traefik.sh:/etc/keepalived/check_traefik.sh:ro"
+          "local/check_traefik.sh:/etc/keepalived/check_traefik.sh:ro",
+          "local/check_wireguard.sh:/etc/keepalived/check_wireguard.sh:ro",
         ]
       }
 
@@ -126,6 +127,15 @@ vrrp_script check_traefik {
   rise 2
 }
 
+# Health check script for WireGuard server liveness
+vrrp_script check_wireguard {
+  script "/etc/keepalived/check_wireguard.sh"
+  interval 5
+  weight -50
+  fall 3
+  rise 2
+}
+
 # VIP: 192.168.68.50 (goren primary, nomad-client-05 backup)
 vrrp_instance VI_TRAEFIK {
   state {{ if eq (env "node.unique.name") "goren" }}MASTER{{ else }}BACKUP{{ end }}
@@ -147,10 +157,39 @@ vrrp_instance VI_TRAEFIK {
     check_traefik
   }
 }
+
+# VIP: 192.168.68.49 (goren primary, nomad-client-05 backup)
+# Floats to whichever ingress node currently has a healthy WireGuard
+# interface. The home router (TP-Link Deco) binds port-forwards to
+# MAC+IP, and use_vmac (RFC 5798 virtual MAC) tripped Deco's mesh ARP
+# bridging across wired/wifi segments. Reverted to plain VIP without
+# use_vmac; the port-forward is bound to goren's MAC + .49, so failover
+# to nomad-client-05 currently requires a manual Deco reconfig. Tracked
+# as a separate hardening item.
+vrrp_instance VI_WIREGUARD {
+  state {{ if eq (env "node.unique.name") "goren" }}MASTER{{ else }}BACKUP{{ end }}
+  interface {{ env "meta.vrrp_interface" }}
+  virtual_router_id 49
+  priority {{ if eq (env "node.unique.name") "goren" }}101{{ else }}100{{ end }}
+  advert_int 1
+
+  authentication {
+    auth_type PASS
+    auth_pass munchbox49
+  }
+
+  virtual_ipaddress {
+    192.168.68.49/24
+  }
+
+  track_script {
+    check_wireguard
+  }
+}
         EOF
       }
 
-      # --- Health Check Script ---
+      # --- Health Check Script: Traefik ---
       template {
         destination = "local/check_traefik.sh"
         perms       = "0755"
@@ -160,6 +199,23 @@ vrrp_instance VI_TRAEFIK {
 # Check if Traefik is responding on the local node
 curl -sf http://127.0.0.1:8081/ping > /dev/null 2>&1
 exit $?
+        EOF
+      }
+
+      # --- Health Check Script: WireGuard ---
+      # Healthy when wg0 exists AND at least one peer has handshaken in the
+      # last 180 seconds. The handshake check distinguishes "WG service is
+      # running" from "WG service is actually exchanging traffic" - the
+      # latter is what callers care about.
+      template {
+        destination = "local/check_wireguard.sh"
+        perms       = "0755"
+        change_mode = "restart"
+        data        = <<-EOF
+#!/bin/sh
+ip link show wg0 >/dev/null 2>&1 || exit 1
+wg show wg0 latest-handshakes 2>/dev/null \
+  | awk -v now=$(date +%s) '{ if ($2 > 0 && (now - $2) < 180) found=1 } END { exit !found }'
         EOF
       }
 

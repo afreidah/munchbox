@@ -3,8 +3,11 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Adds static route to WireGuard network (10.200.0.0/24) via stabler for all
-# home network Consul nodes. Required for bidirectional gossip with Oracle nodes.
+# Adds a static route to the WireGuard network (10.200.0.0/24) via the
+# floating VIP managed by keepalived's VI_WIREGUARD instance for all home
+# network Consul nodes. Required for bidirectional gossip with Oracle nodes
+# and survives ingress-node failover transparently because the route target
+# is the VIP rather than a specific node IP.
 #
 # Usage: ansible-playbook -i inventory/bare-metal.ini playbooks/wireguard-routes.yml
 # -------------------------------------------------------------------------------
@@ -14,7 +17,11 @@
   gather_facts: true
   vars:
     wireguard_network: "10.200.0.0/24"
-    wireguard_gateway: "192.168.68.61"  # stabler
+    # Floating VRRP VIP held by whichever ingress node is currently MASTER
+    # of the VI_WIREGUARD instance in nomad/jobs/infrastructure/keepalived.
+    # Replaces the previous static stabler IP (192.168.68.61) so home->Oracle
+    # traffic survives an ingress-node failover without manual intervention.
+    wireguard_gateway: "192.168.68.49"
 
   tasks:
     - name: Skip the WireGuard gateway and any cloud (WG-client) hosts

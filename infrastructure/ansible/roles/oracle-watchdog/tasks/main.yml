@@ -45,6 +45,32 @@
   notify: Restart oracle-watchdog
 
 # -------------------------------------------------------------------------------
+# Monitor Config File
+#
+# The monitor reads /etc/oracle-watchdog/config.yaml when it exists. The
+# file is optional - absent it, monitor runs in legacy env-only mode. We
+# write it unconditionally so flipping wireguard_enabled is a one-variable
+# change at cutover time.
+# -------------------------------------------------------------------------------
+
+- name: Create oracle-watchdog config directory
+  file:
+    path: "{{ oracle_watchdog_config_dir }}"
+    state: directory
+    mode: "0755"
+    owner: "{{ oracle_watchdog_user }}"
+    group: "{{ oracle_watchdog_group }}"
+
+- name: Write oracle-watchdog monitor configuration
+  template:
+    src: config.yaml.j2
+    dest: "{{ oracle_watchdog_config_dir }}/config.yaml"
+    owner: "{{ oracle_watchdog_user }}"
+    group: "{{ oracle_watchdog_group }}"
+    mode: "0644"
+  notify: Restart oracle-watchdog
+
+# -------------------------------------------------------------------------------
 # Systemd Override (set CONSUL_HTTP_ADDR)
 # -------------------------------------------------------------------------------
 
