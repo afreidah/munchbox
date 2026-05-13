@@ -84,7 +84,7 @@ groups:
     interval: 30s
     rules:
       - alert: SiteDown
-        expr: probe_success{job="site_https"} == 0 and on (instance) (probe_http_status_code{job="site_https"} != 401 and probe_http_status_code{job="site_https"} != 403)
+        expr: probe_success{job=~"site_https|site_http"} == 0 and on (instance) (probe_http_status_code{job=~"site_https|site_http"} != 401 and probe_http_status_code{job=~"site_https|site_http"} != 403)
         for: 2m
         labels:
           severity: critical

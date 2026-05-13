@@ -16,6 +16,13 @@
 
   vars:
     traefik_ip: "192.168.68.60"  # goren - single traefik instance
+    # Public WAN IP for the home network. Must match the Cloudflare A record
+    # for wg.munchbox.cc managed in infrastructure/terragrunt/root.hcl. Used
+    # to override the *.munchbox.cc wildcard for the WG endpoint hostname so
+    # internal lookups return the same public IP as external ones, which
+    # matters because Oracle nodes query home DNS through the tunnel and the
+    # wgresolver compares the DNS answer to the kernel WG peer endpoint.
+    wg_endpoint_public_ip: "23.240.245.39"
 
   tasks:
     - name: Create dnsmasq config for munchbox.cc
@@ -26,11 +33,20 @@
           # -----------------------------------------------------------------------
           # Munchbox Traefik DNS
           #
-          # Routes *.munchbox.cc to Traefik on goren (single instance).
+          # Routes *.munchbox.cc to Traefik on goren (single instance), with a
+          # specific override for wg.munchbox.cc so the WireGuard endpoint
+          # hostname resolves to the public WAN IP. dnsmasq's address= entries
+          # match longest-name-wins, so the wg override takes precedence over
+          # the broader wildcard.
           # Managed by Ansible - playbooks/configure-pihole-vips.yml
           # -----------------------------------------------------------------------
 
-          # Wildcard for all *.munchbox.cc subdomains
+          # Specific override for the WireGuard endpoint hostname. Must equal
+          # the Cloudflare A record so Oracle nodes (which query home DNS via
+          # the tunnel) see the same public IP as the external resolver.
+          address=/wg.munchbox.cc/{{ wg_endpoint_public_ip }}
+
+          # Wildcard for all other *.munchbox.cc subdomains
           address=/.munchbox.cc/{{ traefik_ip }}
       notify: Restart pihole-FTL
 

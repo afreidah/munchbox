@@ -333,7 +333,28 @@ scrape_configs:
           - "https://k3s-status.alexfreidah.com/"
           # Public munchbox.cc services (via Cloudflare tunnel, no Authentik)
           - "https://jellyfin.munchbox.cc/web/"
-          - "https://s3-orchestrator.munchbox.cc/"
+    relabel_configs:
+      - source_labels: ["__address__"]
+        target_label: "__param_target"
+      - source_labels: ["__param_target"]
+        target_label: "instance"
+      - target_label: "__address__"
+        replacement: "blackbox-exporter.service.consul:9115"
+
+  # -----------------------------------------------------------------------
+  # Site monitoring (HTTP) — for sites that are public via Cloudflare tunnel
+  # but only listen on plain HTTP internally. Pi-hole resolves *.munchbox.cc
+  # to goren, so probing the HTTPS URL from inside the cluster hits Traefik
+  # on :443 with no matching router and 404s. These targets are probed over
+  # HTTP to match the actual internal entrypoint.
+  # -----------------------------------------------------------------------
+  - job_name: "site_http"
+    metrics_path: "/probe"
+    params:
+      module: ["http_2xx"]
+    static_configs:
+      - targets:
+          - "http://s3-orchestrator.munchbox.cc/"
     relabel_configs:
       - source_labels: ["__address__"]
         target_label: "__param_target"

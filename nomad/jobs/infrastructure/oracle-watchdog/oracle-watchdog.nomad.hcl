@@ -119,7 +119,7 @@ job "oracle-watchdog" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/oracle-watchdog:v0.0.9"
+        image              = "registry.munchbox.cc/oracle-watchdog:v1.4.1"
         image_pull_timeout = "5m"
         ports              = ["metrics"]
 
@@ -159,6 +159,9 @@ key_file=/etc/oci/key.pem
       }
 
       # --- Watchdog Configuration ---
+      # The wan_dns block requires oracle-watchdog v1.4.0 or newer. Older
+      # binaries silently ignore the unknown block. Bump the docker image
+      # tag above before flipping wan_dns.enabled to true.
       template {
         destination = "local/config.yaml"
         perms       = "0644"
@@ -202,6 +205,39 @@ nodes:
   - name: oraclenode2
     instance_id: "ocid1.instance.oc1.phx.anyhqljtrphwkzycbfjsupzwd6restfxcazav6usagueuesiglarkluylgda"
     compartment_id: "ocid1.tenancy.oc1..aaaaaaaaeyhaous2t76u676i73cr4wi2turtytmu2j2muyiyvrboqpsp5z7a"
+
+# WAN-IP DDNS updater. Keeps the wg.munchbox.cc Cloudflare A record in
+# sync with the home WAN IP so Oracle nodes can reach the WG server
+# through DNS even when the residential WAN IP changes. Default-disabled;
+# enable by flipping enabled to true after the v1.4.0+ image is rolled
+# and the cloudflare/api_token Vault secret is verified.
+wan_dns:
+  enabled: true
+  hostname: "wg.munchbox.cc"
+  cloudflare:
+    api_token_env: "CLOUDFLARE_API_TOKEN"
+    zone_id: "{{ with secret "secret/data/cloudflare" }}{{ .Data.data.zone_id }}{{ end }}"
+  detection_providers:
+    - "https://api.ipify.org"
+    - "https://1.1.1.1/cdn-cgi/trace"
+  poll_interval: 5m
+  cooldown: 15m
+        EOF
+      }
+
+      # --- Cloudflare API Token from Vault ---
+      # Mounted as an env var (not a file) so the wandns package picks it
+      # up via the api_token_env name in config without disk I/O. Reuses
+      # the existing secret/cloudflare path that the cloudflared tunnel
+      # and other jobs already source from.
+      template {
+        destination = "secrets/cloudflare.env"
+        perms       = "0600"
+        env         = true
+        data        = <<-EOF
+{{ with secret "secret/data/cloudflare" -}}
+CLOUDFLARE_API_TOKEN={{ .Data.data.api_token }}
+{{- end }}
         EOF
       }
 

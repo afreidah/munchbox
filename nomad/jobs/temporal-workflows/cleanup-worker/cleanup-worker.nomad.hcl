@@ -29,13 +29,14 @@ job "cleanup-worker" {
   }
 
   # ---------------------------------------------------------------------------
-  # Placement - bare metal nodes for SSH access to all cluster nodes
+  # Placement - stabler only (bare metal node with SSH access to cluster).
+  # Excluded from goren because cleanup-worker binds host:9090 in host-net
+  # mode, which collides with the prometheus job on the ingress node.
   # ---------------------------------------------------------------------------
 
   constraint {
     attribute = "${node.unique.name}"
-    operator  = "set_contains_any"
-    value     = "goren,stabler.munchbox.cc"
+    value     = "stabler.munchbox.cc"
   }
 
   # ---------------------------------------------------------------------------

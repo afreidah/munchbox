@@ -18,6 +18,13 @@ type  = "system"
 size  = "medium"
 
 # --- Placement: ingress nodes only ---
+# TODO(wg-ha): the backup ingress node's wg0 has the 10.200.0.0/24 route
+# but no learned peer endpoints, so its prometheus instance can't reach
+# Oracle exporters and false-alerts on a cascade. Real fix is to bring
+# wg0 up only on the node currently holding the WG VIP (sync wg0 to the
+# keepalived MASTER state via notify_master/notify_backup). Until then,
+# expect spurious "Oracle scrape failed" alerts from the backup-ingress
+# prometheus instance.
 constraints = [
   { attribute = "$${meta.role}", operator = "=", value = "ingress" }
 ]
