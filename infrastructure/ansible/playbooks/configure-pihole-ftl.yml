@@ -1,0 +1,46 @@
+# -------------------------------------------------------------------------------
+# Configure Pi-hole FTL Tunables
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Manages /etc/pihole/pihole-FTL.conf to bound query-database growth and reduce
+# SD card I/O. Default Pi-hole settings (365-day retention, 60s flush) make the
+# DB grow to several hundred MB on busy networks, which causes high iowait and
+# slow web UI loads on Pi 5s with SD-card storage.
+#
+# Usage:
+#   ansible-playbook playbooks/configure-pihole-ftl.yml -i inventory/bare-metal.ini
+# -------------------------------------------------------------------------------
+---
+- name: Configure Pi-hole FTL tunables
+  hosts: dns_servers
+  become: true
+  gather_facts: false
+
+  vars:
+    pihole_ftl_maxdbdays: 90       # default 365
+    pihole_ftl_dbinterval: 5.0     # minutes between DB flushes; default 1.0
+    pihole_ftl_privacylevel: 0     # 0=show all, 1=hide clients, 2=anonymous, 3=disabled
+
+  tasks:
+    - name: Deploy /etc/pihole/pihole-FTL.conf
+      copy:
+        dest: /etc/pihole/pihole-FTL.conf
+        owner: pihole
+        group: pihole
+        mode: '0644'
+        content: |
+          # -----------------------------------------------------------------------
+          # Pi-hole FTL configuration
+          # Managed by Ansible - playbooks/configure-pihole-ftl.yml
+          # -----------------------------------------------------------------------
+          MAXDBDAYS={{ pihole_ftl_maxdbdays }}
+          DBINTERVAL={{ pihole_ftl_dbinterval }}
+          PRIVACYLEVEL={{ pihole_ftl_privacylevel }}
+      notify: Restart pihole-FTL
+
+  handlers:
+    - name: Restart pihole-FTL
+      systemd:
+        name: pihole-FTL
+        state: restarted

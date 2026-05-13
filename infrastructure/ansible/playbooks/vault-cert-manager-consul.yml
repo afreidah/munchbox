@@ -50,7 +50,7 @@
               "check": {
                 "http": "http://localhost:{{ aggregator_port }}/",
                 "interval": "30s",
-                "timeout": "5s"
+                "timeout": "15s"
               }
             }
           }

@@ -14,8 +14,6 @@
   hosts: nomad_servers
   become: true
   serial: 1
-  vars:
-    nomad_version: "1.11.1"
 
   tasks:
     - name: Set architecture
@@ -87,8 +85,6 @@
   hosts: nomad_clients:!nomad_servers
   become: true
   serial: 1
-  vars:
-    nomad_version: "1.11.1"
 
   tasks:
     - name: Set architecture

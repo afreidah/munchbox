@@ -33,6 +33,7 @@
 - name: Install and configure Consul clients
   hosts: consul_clients
   become: true
+  serial: 1
   vars:
     consul_server_enabled: false
     consul_client_enabled: true

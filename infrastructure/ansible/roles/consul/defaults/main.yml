@@ -7,7 +7,7 @@
 # or host_vars as needed for environment-specific configuration.
 # -------------------------------------------------------------------------------
 
-consul_version: "1.22.3"
+consul_version: "1.22.7"
 consul_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
 consul_archive: "consul_{{ consul_version }}_linux_{{ consul_arch }}.zip"
 consul_download_url: "https://releases.hashicorp.com/consul/{{ consul_version }}/{{ consul_archive }}"

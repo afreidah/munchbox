@@ -47,8 +47,8 @@ common_packages:
 # Hashicorp Tool Versions
 # -------------------------------------------------------------------------------
 
-nomad_version: 1.11.1
-consul_version: 1.22.3
+nomad_version: 2.0.0
+consul_version: 1.22.7
 vault_version: 1.15.4
 
 # -------------------------------------------------------------------------------

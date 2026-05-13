@@ -130,14 +130,15 @@
         mode: '0644'
         content: |
           # Managed by Ansible - configure-local-consul-dns.yml
-          # Local dnsmasq handles all DNS:
+          # Local dnsmasq is the SOLE resolver. dnsmasq itself fails over to
+          # direct Pi-holes if CoreDNS is unreachable, so we don't need to list
+          # them here. Listing them here would let processes (libc, Go's
+          # net.Resolver, etc.) bypass the round-robin and hit Pi-holes directly,
+          # causing imbalanced LAN load (green getting ~64% vs logan ~36%).
           #   .consul queries → Consul agent (port 8600)
           #   Other queries → local CoreDNS → Pi-holes (round-robin)
           search munchbox.cc
           nameserver {{ dnsmasq_listen_address }}
-          {% for pihole in pihole_servers %}
-          nameserver {{ pihole }}
-          {% endfor %}
 
     - name: Ensure dnsmasq is enabled and started
       ansible.builtin.systemd:

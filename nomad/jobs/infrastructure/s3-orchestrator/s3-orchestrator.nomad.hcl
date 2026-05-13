@@ -8,7 +8,7 @@ job "s3-orchestrator" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
-  node_pool   = "all"
+  node_pool   = "default"
   priority    = 50
 
   # ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.42.5"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.46.45"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -186,7 +186,7 @@ backends:
     force_path_style: true
     disable_checksum: true
     quota_bytes: 10737418240
-    egress_byte_limit: 32212254720
+    egress_byte_limit: 10737418240
     ingress_byte_limit: 10737418240
   - name: "ibm"
     endpoint: "{{ .Data.data.ibm_s3_endpoint }}"
@@ -384,9 +384,9 @@ EOH
 
       # --- Resources ---
   		resources {
- 		    cpu        = 4000
- 		    memory     = 1024
- 		    memory_max = 2048
+ 		    cpu        = 500
+ 		    memory     = 512
+ 		    memory_max = 1000
  		  }
 
       # --- Termination ---

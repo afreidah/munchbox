@@ -136,7 +136,7 @@ location {
 opensky {
   id            = "{{ .Data.data.opensky_id }}"
   secret        = "{{ .Data.data.opensky_secret }}"
-  poll_interval = "120s"
+  poll_interval = "240s"
 }
 
 dump1090 {
@@ -161,7 +161,7 @@ redis {
 }
 
 squawk_monitor {
-  interval = "900s"
+  interval = "1000s"
 }
 
 postgres {
