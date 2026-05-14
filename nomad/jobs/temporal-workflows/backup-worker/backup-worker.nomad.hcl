@@ -46,6 +46,16 @@ job "backup-worker" {
     count = 1
 
     network {
+      # Use the host's local stub resolver so .consul lookups reach the
+      # Consul agent (via dnsmasq) instead of falling through to pi-hole,
+      # which lacks a .consul authority and lets search-domain expansion
+      # rewrite s3-orchestrator.service.consul -> .munchbox.cc and resolve
+      # to the wildcard goren IP (causing PutObject -> 192.168.68.60:9000
+      # connection-refused failures).
+      dns {
+        servers  = ["127.0.0.53"]
+        searches = []
+      }
       port "metrics" {
         to = 9090
       }
@@ -154,13 +164,13 @@ job "backup-worker" {
       }
 
       # --- Resources ---
-      # Registry backup tars ~600MB of data; needs memory headroom for gzip
-      # bursts. Steady-state usage is ~30 MiB, so request stays small and
-      # memory_max permits the burst when a registry backup runs.
+      # Steady-state usage is ~30 MiB, but the Postgres + Registry backup
+      # activities OOM when run with memory=96/memory_max=768 (exit 137 on
+      # every dump after the patroni restart cycle). Keeping memory at the
+      # historical 512 MiB; CPU is safely high already.
       resources {
-        cpu        = 2000
-        memory     = 96
-        memory_max = 768
+        cpu    = 2000
+        memory = 512
       }
 
       kill_timeout = "30s"

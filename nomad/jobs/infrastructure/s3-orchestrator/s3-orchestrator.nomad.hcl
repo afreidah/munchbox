@@ -383,11 +383,10 @@ EOH
       }
 
       # --- Resources ---
-  		resources {
- 		    cpu        = 500
- 		    memory     = 512
- 		    memory_max = 1000
- 		  }
+      resources {
+        cpu    = 500
+        memory = 1024
+      }
 
       # --- Termination ---
       kill_timeout = "30s"
