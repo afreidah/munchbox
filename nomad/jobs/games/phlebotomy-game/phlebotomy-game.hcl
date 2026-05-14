@@ -16,6 +16,8 @@ image        = "registry.munchbox.cc/phlebotomy-game:latest"
 port         = 8080
 host_network = false
 size         = "tiny"
+cpu          = 50
+memory       = 32
 storage      = "ephemeral"
 
 # --- Traefik integration ---

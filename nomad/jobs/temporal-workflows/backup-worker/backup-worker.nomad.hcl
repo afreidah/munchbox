@@ -154,10 +154,13 @@ job "backup-worker" {
       }
 
       # --- Resources ---
-      # Registry backup tars ~600MB of data; needs memory for gzip
+      # Registry backup tars ~600MB of data; needs memory headroom for gzip
+      # bursts. Steady-state usage is ~30 MiB, so request stays small and
+      # memory_max permits the burst when a registry backup runs.
       resources {
-        cpu    = 2000
-        memory = 512
+        cpu        = 2000
+        memory     = 96
+        memory_max = 768
       }
 
       kill_timeout = "30s"

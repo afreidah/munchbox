@@ -37,6 +37,15 @@ job "trivy-dashboard" {
     value     = "amd64"
   }
 
+  # Home cluster only — Oracle amd64 nodes can match the arch above but
+  # don't have a working path to the home registry / consul / vault that
+  # this dashboard needs.
+  constraint {
+    attribute = "${meta.cloud}"
+    operator  = "!="
+    value     = "oracle"
+  }
+
 
   # ---------------------------------------------------------------------------
   # Task Group: dashboard
@@ -140,8 +149,8 @@ job "trivy-dashboard" {
       }
 
       resources {
-        cpu    = 100
-        memory = 128
+        cpu    = 50
+        memory = 64
       }
 
       kill_timeout = "10s"

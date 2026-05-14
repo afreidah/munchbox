@@ -18,6 +18,7 @@ constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]
 size         = "medium"
+memory       = 192
 
 # --- Health check (use /ping to avoid auth failures in logs) ---
 health_path  = "/ping"

@@ -181,8 +181,8 @@ EOF
 
       # --- Resources ---
       resources {
-        cpu    = 100
-        memory = 64
+        cpu    = 50
+        memory = 32
       }
 
       # --- Termination ---

@@ -250,7 +250,7 @@ CLOUDFLARE_API_TOKEN={{ .Data.data.api_token }}
 
       # --- Resources ---
       resources {
-        cpu    = 100
+        cpu    = 50
         memory = 64
       }
 

@@ -193,8 +193,11 @@ EOH
       }
 
       # --- Resources ---
+      # CPU bumped from 100 to 300 MHz: 7d p95 was 179 MHz with bursts to
+      # 2.2 GHz under DNS load (system job, runs everywhere — small per-node
+      # increase but matters for query latency under load).
       resources {
-        cpu    = 100
+        cpu    = 300
         memory = 64
       }
 

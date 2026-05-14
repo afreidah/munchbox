@@ -200,7 +200,7 @@ EOF
 
       resources {
         cpu    = 200
-        memory = 512
+        memory = 192
       }
     }
 
@@ -276,7 +276,7 @@ EOF
 
       resources {
         cpu    = 1500
-        memory = 1024
+        memory = 192
       }
 
       kill_timeout = "30s"

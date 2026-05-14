@@ -14,7 +14,8 @@ image = "registry.munchbox.cc/health-checker:latest"
 port  = 8080
 node  = "any"
 host_network = true
-size = "small"
+size   = "small"
+memory = 32
 storage = "ephemeral"
 
 # --- Volume mounts ---
