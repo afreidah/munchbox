@@ -30,8 +30,16 @@ job "trivy-server" {
   }
 
   # ---------------------------------------------------------------------------
-  # Placement
+  # Placement — home cluster only (Oracle has unreliable image pulls and the
+  # vuln DB sync is bandwidth-heavy; previously fit only on home nodes by
+  # accident of resource size, now needs an explicit exclusion).
   # ---------------------------------------------------------------------------
+
+  constraint {
+    attribute = "${meta.cloud}"
+    operator  = "!="
+    value     = "oracle"
+  }
 
   # ---------------------------------------------------------------------------
   # Task Group: server
@@ -111,8 +119,10 @@ job "trivy-server" {
         env         = true
       }
 
+      # Vuln DB sync spikes well above steady-state (OOM-killed at 256).
+      # Keeping memory at the historical 512 MiB; CPU was safely cut.
       resources {
-        cpu    = 500
+        cpu    = 100
         memory = 512
       }
 

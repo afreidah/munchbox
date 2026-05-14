@@ -16,6 +16,8 @@ port         = 8078
 static_port  = 8078
 host_network = true
 size         = "tiny"
+cpu          = 50
+memory       = 32
 
 # --- Run on large Oracle Cloud nodes ---
 constraints = [

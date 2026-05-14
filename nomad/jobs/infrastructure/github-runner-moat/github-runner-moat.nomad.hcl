@@ -157,7 +157,7 @@ EOF
 
       resources {
         cpu    = 6000
-        memory = 4096
+        memory = 2176
       }
 
       kill_timeout = "120s"

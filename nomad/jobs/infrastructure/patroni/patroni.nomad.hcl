@@ -701,7 +701,7 @@ PG_EXPORTER_DISABLE_SETTINGS_METRICS=false
       }
 
       resources {
-        cpu    = 50
+        cpu    = 250
         memory = 64
       }
     }

@@ -447,7 +447,7 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
       }
 
       resources {
-        cpu    = 50
+        cpu    = 200
         memory = 64
       }
     }

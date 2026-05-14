@@ -220,7 +220,7 @@ wg show wg0 latest-handshakes 2>/dev/null \
       }
 
       resources {
-        cpu    = 50
+        cpu    = 150
         memory = 64
       }
 

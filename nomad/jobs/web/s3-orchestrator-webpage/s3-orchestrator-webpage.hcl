@@ -14,8 +14,10 @@ image = "registry.munchbox.cc/s3-orchestrator-web:v0.46.45"
 port  = 80
 node  = "any"
 host_network = false
-size  = "tiny"
-count = 3
+size   = "tiny"
+cpu    = 50
+memory = 32
+count  = 3
 storage = "ephemeral"
 
 # --- Placement: one instance per node ---

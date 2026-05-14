@@ -185,8 +185,8 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu        = 1024
-        memory     = 1024
+        cpu        = 150
+        memory     = 96
         memory_max = 1536
       }
 

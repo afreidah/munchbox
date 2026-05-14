@@ -16,7 +16,16 @@ port         = 80
 host_network = false
 node         = "any"
 size         = "tiny"
+cpu          = 50
+memory       = 32
 storage      = "ephemeral"
+
+# --- Placement: home cluster only (TODO: see issue tracking why
+# CF-tunnel + oauth2-proxy auth flow breaks when this lands behind WG
+# on an Oracle node — single curl works, browser auth flow returns 502)
+constraints = [
+  { attribute = "$${meta.cloud}", operator = "!=", value = "oracle" }
+]
 
 # --- Traefik integration ---
 traefik      = true

@@ -180,8 +180,8 @@ job "cleanup-worker" {
       }
 
       resources {
-        cpu    = 200
-        memory = 128
+        cpu    = 100
+        memory = 32
       }
 
       kill_timeout = "30s"
