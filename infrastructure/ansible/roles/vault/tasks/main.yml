@@ -188,3 +188,16 @@
     src: vault.sh.j2
     dest: /etc/profile.d/vault.sh
     mode: "0644"
+
+# -------------------------------------------------------------------------------
+# Log Rotation
+# -------------------------------------------------------------------------------
+
+- name: Deploy logrotate config for Vault audit log
+  template:
+    src: vault-logrotate.j2
+    dest: /etc/logrotate.d/vault
+    owner: root
+    group: root
+    mode: "0644"
+  tags: [logrotate, vault_logrotate]
