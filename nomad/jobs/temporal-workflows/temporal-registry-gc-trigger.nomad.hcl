@@ -87,7 +87,7 @@ job "temporal-registry-gc-trigger" {
         REGISTRY_JOB_NAME           = "registry"
         REGISTRY_DATA_DIR           = "/mnt/gdrive/munchbox-data/registry"
         REGISTRY_IMAGE              = "registry:3"
-        DRY_RUN                     = "true"
+        DRY_RUN                     = "false"
         DELETE_UNTAGGED             = "true"
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
       }
