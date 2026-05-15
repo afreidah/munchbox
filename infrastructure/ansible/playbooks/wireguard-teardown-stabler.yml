@@ -1,0 +1,57 @@
+---
+# -------------------------------------------------------------------------------
+# Tear down the legacy stabler-only WireGuard server config
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# After the WG HA cutover (issue #29), the home end of the WG tunnel runs
+# as a Nomad job on the ingress pair (goren + nomad-client-05) behind the
+# 192.168.68.49 VRRP VIP. Stabler's old wg-quick@wg0 unit and
+# /etc/wireguard/wg0.conf were left behind during the cutover so we could
+# roll back. Confirmed safe to drop now: stabler's wg0 has had no peer
+# handshakes for 1+ days because all Oracle clients connect to the
+# wg.munchbox.cc endpoint instead.
+#
+# Leaves the keypair (/etc/wireguard/{private,public}.key) in place so we
+# can re-enable later if needed without re-bootstrapping. Does not
+# uninstall the wireguard package — keeping `wg show` available for ops.
+#
+# Usage:
+#   ansible-playbook -i inventory/bare-metal.ini -i inventory/hosts.yml \
+#                    playbooks/wireguard-teardown-stabler.yml
+# -------------------------------------------------------------------------------
+
+- name: Tear down stabler legacy WireGuard server
+  hosts: stabler
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Stop and disable wg-quick@wg0
+      ansible.builtin.systemd:
+        name: wg-quick@wg0
+        state: stopped
+        enabled: false
+      register: wg_systemd
+      failed_when:
+        - wg_systemd is failed
+        - "'Could not find the requested service' not in (wg_systemd.msg | default(''))"
+
+    - name: Remove /etc/wireguard/wg0.conf (keypair preserved for possible re-enable)
+      ansible.builtin.file:
+        path: /etc/wireguard/wg0.conf
+        state: absent
+
+    - name: Confirm wg0 interface is gone
+      ansible.builtin.command: ip link show wg0
+      register: wg0_check
+      failed_when: false
+      changed_when: false
+
+    - name: Display result
+      ansible.builtin.debug:
+        msg: |
+          {{ inventory_hostname }}:
+            wg-quick@wg0: stopped + disabled
+            /etc/wireguard/wg0.conf: removed
+            wg0 interface: {{ 'gone' if wg0_check.rc != 0 else 'still present (manual cleanup may be needed)' }}
