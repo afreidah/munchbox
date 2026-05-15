@@ -110,7 +110,7 @@ job "cleanup-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/cleanup-worker:v0.1.0"
+        image              = "registry.munchbox.cc/cleanup-worker:v0.2.4"
         image_pull_timeout = "5m"
         network_mode       = "host"
         ports              = ["metrics"]
