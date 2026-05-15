@@ -1,0 +1,65 @@
+---
+# -------------------------------------------------------------------------------
+# Cap journald disk usage cluster-wide
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Drops a /etc/systemd/journald.conf.d/limits.conf override on every host so the
+# persistent journal can't grow unbounded. nomad-server-03 had 2.9 GB of
+# /var/log/journal on a 30 GB disk before this. Caps total persistent journal
+# at 500 MiB and per-file at 50 MiB.
+#
+# Usage:
+#   ansible-playbook -i inventory/bare-metal.ini -i inventory/hosts.yml \
+#                    playbooks/cap-journald.yml
+# -------------------------------------------------------------------------------
+
+- name: Cap journald disk usage
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure journald drop-in directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy journald size cap
+      ansible.builtin.copy:
+        dest: /etc/systemd/journald.conf.d/limits.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by Ansible — playbooks/cap-journald.yml
+          [Journal]
+          SystemMaxUse=500M
+          SystemMaxFileSize=50M
+      notify: restart systemd-journald
+
+    - name: Force immediate vacuum to enforce the new cap
+      # Restarting journald picks up the config, but it only enforces on
+      # rotation. Vacuum forces it to drop already-archived files above the
+      # cap so the existing oversize journals shrink right away.
+      ansible.builtin.command: journalctl --vacuum-size=500M
+      register: journal_vacuum
+      changed_when: "'Deleted archived journal' in journal_vacuum.stderr or 'Vacuuming done' in journal_vacuum.stderr"
+
+    - name: Show post-vacuum disk usage
+      ansible.builtin.command: journalctl --disk-usage
+      register: journal_usage
+      changed_when: false
+
+    - name: Display result
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: {{ journal_usage.stdout }}"
+
+  handlers:
+    - name: restart systemd-journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted
