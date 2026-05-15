@@ -9,6 +9,13 @@ wireguard_interface: wg0
 wireguard_port: 51820
 wireguard_network: "10.200.0.0/24"
 
+# Tunnel MTU. Default 1380 sized to fit inside a 1500-byte underlay after
+# WG/UDP/IP encapsulation overhead on residential ISPs. The OCI side will
+# happily negotiate 8920 against the 9000 MTU underlay, but home-edge ICMP
+# blackholes break PMTU discovery — leaving long-lived TCP to die from
+# fragmentation timeouts under load.
+wireguard_mtu: 1380
+
 # Role: 'server' (hub at home) or 'client' (Oracle nodes connecting in)
 wireguard_role: client
 

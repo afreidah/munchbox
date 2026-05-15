@@ -44,10 +44,10 @@ templates = [
 tags = ["monitoring", "blackbox-exporter", "probes"]
 
 # --- Placement: home cluster only ---
-# Probes are scraped by prometheus and represent the cluster's view of
-# external/internal endpoints. Running blackbox on Oracle adds tunnel
-# latency to every probe and exposes it to oracle-node-2's known
-# reliability churn (alloc went `lost` before this constraint).
+# The MTU fix on 2026-05-15 removed the network-failure reason for excluding
+# Oracle, but moving blackbox here still requires WG-HA active/active so the
+# nomad-client-05 prometheus replica can reach Oracle services. Until that
+# work lands, blackbox stays home so the dashboard has full coverage.
 node = "any"
 constraints = [
   { attribute = "$${meta.cloud}", operator = "!=", value = "oracle" }

@@ -30,8 +30,19 @@ job "s3-orchestrator" {
   }
 
   # ---------------------------------------------------------------------------
-  # Placement
+  # Placement — pinned to goren (the VRRP-master ingress)
+  #
+  # s3-orchestrator must reach the MinIO backends on oraclearm-1 / oraclearm-2
+  # via 10.200.0.x. Only the WG ingress holding VRRP MASTER has live peer
+  # state with the Oracle nodes — the backup ingress (nomad-client-05) has
+  # wg0 up but no handshake, so all traffic to 10.200.0.x from there is
+  # blackholed. Pinning here until WG-HA active/active lands (issue #61).
   # ---------------------------------------------------------------------------
+
+  constraint {
+    attribute = "${node.unique.name}"
+    value     = "goren"
+  }
 
   # ---------------------------------------------------------------------------
   # Task Group: s3-orchestrator

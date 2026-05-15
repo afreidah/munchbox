@@ -8,6 +8,7 @@
 [Interface]
 Address = {{ wireguard_client_address | default('10.200.0.99/24') }}
 PrivateKey = {{ wireguard_private_key }}
+MTU = {{ wireguard_mtu }}
 
 [Peer]
 # Home WireGuard server

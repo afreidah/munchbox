@@ -9,14 +9,21 @@
 Address = {{ wireguard_server_address }}
 ListenPort = {{ wireguard_port }}
 PrivateKey = {{ wireguard_private_key }}
+MTU = {{ wireguard_mtu }}
 
 # NAT for clients to reach home network
 PostUp = iptables -t nat -A POSTROUTING -s {{ wireguard_network }} -o {{ wireguard_nat_interface }} -j MASQUERADE
 PostUp = iptables -A FORWARD -i {{ wireguard_interface }} -j ACCEPT
 PostUp = iptables -A FORWARD -o {{ wireguard_interface }} -j ACCEPT
+# Clamp TCP MSS on forwarded traffic to MTU-40. PMTUD is unreliable end-to-end
+# (home-edge ICMP blackhole), so we pin MSS instead of trusting discovery.
+PostUp = iptables -t mangle -A FORWARD -o {{ wireguard_interface }} -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ wireguard_mtu - 40 }}
+PostUp = iptables -t mangle -A FORWARD -i {{ wireguard_interface }} -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ wireguard_mtu - 40 }}
 PostDown = iptables -t nat -D POSTROUTING -s {{ wireguard_network }} -o {{ wireguard_nat_interface }} -j MASQUERADE
 PostDown = iptables -D FORWARD -i {{ wireguard_interface }} -j ACCEPT
 PostDown = iptables -D FORWARD -o {{ wireguard_interface }} -j ACCEPT
+PostDown = iptables -t mangle -D FORWARD -o {{ wireguard_interface }} -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ wireguard_mtu - 40 }}
+PostDown = iptables -t mangle -D FORWARD -i {{ wireguard_interface }} -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss {{ wireguard_mtu - 40 }}
 
 # Peers are added below - run playbook with --tags wireguard-peers to update
 {% for peer in wireguard_peers | default([]) %}

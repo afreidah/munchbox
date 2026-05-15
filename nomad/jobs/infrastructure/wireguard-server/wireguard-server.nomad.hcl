@@ -181,13 +181,23 @@ while true; do sleep 60 & wait $!; done
 Address = 10.200.0.1/24
 ListenPort = 51820
 PrivateKey = {{ with secret "secret/data/wireguard" }}{{ .Data.data.server_private_key }}{{ end }}
+# Sized to fit a 1500-byte underlay after WG/UDP/IP encap. Default would
+# inherit the ingress NIC MTU (1500), letting TCP advertise an MSS that the
+# residential ISP path can't carry — and home-edge ICMP blackholes break
+# PMTUD recovery, killing long-lived TCP under load.
+MTU = 1380
 
 PostUp = iptables -t nat -A POSTROUTING -s 10.200.0.0/24 -o eth0 -j MASQUERADE
 PostUp = iptables -A FORWARD -i wg0 -j ACCEPT
 PostUp = iptables -A FORWARD -o wg0 -j ACCEPT
+# Pin TCP MSS on forwarded traffic so we don't depend on PMTU discovery.
+PostUp = iptables -t mangle -A FORWARD -o wg0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1340
+PostUp = iptables -t mangle -A FORWARD -i wg0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1340
 PostDown = iptables -t nat -D POSTROUTING -s 10.200.0.0/24 -o eth0 -j MASQUERADE
 PostDown = iptables -D FORWARD -i wg0 -j ACCEPT
 PostDown = iptables -D FORWARD -o wg0 -j ACCEPT
+PostDown = iptables -t mangle -D FORWARD -o wg0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1340
+PostDown = iptables -t mangle -D FORWARD -i wg0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1340
 
 [Peer]
 # oracle-node-1
