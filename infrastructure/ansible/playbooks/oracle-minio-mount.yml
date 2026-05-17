@@ -1,0 +1,47 @@
+# -------------------------------------------------------------------------------
+# Oracle MinIO Block-Volume Mount
+#
+# Project: Munchbox / Author: Alex Freidah
+#
+# Ensures the OCI block volume (label: minio-data) is mounted persistently at
+# /mnt/minio-data on the Oracle ARM nodes that host MinIO. Without this, a
+# kernel-upgrade reboot leaves the volume detached and MinIO comes up against
+# an empty root-fs stub — which is exactly how the bucket on oraclearm-2 went
+# missing in May 2026.
+#
+# Usage: ansible-playbook -i inventory/hosts.yml playbooks/oracle-minio-mount.yml
+# -------------------------------------------------------------------------------
+---
+- name: Persist OCI block-volume mount for MinIO
+  hosts: oracle-arm-1:oracle-arm-2
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure mount point exists
+      ansible.builtin.file:
+        path: /mnt/minio-data
+        state: directory
+        mode: "0755"
+
+    - name: Resolve UUID of the minio-data labeled volume
+      # blkid -L gives the device path; we need -t LABEL=... -o value -s UUID
+      # to actually return the UUID string.
+      ansible.builtin.command: blkid -t LABEL=minio-data -o value -s UUID
+      register: minio_volume_uuid
+      changed_when: false
+      failed_when: minio_volume_uuid.rc != 0 or minio_volume_uuid.stdout | length == 0
+
+    - name: Remove legacy /dev/sdb fstab entry if present (superseded by the UUID entry)
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^/dev/sdb\s+/mnt/minio-data\s'
+        state: absent
+
+    - name: Ensure UUID-based mount in fstab and mounted
+      ansible.posix.mount:
+        path: /mnt/minio-data
+        src: "UUID={{ minio_volume_uuid.stdout }}"
+        fstype: ext4
+        opts: defaults,nofail,_netdev
+        state: mounted
