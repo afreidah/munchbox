@@ -32,7 +32,7 @@
       common_name: "client.{{ consul_datacenter }}.consul"
       certificate: /etc/consul.d/tls/consul.crt
       key: /etc/consul.d/tls/consul.key
-      ttl: 2160h
+      ttl: 720h
       alt_names:
         - localhost
         - "{{ inventory_hostname }}"
@@ -55,7 +55,7 @@
       common_name: "server.{{ consul_datacenter }}.consul"
       certificate: /etc/consul.d/tls/consul.crt
       key: /etc/consul.d/tls/consul.key
-      ttl: 2160h
+      ttl: 720h
       alt_names:
         - localhost
         - "{{ inventory_hostname }}"
@@ -78,7 +78,7 @@
       common_name: "client.{{ nomad_region | default('global') }}.nomad"
       certificate: /etc/nomad.d/tls/nomad.crt
       key: /etc/nomad.d/tls/nomad.key
-      ttl: 2160h
+      ttl: 720h
       alt_names:
         - localhost
         - "{{ inventory_hostname }}"
@@ -101,7 +101,7 @@
       common_name: "server.{{ nomad_region | default('global') }}.nomad"
       certificate: /etc/nomad.d/tls/nomad.crt
       key: /etc/nomad.d/tls/nomad.key
-      ttl: 2160h
+      ttl: 720h
       alt_names:
         - localhost
         - "{{ inventory_hostname }}"
@@ -126,7 +126,7 @@
       common_name: "server.{{ nomad_region | default('global') }}.nomad"
       certificate: /etc/nomad.d/tls/nomad.crt
       key: /etc/nomad.d/tls/nomad.key
-      ttl: 2160h
+      ttl: 720h
       alt_names:
         - localhost
         - "{{ inventory_hostname }}"
