@@ -443,11 +443,17 @@ EOH
       "X-Auth-Request-Access-Token"
     ]
 
-  # --- OAuth2 Proxy Error Handler (redirects 401 to sign-in) ---
+  # --- OAuth2 Proxy Error Handler (redirects 401 directly to OAuth flow) ---
+  # Skip the /oauth2/sign_in HTML page — its button is fragile when the
+  # request carries an `rd` parameter (CSRF cookie / SameSite / double
+  # URL-encoding issues). /oauth2/start fires the OAuth flow immediately,
+  # so the user goes straight from a protected page to Google and back,
+  # no intermediate oauth2-proxy UI. The HTML sign-in page only matters
+  # for multi-provider setups, which we don't run.
   [http.middlewares.oauth2-proxy-errors.errors]
     status  = ["401"]
     service = "oauth2-proxy-signin"
-    query   = "/oauth2/sign_in?rd={url}"
+    query   = "/oauth2/start?rd={url}"
 
   # --- HTTPS redirect ---
   [http.middlewares.redirect-https.redirectScheme]
