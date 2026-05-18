@@ -42,7 +42,8 @@ consul_bind_addr: "{{ static_ip }}"
 nomad_bind_addr: "{{ static_ip }}"
 
 # Use WireGuard interface for bridge networking so services register with WireGuard IP
-nomad_network_interface: "wg0"
+# (post-#70 reverse-WG cutover: oracles use wg1, not wg0 — wg0 is retired)
+nomad_network_interface: "wg1"
 
 # Note: nomad_advertise_* addresses are now computed automatically from static_ip
 # in roles/nomad/defaults/main.yml using nomad_advertise_ip variable
@@ -125,6 +126,11 @@ nomad_tls_rpc: true
 # -------------------------------------------------------------------------------
 
 nomad_node_pool: "oracle"
+
+# Pin the Nomad node name to the OS-hostname form (no hyphens) that Nomad
+# currently advertises. Constraints in jobs/* use this form; ansible inventory
+# uses the hyphenated form (oracle-node-1). See #32.
+nomad_node_name: "{{ inventory_hostname | replace('-', '') }}"
 
 nomad_client_meta:
   cloud: "oracle"
