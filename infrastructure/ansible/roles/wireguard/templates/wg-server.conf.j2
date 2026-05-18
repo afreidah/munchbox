@@ -16,9 +16,13 @@ ListenPort = {{ wireguard_port }}
 PrivateKey = {{ wireguard_private_key }}
 MTU = {{ wireguard_mtu }}
 
-# Open local iptables for inbound WG traffic on the public interface
+# Open local iptables for inbound WG traffic on the public interface,
+# and accept everything coming in over the WG interface itself (mesh traffic
+# from goren + nc05 to nomad/consul/vault scrape endpoints, etc).
 PostUp = iptables -I INPUT -p udp --dport {{ wireguard_port }} -j ACCEPT
+PostUp = iptables -I INPUT -i {{ wireguard_interface }} -j ACCEPT
 PostDown = iptables -D INPUT -p udp --dport {{ wireguard_port }} -j ACCEPT
+PostDown = iptables -D INPUT -i {{ wireguard_interface }} -j ACCEPT
 
 [Peer]
 # goren — carries the 192.168.68.0/24 return route
