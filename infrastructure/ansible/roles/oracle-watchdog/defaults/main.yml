@@ -28,20 +28,3 @@ oracle_watchdog_vault_path: "secret/data/consul/oracle-watchdog-token"
 # -------------------------------------------------------------------------------
 
 oracle_watchdog_metrics_port: 9104
-
-# -------------------------------------------------------------------------------
-# WireGuard Endpoint Resolver (default-disabled)
-#
-# Enabled at cutover time, after the WG-HA ingress pair is up and the
-# shared peer pubkey has been written to Vault. Until enabled, the
-# wireguard block in the rendered config is inert: validation is skipped
-# entirely and the resolver goroutine never starts.
-# -------------------------------------------------------------------------------
-
-oracle_watchdog_wireguard_enabled: false
-oracle_watchdog_wireguard_interface: wg0
-oracle_watchdog_wireguard_peer_pubkey: ""
-oracle_watchdog_wireguard_endpoint_hostname: wg.munchbox.cc
-oracle_watchdog_wireguard_endpoint_port: 51820
-oracle_watchdog_wireguard_resolve_interval: 60s
-oracle_watchdog_wireguard_stale_handshake_threshold: 180s
