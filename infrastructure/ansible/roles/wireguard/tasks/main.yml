@@ -3,12 +3,14 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Installs and configures WireGuard for hub-and-spoke VPN topology.
-# Server (hub) runs at home, clients (Oracle nodes) connect in.
+# Provisions WireGuard mesh per the reverse topology: oracle nodes are
+# servers, home ingresses are clients dialing outbound to each oracle.
+# Keys are sourced from Vault at {{ wireguard_vault_path_prefix }}/<node>.
+# Keep wireguard_mesh_nodes (defaults) in sync with cluster membership.
 # -------------------------------------------------------------------------------
 
 - name: Install WireGuard
-  apt:
+  ansible.builtin.apt:
     name:
       - wireguard
       - wireguard-tools
@@ -16,7 +18,7 @@
     update_cache: true
 
 - name: Enable IP forwarding
-  sysctl:
+  ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: "1"
     sysctl_set: true
@@ -24,58 +26,74 @@
     reload: true
   when: wireguard_ip_forward
 
-- name: Create WireGuard directory
-  file:
+- name: Create /etc/wireguard
+  ansible.builtin.file:
     path: /etc/wireguard
     state: directory
     mode: "0700"
     owner: root
     group: root
 
-- name: Check if private key exists
-  stat:
-    path: /etc/wireguard/private.key
-  register: wg_private_key
+# -------------------------------------------------------------------------------
+# Vault key plumbing — fetch every mesh node's pubkey + this node's privkey.
+# Done on the controller (delegate_to: localhost) and shared across hosts so
+# we don't hammer Vault once per node per fact.
+# -------------------------------------------------------------------------------
 
-- name: Generate WireGuard private key
-  shell: wg genkey > /etc/wireguard/private.key
-  args:
-    creates: /etc/wireguard/private.key
-  when: not wg_private_key.stat.exists
+- name: Fetch WG public keys from Vault for the whole mesh
+  ansible.builtin.uri:
+    url: "{{ vault_api_addr }}/v1/{{ wireguard_vault_path_prefix }}/{{ item }}"
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+    validate_certs: false
+    status_code: 200
+  loop: "{{ wireguard_mesh_nodes }}"
+  register: wg_pubkey_responses
+  delegate_to: localhost
+  become: false
+  run_once: true
+  check_mode: false   # read-only Vault GET, safe in --check
+  no_log: true
 
-- name: Set private key permissions
-  file:
-    path: /etc/wireguard/private.key
-    mode: "0600"
-    owner: root
-    group: root
+- name: Assemble pubkey dict
+  ansible.builtin.set_fact:
+    wireguard_pubkeys: >-
+      {{
+        dict(
+          wg_pubkey_responses.results
+          | map(attribute='item')
+          | zip(
+              wg_pubkey_responses.results
+              | map(attribute='json.data.data.public_key')
+            )
+        )
+      }}
+  run_once: true
 
-- name: Generate WireGuard public key
-  shell: cat /etc/wireguard/private.key | wg pubkey > /etc/wireguard/public.key
-  args:
-    creates: /etc/wireguard/public.key
+- name: Fetch this node's WG private key from Vault
+  ansible.builtin.uri:
+    url: "{{ vault_api_addr }}/v1/{{ wireguard_vault_path_prefix }}/{{ inventory_hostname }}"
+    headers:
+      X-Vault-Token: "{{ lookup('env', 'VAULT_TOKEN') }}"
+    validate_certs: false
+    status_code: 200
+  register: wg_self_response
+  delegate_to: localhost
+  become: false
+  check_mode: false
+  no_log: true
 
-- name: Read private key
-  slurp:
-    src: /etc/wireguard/private.key
-  register: wg_private_key_content
+- name: Stash private key fact
+  ansible.builtin.set_fact:
+    wireguard_private_key: "{{ wg_self_response.json.data.data.private_key }}"
+  no_log: true
 
-- name: Read public key
-  slurp:
-    src: /etc/wireguard/public.key
-  register: wg_public_key_content
+# -------------------------------------------------------------------------------
+# Config render — different template per role
+# -------------------------------------------------------------------------------
 
-- name: Set key facts
-  set_fact:
-    wireguard_private_key: "{{ wg_private_key_content.content | b64decode | trim }}"
-    wireguard_public_key: "{{ wg_public_key_content.content | b64decode | trim }}"
-
-- name: Display public key (for manual peer configuration)
-  debug:
-    msg: "WireGuard public key for {{ inventory_hostname }}: {{ wireguard_public_key }}"
-
-- name: Deploy WireGuard server configuration
-  template:
+- name: Deploy WireGuard server configuration (oracle nodes)
+  ansible.builtin.template:
     src: wg-server.conf.j2
     dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
     mode: "0600"
@@ -84,8 +102,8 @@
   when: wireguard_role == 'server'
   notify: Restart WireGuard
 
-- name: Deploy WireGuard client configuration
-  template:
+- name: Deploy WireGuard client configuration (home ingress nodes)
+  ansible.builtin.template:
     src: wg-client.conf.j2
     dest: "/etc/wireguard/{{ wireguard_interface }}.conf"
     mode: "0600"
@@ -95,7 +113,7 @@
   notify: Restart WireGuard
 
 - name: Enable and start WireGuard
-  systemd:
+  ansible.builtin.systemd:
     name: "wg-quick@{{ wireguard_interface }}"
     enabled: true
     state: started

@@ -2,24 +2,33 @@
 # WireGuard Clients Group Variables
 #
 # Project: Munchbox / Author: Alex Freidah
+#
+# Post-2026-05-17 (issue #70) the WG roles flipped. This group now holds
+# the HOME INGRESS nodes (goren, nc05). Each dials outbound to all 4
+# Oracle servers — no port-forwarding on the home router required.
 # -------------------------------------------------------------------------------
 
 wireguard_role: client
 
-# Server endpoint - DDNS hostname managed in Cloudflare. The A record is
-# kept in sync with the home WAN IP at runtime by oracle-watchdog (agent
-# mode, wan_dns block). Re-resolution on the client side is handled by
-# oracle-watchdog (monitor mode, wireguard block / wgresolver package).
-wireguard_server_endpoint: "wg.munchbox.cc"
+# All 4 Oracle peers each home ingress maintains a tunnel to. Each
+# oracle's public IP is its own VCN's static address. Public keys are
+# fetched from Vault at runtime via the role's task.
+wireguard_client_peers:
+  - name: oracle-node-1
+    endpoint: 132.226.87.58
+    wg_address: 10.200.0.11
+  - name: oracle-node-2
+    endpoint: 158.101.33.133
+    wg_address: 10.200.0.12
+  - name: oracle-arm-1
+    endpoint: 132.226.26.135
+    wg_address: 10.200.0.13
+  - name: oracle-arm-2
+    endpoint: 137.131.39.64
+    wg_address: 10.200.0.14
 
-# Server public key. After WG-HA cutover this is the SHARED public key
-# stored in Vault at secret/data/wireguard and applied to every ingress
-# node running the wireguard-server Nomad job. Until cutover, the value
-# below MUST match whatever key stabler currently advertises so existing
-# clients keep handshaking. Update this in lockstep with the Vault write.
-wireguard_server_public_key: "cUn1CNonnDVBMWg6jFop2htQ2GWu8jaepTt8/yPPcjI="
-
-# Networks to route through the tunnel
-wireguard_server_allowed_networks:
-  - "10.200.0.0/24" # WireGuard network
-  - "192.168.68.0/24" # Home network
+# Per-host: wireguard_client_address (e.g. "10.201.0.2/32")
+# Per-host: wireguard_home_subnet_carrier — true on goren, absent on nc05.
+#   When true, the rendered config adds the MASQUERADE iptables rule so
+#   oracle→home traffic gets translated and return packets find their way
+#   back via goren.

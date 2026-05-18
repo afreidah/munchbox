@@ -3,21 +3,26 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Sets up WireGuard VPN for connecting Oracle Cloud nodes to home network.
-# Run in stages:
+# Post-2026-05-17 (issue #70) the WG mesh runs reverse hub-and-spoke:
+# Oracle nodes are servers (each listens on its public IP:51820); home
+# ingresses (goren, nomad-client-05) are clients, each dialing outbound
+# to all 4 Oracle servers. No port-forward on the home router.
 #
-# 1. Set up server first (generates keys):
-#    ansible-playbook playbooks/wireguard-setup.yml --limit wireguard_server
+# Keys live in Vault at secret/data/wireguard-v2/<node>. To bootstrap a
+# fresh node, generate a keypair and `vault kv put` it there before
+# running this playbook.
 #
-# 2. Note the server public key from output, update group_vars/wireguard_clients.yml
+# Usage:
+#   export VAULT_TOKEN=<your-token>
+#   ansible-playbook -i inventory/hosts.yml \
+#                    -i inventory/bare-metal.ini \
+#                    -i inventory/oracle-nodes.yml \
+#                    playbooks/wireguard-setup.yml
 #
-# 3. Set up clients (generates keys):
-#    ansible-playbook playbooks/wireguard-setup.yml --limit wireguard_clients
-#
-# 4. Note client public keys from output, update group_vars/wireguard_server.yml
-#
-# 5. Re-run on server to add peers:
-#    ansible-playbook playbooks/wireguard-setup.yml --limit wireguard_server
+# Limit to a subset:
+#   --limit wireguard_server     (oracles only)
+#   --limit wireguard_clients    (home ingresses only)
+#   --limit oracle-arm-1         (one node)
 # -------------------------------------------------------------------------------
 
 - name: Set up WireGuard VPN
@@ -28,37 +33,10 @@
 
   post_tasks:
     - name: Show WireGuard status
-      command: wg show
+      ansible.builtin.command: wg show
       register: wg_status
       changed_when: false
 
     - name: Display WireGuard status
-      debug:
+      ansible.builtin.debug:
         msg: "{{ wg_status.stdout_lines }}"
-
-    - name: Reminder for next steps
-      debug:
-        msg: |
-          ============================================================
-          WireGuard setup complete for {{ inventory_hostname }}
-
-          Public Key: {{ wireguard_public_key }}
-
-          {% if wireguard_role == 'server' %}
-          NEXT STEPS:
-          1. Update group_vars/wireguard_clients.yml with:
-             - wireguard_server_public_key: "{{ wireguard_public_key }}"
-             - wireguard_server_endpoint: "YOUR_HOME_PUBLIC_IP"
-          2. Run playbook on clients
-          3. Add client public keys to group_vars/wireguard_server.yml
-          4. Re-run playbook on server to add peers
-          {% else %}
-          NEXT STEPS:
-          1. Add this peer to group_vars/wireguard_server.yml:
-             - name: {{ inventory_hostname }}
-               public_key: "{{ wireguard_public_key }}"
-               allowed_ips: "{{ wireguard_client_address | regex_replace('/\\d+$', '/32') }}"
-               persistent_keepalive: true
-          2. Re-run playbook on server to apply peer config
-          {% endif %}
-          ============================================================

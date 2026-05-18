@@ -17,15 +17,12 @@ host_network = true
 type  = "system"
 size  = "medium"
 
-# --- Placement: goren only (WG-HA workaround) ---
-# Backup ingress (nomad-client-05) has wg0 up but no live peer state with
-# Oracle nodes, so its prometheus replica false-alerted on every Oracle
-# target. Pinning to goren — the VRRP MASTER, the only ingress that
-# actually holds Oracle peer state — gives us consistent scrape results
-# at the cost of losing prometheus HA. Un-pin once #39 (WG-HA
-# active/active) lands.
+# --- Placement: both ingress nodes ---
+# Restored to type=system on the ingress role after issue #70 (reverse-WG
+# cutover) gave both ingresses independent active WG sessions to every
+# Oracle. The nc05 replica can now scrape Oracle targets normally.
 constraints = [
-  { attribute = "$${node.unique.name}", operator = "=", value = "goren" }
+  { attribute = "$${meta.role}", operator = "=", value = "ingress" }
 ]
 vault = true
 
