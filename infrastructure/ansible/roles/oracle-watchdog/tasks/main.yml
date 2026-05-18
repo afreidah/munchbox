@@ -48,9 +48,7 @@
 # Monitor Config File
 #
 # The monitor reads /etc/oracle-watchdog/config.yaml when it exists. The
-# file is optional - absent it, monitor runs in legacy env-only mode. We
-# write it unconditionally so flipping wireguard_enabled is a one-variable
-# change at cutover time.
+# file is optional - absent it, monitor runs in legacy env-only mode.
 # -------------------------------------------------------------------------------
 
 - name: Create oracle-watchdog config directory
