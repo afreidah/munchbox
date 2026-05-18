@@ -22,7 +22,7 @@ alerting:
   alertmanagers:
     - scheme: http
       consul_sd_configs:
-        - server: "192.168.68.61:8500"
+        - server: "127.0.0.1:8500"
           services: ["alertmanager"]
           token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
       relabel_configs:
@@ -58,7 +58,7 @@ scrape_configs:
       type: "Bearer"
       credentials: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["consul"]
         datacenter: "munchbox"
@@ -83,7 +83,7 @@ scrape_configs:
     params:
       format: ["prometheus"]
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["nomad"]
         datacenter: "munchbox"
@@ -114,7 +114,7 @@ scrape_configs:
     params:
       format: ["prometheus"]
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["nomad-client"]
         datacenter: "munchbox"
@@ -144,7 +144,7 @@ scrape_configs:
       ca_file: "/etc/prometheus/certs/ca-chain.crt"
     bearer_token_file: "/etc/prometheus/secrets/vault_token"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["vault"]
         datacenter: "munchbox"
@@ -172,7 +172,7 @@ scrape_configs:
     scheme: "http"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["cloudflared-tunnel"]
         datacenter: "munchbox"
@@ -202,7 +202,7 @@ scrape_configs:
     authorization:
       credentials_file: "/etc/prometheus/secrets/consul_token"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["consul"]
         datacenter: "munchbox"
@@ -225,7 +225,7 @@ scrape_configs:
     scheme: "http"
     honor_labels: true
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["traefik"]
         datacenter: "munchbox"
@@ -244,7 +244,7 @@ scrape_configs:
   - job_name: "blackbox"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["blackbox-exporter"]
         datacenter: "munchbox"
@@ -261,7 +261,7 @@ scrape_configs:
   - job_name: "postgres-exporter"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["postgres-exporter"]
         datacenter: "munchbox"
@@ -283,7 +283,7 @@ scrape_configs:
   - job_name: "redis-exporter"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["redis-exporter"]
         datacenter: "munchbox"
@@ -305,7 +305,7 @@ scrape_configs:
     scrape_interval: 60s
     scrape_timeout: 30s
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["nextcloud-exporter"]
         datacenter: "munchbox"
@@ -369,7 +369,7 @@ scrape_configs:
   - job_name: "alertmanager"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["alertmanager"]
         datacenter: "munchbox"
@@ -387,7 +387,7 @@ scrape_configs:
   - job_name: "trivy-dashboard"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["trivy-dashboard"]
         datacenter: "munchbox"
@@ -407,7 +407,7 @@ scrape_configs:
   - job_name: "coredns"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["coredns-metrics"]
         datacenter: "munchbox"
@@ -427,7 +427,7 @@ scrape_configs:
   - job_name: "forgejo"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["forgejo"]
         datacenter: "munchbox"
@@ -447,7 +447,7 @@ scrape_configs:
   - job_name: "patroni"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["patroni"]
         datacenter: "munchbox"
@@ -467,7 +467,7 @@ scrape_configs:
   - job_name: "haproxy"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["haproxy-metrics"]
         datacenter: "munchbox"
@@ -487,7 +487,7 @@ scrape_configs:
   - job_name: "vault-cert-manager"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["vault-cert-manager"]
         datacenter: "munchbox"
@@ -507,7 +507,7 @@ scrape_configs:
   - job_name: "oracle-watchdog"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["oracle-watchdog-agent"]
         datacenter: "munchbox"
@@ -532,7 +532,7 @@ scrape_configs:
   - job_name: "oracle-watchdog-monitor"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["oracle-watchdog"]
         datacenter: "munchbox"
@@ -560,7 +560,7 @@ scrape_configs:
       username: "admin"
       password: "{{ with secret "secret/data/aptly" }}{{ .Data.data.password }}{{ end }}"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["aptly"]
         datacenter: "munchbox"
@@ -599,7 +599,7 @@ scrape_configs:
   - job_name: "cloudflare-log-collector"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["cloudflare-log-collector"]
         datacenter: "munchbox"
@@ -619,7 +619,7 @@ scrape_configs:
   - job_name: "flight-fetcher"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["flight-fetcher"]
         datacenter: "munchbox"
@@ -639,7 +639,7 @@ scrape_configs:
   - job_name: "s3-orchestrator"
     metrics_path: "/metrics"
     consul_sd_configs:
-      - server: "192.168.68.61:8500"
+      - server: "127.0.0.1:8500"
         scheme: "http"
         services: ["s3-orchestrator"]
         datacenter: "munchbox"
