@@ -43,12 +43,11 @@ templates = [
 # --- Service tags ---
 tags = ["monitoring", "blackbox-exporter", "probes"]
 
-# --- Placement: home cluster only ---
-# The MTU fix on 2026-05-15 removed the network-failure reason for excluding
-# Oracle, but moving blackbox here still requires WG-HA active/active so the
-# nomad-client-05 prometheus replica can reach Oracle services. Until that
-# work lands, blackbox stays home so the dashboard has full coverage.
+# --- Placement: Oracle cloud ---
+# Runs off-LAN so probes exercise true outside->in reachability for our
+# published services (Cloudflare tunnel + the dual ingress path), instead
+# of short-circuiting inside the home network.
 node = "any"
 constraints = [
-  { attribute = "$${meta.cloud}", operator = "!=", value = "oracle" }
+  { attribute = "$${meta.cloud}", operator = "=", value = "oracle" }
 ]
