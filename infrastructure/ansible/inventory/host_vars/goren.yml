@@ -10,3 +10,9 @@ vault_cluster_address: "192.168.68.60:8201"
 
 nomad_client_meta:
   vrrp_interface: "eth0"
+
+# WireGuard client config (post-#70 reverse cutover): this ingress dials
+# outbound to all 4 oracle servers AND carries the 192.168.68.0/24 return
+# route via the MASQUERADE iptables rule rendered in the wg-client template.
+wireguard_client_address: "10.201.0.2/32"
+wireguard_home_subnet_carrier: true

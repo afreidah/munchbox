@@ -6,3 +6,9 @@
 
 nomad_client_meta:
   vrrp_interface: "eth0"
+
+# WireGuard client config (post-#70 reverse cutover): this ingress dials
+# outbound to all 4 oracle servers. No MASQUERADE here — that lives on
+# goren only since only one ingress can carry the 192.168.68.0/24 return
+# route (overlapping AllowedIPs aren't allowed by WG).
+wireguard_client_address: "10.201.0.3/32"
