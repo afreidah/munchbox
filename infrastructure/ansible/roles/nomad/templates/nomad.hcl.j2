@@ -7,6 +7,11 @@
 # -------------------------------------------------------------------------------
 datacenter = "{{ nomad_datacenter }}"
 region = "{{ nomad_region }}"
+{% if nomad_node_name is defined %}
+# Pin the advertised node name so it can't drift if the OS hostname changes
+# (see #32). Constraints like `node.unique.name = "oraclenode1"` match this.
+name = "{{ nomad_node_name }}"
+{% endif %}
 data_dir = "{{ nomad_data_dir }}"
 log_level = "INFO"
 bind_addr = "{{ nomad_bind_addr }}"
