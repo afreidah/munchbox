@@ -1066,6 +1066,8 @@ locals {
       "pihole-green"    = { domain = "pihole-green.munchbox.cc",    ip = local.traefik_vip }
       "pihole-logan"    = { domain = "pihole-logan.munchbox.cc",    ip = local.traefik_vip }
       "s3"              = { domain = "s3.munchbox.cc",              ip = local.traefik_vip }
+      # --- cinc-server API isn't fronted by Traefik; clients hit the VM directly ---
+      "cinc-server"     = { domain = "cinc-server.munchbox.cc",     ip = "192.168.68.99" }
     }
 
     cname_records = {}
