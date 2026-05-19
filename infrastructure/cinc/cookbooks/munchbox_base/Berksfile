@@ -1,0 +1,14 @@
+# frozen_string_literal: true
+
+# -------------------------------------------------------------------------------
+# Berksfile for munchbox_base
+#
+# Resolves the cookbook + its deps for test-kitchen. `source chef_repo: '../..'`
+# points at infrastructure/cinc/ so berks finds the sibling cookbooks/
+# directory (where munchbox_lib lives). `metadata` pulls dep declarations
+# from metadata.rb in this dir.
+# -------------------------------------------------------------------------------
+
+source chef_repo: '../..'
+
+metadata

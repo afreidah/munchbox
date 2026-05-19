@@ -108,3 +108,28 @@ RSpec.describe MunchboxLibCookbook::Helpers do
     end
   end
 end
+
+# -------------------------------------------------------------------------------
+# DSL extension
+#
+# The bare `cookbook` method must be included on Chef::DSL::Recipe,
+# Chef::Resource, and Chef::Node so recipes, resources, and attribute files
+# can all call it without naming the module.
+# -------------------------------------------------------------------------------
+
+RSpec.describe 'DSL extension' do
+  # --- Recipe DSL gets the bare method ---
+  it 'extends Chef::DSL::Recipe with a `cookbook` instance method' do
+    expect(Chef::DSL::Recipe.instance_method(:cookbook)).to be_a(UnboundMethod)
+  end
+
+  # --- Resource DSL gets the bare method ---
+  it 'extends Chef::Resource with a `cookbook` instance method' do
+    expect(Chef::Resource.instance_method(:cookbook)).to be_a(UnboundMethod)
+  end
+
+  # --- Attribute-file context (Chef::Node) gets the bare method ---
+  it 'extends Chef::Node with a `cookbook` instance method' do
+    expect(Chef::Node.instance_method(:cookbook)).to be_a(UnboundMethod)
+  end
+end

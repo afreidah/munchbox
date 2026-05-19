@@ -1,0 +1,61 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for munchbox_base.
+#
+# Real VMs via Vagrant because we exercise systemd units (timesyncd, journald,
+# sshd) -- docker containers won't cut it. Targets debian-12 to match the
+# cookbook's supports list.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: default
+    run_list:
+      - recipe[munchbox_base::apt_repo]
+      - recipe[munchbox_base::packages]
+      - recipe[munchbox_base::timesync]
+      - recipe[munchbox_base::journald]
+      - recipe[munchbox_base::sshd]
+    verifier:
+      inspec_tests:
+        - test/integration/default
+    attributes:
+      munchbox_base:
+        apt_repo:
+          # Public repo we use for the integration only -- apt.munchbox.cc
+          # isn't always reachable from a fresh kitchen VM, and we just need
+          # to prove the resource can register a working third-party repo.
+          name: nginx
+          uri: https://nginx.org/packages/debian
+          distribution: bookworm
+          components:
+            - nginx
+          key_url: https://nginx.org/keys/nginx_signing.key
+        packages:
+          - curl
+          - jq

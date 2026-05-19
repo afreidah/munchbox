@@ -1,0 +1,11 @@
+<%#
+  Cookbook:: munchbox_base
+  Template:: journald.conf.erb
+  Dropped at /etc/systemd/journald.conf.d/00-munchbox.conf. Only renders
+  keys that are present in the settings hash; pass `nil` to skip a setting.
+%>
+[Journal]
+<% @settings.each do |key, value| -%>
+<%   next if value.nil? -%>
+<%= key.split('_').map(&:capitalize).join %>=<%= value %>
+<% end -%>
