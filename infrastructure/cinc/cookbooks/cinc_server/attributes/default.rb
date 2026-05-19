@@ -33,7 +33,7 @@ default[cookbook]['install'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['config'] = {
-  'api_fqdn' => 'cinc-server.local',
+  'api_fqdn' => 'cinc-server.munchbox.cc',
   'settings' => {
     "nginx['enable_non_ssl']" => 'true',
   },
