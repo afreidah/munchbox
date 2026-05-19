@@ -1,0 +1,49 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for cinc_server.
+#
+# cinc-server is a heavy install (~300 MB .deb, then `chef-server-ctl
+# reconfigure` brings up postgres + opscode-erchef + nginx etc). The VM
+# needs real memory or reconfigure OOMs partway through. Expect the full
+# `make kitchen` cycle to run ~10-15 minutes.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 4096
+    cpus: 2
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: default
+    run_list:
+      - recipe[cinc_server::install]
+      - recipe[cinc_server::configure]
+    attributes:
+      cinc_server:
+        config:
+          # api_fqdn must resolve from inside the VM for chef-server-ctl
+          # reconfigure to be happy. Use the box's default hostname.
+          api_fqdn: cinc-server.test
+          settings:
+            "nginx['enable_non_ssl']": 'true'

@@ -1,0 +1,54 @@
+# frozen_string_literal: true
+
+# -------------------------------------------------------------------------------
+# Cookbook:: cinc_server
+# Resource:: cinc_server_install
+#
+# Downloads the cinc-server .deb to /var/cache and installs it via
+# dpkg_package. cinc-server isn't published to a generic apt repo, so we
+# can't lean on apt_package + a source list.
+#
+# Properties:
+#   url      - Full URL to the .deb (required).
+#   version  - Pinned version string (required) -- used to gate dpkg_package
+#              upgrades and to disambiguate the cached download path.
+#   checksum - Optional SHA256. When set, remote_file enforces it and
+#              skips re-download if the cached file matches.
+# -------------------------------------------------------------------------------
+
+unified_mode true
+
+provides :cinc_server_install
+
+property :url,      String, required: true
+property :version,  String, required: true
+property :checksum, [String, nil]
+
+default_action :install
+
+# --- Fetch the .deb if needed and dpkg-install at the pinned version ---
+action :install do
+  cache_path = "/var/cache/cinc-server-#{new_resource.version}.deb"
+
+  remote_file cache_path do
+    source   new_resource.url
+    checksum new_resource.checksum if new_resource.checksum
+    owner    'root'
+    group    'root'
+    mode     '0644'
+    action   :create
+  end
+
+  dpkg_package 'cinc-server-core' do
+    source  cache_path
+    version "#{new_resource.version}-1"
+    action  :install
+  end
+end
+
+# --- Remove the package; leave the cached .deb alone in case we're reinstalling ---
+action :remove do
+  dpkg_package 'cinc-server-core' do
+    action :remove
+  end
+end

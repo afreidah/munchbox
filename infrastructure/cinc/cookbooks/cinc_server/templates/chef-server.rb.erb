@@ -1,0 +1,15 @@
+<%#
+  Cookbook:: cinc_server
+  Template:: chef-server.rb.erb
+
+  Renders /etc/opscode/chef-server.rb. `api_fqdn` is the one setting every
+  install must override; `settings` is a free-form hash of additional
+  `directive[key]` -> value-literal pairs (quote strings yourself).
+%>
+# Managed by chef (cinc_server::configure) -- do not edit by hand.
+
+api_fqdn '<%= @api_fqdn %>'
+
+<% @settings.each do |key, value| -%>
+<%= key %> <%= value %>
+<% end -%>
