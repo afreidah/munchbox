@@ -79,6 +79,7 @@ def build_inventory(config):
                 "vault_servers": {"hosts": {}},
                 "gpu_nodes": {"hosts": {}},
                 "ingress": {"hosts": {}},
+                "cinc_servers": {"hosts": {}},
                 "proxmox_hosts": {"hosts": {}},
                 "cloud_nodes": {
                     "hosts": {},
@@ -130,6 +131,9 @@ def build_inventory(config):
 
         if "ingress" in roles:
             inventory["all"]["children"]["ingress"]["hosts"][name] = host_entry.copy()
+
+        if "cinc_server" in roles:
+            inventory["all"]["children"]["cinc_servers"]["hosts"][name] = host_entry.copy()
 
         # Add cloud nodes to their own group
         if data.get("type") == "cloud":

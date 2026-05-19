@@ -14,7 +14,7 @@
 # -------------------------------------------------------------------------------
 
 - name: Deploy SSH CA configuration
-  hosts: nomad_servers:nomad_clients:proxmox_hosts
+  hosts: nomad_servers:nomad_clients:proxmox_hosts:cinc_servers
   become: true
   serial: 3
   roles:
