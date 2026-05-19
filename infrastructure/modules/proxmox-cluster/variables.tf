@@ -23,6 +23,10 @@ variable "vms" {
       gateway    = string
       nameserver = optional(string)
       sshkeys    = optional(string)
+      # --- Proxmox storage ID for the auto-attached cloud-init CD-ROM.
+      # Leave null for VMs whose cloud-init drive was created out-of-band
+      # so terraform doesn't try to reconcile that drive. ---
+      storage    = optional(string)
     }), null)
   }))
 }
