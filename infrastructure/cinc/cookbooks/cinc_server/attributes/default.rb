@@ -21,6 +21,7 @@ default[cookbook]['install'] = {
   'version' => '15.10.91',
   'url' => 'https://downloads.cinc.sh/files/stable/cinc-server/15.10.91/debian/12/cinc-server-core_15.10.91-1_amd64.deb',
   'checksum' => nil,
+  'package_name' => 'cinc-server-core',
 }
 
 # -------------------------------------------------------------------------------
@@ -35,5 +36,29 @@ default[cookbook]['config'] = {
   'api_fqdn' => 'cinc-server.local',
   'settings' => {
     "nginx['enable_non_ssl']" => 'true',
+  },
+}
+
+# -------------------------------------------------------------------------------
+# Initial org + admin user (cinc_server::bootstrap)
+#
+# Override these per-node (especially `password`) before running the
+# bootstrap recipe. The captured admin private key is written to
+# `key_path` -- pick a directory that's tight on perms and out of the
+# repo, since this key has full server admin rights.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['bootstrap'] = {
+  'org' => {
+    'short_name' => 'munchbox',
+    'full_name'  => 'Munchbox',
+  },
+  'user' => {
+    'username'   => 'alex',
+    'first_name' => 'Alex',
+    'last_name'  => 'Freidah',
+    'email'      => 'alex.freidah@gmail.com',
+    'password'   => 'CHANGEME-set-via-attribute-override',
+    'key_path'   => '/etc/cinc-bootstrap/alex.pem',
   },
 }
