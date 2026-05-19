@@ -1,0 +1,10 @@
+<%#
+  Cookbook:: munchbox_base
+  Template:: timesyncd.conf.erb
+  Dropped at /etc/systemd/timesyncd.conf.d/00-munchbox.conf.
+%>
+[Time]
+NTP=<%= @ntp_servers.join(' ') %>
+<% unless @fallback_servers.empty? -%>
+FallbackNTP=<%= @fallback_servers.join(' ') %>
+<% end -%>

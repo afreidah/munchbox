@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------------
-# Cookstyle (rubocop) config for munchbox_lib.
+# Cookstyle (rubocop) config for munchbox_base.
 #
-# Inherits cookstyle defaults; overrides below are project-specific only.
+# Inherits cookstyle defaults; project-specific overrides only.
 # -------------------------------------------------------------------------------
 
 require:
@@ -23,7 +23,8 @@ AllCops:
 Layout/LineLength:
   Max: 120
 
-# --- Specs use long descriptions; don't fight rspec idioms ---
+# --- Specs + inspec controls use long describe blocks; don't fight that ---
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
+    - 'test/**/*'

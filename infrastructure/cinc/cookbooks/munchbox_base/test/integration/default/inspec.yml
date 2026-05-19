@@ -1,0 +1,10 @@
+---
+name: munchbox_base
+title: munchbox_base integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged munchbox_base node (apt repo, packages, timesync, journald, sshd).
+version: 0.1.0
+supports:
+  - platform: debian

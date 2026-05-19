@@ -14,6 +14,7 @@ module Chef; end unless defined?(Chef)
 module Chef::DSL; end unless defined?(Chef::DSL)
 module Chef::DSL::Recipe; end unless defined?(Chef::DSL::Recipe)
 class Chef::Resource; end unless defined?(Chef::Resource)
+class Chef::Node; end unless defined?(Chef::Node)
 
 require_relative '../libraries/cookbook_helpers'
 

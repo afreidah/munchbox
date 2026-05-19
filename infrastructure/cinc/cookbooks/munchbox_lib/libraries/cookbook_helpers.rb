@@ -12,10 +12,9 @@
 # .cookbook` and as a bare `cookbook` method inside recipes and resources
 # (via the DSL extension at the bottom of this file).
 #
-# Caveat: chef evaluates attribute files before libraries, so this helper is
-# NOT available in `attributes/*.rb`. Attribute files need to declare a local
-# `cookbook = '<name>'` at the top, matching `metadata.rb` by hand. Every
-# other context (recipes, resources, templates) gets it for free.
+# Available everywhere: recipes, resources, templates, AND attribute files
+# (chef >= 12 loads libraries before attributes, and we extend Chef::Node so
+# the bare `cookbook` method resolves inside attribute files too).
 # -------------------------------------------------------------------------------
 
 module MunchboxLibCookbook
@@ -78,9 +77,13 @@ end
 # -------------------------------------------------------------------------------
 # DSL extension
 #
-# Make `cookbook` available as a bare method inside recipes and resources.
-# Wrapping it in a module so we pass the *caller's* file path through;
-# otherwise the default would always resolve to this file.
+# Make `cookbook` available as a bare method inside recipes, resources, and
+# attribute files. Wrapping it in a module so we pass the *caller's* file path
+# through; otherwise the default would always resolve to this file.
+#
+# Note: on chef >= 12 libraries are loaded before attributes, so extending
+# Chef::Node here lets attribute files call `cookbook` directly without having
+# to declare the name as a local literal.
 # -------------------------------------------------------------------------------
 
 dsl_extension = Module.new do
@@ -92,3 +95,4 @@ end
 
 Chef::DSL::Recipe.include(dsl_extension)
 Chef::Resource.include(dsl_extension)
+Chef::Node.include(dsl_extension)

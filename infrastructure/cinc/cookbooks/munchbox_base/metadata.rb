@@ -1,21 +1,26 @@
 # frozen_string_literal: true
 
 # -------------------------------------------------------------------------------
-# Cookbook:: munchbox_lib
+# Cookbook:: munchbox_base
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Library-only cookbook. Holds shared helpers used by every other cookbook
-# in this repo (cookbook_name lookup, etc). No recipes, no resources, no
-# attributes - just `libraries/`.
+# Wide base cookbook. Runs on every node and owns OS-level prerequisites:
+# packages, apt repo, time sync, journald, sshd hardening. Other cookbooks
+# assume munchbox_base has already converged.
 # -------------------------------------------------------------------------------
 
-name             'munchbox_lib'
+name             'munchbox_base'
 maintainer       'Alex Freidah'
 maintainer_email 'alex.freidah@gmail.com'
 license          'MIT'
-description      'Shared helper library for Munchbox cookbooks'
-version          '0.2.0'
+description      'OS-level prerequisites every Munchbox node needs'
+version          '0.1.0'
 chef_version     '>= 17'
 issues_url       'https://github.com/afreidah/munchbox/issues'
 source_url       'https://github.com/afreidah/munchbox'
+
+depends 'munchbox_lib'
+
+supports 'debian'
+supports 'ubuntu'

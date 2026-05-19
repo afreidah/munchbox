@@ -1,0 +1,39 @@
+<%#
+  Cookbook:: munchbox_base
+  Template:: sshd_config.erb
+
+  Full /etc/ssh/sshd_config. Owned end-to-end by munchbox_base::sshd so we
+  don't have to fight sshd's first-occurrence-wins precedence against the
+  upstream package config. Tunable hardening flows in via @settings (keys
+  are snake_case in the hash and rendered as PascalCase directives).
+%>
+# Managed by chef (munchbox_base::sshd) -- do not edit by hand.
+
+# --- Listen settings ---
+Port 22
+AddressFamily any
+ListenAddress 0.0.0.0
+ListenAddress ::
+
+# --- Host keys (debian defaults) ---
+HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /etc/ssh/ssh_host_ecdsa_key
+HostKey /etc/ssh/ssh_host_ed25519_key
+
+# --- Tunable hardening (from node attributes) ---
+<% @settings.each do |key, value| -%>
+<%   next if value.nil? -%>
+<%= key.to_s.split('_').map(&:capitalize).join %> <%= value %>
+<% end -%>
+
+# --- Auth plumbing ---
+AuthorizedKeysFile .ssh/authorized_keys
+UsePAM yes
+PrintMotd no
+AcceptEnv LANG LC_*
+
+# --- Subsystems ---
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# --- Drop-ins from packages (kept last so they can't shadow our hardening) ---
+Include /etc/ssh/sshd_config.d/*.conf
