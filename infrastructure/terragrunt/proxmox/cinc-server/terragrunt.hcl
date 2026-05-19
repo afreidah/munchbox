@@ -1,9 +1,10 @@
 # -----------------------------------------------------------------------------
-# PROXMOX CLUSTER - On-Prem Nomad/Consul/Vault VMs
+# PROXMOX CINC-SERVER - Dedicated VM for cinc/chef server
 # -----------------------------------------------------------------------------
 #
-# Manages the VMs in root.hcl `proxmox_vm_groups.cluster` (matched by this
-# directory's name). Post-provisioning configuration is handled by Ansible.
+# Manages the VM in root.hcl `proxmox_vm_groups.cinc-server` (matched by this
+# directory's name). Hosts the cinc-server that will drive the chef migration
+# from ansible (see #81).
 #
 # -----------------------------------------------------------------------------
 
