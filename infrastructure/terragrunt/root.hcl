@@ -94,71 +94,96 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # PROXMOX VMS (On-Prem Cluster)
+  # PROXMOX VM GROUPS
   # ---------------------------------------------------------------------------
-  # These are managed via Ansible post-provision, no cloud-init bootstrap
+  # Keyed by terragrunt subdir name under terragrunt/proxmox/. The
+  # _env_helpers/proxmox-cluster.hcl helper looks up the group via
+  # basename(get_terragrunt_dir()), so a directory named `cluster` reads
+  # `proxmox_vm_groups.cluster`, `cinc-server` reads
+  # `proxmox_vm_groups.cinc-server`, etc.
 
-  proxmox_vms = {
-    "nomad-server-03" = {
-      target_node = "fontana"
-      vmid        = 172
-      memory      = 2048
-      cores       = 2
-      disk_size   = "40G"
-      existing    = true
-    }
+  proxmox_vm_groups = {
+    # The main Nomad/Consul/Vault cluster. Existing VMs are managed via
+    # Ansible post-provision; cloud-init only set for the few that need it.
+    cluster = {
+      "nomad-server-03" = {
+        target_node = "fontana"
+        vmid        = 172
+        memory      = 2048
+        cores       = 2
+        disk_size   = "40G"
+        existing    = true
+      }
 
-    "nomad-client-01" = {
-      target_node = "fontana"
-      vmid        = 180
-      memory      = 13312
-      cores       = 4
-      disk_size   = "60G"
-      existing    = true
-    }
+      "nomad-client-01" = {
+        target_node = "fontana"
+        vmid        = 180
+        memory      = 13312
+        cores       = 4
+        disk_size   = "60G"
+        existing    = true
+      }
 
-    "nomad-client-02" = {
-      target_node = "mccoy"
-      vmid        = 181
-      memory      = 15360
-      cores       = 4
-      disk_size   = "40G"
-      existing    = true
-    }
+      "nomad-client-02" = {
+        target_node = "mccoy"
+        vmid        = 181
+        memory      = 15360
+        cores       = 4
+        disk_size   = "40G"
+        existing    = true
+      }
 
-    "nomad-client-03" = {
-      target_node = "cabot"
-      vmid        = 182
-      memory      = 7168
-      cores       = 4
-      disk_size   = "40G"
-      existing    = true
-    }
+      "nomad-client-03" = {
+        target_node = "cabot"
+        vmid        = 182
+        memory      = 7168
+        cores       = 4
+        disk_size   = "40G"
+        existing    = true
+      }
 
-    "nomad-client-04" = {
-      target_node     = "rubirosa"
-      vmid            = 183
-      memory          = 28672
-      cores           = 10
-      disk_size       = "140G"
-      gpu_passthrough = { pci_address = "0000:02:00.0" }
-      cloud_init = {
-        ip         = "192.168.68.73/24"
-        gateway    = "192.168.68.1"
-        nameserver = "192.168.68.62"
+      "nomad-client-04" = {
+        target_node     = "rubirosa"
+        vmid            = 183
+        memory          = 28672
+        cores           = 10
+        disk_size       = "140G"
+        gpu_passthrough = { pci_address = "0000:02:00.0" }
+        cloud_init = {
+          ip         = "192.168.68.73/24"
+          gateway    = "192.168.68.1"
+          nameserver = "192.168.68.62"
+        }
+      }
+
+      "nomad-client-05" = {
+        target_node = "rubirosa"
+        vmid        = 184
+        memory      = 28672
+        cores       = 10
+        disk_size   = "40G"
+        cloud_init = {
+          ip         = "192.168.68.74/24"
+          gateway    = "192.168.68.1"
+          nameserver = "192.168.68.62"
+        }
       }
     }
 
-    "nomad-client-05" = {
-      target_node = "rubirosa"
-      vmid        = 184
-      memory      = 28672
-      cores       = 10
-      disk_size   = "40G"
-      cloud_init = {
-        ip         = "192.168.68.74/24"
-        gateway    = "192.168.68.1"
-        nameserver = "192.168.68.62"
+    # Cinc/Chef server host. Provisioned as its own group so it can be
+    # applied independently of the cluster.
+    cinc-server = {
+      "cinc-server" = {
+        target_node = "rubirosa"
+        vmid        = 185
+        memory      = 4096
+        cores       = 2
+        disk_size   = "60G"
+        cloud_init = {
+          ip         = "192.168.68.76/24"
+          gateway    = "192.168.68.1"
+          nameserver = "192.168.68.62"
+        }
       }
     }
   }
