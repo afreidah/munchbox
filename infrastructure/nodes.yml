@@ -180,6 +180,17 @@ vms:
       - ingress
     notes: "High-performance general workload client + Traefik standby"
 
+  cinc-server:
+    proxmox_host: rubirosa
+    vmid: 185
+    ip: 192.168.68.99
+    cores: 2
+    memory_mb: 4096
+    disk_gb: 60
+    roles:
+      - cinc_server
+    notes: "Cinc/Chef server (chef migration #81). VM lifecycle managed by terragrunt; this entry exists so ansible can target it for ssh-ca onboarding until the chef-side bootstrap takes over."
+
 # -------------------------------------------------------------------------------
 # Cloud Nodes (Oracle Cloud Free Tier)
 #
