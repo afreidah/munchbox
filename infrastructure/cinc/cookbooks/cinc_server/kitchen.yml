@@ -39,6 +39,7 @@ suites:
     run_list:
       - recipe[cinc_server::install]
       - recipe[cinc_server::configure]
+      - recipe[cinc_server::bootstrap]
     attributes:
       cinc_server:
         config:
@@ -47,3 +48,7 @@ suites:
           api_fqdn: cinc-server.test
           settings:
             "nginx['enable_non_ssl']": 'true'
+        bootstrap:
+          user:
+            password: kitchen-test-temp-password
+            key_path: /etc/cinc-bootstrap/alex.pem

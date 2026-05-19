@@ -9,7 +9,8 @@
 # -------------------------------------------------------------------------------
 
 cinc_server_install 'cinc-server' do
-  url      node[cookbook]['install']['url']
-  version  node[cookbook]['install']['version']
-  checksum node[cookbook]['install']['checksum']
+  url          node[cookbook]['install']['url']
+  version      node[cookbook]['install']['version']
+  checksum     node[cookbook]['install']['checksum']
+  package_name node[cookbook]['install']['package_name']
 end

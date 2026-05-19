@@ -21,7 +21,7 @@ unified_mode true
 provides :cinc_server_configure
 
 property :api_fqdn, String, required: true
-property :settings, Hash, default: {}
+property :settings, Hash,   default: {}
 
 default_action :configure
 

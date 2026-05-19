@@ -273,6 +273,100 @@ if !ok {
 }
 ```
 
+### Ruby / Chef (Cinc) Files
+
+Applies to chef/cinc cookbooks under `infrastructure/cinc/` (resources,
+recipes, libraries, attributes, templates) and any other Ruby code.
+
+```ruby
+# frozen_string_literal: true
+
+# -------------------------------------------------------------------------------
+# Cookbook:: <cookbook_name>
+# Resource:: <resource_name>
+#
+# 2-4 sentences describing what the resource/recipe/library does, key
+# properties or behaviours, and any important caveats.
+# -------------------------------------------------------------------------------
+
+unified_mode true
+
+provides :<resource_name>
+```
+
+**Ruby/Chef-Specific Rules:**
+- Use `#` comments (Ruby has no block comment syntax we use)
+- File headers use 79-char `# ---...---` dividers
+- Major sections within a file use 73-char `# ---...---` dividers with blank line AFTER
+- Single-line markers: `# --- description ---` (no blank line after)
+- `# frozen_string_literal: true` magic comment is always the first line; one blank line, then the file header box
+- Cookbook namespace via the `cookbook` helper from `munchbox_lib` (e.g. `default[cookbook]['key']`); never hardcode the cookbook name
+- Custom resources set `unified_mode true` and declare `provides :resource_name`
+- `default.rb` recipe stays empty; compose by listing per-concern sub-recipes in the run list
+- One targeted resource per concern; one recipe per resource
+
+**Binary comment rule (strict):**
+
+Every comment is either a single-line `# --- text ---` marker OR a full
+box comment. There is **no in-between multi-line `# foo` / `# bar` form**.
+If an inline note feels too long for one line, promote it to a box section
+(blank line after); otherwise compress it into one `# --- ... ---` line.
+
+```ruby
+# --- Drop conf.d override, enable+start sshd, restart on change ---
+action :configure do
+  template '/etc/ssh/sshd_config.d/00-munchbox.conf' do
+    source 'sshd-munchbox.conf.erb'
+    mode   '0644'
+    variables(settings: new_resource.settings)
+    notifies :restart, 'service[ssh]', :delayed
+  end
+
+  service 'ssh' do
+    action %i(enable start)
+  end
+end
+```
+
+**Wrong** (multi-line inline form):
+```ruby
+action :configure do
+  # apt_repository shells out to gpg to verify the signing key
+  # and may also need https transport. Install both first.
+  package %w(gnupg apt-transport-https ca-certificates)
+end
+```
+
+**Right** (compress to one line):
+```ruby
+action :configure do
+  # --- apt_repository needs gpg + https transport at compile time ---
+  package %w(gnupg apt-transport-https ca-certificates)
+end
+```
+
+Or, if the explanation genuinely deserves multiple lines, promote it to a
+section box:
+```ruby
+action :configure do
+  # -------------------------------------------------------------------------
+  # Prerequisites
+  #
+  # apt_repository shells out to gpg to verify the signing key + may need
+  # https transport for the apt_repository fetch. Both must be present
+  # before the repository resource runs.
+  # -------------------------------------------------------------------------
+
+  package %w(gnupg apt-transport-https ca-certificates)
+end
+```
+
+**Testing rules:**
+- Every resource/recipe gets chefspec coverage (run via `make test`)
+- Cookstyle (`make lint`) must pass with no offenses
+- Test-Kitchen via `make kitchen` (vagrant-libvirt) for end-to-end validation when systemd or real services are involved
+- InSpec controls live under `test/integration/default/controls/`
+
 ---
 
 ## Nomad Job Structure

@@ -48,11 +48,36 @@ control 'configure' do
     its('stdout') { should match(/run: opscode-erchef:/) }
   end
 
-  # --- /_status hits nginx -> opscode-erchef -> postgres -> bifrost, so
-  # "pong" here proves chef-server itself is responding end-to-end, not
-  # just nginx returning a 200 ---
+  # --- /_status hits nginx -> opscode-erchef -> postgres -> bifrost; "pong" proves chef-server is responding end-to-end ---
   describe command('curl -ksf https://localhost/_status') do
     its('exit_status') { should eq 0 }
     its('stdout') { should match(/"status":\s*"pong"/) }
+  end
+end
+
+control 'bootstrap' do
+  impact 1.0
+  title 'cinc_server::bootstrap creates the initial org + admin user'
+
+  describe command("chef-server-ctl org-show 'munchbox'") do
+    its('exit_status') { should eq 0 }
+  end
+
+  describe command("chef-server-ctl user-show 'alex'") do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match(/email:\s*alex\.freidah@gmail\.com/) }
+  end
+
+  describe file('/etc/cinc-bootstrap/alex.pem') do
+    it { should exist }
+    its('mode') { should cmp '0600' }
+    its('owner') { should eq 'root' }
+    its('content') { should match(/BEGIN (RSA )?PRIVATE KEY/) }
+  end
+
+  # --- alex should be an admin of the munchbox org ---
+  describe command("chef-server-ctl org-user-list 'munchbox'") do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match(/^alex$/) }
   end
 end
