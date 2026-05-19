@@ -180,7 +180,7 @@ locals {
         cores       = 2
         disk_size   = "60G"
         cloud_init = {
-          ip         = "192.168.68.76/24"
+          ip         = "192.168.68.99/24"
           gateway    = "192.168.68.1"
           nameserver = "192.168.68.62"
           # Attach a cloud-init CD-ROM so the OS can actually read the
