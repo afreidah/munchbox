@@ -1,0 +1,20 @@
+<%#
+  Cookbook:: cinc_client
+  Template:: client.rb.erb
+
+  Rendered at /etc/cinc/client.rb. node_name is omitted when nil so
+  cinc-client falls back to the system hostname automatically.
+%>
+# Managed by chef (cinc_client::configure) -- do not edit by hand.
+
+chef_server_url        '<%= @chef_server_url %>'
+<% if @node_name -%>
+node_name              '<%= @node_name %>'
+<% end -%>
+validation_client_name '<%= @validator_client_name %>'
+validation_key         '/etc/cinc/validation.pem'
+client_key             '/etc/cinc/client.pem'
+trusted_certs_dir      '/etc/cinc/trusted_certs'
+
+log_level    :<%= @log_level %>
+log_location '<%= @log_location %>'
