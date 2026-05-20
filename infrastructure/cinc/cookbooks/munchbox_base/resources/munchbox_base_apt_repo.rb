@@ -29,6 +29,9 @@ default_action :configure
 
 # --- Add the repo + key (apt_repository runs apt-get update internally) ---
 action :configure do
+  # --- Block on apt's frontend/lists lock so unattended-upgrades / apt-daily timers don't race the run ---
+  munchbox_base_apt_lock_wait 'munchbox_base_apt_repo'
+
   # Refresh the cache first -- stock cloud images often ship with an apt
   # index pinned to a debian point release that has since rolled forward,
   # so explicit version installs (gnupg, apt-transport-https) 404 against

@@ -27,4 +27,9 @@ RSpec.describe 'cinc_client::install' do
     expect(chef_run).to install_apt_package('cinc')
       .with(version: '19.2.12-1')
   end
+
+  # --- apt lock wait gates everything that touches apt ---
+  it 'waits for the apt lock before touching apt' do
+    expect(chef_run).to wait_munchbox_base_apt_lock_wait('cinc_client_install')
+  end
 end

@@ -25,4 +25,9 @@ RSpec.describe 'munchbox_base::apt_repo' do
     expect(chef_run).to add_apt_repository('munchbox')
       .with(uri: 'https://apt.munchbox.cc', distribution: 'stable')
   end
+
+  # --- apt lock wait gates the apt-update + package installs ---
+  it 'waits for the apt lock before touching apt' do
+    expect(chef_run).to wait_munchbox_base_apt_lock_wait('munchbox_base_apt_repo')
+  end
 end
