@@ -1,0 +1,59 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for cinc_client.
+#
+# Verifies static configuration only: package installed, /etc/cinc/client.rb
+# rendered with the expected content, trusted cert + validator pem dropped
+# at the right perms, systemd units present. Does NOT actually run
+# cinc-client (no reachable cinc-server in the kitchen VM), and the timer
+# is deliberately left disabled so it doesn't fire failing runs in the
+# background.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: default
+    run_list:
+      - recipe[cinc_client::install]
+      - recipe[cinc_client::configure]
+      - recipe[cinc_client::service]
+    attributes:
+      cinc_client:
+        config:
+          chef_server_url: https://cinc-server.test/organizations/munchbox
+          validator_client_name: munchbox-validator
+          # Bogus content for static-config verification only; cinc-client
+          # is never actually run in kitchen.
+          trusted_cert: |
+            -----BEGIN CERTIFICATE-----
+            KITCHEN-TEST-CERT-PLACEHOLDER
+            -----END CERTIFICATE-----
+          validator_pem: |
+            -----BEGIN RSA PRIVATE KEY-----
+            KITCHEN-TEST-VALIDATOR-PLACEHOLDER
+            -----END RSA PRIVATE KEY-----
