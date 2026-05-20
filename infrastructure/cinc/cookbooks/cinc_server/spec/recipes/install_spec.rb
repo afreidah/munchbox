@@ -22,4 +22,15 @@ RSpec.describe 'cinc_server::install' do
     expect(chef_run).to install_dpkg_package('cinc-server-core')
       .with(version: '15.10.91-1')
   end
+
+  # --- cron prereq is installed for /etc/cron.hourly ---
+  it 'installs cron as a prereq' do
+    expect(chef_run).to install_package('cron')
+  end
+
+  # --- The .deb is fetched to a deterministic cache path ---
+  it 'fetches the .deb to /var/cache' do
+    expect(chef_run).to create_remote_file('/var/cache/cinc-server-core-15.10.91.deb')
+      .with(owner: 'root', group: 'root', mode: '0644')
+  end
 end

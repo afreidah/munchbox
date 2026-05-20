@@ -9,6 +9,7 @@
 # -------------------------------------------------------------------------------
 
 cinc_server_configure 'cinc-server' do
-  api_fqdn node[cookbook]['config']['api_fqdn']
-  settings node[cookbook]['config']['settings'].to_hash
+  api_fqdn      node[cookbook]['config']['api_fqdn']
+  ssl_alt_names node[cookbook]['config']['ssl_alt_names'].to_a
+  settings      node[cookbook]['config']['settings'].to_hash
 end

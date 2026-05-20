@@ -46,6 +46,8 @@ suites:
           # api_fqdn must resolve from inside the VM for chef-server-ctl
           # reconfigure to be happy. Use the box's default hostname.
           api_fqdn: cinc-server.test
+          ssl_alt_names:
+            - DNS:cinc-server
           settings:
             "nginx['enable_non_ssl']": 'true'
         bootstrap:

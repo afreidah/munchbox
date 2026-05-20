@@ -11,7 +11,7 @@ RSpec.describe 'cinc_server::bootstrap' do
   before do
     stub_command("chef-server-ctl org-show 'munchbox'").and_return(false)
     stub_command("chef-server-ctl user-show 'alex'").and_return(false)
-    stub_command("chef-server-ctl org-user-list 'munchbox' | grep -qx 'alex'").and_return(false)
+    stub_command("chef-server-ctl user-show 'alex' --with-orgs | grep -E '^organizations:' | grep -wq 'munchbox'").and_return(false)
   end
 
   cached(:chef_run) do
@@ -29,9 +29,9 @@ RSpec.describe 'cinc_server::bootstrap' do
     expect(chef_run).to create_cinc_server_user('alex')
       .with(
         first_name: 'Alex',
-        last_name:  'Freidah',
-        email:      'alex.freidah@gmail.com',
-        org:        'munchbox'
+        last_name: 'Freidah',
+        email: 'alex.freidah@gmail.com',
+        org: 'munchbox'
       )
   end
 
@@ -39,5 +39,35 @@ RSpec.describe 'cinc_server::bootstrap' do
   it 'creates the bootstrap key directory with restrictive perms' do
     expect(chef_run).to create_directory('/etc/cinc-bootstrap')
       .with(owner: 'root', group: 'root', mode: '0700')
+  end
+
+  # --- Underlying chef-server-ctl execute resources are queued ---
+  it 'queues the org-create execute (gated by org-show)' do
+    expect(chef_run).to run_execute('chef-server-ctl org-create munchbox')
+  end
+
+  it 'queues the user-create execute (gated by user-show)' do
+    expect(chef_run).to run_execute('chef-server-ctl user-create alex')
+  end
+
+  it 'queues the org-user-add execute to make alex an admin of munchbox' do
+    expect(chef_run).to run_execute('chef-server-ctl org-user-add munchbox alex --admin')
+  end
+
+  # --- Pretend the pem exists post-user-create so the perms-lockdown file resource runs ---
+  context 'when the captured pem exists' do
+    cached(:chef_run_with_pem) do
+      stub_command("chef-server-ctl org-show 'munchbox'").and_return(false)
+      stub_command("chef-server-ctl user-show 'alex'").and_return(false)
+      stub_command("chef-server-ctl user-show 'alex' --with-orgs | grep -E '^organizations:' | grep -wq 'munchbox'").and_return(false)
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with('/etc/cinc-bootstrap/alex.pem').and_return(true)
+      ChefSpec::SoloRunner.new(step_into: %w(cinc_server_org cinc_server_user)).converge('cinc_server::bootstrap')
+    end
+
+    it 'locks the captured pem down to 0600 root:root' do
+      expect(chef_run_with_pem).to create_file('/etc/cinc-bootstrap/alex.pem')
+        .with(owner: 'root', group: 'root', mode: '0600')
+    end
   end
 end
