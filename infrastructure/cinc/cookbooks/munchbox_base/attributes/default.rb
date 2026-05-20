@@ -45,7 +45,7 @@ default[cookbook]['apt_repo'] = {
   'uri' => 'https://apt.munchbox.cc',
   'distribution' => 'stable',
   'components' => %w(main),
-  'key_url' => 'https://apt.munchbox.cc/pubkey.gpg',
+  'key_url' => 'https://apt.munchbox.cc/pubkey.asc',
 }
 
 # -------------------------------------------------------------------------------
