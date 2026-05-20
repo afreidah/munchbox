@@ -34,6 +34,8 @@ default[cookbook]['install'] = {
 
 default[cookbook]['config'] = {
   'api_fqdn' => 'cinc-server.munchbox.cc',
+  # --- Extra SAN entries (with `DNS:` or `IP:` prefix); api_fqdn is added automatically ---
+  'ssl_alt_names' => [],
   'settings' => {
     "nginx['enable_non_ssl']" => 'true',
   },
@@ -51,14 +53,14 @@ default[cookbook]['config'] = {
 default[cookbook]['bootstrap'] = {
   'org' => {
     'short_name' => 'munchbox',
-    'full_name'  => 'Munchbox',
+    'full_name' => 'Munchbox',
   },
   'user' => {
-    'username'   => 'alex',
+    'username' => 'alex',
     'first_name' => 'Alex',
-    'last_name'  => 'Freidah',
-    'email'      => 'alex.freidah@gmail.com',
-    'password'   => 'CHANGEME-set-via-attribute-override',
-    'key_path'   => '/etc/cinc-bootstrap/alex.pem',
+    'last_name' => 'Freidah',
+    'email' => 'alex.freidah@gmail.com',
+    'password' => 'CHANGEME-set-via-attribute-override',
+    'key_path' => '/etc/cinc-bootstrap/alex.pem',
   },
 }

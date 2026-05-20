@@ -58,12 +58,11 @@ action :create do
     not_if "chef-server-ctl user-show '#{new_resource.username}'"
   end
 
-  # --- Lock down the captured key regardless of how chef-server-ctl wrote it ---
+  # --- Lock down the captured key (manages metadata when file exists; does not create) ---
   file new_resource.key_path do
     owner 'root'
     group 'root'
     mode  '0600'
-    action :touch
     only_if { ::File.exist?(new_resource.key_path) }
   end
 
@@ -71,7 +70,8 @@ action :create do
     execute "chef-server-ctl org-user-add #{new_resource.org} #{new_resource.username} --admin" do
       command "chef-server-ctl org-user-add '#{new_resource.org}' '#{new_resource.username}' --admin"
       environment 'CINC_LICENSE' => 'accept', 'CHEF_LICENSE' => 'accept'
-      not_if "chef-server-ctl org-user-list '#{new_resource.org}' | grep -qx '#{new_resource.username}'"
+      # --- cinc-15.10.91 doesn't accept `org-user-list <org>`; use `user-show --with-orgs` which prints `organizations: <name> <name>...` on one line, then word-match the org name ---
+      not_if "chef-server-ctl user-show '#{new_resource.username}' --with-orgs | grep -E '^organizations:' | grep -wq '#{new_resource.org}'"
     end
   end
 end
