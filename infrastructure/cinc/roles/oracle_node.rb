@@ -13,5 +13,6 @@ description 'Oracle Cloud free-tier node; runs base + cinc_client'
 
 run_list(
   'role[base]',
-  'role[cinc_client]'
+  'role[cinc_client]',
+  'recipe[cinc_client::disable_apt_daily]'
 )
