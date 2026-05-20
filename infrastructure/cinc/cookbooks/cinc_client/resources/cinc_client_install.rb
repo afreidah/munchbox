@@ -28,7 +28,10 @@ default_action :install
 
 # --- Register cinc-project apt repo + install the cinc package ---
 action :install do
-  # --- Refresh apt cache first; debian-12 cloud images ship with stale indexes that 404 on version-pinned gnupg/apt-transport-https installs ---
+  # --- Block on apt's frontend/lists lock so unattended-upgrades / apt-daily timers don't race the run ---
+  munchbox_base_apt_lock_wait 'cinc_client_install'
+
+  # --- Refresh apt cache; cloud images ship with stale indexes that 404 on version-pinned installs ---
   apt_update 'cinc_client_install' do
     action :periodic
   end

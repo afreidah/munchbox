@@ -21,6 +21,7 @@ issues_url       'https://github.com/afreidah/munchbox/issues'
 source_url       'https://github.com/afreidah/munchbox'
 
 depends 'munchbox_lib'
+depends 'munchbox_base'
 
 supports 'debian'
 supports 'ubuntu'
