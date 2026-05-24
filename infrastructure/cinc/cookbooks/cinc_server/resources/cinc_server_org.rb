@@ -21,7 +21,10 @@ property :full_name,  String, required: true
 
 default_action :create
 
-# --- Create the org if it doesn't already exist ---
+# -------------------------------------------------------------------------------
+# Action :create  --  Create the org if it doesn't already exist
+# -------------------------------------------------------------------------------
+
 action :create do
   execute "chef-server-ctl org-create #{new_resource.short_name}" do
     command "chef-server-ctl org-create '#{new_resource.short_name}' '#{new_resource.full_name}'"
@@ -30,7 +33,10 @@ action :create do
   end
 end
 
-# --- Tear an org down (rarely useful; mostly for test cleanup) ---
+# -------------------------------------------------------------------------------
+# Action :delete  --  Tear an org down (rarely useful; mostly for test cleanup)
+# -------------------------------------------------------------------------------
+
 action :delete do
   execute "chef-server-ctl org-delete #{new_resource.short_name}" do
     command "chef-server-ctl org-delete '#{new_resource.short_name}' --yes"

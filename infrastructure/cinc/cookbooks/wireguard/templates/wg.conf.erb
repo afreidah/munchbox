@@ -1,0 +1,40 @@
+<%#
+  Cookbook:: wireguard
+  Template:: wg.conf.erb
+
+  Renders a wg-quick interface config. Same template covers both server
+  (ListenPort, peers without Endpoint) and client (no ListenPort,
+  per-peer Endpoint + optional PersistentKeepalive) shapes via gated
+  sections.
+%>
+# Managed by chef (wireguard::configure) -- do not edit by hand.
+
+[Interface]
+Address = <%= @address %>
+<% if @listen_port -%>
+ListenPort = <%= @listen_port %>
+<% end -%>
+PrivateKey = <%= @private_key %>
+<% if @mtu -%>
+MTU = <%= @mtu %>
+<% end -%>
+<% @post_up.each do |cmd| -%>
+PostUp = <%= cmd %>
+<% end -%>
+<% @post_down.each do |cmd| -%>
+PostDown = <%= cmd %>
+<% end -%>
+
+<% @peers.each do |peer| -%>
+[Peer]
+# <%= peer['name'] %>
+PublicKey = <%= peer['public_key'] %>
+AllowedIPs = <%= Array(peer['allowed_ips']).join(', ') %>
+<% if peer['endpoint'] -%>
+Endpoint = <%= peer['endpoint'] %>
+<% end -%>
+<% if peer['persistent_keepalive'] -%>
+PersistentKeepalive = <%= peer['persistent_keepalive'] %>
+<% end -%>
+
+<% end -%>

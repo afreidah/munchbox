@@ -31,7 +31,10 @@ property :package_name, String, required: true
 
 default_action :install
 
-# --- Fetch the .deb if needed and dpkg-install at the pinned version ---
+# -------------------------------------------------------------------------------
+# Action :install  --  Fetch the .deb if needed and dpkg-install at the pinned version
+# -------------------------------------------------------------------------------
+
 action :install do
   # --- infra-server::log_cleanup writes to /etc/cron.hourly; Debian 12 cloud image needs cron installed first ---
   package 'cron' do
@@ -56,7 +59,10 @@ action :install do
   end
 end
 
-# --- Remove the package; leave the cached .deb alone in case we're reinstalling ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Remove the package; leave the cached .deb alone in case we're reinstalling
+# -------------------------------------------------------------------------------
+
 action :remove do
   dpkg_package new_resource.package_name do
     action :remove

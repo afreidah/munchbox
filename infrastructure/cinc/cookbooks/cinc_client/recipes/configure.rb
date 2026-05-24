@@ -11,7 +11,8 @@
 
 cinc_client_configure 'cinc' do
   chef_server_url       node[cookbook]['config']['chef_server_url']
-  node_name             node[cookbook]['config']['node_name']
+  # --- fall back to node.name (registered at bootstrap) so hostname drift can't break auth ---
+  node_name             node[cookbook]['config']['node_name'] || node.name
   log_level             node[cookbook]['config']['log_level']
   log_location          node[cookbook]['config']['log_location']
   validator_client_name node[cookbook]['config']['validator_client_name']

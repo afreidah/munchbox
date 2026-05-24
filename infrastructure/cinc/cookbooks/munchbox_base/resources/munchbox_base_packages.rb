@@ -20,7 +20,10 @@ property :packages, Array, required: true
 
 default_action :install
 
-# --- Ensure every named package is installed ---
+# -------------------------------------------------------------------------------
+# Action :install  --  Ensure every named package is installed
+# -------------------------------------------------------------------------------
+
 action :install do
   package new_resource.name do
     package_name new_resource.packages
@@ -28,7 +31,10 @@ action :install do
   end
 end
 
-# --- Purge every named package (use with care) ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Purge every named package (use with care)
+# -------------------------------------------------------------------------------
+
 action :remove do
   package new_resource.name do
     package_name new_resource.packages

@@ -79,3 +79,29 @@ control 'sshd' do
     it { should be_running }
   end
 end
+
+control 'apt_cleanup' do
+  impact 1.0
+  title 'munchbox_base::apt_cleanup empties the apt archive cache'
+
+  # --- After `apt-get clean` the cache should only contain partial/ + lock + maybe a .gpg ---
+  describe command('find /var/cache/apt/archives -maxdepth 1 -name "*.deb" | wc -l') do
+    its('stdout') { should match(/^\s*0\s*$/) }
+  end
+end
+
+control 'rsyslog_rotation' do
+  impact 1.0
+  title 'munchbox_base::rsyslog_rotation templates /etc/logrotate.d/rsyslog'
+
+  describe file('/etc/logrotate.d/rsyslog') do
+    it { should exist }
+    its('mode') { should cmp '0644' }
+    its('content') { should match(%r{^# Managed by cinc/chef -- munchbox_base::rsyslog_rotation}) }
+    its('content') { should match(%r{^/var/log/syslog$}) }
+    its('content') { should match(/^\s+daily$/) }
+    its('content') { should match(/^\s+size 200M$/) }
+    its('content') { should match(/^\s+su root syslog$/) }
+    its('content') { should match(%r{^\s+/usr/lib/rsyslog/rsyslog-rotate$}) }
+  end
+end

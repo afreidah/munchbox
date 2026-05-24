@@ -85,6 +85,23 @@ inputs = merge(
     oci_config     = local.oci_config
     proxmox_config = local.proxmox_config
 
+    # --- Chef bootstrap (per-node values; shared ones are in bootstrap_inputs) ---
+    # chef_node_name defaults to the hyphen-stripped node_name to match the
+    # existing convention (oracle_arm_1.rb uses 'oraclearm1' not 'oracle-arm-1').
+    chef_node_name = try(local.node_config.chef_node_name, replace(local.root.locals.node_name, "-", ""))
+    # chef_run_list defaults to role[<underscored node_name>] which matches
+    # roles/nodes/<node>.rb conventions (e.g. role[oracle_arm_1]).
+    chef_run_list = try(local.node_config.chef_run_list, "role[${replace(local.root.locals.node_name, "-", "_")}]")
+    # Oracle/cloud nodes need wg0 to reach 192.168.68.x; proxmox/bare-metal already on the LAN.
+    bootstrap_wireguard = try(local.node_config.bootstrap_wireguard, local.provider_type != "proxmox")
+
+    # --- Optional static IP via netplan (proxmox VMs commonly pin DHCP-allocated IPs) ---
+    static_ip           = try(local.node_config.static_ip, "")
+    static_netmask_bits = try(local.node_config.static_netmask_bits, 24)
+    gateway             = try(local.node_config.gateway, "")
+    dns_servers         = try(local.node_config.dns_servers, [])
+    network_interface   = try(local.node_config.network_interface, "ens18")
+
     # Additional tags from node config
     tags = merge(
       local.root.locals.bootstrap_inputs.tags,

@@ -1,0 +1,61 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for nomad.
+#
+# Single-node, ACL+TLS+Consul+Vault all OFF -- the kitchen VM has none
+# of the surrounding infrastructure. Verifies install + configure
+# end-to-end: binary lands, systemd unit comes up, config matches the
+# kitchen attributes, the agent's HTTP API serves /v1/agent/self.
+#
+# Mixed server+client mode (the "single-host dev" shape) so the agent
+# has something to bootstrap against.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+  client_rb:
+    node_name: kitchen
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: nomad
+    run_list:
+      - recipe[nomad::install]
+      - recipe[nomad::configure]
+    attributes:
+      nomad:
+        config:
+          node_name: kitchen
+          bind_addr: 127.0.0.1
+          advertise_ip: 127.0.0.1
+          server_enabled: true
+          bootstrap_expect: 1
+          client_enabled: false
+          servers: []
+          consul_enabled: false
+          vault_enabled: false
+          acl_enabled: false
+          tls_http: false
+          tls_rpc: false

@@ -785,6 +785,44 @@ locals {
       "wireguard"
     ]
 
+    # --- AppRole auth for chef-managed nodes ---
+    approle_auth_enabled = true
+    chef_managed_node_secrets = [
+      # cinc_server-related (admin password, validator pem, trusted cert)
+      "cinc-server/admin/*",
+      "cinc-server/validator",
+      "cinc-server/trusted-cert",
+      # wireguard mesh keys (per node, both public + private)
+      "wireguard-v2/*",
+      # consul agent ACL token (consul/* deliberately NOT listed -- bootstrap-token would be exposed)
+      "consul/agent-token",
+      # consul ACL token used by nomad workloads via the local consul agent's `tokens.default` slot; broader KV/service read than the agent token
+      "consul/nomad-client-token",
+      # consul ACL token for oracle-watchdog (session-heartbeat scope; per-service token, not the broad agent-token)
+      "consul/oracle-watchdog-token",
+      # nomad management ACL token for the auto-restart-webhook receiver (stabler-only at runtime, but policy is fleet-wide; narrower per-job-restart token is a hardening item)
+      "nomad/management-token",
+      # consul ACL token vault servers use to write to vault/ KV in consul storage backend (vault-storage policy); only the 3 vault servers actually need this but policy is fleet-wide
+      "consul/vault-storage-token",
+      # vault-cert-manager AppRole creds (role_id is semi-public; secret_id is sensitive, both required to auth)
+      "vault-cert-manager/role-id",
+      "vault-cert-manager/secret-id",
+      # SSH break-glass pubkey (added to root's authorized_keys by munchbox_base::sshd ssh_ca path)
+      "ssh/break-glass",
+    ]
+
+    # --- Non-KV Vault reads chef-managed nodes need (SSH signer CA pubkeys). ---
+    chef_managed_node_extra_paths = [
+      {
+        path         = "ssh-client-signer/config/ca"
+        capabilities = ["read"]
+      },
+      {
+        path         = "ssh-host-signer/config/ca"
+        capabilities = ["read"]
+      },
+    ]
+
     # --- Database Roles (disabled by default) ---
     database_roles = {
       "temporal" = {
@@ -1202,13 +1240,32 @@ locals {
     consul_servers = local.consul_servers
     nomad_servers  = local.nomad_servers
 
-    # Software versions
+    # Software versions (legacy direct-install path; chef cookbooks pin separately).
     consul_version = "1.17.0"
     nomad_version  = "1.7.0"
 
-    # Docker
+    # Docker (legacy direct-install path).
     allow_privileged_docker = false
     docker_user             = "ubuntu"
+
+    # --- Chef bootstrap (cloud-init path; the cookbooks take over after first converge) ---
+    # The bootstrap module reads chef_validator + encrypted_data_bag_secret from Vault at
+    # apply time via vault_kv_secret_v2 data sources. Per-node values (chef_node_name,
+    # chef_run_list, bootstrap_wireguard, static_ip, etc.) are set in the env_helper.
+    chef_server_url            = "https://cinc-server.munchbox.cc/organizations/munchbox"
+    chef_validator_client_name = "munchbox-validator"
+    cinc_version               = "19.2.12"
+
+    chef_validator_vault_mount       = "secret"
+    chef_validator_vault_name        = "cinc/validator"
+    chef_validator_vault_field       = "pem"
+    chef_data_bag_secret_vault_mount = "secret"
+    chef_data_bag_secret_vault_name  = "cinc/encrypted_data_bag_secret"
+    chef_data_bag_secret_vault_field = "value"
+
+    hosts_overrides = {
+      "cinc-server.munchbox.cc" = "192.168.68.99"
+    }
 
     tags = {
       Project   = "munchbox"

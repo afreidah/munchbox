@@ -1,30 +1,77 @@
 #cloud-config
 # -----------------------------------------------------------------------------
-# Munchbox Node Bootstrap - Cloud-Init Template
+# Munchbox Chef-Bootstrap Cloud-Init
 #
-# Bootstraps a cloud node to join the Munchbox homelab cluster:
-# - Configures WireGuard VPN back to homelab
-# - Installs and configures Nomad client
-# - Installs and configures Consul client
-# - Installs Docker for container workloads
+# First-boot bootstrap for a chef-managed Munchbox node. Works for both
+# oracle cloud nodes (need WireGuard to reach cinc-server over wg0) and
+# proxmox/bare-metal nodes (already on the 192.168.68.x LAN, no WG).
+# After this template runs, the node is registered with
+# cinc-server.munchbox.cc and has performed its first cinc-client
+# converge against its role. All subsequent config (consul, nomad,
+# docker, vault-agent, etc.) lives in chef cookbooks; this template
+# stops touching the node once chef takes over.
+#
+# WHAT THIS TEMPLATE DOES:
+#   1. Optional static IP via netplan (when static_ip is set; common on
+#      proxmox VMs, usually skipped on oracle where DHCP suffices).
+#   2. Drop the munchbox PKI CAs so the node trusts cinc-server's TLS.
+#   3. Pin /etc/hosts entries (cinc-server, anything in hosts_overrides)
+#      so bootstrap doesn't depend on DNS being up.
+#   4. Optionally bring up WireGuard wg0 (when bootstrap_wireguard=true;
+#      needed for oracle nodes to reach 192.168.68.x, skipped for
+#      proxmox/bare-metal nodes already on the LAN).
+#   5. Install cinc-client via direct .deb from downloads.cinc.sh.
+#   6. Drop /etc/cinc/{client.rb, validation.pem, encrypted_data_bag_secret}.
+#   7. Drop /etc/cinc/first_run.json with the node's role.
+#   8. Run cinc-client -j /etc/cinc/first_run.json (the rest is chef's job).
+#
+# PRE-PROVISION REQUIREMENTS (do these BEFORE `terragrunt apply`):
+#   - Mint an AppRole secret_id for this node from
+#     auth/chef-approle/role/chef-managed-node and store at
+#     secret/chef-approle/secret-ids/<node>.
+#   - Upload the encrypted vault_agent data-bag item:
+#       infrastructure/cinc/scripts/upload-vault-agent-data-bag.sh <node>
+#   - Ensure the per-node role file exists at
+#     infrastructure/cinc/roles/nodes/<node>.rb AND has been uploaded
+#     to cinc-server (knife role from file ...).
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
 
 package_update: true
-package_upgrade: true
+package_upgrade: false
 
 packages:
-  - wireguard
   - curl
-  - gnupg
   - ca-certificates
-  - jq
-  - unzip
+  - gnupg
+%{ if bootstrap_wireguard ~}
+  - wireguard
+%{ endif ~}
 
-# Write configuration files
 write_files:
-  # WireGuard configuration
+  # --- munchbox root CA so apt/curl + cinc-client trust apt.munchbox.cc / cinc-server.munchbox.cc ---
+  - path: /usr/local/share/ca-certificates/munchbox-root-ca.crt
+    permissions: '0644'
+    content: |
+      ${indent(6, munchbox_root_ca)}
+
+  - path: /usr/local/share/ca-certificates/munchbox-intermediate-ca.crt
+    permissions: '0644'
+    content: |
+      ${indent(6, munchbox_intermediate_ca)}
+
+  # --- /etc/hosts pin (cinc-server reachability before DNS works on a fresh node). Harmless on LAN nodes too. ---
+  - path: /etc/hosts
+    append: true
+    content: |
+      # Munchbox bootstrap host pins (cloud-init)
+      %{ for hostname, ip in hosts_overrides ~}
+      ${ip} ${hostname}
+      %{ endfor ~}
+
+%{ if bootstrap_wireguard ~}
+  # --- WireGuard wg0 (oracle nodes only; bootstrap-time path to 192.168.68.x). chef wireguard cookbook owns wg1 later. ---
   - path: /etc/wireguard/wg0.conf
     permissions: '0600'
     content: |
@@ -37,158 +84,92 @@ write_files:
       Endpoint = ${wireguard_endpoint}
       AllowedIPs = ${wireguard_allowed_ips}
       PersistentKeepalive = 25
+%{ endif ~}
 
-  # Consul configuration
-  - path: /etc/consul.d/consul.hcl
+  # --- cinc validator key (shared per chef-server organization; pulled from Vault by terragrunt) ---
+  - path: /etc/cinc/validation.pem
+    permissions: '0600'
+    owner: 'root:root'
+    content: |
+      ${indent(6, chef_validator_key)}
+
+  # --- shared encrypted_data_bag_secret (same on every node; pulled from Vault by terragrunt) ---
+  - path: /etc/cinc/encrypted_data_bag_secret
+    permissions: '0640'
+    owner: 'root:root'
+    content: |
+      ${chef_encrypted_data_bag_secret}
+
+  # --- cinc client.rb (matches the shape cinc_client::configure renders post-bootstrap) ---
+  - path: /etc/cinc/client.rb
     permissions: '0644'
     content: |
-      datacenter = "${datacenter}"
-      data_dir = "/opt/consul"
-      log_level = "INFO"
+      # Bootstrap client.rb -- cinc_client::configure replaces this on first chef run.
+      chef_server_url        '${chef_server_url}'
+      node_name              '${chef_node_name}'
+      validation_client_name '${chef_validator_client_name}'
+      validation_key         '/etc/cinc/validation.pem'
+      client_key             '/etc/cinc/client.pem'
+      trusted_certs_dir      '/etc/cinc/trusted_certs'
+      log_level              :info
+      log_location           STDOUT
 
-      bind_addr = "{{ GetInterfaceIP \"wg0\" }}"
-      advertise_addr = "{{ GetInterfaceIP \"wg0\" }}"
-
-      retry_join = [${consul_retry_join}]
-
-      # Client mode
-      server = false
-
-      # Enable service mesh
-      connect {
-        enabled = true
-      }
-
-      ports {
-        grpc = 8502
-      }
-
-  # Nomad configuration
-  - path: /etc/nomad.d/nomad.hcl
-    permissions: '0644'
-    content: |
-      datacenter = "${datacenter}"
-      data_dir = "/opt/nomad"
-      log_level = "INFO"
-
-      bind_addr = "{{ GetInterfaceIP \"wg0\" }}"
-      advertise {
-        http = "{{ GetInterfaceIP \"wg0\" }}"
-        rpc  = "{{ GetInterfaceIP \"wg0\" }}"
-        serf = "{{ GetInterfaceIP \"wg0\" }}"
-      }
-
-      # Client mode
-      client {
-        enabled = true
-
-        servers = [${nomad_servers}]
-
-        node_class = "${node_class}"
-
-        %{ if node_pool != "" ~}
-        node_pool = "${node_pool}"
-        %{ endif ~}
-
-        meta {
-          provider = "${provider_type}"
-          %{ for key, value in node_meta ~}
-          ${key} = "${value}"
-          %{ endfor ~}
-        }
-
-        host_volume "docker-sock" {
-          path      = "/var/run/docker.sock"
-          read_only = true
-        }
-      }
-
-      plugin "docker" {
-        config {
-          allow_privileged = ${allow_privileged_docker}
-          volumes {
-            enabled = true
-          }
-        }
-      }
-
-      %{ if consul_integration ~}
-      consul {
-        address = "127.0.0.1:8500"
-      }
-      %{ endif ~}
-
-  # Docker daemon configuration
-  - path: /etc/docker/daemon.json
+  # --- First-run json picks up the per-node role; matches what knife bootstrap would inject ---
+  - path: /etc/cinc/first_run.json
     permissions: '0644'
     content: |
       {
-        "log-driver": "json-file",
-        "log-opts": {
-          "max-size": "10m",
-          "max-file": "3"
-        },
-        "storage-driver": "overlay2"
+        "run_list": ["${chef_run_list}"]
       }
 
+%{ if static_ip != "" ~}
+  # --- Static IP via netplan (replaces DHCP for the primary interface) ---
+  - path: /etc/netplan/00-munchbox-static.yaml
+    permissions: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          ${network_interface}:
+            dhcp4: false
+            addresses:
+              - ${static_ip}/${static_netmask_bits}
+            routes:
+              - to: default
+                via: ${gateway}
+            nameservers:
+              addresses: [${join(", ", dns_servers)}]
+%{ endif ~}
+
 runcmd:
-  # Enable IP forwarding for WireGuard
+  # --- Update the CA trust bundle so cinc-server.munchbox.cc verifies ---
+  - update-ca-certificates
+
+%{ if static_ip != "" ~}
+  # --- Apply netplan so the static IP is live before anything else tries to bind ---
+  - netplan apply
+  - sleep 3
+%{ endif ~}
+
+%{ if bootstrap_wireguard ~}
+  # --- IP forwarding + bring WG up (oracle nodes only); required so the cinc-client pull below reaches 192.168.68.99 over wg0 ---
   - echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
   - sysctl -p
-
-  # Start WireGuard
   - systemctl enable wg-quick@wg0
   - systemctl start wg-quick@wg0
-
-  # Wait for WireGuard to establish
   - sleep 5
+%{ endif ~}
 
-  # Configure iptables to allow traffic from WireGuard and homelab networks
-  # Insert rules BEFORE the default REJECT rule
-  # Allow all traffic from WireGuard interface
-  - iptables -I INPUT 5 -i wg0 -j ACCEPT
-  # Allow high ports for Nomad dynamic port allocation (20000-32000)
-  - iptables -I INPUT 5 -p tcp --dport 20000:32000 -j ACCEPT
-  - iptables -I INPUT 5 -p udp --dport 20000:32000 -j ACCEPT
-  # Allow common service ports (8000-9999)
-  - iptables -I INPUT 5 -p tcp --dport 8000:9999 -j ACCEPT
-  # Allow Nomad/Consul ports
-  - iptables -I INPUT 5 -p tcp --dport 4646:4648 -j ACCEPT
-  - iptables -I INPUT 5 -p tcp --dport 8300:8600 -j ACCEPT
-  - iptables -I INPUT 5 -p udp --dport 8301:8302 -j ACCEPT
-  - iptables -I INPUT 5 -p udp --dport 8600 -j ACCEPT
-  # Save iptables rules to persist across reboots
-  - apt-get install -y iptables-persistent
-  - netfilter-persistent save
+  # --- Install cinc-client from downloads.cinc.sh (mirrors cinc_client::install, no packagecloud) ---
+  - 'DEB_ARCH=$(dpkg --print-architecture)'
+  - 'curl -fsSL -o /var/cache/cinc.deb "https://downloads.cinc.sh/files/stable/cinc/${cinc_version}/$(. /etc/os-release; echo $ID)/$(. /etc/os-release; echo $VERSION_ID)/cinc_${cinc_version}-1_$${DEB_ARCH}.deb"'
+  - dpkg -i /var/cache/cinc.deb
+  - mkdir -p /etc/cinc/trusted_certs
 
-  # Install Docker
-  - curl -fsSL https://get.docker.com | sh
-  - systemctl enable docker
-  - systemctl start docker
-  %{ if docker_user != "" ~}
-  - usermod -aG docker ${docker_user}
-  %{ endif ~}
+  # --- First chef converge: registers the node, downloads its run_list, and configures everything ---
+  - cinc-client -j /etc/cinc/first_run.json --no-fork
 
-  # Install HashiCorp repository
-  - curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-  - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/hashicorp.list
-  - apt-get update
+  # --- Done marker ---
+  - echo "chef-bootstrap complete at $(date -u +%FT%TZ)" > /var/log/munchbox-bootstrap-complete
 
-  # Install Consul
-  - apt-get install -y consul=${consul_version}-1
-  - mkdir -p /opt/consul
-  - chown consul:consul /opt/consul
-  - systemctl enable consul
-  - systemctl start consul
-
-  # Install Nomad
-  - apt-get install -y nomad=${nomad_version}-1
-  - mkdir -p /opt/nomad
-  - chown nomad:nomad /opt/nomad
-  - systemctl enable nomad
-  - systemctl start nomad
-
-  # Signal completion
-  - echo "Bootstrap complete" > /var/log/bootstrap-complete
-
-final_message: "Munchbox node bootstrap completed after $UPTIME seconds"
+final_message: "Munchbox chef-bootstrap finished after $UPTIME seconds"

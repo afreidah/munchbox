@@ -27,7 +27,10 @@ property :key_url,      String
 
 default_action :configure
 
-# --- Add the repo + key (apt_repository runs apt-get update internally) ---
+# -------------------------------------------------------------------------------
+# Action :configure  --  Add the repo + key (apt_repository runs apt-get update internally)
+# -------------------------------------------------------------------------------
+
 action :configure do
   # --- Block on apt's frontend/lists lock so unattended-upgrades / apt-daily timers don't race the run ---
   munchbox_base_apt_lock_wait 'munchbox_base_apt_repo'
@@ -58,7 +61,10 @@ action :configure do
   end
 end
 
-# --- Remove the repo from sources.list.d ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Remove the repo from sources.list.d
+# -------------------------------------------------------------------------------
+
 action :remove do
   apt_repository new_resource.name do
     action :remove

@@ -1,0 +1,12 @@
+<%#
+  Cookbook:: consul
+  Template:: resolv.conf.erb
+  Local dnsmasq is the SOLE resolver. dnsmasq itself fails over to direct
+  Pi-holes if CoreDNS is unreachable, so we don't need to list them here.
+  Listing them here would let libc / Go's net.Resolver / etc. bypass the
+  CoreDNS round-robin and hit Pi-holes directly, causing imbalanced LAN
+  load (one Pi-hole at ~64%, the other at ~36% seen previously).
+%>
+# Managed by cinc/chef -- consul::dns
+search <%= @search %>
+nameserver <%= @listen_address %>

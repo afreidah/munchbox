@@ -1,0 +1,12 @@
+# --- Test-kitchen state (per-VM logs, vagrant artifacts) ---
+.kitchen/
+kitchen.local.yml
+
+# --- Editor / language-server scratch ---
+.ruby-lsp/
+
+# --- Bundler vendor dir if installed locally ---
+vendor/bundle/
+
+# --- Berkshelf lock file (cookbook dep resolution result) ---
+Berksfile.lock

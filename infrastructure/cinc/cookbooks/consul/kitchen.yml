@@ -1,0 +1,53 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for consul.
+#
+# Verifies install + configure end-to-end in a single-node, ACL-off,
+# TLS-off bootstrap (no cert plumbing, no Vault round-trip). Inspec
+# checks the binary, systemd unit, rendered config, and the HTTP API
+# (status/leader) to confirm the agent is actually serving.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+  client_rb:
+    node_name: kitchen
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: consul
+    run_list:
+      - recipe[consul::install]
+      - recipe[consul::configure]
+    attributes:
+      consul:
+        config:
+          bind_addr: 127.0.0.1
+          server: true
+          bootstrap_expect: 1
+          retry_join:
+            - 127.0.0.1
+          tls_enabled: false
+          acl_enabled: false

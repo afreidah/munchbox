@@ -1,0 +1,9 @@
+<%#
+  Cookbook:: munchbox_base
+  Template:: resolv_conf.erb
+  Renders /etc/resolv.conf with the host's primary IP as the dnsmasq
+  nameserver (NOT 127.0.0.53). See attributes/default.rb for the reason.
+%>
+# Managed by chef (munchbox_base::resolv_conf) -- do not edit by hand.
+search <%= @search %>
+nameserver <%= @nameserver %>

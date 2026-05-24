@@ -1,0 +1,59 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for wireguard.
+#
+# Single interface (wg-kitchen) with one bogus peer. Verifies the
+# packages install, the config renders, and wg-quick brings the link up.
+# No real peer handshake (no other peer in the VM). Key material here is
+# real but freshly generated test keys -- not used in production.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: wireguard
+    run_list:
+      - recipe[wireguard::install]
+      - recipe[wireguard::configure]
+    attributes:
+      wireguard:
+        interfaces:
+          wg-kitchen:
+            address: 10.99.0.1/24
+            listen_port: 51820
+            mtu: 1380
+            # --- Test key material -- 32-byte base64 random (valid WG format); not used outside kitchen ---
+            private_key: NrKgOyslXWp/wxzXURVPD7qY9/NauaTyKYzOeCVgf10=
+            post_up:
+              - iptables -I INPUT -p udp --dport 51820 -j ACCEPT
+            post_down:
+              - iptables -D INPUT -p udp --dport 51820 -j ACCEPT
+            peers:
+              - name: test-peer
+                public_key: 9ldPtASfhe4YO5vXIpJa2GmjKsGaSTZCL3T0mcoAm2s=
+                allowed_ips:
+                  - 10.99.0.2/32

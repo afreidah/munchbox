@@ -1,0 +1,9 @@
+---
+name: docker
+title: docker cookbook integration
+maintainer: Alex Freidah
+license: MIT
+summary: Verifies docker install + daemon.json on a debian-12 VM
+version: 0.1.0
+supports:
+  - platform: debian

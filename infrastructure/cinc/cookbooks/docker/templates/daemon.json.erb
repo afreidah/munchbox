@@ -1,0 +1,7 @@
+<%#
+  Cookbook:: docker
+  Template:: daemon.json.erb
+  Dropped at /etc/docker/daemon.json. The recipe builds @config as a Hash
+  and we just pretty-print it; no per-key conditionals here.
+%>
+<%= JSON.pretty_generate(@config) %>

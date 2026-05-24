@@ -12,15 +12,19 @@
 # -------------------------------------------------------------------------------
 # cinc package
 #
-# Pulled from the cinc-project packagecloud apt repo. Pin a known-good
-# version so client upgrades are deliberate, not silent.
+# Fetched as a .deb directly from packages.cinc.sh (cinc-project's
+# packagecloud apt repo serves 404 for every codename). Pin a known-good
+# version so client upgrades are deliberate, not silent. Keep this in sync
+# with the omnibus `-v` flag in infrastructure/cinc/scripts/bootstrap-cinc-node.sh
+# so fresh nodes don't drift from the cookbook pin between bootstrap and
+# first converge.
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  'version' => '19.2.12',
-  'package_name' => 'cinc',
-  'apt_repo_uri' => 'https://packagecloud.io/cinc-project/stable/debian/',
-  'apt_repo_key' => 'https://packagecloud.io/cinc-project/stable/gpgkey',
+  version: '19.3.14',
+  package_name: 'cinc',
+  download_base: 'https://packages.cinc.sh/files',
+  channel: 'stable',
 }
 
 # -------------------------------------------------------------------------------
@@ -34,13 +38,13 @@ default[cookbook]['install'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['config'] = {
-  'chef_server_url' => 'https://cinc-server.munchbox.cc/organizations/munchbox',
-  'node_name' => nil,
-  'log_level' => 'info',
-  'log_location' => '/var/log/cinc/client.log',
-  'validator_client_name' => 'munchbox-validator',
-  'trusted_cert' => nil,
-  'validator_pem' => nil,
+  chef_server_url: 'https://cinc-server.munchbox.cc/organizations/munchbox',
+  node_name: nil,
+  log_level: 'info',
+  log_location: '/var/log/cinc/client.log',
+  validator_client_name: 'munchbox-validator',
+  trusted_cert: nil,
+  validator_pem: nil,
 }
 
 # -------------------------------------------------------------------------------
@@ -53,6 +57,6 @@ default[cookbook]['config'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['service'] = {
-  'timer_enabled' => false,
-  'on_calendar' => 'hourly',
+  timer_enabled: false,
+  on_calendar: 'hourly',
 }

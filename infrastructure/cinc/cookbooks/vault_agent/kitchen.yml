@@ -1,0 +1,51 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for vault_agent.
+#
+# Verifies static config + service-up only -- no reachable Vault in the
+# kitchen VM, so the agent's auto-auth loop will be retrying forever.
+# That's expected; the systemd unit still reports active (running).
+#
+# AppRole creds come from an unencrypted fixture data bag under
+# test/fixtures/data_bags/vault_agent/<node_name>.json. node_name is
+# pinned to 'kitchen' below so the lookup is deterministic.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+  data_bags_path: test/fixtures/data_bags
+  client_rb:
+    node_name: kitchen
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: vault_agent
+    run_list:
+      - recipe[vault_agent::install]
+      - recipe[vault_agent::configure]
+    attributes:
+      vault_agent:
+        config:
+          vault_addr: https://vault.test:8200

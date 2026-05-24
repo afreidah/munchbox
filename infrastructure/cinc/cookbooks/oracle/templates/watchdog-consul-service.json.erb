@@ -1,0 +1,17 @@
+{
+  "service": {
+    "name": "oracle-watchdog",
+    "tags": ["monitor", "prometheus"],
+    "port": <%= @metrics_port %>,
+    "check": {
+      "http": "http://127.0.0.1:<%= @metrics_port %>/metrics",
+      "interval": "30s",
+      "timeout": "5s"
+    },
+    "meta": {
+      "prometheus_scrape": "true",
+      "prometheus_path": "/metrics",
+      "prometheus_port": "<%= @metrics_port %>"
+    }
+  }
+}

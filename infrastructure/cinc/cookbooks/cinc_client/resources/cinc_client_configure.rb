@@ -12,14 +12,13 @@
 #   - /var/log/cinc/ (log_location parent)
 #
 # Properties:
-#   chef_server_url       - Full URL including /organizations/<org> (required).
-#   node_name             - Override the node name; nil = cinc-client uses
-#                           the system hostname (default).
-#   log_level             - cinc log level symbol name (default 'info').
-#   log_location          - Path for cinc-client.log (default /var/log/cinc/client.log).
-#   validator_client_name - Org-level validator client name (required).
-#   trusted_cert          - PEM content of the cinc-server CA cert (nil ok).
-#   validator_pem         - PEM content of the org validator key (nil ok).
+# - `chef_server_url` (required): Full HTTPS endpoint including /organizations/<org>.
+# - `node_name`: Override the chef node identifier; nil lets cinc-client use the system hostname.
+# - `log_level`: cinc log level symbol name (default 'info').
+# - `log_location`: Path for cinc-client.log (default /var/log/cinc/client.log).
+# - `validator_client_name` (required): Org-level validator client name.
+# - `trusted_cert`: PEM content of the cinc-server CA cert (nil ok).
+# - `validator_pem`: PEM content of the org validator key (nil ok).
 # -------------------------------------------------------------------------------
 
 unified_mode true
@@ -36,7 +35,10 @@ property :validator_pem,         [String, nil],  sensitive: true
 
 default_action :configure
 
-# --- Render client.rb + drop trusted cert + (optional) validator pem ---
+# -------------------------------------------------------------------------------
+# Action :configure  --  Render client.rb + drop trusted cert + (optional) validator pem
+# -------------------------------------------------------------------------------
+
 action :configure do
   directory '/etc/cinc' do
     owner 'root'
@@ -91,7 +93,10 @@ action :configure do
   end
 end
 
-# --- Remove rendered config + cached state (does not unregister the node) ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Remove rendered config + cached state (does not unregister the node)
+# -------------------------------------------------------------------------------
+
 action :remove do
   %w(/etc/cinc/client.rb /etc/cinc/validation.pem /etc/cinc/client.pem /etc/cinc/trusted_certs/cinc-server.crt).each do |path|
     file path do

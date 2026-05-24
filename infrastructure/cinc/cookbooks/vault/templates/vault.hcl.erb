@@ -1,0 +1,86 @@
+<%#
+  Cookbook:: vault
+  Template:: vault.hcl.erb
+
+  Renders /etc/vault.d/vault.hcl. Mirrors the structure of the
+  live ansible-managed config (storage consul + service_registration
+  consul + single TCP listener + cluster addrs + telemetry).
+%>
+# -------------------------------------------------------------------------------
+# Vault Configuration
+#
+# HA configuration with Consul storage backend on <%= @node_name %>.
+# Managed by chef (vault::configure) -- do not edit by hand.
+# -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------------
+# Storage Backend - Consul
+# -------------------------------------------------------------------------------
+
+storage "consul" {
+  address       = "<%= @storage_address %>"
+  scheme        = "<%= @storage_scheme %>"
+  path          = "<%= @storage_path %>"
+  token         = "<%= @consul_storage_token %>"
+  tls_ca_file   = "<%= @storage_tls_ca_file %>"
+  tls_cert_file = "<%= @storage_tls_cert_file %>"
+  tls_key_file  = "<%= @storage_tls_key_file %>"
+}
+
+<% if @service_registration_enabled -%>
+# -------------------------------------------------------------------------------
+# Service Registration - Consul
+# -------------------------------------------------------------------------------
+
+service_registration "consul" {
+  token         = "<%= @consul_storage_token %>"
+  tls_ca_file   = "<%= @storage_tls_ca_file %>"
+  tls_cert_file = "<%= @storage_tls_cert_file %>"
+  tls_key_file  = "<%= @storage_tls_key_file %>"
+}
+
+<% end -%>
+# -------------------------------------------------------------------------------
+# Listener - HTTPS API
+# -------------------------------------------------------------------------------
+
+listener "tcp" {
+  address         = "<%= @listener_address %>"
+  cluster_address = "<%= @advertise_ip %>:<%= @cluster_port %>"
+  tls_disable     = <%= @listener_tls_disable %>
+  tls_cert_file   = "<%= @listener_tls_cert_file %>"
+  tls_key_file    = "<%= @listener_tls_key_file %>"
+}
+
+# -------------------------------------------------------------------------------
+# Cluster Configuration
+# -------------------------------------------------------------------------------
+
+api_addr     = "<%= @api_scheme %>://<%= @advertise_ip %>:<%= @api_port %>"
+cluster_addr = "<%= @api_scheme %>://<%= @advertise_ip %>:<%= @cluster_port %>"
+cluster_name = "<%= @cluster_name %>"
+
+# -------------------------------------------------------------------------------
+# UI
+# -------------------------------------------------------------------------------
+
+ui = <%= @ui_enabled %>
+
+# -------------------------------------------------------------------------------
+# Telemetry
+# -------------------------------------------------------------------------------
+
+telemetry {
+  disable_hostname          = <%= @telemetry_disable_hostname %>
+  prometheus_retention_time = "<%= @telemetry_prometheus_retention_time %>"
+  usage_gauge_period        = "<%= @telemetry_usage_gauge_period %>"
+  enable_hostname_label     = <%= @telemetry_enable_hostname_label %>
+}
+
+# -------------------------------------------------------------------------------
+# Performance and Limits
+# -------------------------------------------------------------------------------
+
+disable_mlock = <%= @disable_mlock %>
+
+log_level = "<%= @log_level %>"

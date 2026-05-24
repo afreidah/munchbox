@@ -23,7 +23,10 @@ property :fallback_servers, Array,  default: []
 
 default_action :configure
 
-# --- Drop conf.d override, enable+start service, restart on change ---
+# -------------------------------------------------------------------------------
+# Action :configure  --  Drop conf.d override, enable+start service, restart on change
+# -------------------------------------------------------------------------------
+
 action :configure do
   directory '/etc/systemd/timesyncd.conf.d' do
     owner 'root'
@@ -49,7 +52,10 @@ action :configure do
   end
 end
 
-# --- Remove the drop-in but leave the service running ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Remove the drop-in but leave the service running
+# -------------------------------------------------------------------------------
+
 action :remove do
   file '/etc/systemd/timesyncd.conf.d/00-munchbox.conf' do
     action :delete

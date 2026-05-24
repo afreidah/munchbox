@@ -13,8 +13,9 @@ description 'The cinc/chef server itself; runs base + cinc_server::* + cinc_clie
 
 run_list(
   'role[base]',
+  'role[cinc_client]',
+  'role[vault_agent]',
   'recipe[cinc_server::install]',
   'recipe[cinc_server::configure]',
-  'recipe[cinc_server::bootstrap]',
-  'role[cinc_client]'
+  'recipe[cinc_server::bootstrap]'
 )

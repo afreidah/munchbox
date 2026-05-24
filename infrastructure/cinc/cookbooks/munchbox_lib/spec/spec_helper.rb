@@ -16,7 +16,16 @@ module Chef::DSL::Recipe; end unless defined?(Chef::DSL::Recipe)
 class Chef::Resource; end unless defined?(Chef::Resource)
 class Chef::Node; end unless defined?(Chef::Node)
 
+# --- vault gem ships with cinc-client but isn't on the rspec load path; stub a class with the one attribute the helper writes to ---
+class Vault
+  class << self
+    attr_accessor :ssl_ca_cert
+  end
+end unless defined?(Vault)
+$LOADED_FEATURES << 'vault' unless $LOADED_FEATURES.include?('vault')
+
 require_relative '../libraries/cookbook_helpers'
+require_relative '../libraries/vault_fetch'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |c|

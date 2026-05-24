@@ -1,0 +1,29 @@
+<%#
+  Cookbook:: vault_agent
+  Template:: agent.hcl.erb
+%>
+# Managed by chef (vault_agent::configure) -- do not edit by hand.
+
+pid_file = "/run/vault-agent/pid"
+
+vault {
+  address = "<%= @vault_addr %>"
+}
+
+auto_auth {
+  method "approle" {
+    mount_path = "<%= @auth_mount %>"
+    config = {
+      role_id_file_path                   = "<%= @role_id_path %>"
+      secret_id_file_path                 = "<%= @secret_id_path %>"
+      remove_secret_id_file_after_reading = false
+    }
+  }
+
+  sink "file" {
+    config = {
+      path = "<%= @sink_path %>"
+      mode = <%= @sink_mode.to_i(8) %>
+    }
+  }
+}

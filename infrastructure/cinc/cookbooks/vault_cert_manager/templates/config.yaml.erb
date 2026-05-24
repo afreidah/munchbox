@@ -1,0 +1,76 @@
+<%#
+  Cookbook:: vault_cert_manager
+  Template:: config.yaml.erb
+
+  Renders /etc/vault-cert-manager/config.yaml. Mirrors the upstream
+  config shape (vault, prometheus, logging, certificates).
+%>
+# -------------------------------------------------------------------------------
+# Vault Cert Manager Configuration
+#
+# Managed by chef (vault_cert_manager::configure) -- do not edit by hand.
+# -------------------------------------------------------------------------------
+
+vault:
+  address: <%= @vault_address %>
+<% if @pki_mount && @pki_mount != 'pki' -%>
+  pki_mount: <%= @pki_mount %>
+<% end -%>
+<% if @skip_verify -%>
+  skip_verify: true
+<% end -%>
+  auth:
+    approle:
+      role_id: "<%= @role_id %>"
+      secret_id_file: <%= @secret_id_file %>
+<% if @approle_mount && @approle_mount != 'approle' -%>
+      mount_path: <%= @approle_mount %>
+<% end -%>
+
+prometheus:
+  port: <%= @metrics_port %>
+  refresh_interval: <%= @metrics_refresh %>
+
+logging:
+  level: <%= @log_level %>
+  format: <%= @log_format %>
+
+certificates:
+<% @certificates.each do |cert| -%>
+  - name: <%= cert['name'] %>
+    role: <%= cert['role'] %>
+    common_name: <%= cert['common_name'] %>
+    certificate: <%= cert['certificate'] %>
+    key: <%= cert['key'] %>
+<% if cert['ttl'] -%>
+    ttl: <%= cert['ttl'] %>
+<% end -%>
+<% if cert['alt_names'] && !cert['alt_names'].empty? -%>
+    alt_names:
+<% cert['alt_names'].each do |n| -%>
+      - <%= n %>
+<% end -%>
+<% end -%>
+<% if cert['ip_sans'] && !cert['ip_sans'].empty? -%>
+    ip_sans:
+<% cert['ip_sans'].each do |ip| -%>
+      - <%= ip %>
+<% end -%>
+<% end -%>
+<% if cert['owner'] -%>
+    owner: <%= cert['owner'] %>
+<% end -%>
+<% if cert['group'] -%>
+    group: <%= cert['group'] %>
+<% end -%>
+<% if cert['on_change'] -%>
+    on_change: "<%= cert['on_change'] %>"
+<% end -%>
+<% if cert['health_check'] -%>
+    health_check:
+      tcp: <%= cert['health_check']['tcp'] %>
+<% if cert['health_check']['timeout'] -%>
+      timeout: <%= cert['health_check']['timeout'] %>
+<% end -%>
+<% end -%>
+<% end -%>

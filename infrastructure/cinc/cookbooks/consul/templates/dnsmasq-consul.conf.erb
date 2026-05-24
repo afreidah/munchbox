@@ -1,0 +1,37 @@
+<%#
+  Cookbook:: consul
+  Template:: dnsmasq-consul.conf.erb
+  Dropped at /etc/dnsmasq.d/consul.conf. Forwards .consul -> local
+  consul agent, everything else -> local CoreDNS with Pi-hole fallback.
+%>
+# Managed by cinc/chef -- consul::dns
+# Forward .consul queries to the local consul agent.
+server=/consul/127.0.0.1#<%= @consul_dns_port %>
+
+# Loopback listener for host processes; second listener on the host IP
+# so containers on the host network can reach dnsmasq too.
+listen-address=<%= @listen_address %>
+listen-address=<%= @host_ip %>
+bind-interfaces
+
+# We supply upstreams below; do not crib /etc/resolv.conf.
+no-resolv
+
+# Upstreams in strict-order:
+#   1. Local CoreDNS (which round-robins to Pi-holes with health checks)
+#   2..N. Direct Pi-hole fallback if CoreDNS is down
+server=127.0.0.1#<%= @coredns_port %>
+<% @pihole_servers.each do |s| -%>
+server=<%= s %>
+<% end -%>
+strict-order
+
+cache-size=<%= @cache_size %>
+domain-needed
+bogus-priv
+dns-forward-max=<%= @dns_forward_max %>
+<% if @filter_aaaa -%>
+
+# Drop AAAA -- cluster is v4-only.
+filter-AAAA
+<% end -%>

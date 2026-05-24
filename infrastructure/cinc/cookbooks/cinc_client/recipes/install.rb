@@ -4,13 +4,15 @@
 # Cookbook:: cinc_client
 # Recipe:: install
 #
-# Registers the cinc-project apt repo and installs the cinc package at
-# the pinned version.
+# Fetches the pinned cinc .deb directly from downloads.cinc.sh and
+# installs via dpkg. No apt repository involved.
 # -------------------------------------------------------------------------------
 
+install = node[cookbook]['install']
+
 cinc_client_install 'cinc' do
-  version      node[cookbook]['install']['version']
-  package_name node[cookbook]['install']['package_name']
-  apt_repo_uri node[cookbook]['install']['apt_repo_uri']
-  apt_repo_key node[cookbook]['install']['apt_repo_key']
+  version       install['version']
+  package_name  install['package_name']
+  download_base install['download_base']
+  channel       install['channel']
 end

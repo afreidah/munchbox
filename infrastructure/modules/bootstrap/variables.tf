@@ -278,3 +278,128 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# -----------------------------------------------------------------------------
+# CHEF BOOTSTRAP
+#
+# Cloud-init drops these into /etc/cinc/* on first boot, then runs
+# `cinc-client -j /etc/cinc/first_run.json` to register the node and
+# converge its role. Everything past first-converge is owned by the chef
+# cookbooks; these vars are only for the bootstrap moment.
+# -----------------------------------------------------------------------------
+
+variable "bootstrap_wireguard" {
+  description = "Bring up wg0 in cloud-init so the node can reach 192.168.68.x (oracle nodes = true; proxmox / bare-metal already on the LAN = false)"
+  type        = bool
+  default     = true
+}
+
+variable "chef_server_url" {
+  description = "URL of the chef/cinc server (e.g. https://cinc-server.munchbox.cc/organizations/munchbox)"
+  type        = string
+}
+
+variable "chef_node_name" {
+  description = "Node name to register with chef-server. Conventionally the hyphen-stripped hostname (e.g. 'oraclearm1' not 'oracle-arm-1') to match existing nomad node_name + role lookup"
+  type        = string
+}
+
+variable "chef_validator_client_name" {
+  description = "Validator client name for the org (e.g. 'munchbox-validator')"
+  type        = string
+}
+
+# --- Validator key (per-org) is read at apply time via vault_kv_secret_v2. ---
+variable "chef_validator_vault_mount" {
+  description = "Vault KV v2 mount holding the chef validator key (default 'secret')"
+  type        = string
+  default     = "secret"
+}
+
+variable "chef_validator_vault_name" {
+  description = "Vault KV v2 path (under mount) for the chef validator key, e.g. 'cinc/validator'"
+  type        = string
+  default     = "cinc/validator"
+}
+
+variable "chef_validator_vault_field" {
+  description = "Field name in the validator KV entry that holds the PEM body"
+  type        = string
+  default     = "pem"
+}
+
+# --- Encrypted data-bag secret (shared across all chef-managed nodes). ---
+variable "chef_data_bag_secret_vault_mount" {
+  description = "Vault KV v2 mount holding the encrypted_data_bag_secret (default 'secret')"
+  type        = string
+  default     = "secret"
+}
+
+variable "chef_data_bag_secret_vault_name" {
+  description = "Vault KV v2 path (under mount) for the encrypted_data_bag_secret, e.g. 'cinc/encrypted_data_bag_secret'"
+  type        = string
+  default     = "cinc/encrypted_data_bag_secret"
+}
+
+variable "chef_data_bag_secret_vault_field" {
+  description = "Field name in the data-bag-secret KV entry that holds the raw secret"
+  type        = string
+  default     = "value"
+}
+
+variable "chef_run_list" {
+  description = "First-run role entry, e.g. 'role[oracle_arm_5]'. The per-node role must already exist on chef-server"
+  type        = string
+}
+
+variable "cinc_version" {
+  description = "cinc-client version to install at bootstrap. Match what cinc_client cookbook pins"
+  type        = string
+  default     = "19.2.12"
+}
+
+# -----------------------------------------------------------------------------
+# CHEF BOOTSTRAP -- static network (optional)
+# -----------------------------------------------------------------------------
+
+variable "static_ip" {
+  description = "Static IP for the primary interface (e.g. '192.168.68.50'). Leave empty to keep DHCP"
+  type        = string
+  default     = ""
+}
+
+variable "static_netmask_bits" {
+  description = "Netmask in CIDR-bits notation (e.g. 22 for a /22). Only used when static_ip is set"
+  type        = number
+  default     = 24
+}
+
+variable "gateway" {
+  description = "Default gateway IP. Only used when static_ip is set"
+  type        = string
+  default     = ""
+}
+
+variable "dns_servers" {
+  description = "Initial DNS resolvers for the static-IP path (e.g. Pi-holes). consul::dns takes over after first chef converge"
+  type        = list(string)
+  default     = []
+}
+
+variable "network_interface" {
+  description = "Primary network interface name for netplan (e.g. ens18 on proxmox, ens3 on oracle). Only used when static_ip is set"
+  type        = string
+  default     = "ens18"
+}
+
+# -----------------------------------------------------------------------------
+# CHEF BOOTSTRAP -- /etc/hosts pins
+# -----------------------------------------------------------------------------
+
+variable "hosts_overrides" {
+  description = "Map of hostname=>IP to pin in /etc/hosts before chef runs. Always include cinc-server.munchbox.cc since first-converge needs to reach it before consul::dns has been set up"
+  type        = map(string)
+  default = {
+    "cinc-server.munchbox.cc" = "192.168.68.99"
+  }
+}

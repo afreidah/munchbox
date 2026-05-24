@@ -1,0 +1,36 @@
+<%#
+  Cookbook:: munchbox_base
+  Template:: logrotate-rsyslog.erb
+  Dropped at /etc/logrotate.d/rsyslog. Renders a single multi-file
+  logrotate stanza driven entirely from the resource properties.
+%>
+# Managed by cinc/chef -- munchbox_base::rsyslog_rotation
+<% @log_files.each do |f| -%>
+<%= f %>
+<% end -%>
+{
+    rotate <%= @rotate %>
+    <%= @frequency %>
+<% unless @size.nil? -%>
+    size <%= @size %>
+<% end -%>
+<% if @missingok -%>
+    missingok
+<% end -%>
+<% if @notifempty -%>
+    notifempty
+<% end -%>
+<% if @compress -%>
+    compress
+<% end -%>
+<% if @delaycompress -%>
+    delaycompress
+<% end -%>
+    sharedscripts
+    # /var/log is group-writable by syslog, so logrotate refuses to rotate
+    # without an explicit `su` telling it which user/group to drop to.
+    su <%= @su_user %> <%= @su_group %>
+    postrotate
+        <%= @postrotate %>
+    endscript
+}

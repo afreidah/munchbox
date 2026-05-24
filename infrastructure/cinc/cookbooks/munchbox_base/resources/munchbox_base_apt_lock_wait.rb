@@ -21,16 +21,16 @@ property :timeout, Integer, default: 600
 
 default_action :wait
 
-# --- Poll fuser on both lock files; sleep + retry until free or timeout ---
+# -------------------------------------------------------------------------------
+# Action :wait  --  Poll fuser on both lock files; sleep + retry until free or timeout
+# -------------------------------------------------------------------------------
+
 action :wait do
-  execute "munchbox_base apt lock wait (timeout #{new_resource.timeout}s)" do
-    command <<~CMD
-      end=$(( $(date +%s) + #{new_resource.timeout} ))
-      while fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock >/dev/null 2>&1; do
-        [ $(date +%s) -gt $end ] && { echo "apt lock still held after #{new_resource.timeout}s" >&2; exit 1; }
-        sleep 5
-      done
-    CMD
-    timeout new_resource.timeout + 30
+  # --- Plain Ruby (no chef sub-resource) so the parent resource isn't counted as "updated" on every converge -- the wait is a synchronization barrier, not a state change ---
+  deadline = Time.now + new_resource.timeout
+  while system('fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock >/dev/null 2>&1')
+    raise "apt lock still held after #{new_resource.timeout}s" if Time.now > deadline
+
+    sleep 5
   end
 end

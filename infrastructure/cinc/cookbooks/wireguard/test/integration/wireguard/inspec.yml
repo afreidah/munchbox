@@ -1,0 +1,11 @@
+---
+name: wireguard
+title: wireguard integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged wireguard node (packages, config, service).
+version: 0.1.0
+supports:
+  - platform: debian
+  - platform: ubuntu

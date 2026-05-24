@@ -18,6 +18,7 @@ description 'Installs + configures cinc-client and enables the periodic timer'
 run_list(
   'recipe[cinc_client::install]',
   'recipe[cinc_client::configure]',
+  'recipe[cinc_client::data_bag_secret]',
   'recipe[cinc_client::service]'
 )
 

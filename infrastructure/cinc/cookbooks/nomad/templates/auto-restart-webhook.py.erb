@@ -1,0 +1,125 @@
+<%#
+  Cookbook:: nomad
+  Template:: auto-restart-webhook.py.erb
+
+  Stateless AlertManager webhook receiver. POST with firing alerts whose
+  labels include auto_restart=true + nomad_job=<name> triggers
+  `nomad job restart`, gated by a per-job cooldown.
+
+  Managed by chef (nomad::auto_restart_webhook); do not edit by hand.
+%>
+#!/usr/bin/env python3
+"""AlertManager Webhook Receiver for Nomad Job Auto-Restart"""
+
+import http.server
+import json
+import subprocess
+import time
+from pathlib import Path
+
+COOLDOWN_DIR = Path('<%= @cooldown_dir %>')
+COOLDOWN_SECONDS = <%= @cooldown_seconds %>
+LOG_FILE = '<%= @log_file %>'
+BIND_ADDRESS = '<%= @bind_address %>'
+PORT = <%= @port %>
+
+
+def log(msg):
+    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+    line = f'[{timestamp}] {msg}'
+    print(line)
+    with open(LOG_FILE, 'a') as f:
+        f.write(line + '\n')
+
+
+class WebhookHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        # --- consul health check pings /; respond 200 so the service stays passing. ---
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(b'{"status":"ok"}')
+
+    def do_POST(self):
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length).decode('utf-8')
+
+        try:
+            data = json.loads(body) if body else {}
+        except json.JSONDecodeError:
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b'{"error":"invalid json"}')
+            return
+
+        log(f'Received webhook: status={data.get("status")}')
+
+        if data.get('status') != 'firing':
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"skipped","reason":"not firing"}')
+            return
+
+        jobs_to_restart = set()
+        for alert in data.get('alerts', []):
+            if alert.get('status') != 'firing':
+                continue
+            labels = alert.get('labels', {})
+            if labels.get('auto_restart') == 'true' and labels.get('nomad_job'):
+                jobs_to_restart.add(labels['nomad_job'])
+
+        if not jobs_to_restart:
+            log('No auto_restart jobs found')
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"status":"skipped","reason":"no auto_restart jobs"}')
+            return
+
+        restarted = []
+        skipped = []
+
+        COOLDOWN_DIR.mkdir(exist_ok=True)
+
+        for job in jobs_to_restart:
+            cooldown_file = COOLDOWN_DIR / job
+            now = time.time()
+
+            if cooldown_file.exists():
+                last_restart = float(cooldown_file.read_text().strip())
+                if now - last_restart < COOLDOWN_SECONDS:
+                    log(f'Job {job} in cooldown, skipping')
+                    skipped.append(job)
+                    continue
+
+            log(f'Restarting Nomad job: {job}')
+            result = subprocess.run(
+                ['nomad', 'job', 'restart', '-on-error=fail', job],
+                capture_output=True, text=True
+            )
+
+            if result.returncode == 0:
+                log(f'Successfully restarted: {job}')
+                cooldown_file.write_text(str(now))
+                restarted.append(job)
+            else:
+                log(f'Failed to restart {job}: {result.stderr}')
+
+        response = json.dumps({
+            'status': 'ok',
+            'restarted': restarted,
+            'skipped': skipped,
+        })
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(response.encode())
+
+    def log_message(self, format, *args):
+        pass  # Suppress default access logging
+
+
+if __name__ == '__main__':
+    server = http.server.HTTPServer((BIND_ADDRESS, PORT), WebhookHandler)
+    log(f'Webhook server started on {BIND_ADDRESS}:{PORT}')
+    server.serve_forever()

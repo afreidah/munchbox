@@ -39,7 +39,10 @@ property :settings,      Hash,   default: {}
 
 default_action :configure
 
-# --- Pin hostname, own the cert, render chef-server.rb, run reconfigure on change ---
+# -------------------------------------------------------------------------------
+# Action :configure  --  Pin hostname, own the cert, render chef-server.rb, run reconfigure on change
+# -------------------------------------------------------------------------------
+
 action :configure do
   # --- Hostname has to match api_fqdn so anything that defaults to the system hostname (nginx server_name, etc.) is right ---
   hostname new_resource.api_fqdn
@@ -108,7 +111,7 @@ action :configure do
     notifies :run, 'execute[wait for cinc-server API ready]', :immediately
   end
 
-  # --- Block until /_status returns "pong" so downstream bootstrap chef-server-ctl calls don't race a half-up server. Notify-only so it doesn't run on idempotent converges. ---
+  # --- Wait for /_status=pong so downstream chef-server-ctl calls don't race a half-up server. ---
   execute 'wait for cinc-server API ready' do
     command 'for i in $(seq 1 60); do curl -ksf https://localhost/_status | grep -q \'"status":"pong"\' && exit 0; sleep 2; done; exit 1'
     timeout 130
@@ -116,7 +119,10 @@ action :configure do
   end
 end
 
-# --- Remove the rendered config; do NOT auto-run reconfigure ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Remove the rendered config; do NOT auto-run reconfigure
+# -------------------------------------------------------------------------------
+
 action :remove do
   file '/etc/opscode/chef-server.rb' do
     action :delete

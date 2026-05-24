@@ -172,6 +172,31 @@ variable "workload_secrets" {
   default     = []
 }
 
+# -------------------------------------------------------------------------
+# APPROLE AUTH (chef-managed nodes)
+# -------------------------------------------------------------------------
+
+variable "approle_auth_enabled" {
+  description = "Enable AppRole auth backend for chef-managed nodes"
+  type        = bool
+  default     = false
+}
+
+variable "chef_managed_node_secrets" {
+  description = "KV v2 paths (sans `secret/data/` prefix) that chef-managed nodes can read. Globs supported (* matches trailing characters, + matches one path segment)."
+  type        = list(string)
+  default     = []
+}
+
+variable "chef_managed_node_extra_paths" {
+  description = "Non-KV Vault paths chef-managed nodes can hit (e.g. ssh-client-signer/config/ca). Each entry takes a `path` (literal Vault path) + `capabilities` list. Use this for SSH signer pubkeys, transit reads, or any backend that doesn't live under `secret/data/`."
+  type = list(object({
+    path         = string
+    capabilities = list(string)
+  }))
+  default = []
+}
+
 variable "vault_policies" {
   description = "Map of Vault policies to create"
   type = map(object({

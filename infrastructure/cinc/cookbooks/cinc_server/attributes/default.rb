@@ -18,10 +18,10 @@
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  'version' => '15.10.91',
-  'url' => 'https://downloads.cinc.sh/files/stable/cinc-server/15.10.91/debian/12/cinc-server-core_15.10.91-1_amd64.deb',
-  'checksum' => nil,
-  'package_name' => 'cinc-server-core',
+  version: '15.10.91',
+  url: 'https://downloads.cinc.sh/files/stable/cinc-server/15.10.91/debian/12/cinc-server-core_15.10.91-1_amd64.deb',
+  checksum: nil,
+  package_name: 'cinc-server-core',
 }
 
 # -------------------------------------------------------------------------------
@@ -33,10 +33,10 @@ default[cookbook]['install'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['config'] = {
-  'api_fqdn' => 'cinc-server.munchbox.cc',
+  api_fqdn: 'cinc-server.munchbox.cc',
   # --- Extra SAN entries (with `DNS:` or `IP:` prefix); api_fqdn is added automatically ---
-  'ssl_alt_names' => [],
-  'settings' => {
+  ssl_alt_names: [],
+  settings: {
     "nginx['enable_non_ssl']" => 'true',
   },
 }
@@ -51,16 +51,16 @@ default[cookbook]['config'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['bootstrap'] = {
-  'org' => {
-    'short_name' => 'munchbox',
-    'full_name' => 'Munchbox',
+  org: {
+    short_name: 'munchbox',
+    full_name: 'Munchbox',
   },
-  'user' => {
-    'username' => 'alex',
-    'first_name' => 'Alex',
-    'last_name' => 'Freidah',
-    'email' => 'alex.freidah@gmail.com',
-    'password' => 'CHANGEME-set-via-attribute-override',
-    'key_path' => '/etc/cinc-bootstrap/alex.pem',
+  user: {
+    username: 'alex',
+    first_name: 'Alex',
+    last_name: 'Freidah',
+    email: 'alex.freidah@gmail.com',
+    password: 'CHANGEME-set-via-attribute-override',
+    key_path: '/etc/cinc-bootstrap/alex.pem',
   },
 }

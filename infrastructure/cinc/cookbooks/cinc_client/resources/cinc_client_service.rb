@@ -26,7 +26,10 @@ property :on_calendar,   String,                  required: true
 
 default_action :configure
 
-# --- Install both units, gate timer enable/start on the attribute ---
+# -------------------------------------------------------------------------------
+# Action :configure  --  Install both units, gate timer enable/start on the attribute
+# -------------------------------------------------------------------------------
+
 action :configure do
   # --- Oneshot service triggered by the timer; never enabled directly ---
   systemd_unit 'cinc-client.service' do
@@ -60,7 +63,10 @@ action :configure do
   end
 end
 
-# --- Stop + tear down both units ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Stop + tear down both units
+# -------------------------------------------------------------------------------
+
 action :remove do
   systemd_unit 'cinc-client.timer' do
     action %i(disable stop delete)

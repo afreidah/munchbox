@@ -22,7 +22,10 @@ property :settings, Hash, required: true
 
 default_action :configure
 
-# --- Drop conf.d override, enable+start journald, restart on change ---
+# -------------------------------------------------------------------------------
+# Action :configure  --  Drop conf.d override, enable+start journald, restart on change
+# -------------------------------------------------------------------------------
+
 action :configure do
   directory '/etc/systemd/journald.conf.d' do
     owner 'root'
@@ -45,7 +48,10 @@ action :configure do
   end
 end
 
-# --- Remove the drop-in; restart journald so it picks up upstream defaults ---
+# -------------------------------------------------------------------------------
+# Action :remove  --  Remove the drop-in; restart journald so it picks up upstream defaults
+# -------------------------------------------------------------------------------
+
 action :remove do
   file '/etc/systemd/journald.conf.d/00-munchbox.conf' do
     action :delete

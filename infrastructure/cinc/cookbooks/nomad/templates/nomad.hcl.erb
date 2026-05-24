@@ -1,0 +1,172 @@
+<%#
+  Cookbook:: nomad
+  Template:: nomad.hcl.erb
+
+  Renders /etc/nomad.d/nomad.hcl. Mirrors the structure of the live
+  ansible-managed config. Section headers match the existing style.
+%>
+# -------------------------------------------------------------------------------
+# Nomad Configuration
+#
+# <%= [@server_enabled ? 'Server' : nil, @client_enabled ? 'Client' : nil].compact.join('/') %> mode on <%= @node_name %> (datacenter: <%= @datacenter %>).
+# Managed by chef (nomad::configure) -- do not edit by hand.
+# -------------------------------------------------------------------------------
+
+datacenter = "<%= @datacenter %>"
+region = "<%= @region %>"
+name = "<%= @node_name %>"
+data_dir = "<%= @data_dir %>"
+log_level = "<%= @log_level %>"
+bind_addr = "<%= @bind_addr %>"
+advertise {
+  http = "<%= @advertise_ip %>:<%= @advertise_http_port %>"
+  rpc  = "<%= @advertise_ip %>:<%= @advertise_rpc_port %>"
+  serf = "<%= @advertise_ip %>:<%= @advertise_serf_port %>"
+}
+<% if @server_enabled -%>
+# -------------------------------------------------------------------------------
+# Server Configuration
+# -------------------------------------------------------------------------------
+
+server {
+  enabled = true
+  bootstrap_expect = <%= @bootstrap_expect %>
+<% unless @server_join.empty? -%>
+
+  server_join {
+    retry_join = <%= @server_join.to_json %>
+  }
+<% end -%>
+}
+<% end -%>
+<% if @client_enabled -%>
+# -------------------------------------------------------------------------------
+# Client Configuration
+# -------------------------------------------------------------------------------
+
+client {
+  node_pool = "<%= @node_pool %>"
+<% if @node_class -%>
+  node_class = "<%= @node_class %>"
+<% end -%>
+  meta {
+    arch = "<%= @arch %>"
+<% @client_meta.each do |k, v| -%>
+    <%= k %> = "<%= v %>"
+<% end -%>
+  }
+  enabled = true
+  gc_disk_usage_threshold = <%= @gc_disk_usage_threshold %>
+  gc_inode_usage_threshold = <%= @gc_inode_usage_threshold %>
+<% unless @servers.empty? -%>
+  servers = <%= @servers.to_json %>
+<% end -%>
+<% if @network_interface -%>
+  network_interface = "<%= @network_interface %>"
+<% end -%>
+}
+<% end -%>
+<% if @consul_enabled -%>
+# -------------------------------------------------------------------------------
+# Consul Integration
+# -------------------------------------------------------------------------------
+
+consul {
+<% if @consul_ssl -%>
+  verify_ssl = true
+<% end -%>
+<% if @consul_token && !@consul_token.empty? -%>
+  token = "<%= @consul_token %>"
+<% end -%>
+  address = "<%= @consul_address %>"
+  datacenter = "<%= @consul_datacenter %>"
+<% if @consul_ssl -%>
+  ssl = true
+  ca_file = "<%= @consul_ca_file %>"
+  cert_file = "<%= @consul_cert_file %>"
+  key_file = "<%= @consul_key_file %>"
+<% end -%>
+}
+<% end -%>
+# -------------------------------------------------------------------------------
+# ACL Configuration
+# -------------------------------------------------------------------------------
+
+acl {
+  enabled = <%= @acl_enabled %>
+}
+# -------------------------------------------------------------------------------
+# TLS Configuration
+# -------------------------------------------------------------------------------
+
+tls {
+  http = <%= @tls_http %>
+  rpc  = <%= @tls_rpc %>
+<% if @tls_http || @tls_rpc -%>
+
+  ca_file   = "<%= @tls_ca_file %>"
+  cert_file = "<%= @tls_cert_file %>"
+  key_file  = "<%= @tls_key_file %>"
+
+  verify_server_hostname = <%= @tls_verify_server_hostname %>
+  verify_https_client    = <%= @tls_verify_https_client %>
+<% end -%>
+}
+<% if @vault_enabled -%>
+# -------------------------------------------------------------------------------
+# Vault Integration
+#
+# Workload identity: nomad signs JWTs for tasks; Vault accepts via the
+# nomad-jwt auth method. No static token needed in this stanza.
+# -------------------------------------------------------------------------------
+
+vault {
+  default_identity {
+    aud = <%= @vault_default_identity_aud.to_json %>
+    ttl = "<%= @vault_default_identity_ttl %>"
+  }
+  enabled = true
+  address = "<%= @vault_address %>"
+<% if @vault_ca_file -%>
+  ca_file = "<%= @vault_ca_file %>"
+<% end -%>
+}
+<% end -%>
+<% if @client_enabled -%>
+# -------------------------------------------------------------------------------
+# Docker Plugin Configuration
+# -------------------------------------------------------------------------------
+
+plugin "docker" {
+  config {
+    allow_privileged = <%= @docker_allow_privileged %>
+    allow_caps = <%= @docker_allow_caps.to_json %>
+    volumes {
+      enabled = <%= @docker_volumes_enabled %>
+    }
+    gc {
+      image       = <%= @docker_gc_image %>
+      image_delay = "<%= @docker_gc_image_delay %>"
+      container   = <%= @docker_gc_container %>
+      dangling_containers {
+        enabled        = true
+        dry_run        = false
+        period         = "<%= @docker_gc_dangling_period %>"
+        creation_grace = "<%= @docker_gc_dangling_grace %>"
+      }
+    }
+  }
+}
+
+<% end -%>
+# -------------------------------------------------------------------------------
+# Telemetry - Prometheus Metrics
+#
+# -------------------------------------------------------------------------------
+
+telemetry {
+  prometheus_metrics         = <%= @telemetry_prometheus_metrics %>
+  disable_hostname           = <%= @telemetry_disable_hostname %>
+  publish_allocation_metrics = <%= @telemetry_publish_alloc_metrics %>
+  publish_node_metrics       = <%= @telemetry_publish_node_metrics %>
+}

@@ -33,7 +33,10 @@ property :org,        String
 
 default_action :create
 
-# --- Create the user (and its key) + optionally add to an org as admin ---
+# -------------------------------------------------------------------------------
+# Action :create  --  Create the user (and its key) + optionally add to an org as admin
+# -------------------------------------------------------------------------------
+
 action :create do
   # --- Ensure parent dir for the captured pem exists with restrictive perms ---
   directory ::File.dirname(new_resource.key_path) do
@@ -70,13 +73,16 @@ action :create do
     execute "chef-server-ctl org-user-add #{new_resource.org} #{new_resource.username} --admin" do
       command "chef-server-ctl org-user-add '#{new_resource.org}' '#{new_resource.username}' --admin"
       environment 'CINC_LICENSE' => 'accept', 'CHEF_LICENSE' => 'accept'
-      # --- cinc-15.10.91 doesn't accept `org-user-list <org>`; use `user-show --with-orgs` which prints `organizations: <name> <name>...` on one line, then word-match the org name ---
+      # --- cinc-15.10.91 lacks `org-user-list`; word-match org against `user-show --with-orgs` output. ---
       not_if "chef-server-ctl user-show '#{new_resource.username}' --with-orgs | grep -E '^organizations:' | grep -wq '#{new_resource.org}'"
     end
   end
 end
 
-# --- Remove the user (test cleanup; deletes the captured pem too) ---
+# -------------------------------------------------------------------------------
+# Action :delete  --  Remove the user (test cleanup; deletes the captured pem too)
+# -------------------------------------------------------------------------------
+
 action :delete do
   execute "chef-server-ctl user-delete #{new_resource.username}" do
     command "chef-server-ctl user-delete '#{new_resource.username}' --yes"

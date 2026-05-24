@@ -8,8 +8,12 @@
 # and ensures the service is enabled+running.
 # -------------------------------------------------------------------------------
 
+cfg = node[cookbook]['timesync']
+
+return unless cfg['enabled']
+
 munchbox_base_timesync 'baseline' do
-  service          node[cookbook]['timesync']['service']
-  ntp_servers      node[cookbook]['timesync']['ntp_servers']
-  fallback_servers node[cookbook]['timesync']['fallback_servers']
+  service          cfg['service']
+  ntp_servers      cfg['ntp_servers']
+  fallback_servers cfg['fallback_servers']
 end

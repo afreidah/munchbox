@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+# -------------------------------------------------------------------------------
+# Cookbook:: vault
+# Recipe:: install
+# -------------------------------------------------------------------------------
+
+vault_install 'vault' do
+  version    node[cookbook]['install']['version']
+  bin_path   node[cookbook]['install']['bin_path']
+  user       node[cookbook]['install']['user']
+  group      node[cookbook]['install']['group']
+  config_dir node[cookbook]['install']['config_dir']
+  data_dir   node[cookbook]['install']['data_dir']
+  tls_dir    node[cookbook]['install']['tls_dir']
+end

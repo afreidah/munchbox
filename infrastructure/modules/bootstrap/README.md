@@ -2,11 +2,21 @@
 
 **One module to deploy a fully configured Munchbox cluster node on any provider.**
 
-Combines `network` + `compute` + cloud-init to provision a node that automatically:
-- Connects via WireGuard to your homelab
-- Joins your Nomad cluster as a client
-- Joins your Consul cluster
-- Installs Docker for container workloads
+Combines `network` + `compute` + a chef-bootstrap cloud-init that:
+- Trusts the munchbox PKI (root + intermediate CA)
+- (oracle only) brings up WireGuard wg0 to reach the homelab LAN
+- Installs cinc-client directly from `downloads.cinc.sh` (no packagecloud)
+- Drops `/etc/cinc/{client.rb, validation.pem, encrypted_data_bag_secret}`
+  with values pulled from Vault at terragrunt-apply time
+- Runs the first `cinc-client -j /etc/cinc/first_run.json` converge
+
+Everything past first-converge (consul / nomad / docker / vault-agent /
+vault-cert-manager / wireguard wg1 / oracle::watchdog / minio mount /
+etc.) is owned by chef cookbooks. This module exists only to get a fresh
+node to the point where chef takes over.
+
+See [Chef Bootstrap Workflow](#chef-bootstrap-workflow) below for the
+full provisioning sequence including the pre-VM steps.
 
 ## Quick Start
 
@@ -207,3 +217,91 @@ nomad node status
 # Node should appear in Consul
 consul members
 ```
+
+---
+
+## Chef Bootstrap Workflow
+
+End-to-end sequence for provisioning a new chef-managed node.
+
+### 0. One-time chef-server prereqs (do this ONCE, not per node)
+
+Vault must hold both the org validator key and the shared
+encrypted_data_bag_secret. Default paths the bootstrap module reads:
+
+| Vault path | Field | What |
+| --- | --- | --- |
+| `secret/cinc/validator-key` | `key` | PEM body of the org's validator (e.g. `munchbox-validator`) |
+| `secret/cinc/encrypted_data_bag_secret` | `value` | Shared data-bag secret (already populated when oracle nodes were adopted) |
+
+Override paths via the `chef_validator_vault_*` / `chef_data_bag_secret_vault_*`
+variables in the bootstrap module if you store them elsewhere.
+
+To populate the validator key (one-time):
+
+```bash
+# If the validator pem was saved on cinc-server at org-create time:
+ssh root@cinc-server.munchbox.cc 'cat /etc/cinc-bootstrap/munchbox-validator.pem' \
+  | infrastructure/cinc/scripts/store-validator-key-in-vault.sh
+
+# OR (DESTRUCTIVE; invalidates any cached copies of the key):
+knife client reregister munchbox-validator \
+  | infrastructure/cinc/scripts/store-validator-key-in-vault.sh
+```
+
+### 1. Per-node prereqs (run on workstation BEFORE `terragrunt apply`)
+
+Create the per-node chef role file at
+`infrastructure/cinc/roles/nodes/<node>.rb`, then:
+
+```bash
+source munchbox-env.sh
+infrastructure/cinc/scripts/prepare-chef-bootstrap.sh <chef-node-name>
+```
+
+This script does three things:
+
+1. Mints a fresh AppRole secret_id from
+   `auth/chef-approle/role/chef-managed-node` and stores it at
+   `secret/chef-approle/secret-ids/<node>`.
+2. Builds + uploads the encrypted `vault_agent/<node>` data-bag item
+   to cinc-server (wraps `upload-vault-agent-data-bag.sh`).
+3. Uploads the per-node role file (`knife role from file`).
+
+### 2. Provision the VM
+
+```bash
+cd infrastructure/terragrunt/<provider>/<node>
+terragrunt apply
+```
+
+Cloud-init runs at first boot and converges chef. Watch progress via
+the cloud-init log on the new node:
+
+```bash
+ssh <user>@<node> 'sudo tail -f /var/log/cloud-init-output.log'
+```
+
+When the bootstrap finishes you'll see `/var/log/munchbox-bootstrap-complete`
+appear and the node will register with `knife status`.
+
+### 3. Subsequent converges
+
+The hourly `cinc-client.timer` (installed by `cinc_client::service`) takes
+over after first boot. Manual converges via
+`ssh <user>@<node> 'sudo cinc-client'` work as normal.
+
+### Per-node terragrunt overrides
+
+Recognized keys in `node.yaml` for the chef bootstrap:
+
+| Key | Default | Notes |
+| --- | --- | --- |
+| `chef_node_name` | `<node_name>` with hyphens stripped | Match the existing convention (`oraclearm1` not `oracle-arm-1`). |
+| `chef_run_list` | `role[<node_name with hyphens→underscores>]` | First-converge role. |
+| `bootstrap_wireguard` | `true` unless `provider_type == "proxmox"` | Skip wg0 setup on LAN nodes. |
+| `static_ip` | `""` (DHCP) | Set on proxmox VMs that need pinned IPs. |
+| `static_netmask_bits` | `24` | CIDR-bits. |
+| `gateway` | `""` | Required when `static_ip` is set. |
+| `dns_servers` | `[]` | Initial resolvers; `consul::dns` overrides at first converge. |
+| `network_interface` | `ens18` | Override per-platform if needed. |

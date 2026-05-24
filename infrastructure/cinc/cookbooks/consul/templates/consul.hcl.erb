@@ -1,0 +1,148 @@
+<%#
+  Cookbook:: consul
+  Template:: consul.hcl.erb
+
+  Renders /etc/consul.d/consul.hcl. Mirrors the structure of the live
+  goren config -- bumping fields here means re-rendering this template +
+  bumping the cookbook version.
+%>
+# -------------------------------------------------------------------------------
+# Consul Configuration
+#
+# <%= @server ? 'Server' : 'Client' %> mode on <%= @node_name %> (datacenter: <%= @datacenter %>).
+# Managed by chef (consul::configure) -- do not edit by hand.
+# -------------------------------------------------------------------------------
+
+datacenter  = "<%= @datacenter %>"
+node_name   = "<%= @node_name %>"
+data_dir    = "<%= @data_dir %>"
+bind_addr   = "<%= @bind_addr %>"
+client_addr = "<%= @client_addr %>"
+
+<% if @server -%>
+# -------------------------------------------------------------------------------
+# Server Configuration
+# -------------------------------------------------------------------------------
+
+server           = true
+bootstrap_expect = <%= @bootstrap_expect %>
+<% else -%>
+# -------------------------------------------------------------------------------
+# Client Configuration
+# -------------------------------------------------------------------------------
+
+server = false
+<% end -%>
+
+retry_join = <%= @retry_join.to_json %>
+
+<% unless @node_meta.empty? -%>
+# -------------------------------------------------------------------------------
+# Node Metadata
+# -------------------------------------------------------------------------------
+
+node_meta {
+<% @node_meta.each do |k, v| -%>
+  <%= k %> = "<%= v %>"
+<% end -%>
+}
+
+<% end -%>
+# -------------------------------------------------------------------------------
+# UI
+# -------------------------------------------------------------------------------
+
+ui_config {
+  enabled = <%= @ui_enabled %>
+}
+
+# -------------------------------------------------------------------------------
+# Performance
+# -------------------------------------------------------------------------------
+
+performance {
+  raft_multiplier = <%= @raft_multiplier %>
+}
+
+# -------------------------------------------------------------------------------
+# Connect / Service Mesh
+# -------------------------------------------------------------------------------
+
+connect {
+  enabled = <%= @connect_enabled %>
+}
+
+# -------------------------------------------------------------------------------
+# Ports
+# -------------------------------------------------------------------------------
+
+ports {
+  dns      = <%= @ports['dns'] %>
+  http     = <%= @ports['http'] %>
+  https    = <%= @ports['https'] %>
+  grpc     = <%= @ports['grpc'] %>
+  grpc_tls = <%= @ports['grpc_tls'] %>
+  serf_lan = <%= @ports['serf_lan'] %>
+  serf_wan = <%= @ports['serf_wan'] %>
+  server   = <%= @ports['server'] %>
+}
+
+<% if @acl_enabled -%>
+# -------------------------------------------------------------------------------
+# ACL
+# -------------------------------------------------------------------------------
+
+acl {
+  enabled        = true
+  default_policy = "<%= @acl_default_policy %>"
+  down_policy    = "<%= @acl_down_policy %>"
+<% if @acl_agent_token && !@acl_agent_token.empty? -%>
+  tokens {
+    agent   = "<%= @acl_agent_token %>"
+<% if @acl_default_token && !@acl_default_token.empty? -%>
+    default = "<%= @acl_default_token %>"
+<% else -%>
+    default = "<%= @acl_agent_token %>"
+<% end -%>
+  }
+<% end -%>
+}
+
+<% end -%>
+# -------------------------------------------------------------------------------
+# Telemetry
+# -------------------------------------------------------------------------------
+
+telemetry {
+  prometheus_retention_time = "<%= @telemetry_prometheus_retention_time %>"
+  disable_hostname          = <%= @telemetry_disable_hostname %>
+}
+
+<% if @tls_enabled -%>
+# -------------------------------------------------------------------------------
+# TLS
+#
+# Cert files are managed out-of-band by vault-cert-manager; this cookbook
+# only references the paths.
+# -------------------------------------------------------------------------------
+
+tls {
+  defaults {
+    ca_file   = "<%= @tls_ca_file %>"
+    cert_file = "<%= @tls_cert_file %>"
+    key_file  = "<%= @tls_key_file %>"
+
+    verify_incoming = <%= @tls_verify_incoming %>
+    verify_outgoing = <%= @tls_verify_outgoing %>
+  }
+
+  internal_rpc {
+    verify_server_hostname = <%= @tls_verify_server_hostname %>
+  }
+
+  # Allow browsers to access HTTPS UI without client certificates
+  https {
+    verify_incoming = false
+  }
+}
+<% end -%>

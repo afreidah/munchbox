@@ -1,0 +1,26 @@
+# -------------------------------------------------------------------------------
+# Cookstyle (rubocop) config for vault_cert_manager.
+# -------------------------------------------------------------------------------
+
+require:
+  - cookstyle
+
+inherit_gem:
+  cookstyle: config/cookstyle.yml
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.1
+  Exclude:
+    - 'Berksfile.lock'
+    - 'Gemfile.lock'
+    - 'tmp/**/*'
+    - 'vendor/**/*'
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - 'test/**/*'

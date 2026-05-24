@@ -1,0 +1,11 @@
+# -------------------------------------------------------------------------------
+# Oracle Watchdog Systemd Override
+#
+# Managed by chef (oracle::watchdog) -- do not edit by hand. Drops the
+# CONSUL_HTTP_ADDR + CONSUL_HTTP_TOKEN env vars into the unit so the
+# monitor mode can keep a consul session heartbeat alive.
+# -------------------------------------------------------------------------------
+
+[Service]
+Environment=CONSUL_HTTP_ADDR=<%= @consul_addr %>
+Environment=CONSUL_HTTP_TOKEN=<%= @consul_token %>

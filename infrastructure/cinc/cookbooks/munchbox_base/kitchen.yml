@@ -41,6 +41,8 @@ suites:
       - recipe[munchbox_base::timesync]
       - recipe[munchbox_base::journald]
       - recipe[munchbox_base::sshd]
+      - recipe[munchbox_base::rsyslog_rotation]
+      - recipe[munchbox_base::apt_cleanup]
     verifier:
       inspec_tests:
         - test/integration/default

@@ -1,0 +1,18 @@
+<%#
+  Cookbook:: nomad
+  Template:: auto-restart-webhook-consul-service.json.erb
+  Managed by chef (nomad_auto_restart_webhook); do not edit by hand.
+%>
+{
+  "service": {
+    "name": "<%= @service_name %>",
+    "tags": <%= @tags.to_json %>,
+    "port": <%= @port %>,
+    "check": {
+      "http": "http://127.0.0.1:<%= @port %><%= @check_path %>",
+      "method": "GET",
+      "interval": "<%= @interval %>",
+      "timeout": "<%= @timeout %>"
+    }
+  }
+}
