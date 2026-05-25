@@ -92,7 +92,35 @@ action :install do
     not_if   "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{new_resource.version}'"
   end
 
-  # --- Shadow declaration so the version-bump notify below resolves inside this custom resource's collection (unified_mode true sandboxes resources per-action; we can't notify the configure recipe's systemd_unit[consul.service] across that boundary). ---
+  # --- Render the systemd unit here, not in configure. The unit content is static deployment plumbing (binary path, user/group, config dir) -- no dynamic Vault state -- so it belongs with install. Single source of truth: configure declares no systemd_unit, just starts service[consul]. Greenfield ordering works because the unit file lands BEFORE the binary-install execute's restart notify fires. ConditionFileNotEmpty on consul.hcl makes the unit a no-op start until configure renders the config. ---
+  systemd_unit 'consul.service' do
+    content <<~UNIT
+      [Unit]
+      Description=Consul Agent
+      Documentation=https://www.consul.io/docs/
+      Requires=network-online.target
+      After=network-online.target
+      ConditionFileNotEmpty=#{new_resource.config_dir}/consul.hcl
+
+      [Service]
+      Type=notify
+      User=#{new_resource.user}
+      Group=#{new_resource.group}
+      ExecStart=#{new_resource.bin_path} agent -config-dir=#{new_resource.config_dir}
+      ExecReload=/bin/kill --signal HUP $MAINPID
+      KillMode=process
+      KillSignal=SIGTERM
+      Restart=on-failure
+      RestartSec=5
+      LimitNOFILE=65536
+
+      [Install]
+      WantedBy=multi-user.target
+    UNIT
+    action :create
+  end
+
+  # --- Shadow service declaration so the version-bump notify below resolves inside this custom resource's collection (unified_mode true sandboxes notify lookups per-action). ---
   service 'consul' do
     action :nothing
   end
@@ -100,7 +128,7 @@ action :install do
   execute "install consul #{new_resource.version}" do
     command "unzip -o #{archive_path} -d /usr/local/bin && chmod 0755 #{new_resource.bin_path} && rm -f #{archive_path}"
     not_if  "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{new_resource.version}'"
-    # --- Bounce consul after a version change so the running process actually uses the new binary. ---
+    # --- Bounce consul after a version change so the running process actually uses the new binary. Unit file is rendered above first, so the restart resolves cleanly even on greenfield. ---
     notifies :restart, 'service[consul]', :delayed
   end
 end
