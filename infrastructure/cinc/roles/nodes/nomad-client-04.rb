@@ -11,7 +11,7 @@ name 'nomad-client-04'
 description 'nomad-client-04: cluster nomad+consul client on a proxmox VM (GPU host)'
 
 run_list(
-  'role[proxmox_node]',
+  'role[proxmox_vm]',
   # --- GPU host: install nvidia driver + nvidia-container-toolkit. The `nvidia` docker runtime block in daemon.json is owned by docker.daemon.extra in this role's attributes (already present). ---
   'recipe[nvidia::install]'
 )

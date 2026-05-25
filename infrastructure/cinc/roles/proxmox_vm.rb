@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 # -------------------------------------------------------------------------------
-# Role:: proxmox_node
+# Role:: proxmox_vm
 #
-# Proxmox-hosted VMs (nomad-client-01..05). Composes role[base] +
-# role[cinc_client]; other concerns come in later as their cookbooks land.
+# Proxmox-hosted VMs (nomad-client-01..05). NOT the hypervisors themselves
+# -- those are role[proxmox_host] (cabot/fontana/mccoy/rubirosa).
 # -------------------------------------------------------------------------------
 
-name 'proxmox_node'
+name 'proxmox_vm'
 description 'Proxmox-hosted nomad-client VM; runs base + cinc_client'
 
 run_list(

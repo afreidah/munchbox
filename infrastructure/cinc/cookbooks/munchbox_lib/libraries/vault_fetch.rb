@@ -61,16 +61,26 @@ module MunchboxLibVaultFetch
     value
   end
 
-  # --- Read the CA certificate from a Vault PKI mount (default `pki_int`). Returns PEM-encoded cert. Used to distribute the Vault intermediate CA to nodes that need to trust Vault-issued certs (nomad → vault https, docker → private registry). ---
+  # --- Read the CA certificate from a Vault PKI mount (default `pki_int`). Returns PEM-encoded cert. ---
   def vault_pki_ca(mount = 'pki_int')
+    vault_pki_cert(mount, 'ca')
+  end
+
+  # --- Read the full CA chain (intermediate + root, concatenated PEM) from a Vault PKI mount. ---
+  def vault_pki_ca_chain(mount = 'pki_int')
+    vault_pki_cert(mount, 'ca_chain')
+  end
+
+  # --- Internal: read a cert/* path from a Vault PKI mount. ---
+  def vault_pki_cert(mount, leaf)
     wait_for_token_sink
     token = ::File.read(VAULT_TOKEN_SINK).strip
     require 'vault'
     Vault.ssl_ca_cert = VAULT_CA_CERT
     Vault.address     = ENV['VAULT_ADDR'] || VAULT_ADDR_DEFAULT
     Vault.token       = token
-    result = Vault.logical.read("#{mount}/cert/ca")
-    raise "vault: no certificate at #{mount}/cert/ca" unless result&.data&.dig(:certificate)
+    result = Vault.logical.read("#{mount}/cert/#{leaf}")
+    raise "vault: no certificate at #{mount}/cert/#{leaf}" unless result&.data&.dig(:certificate)
 
     result.data[:certificate]
   end

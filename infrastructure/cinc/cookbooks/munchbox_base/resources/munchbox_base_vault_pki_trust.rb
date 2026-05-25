@@ -59,9 +59,28 @@ action :configure do
 
   ca_pem        = vault_pki_ca(new_resource.mount)
   ca_pem        = "#{ca_pem}\n" unless ca_pem.end_with?("\n")
+  chain_pem     = nil # lazy-fetched only if a chain destination needs it
   system_change = false
 
-  new_resource.destinations.each do |dest|
+  new_resource.destinations.each do |raw|
+    # --- Support both string (path, defaults) and hash {path, owner, group, mode, chain} entries ---
+    spec = raw.is_a?(Hash) ? raw : { 'path' => raw }
+    dest    = spec['path']
+    owner   = spec['owner'] || 'root'
+    group   = spec['group'] || 'root'
+    mode    = spec['mode']  || '0644'
+    chain   = spec['chain'] == true
+
+    if chain
+      chain_pem ||= begin
+        c = vault_pki_ca_chain(new_resource.mount)
+        c.end_with?("\n") ? c : "#{c}\n"
+      end
+      content = chain_pem
+    else
+      content = ca_pem
+    end
+
     parent = ::File.dirname(dest)
     directory parent do
       owner 'root'
@@ -72,7 +91,7 @@ action :configure do
 
     # --- Normalize for compare so a missing trailing newline (or extra one) doesn't trigger a needless rotation on every converge. ---
     existing = ::File.exist?(dest) ? ::File.read(dest) : nil
-    next if existing && existing.strip == ca_pem.strip
+    next if existing && existing.strip == content.strip
 
     # --- Back up the prior cert into backup_dir (NOT alongside the live cert) so update-ca-certificates doesn't keep trusting the rotated-out CA. Rollback is still a single `mv`. ---
     if existing
@@ -92,11 +111,16 @@ action :configure do
       Chef::Log.info("munchbox_base_vault_pki_trust: rotated #{dest} -> #{backup}")
     end
 
+    new_content = content
+    new_owner   = owner
+    new_group   = group
+    new_mode    = mode
+
     file dest do
-      content  ca_pem
-      owner    'root'
-      group    'root'
-      mode     '0644'
+      content  new_content
+      owner    new_owner
+      group    new_group
+      mode     new_mode
       sensitive true
     end
 

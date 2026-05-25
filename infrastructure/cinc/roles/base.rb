@@ -27,5 +27,7 @@ run_list(
   # --- Ignore IPv6 RAs cluster-wide. Deco mesh keeps broadcasting a bogus ::/64 prefix even with IPv6 disabled in its UI; that route hijacks v4-mapped v6 connect()s into local v6 listeners (caused chef downloads to hit traefik on the ingress with the wrong cert). ---
   'recipe[munchbox_base::disable_ipv6_ra]',
   # --- Cluster-wide kernel knobs (currently just vm.overcommit_memory=1 for Redis BGSAVE). ---
-  'recipe[munchbox_base::sysctl]'
+  'recipe[munchbox_base::sysctl]',
+  # --- /etc/hosts MUNCHBOX block rendered from chef-search. ---
+  'recipe[munchbox_base::etc_hosts]'
 )

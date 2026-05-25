@@ -12,7 +12,7 @@ name 'nomad-client-01'
 description 'nomad-client-01: cluster nomad+consul client on a proxmox VM'
 
 run_list(
-  'role[proxmox_node]'
+  'role[proxmox_vm]'
 )
 
 # --- consul-client + nomad-client cert defs. alt_names cover hostname + FQDN + the consul/nomad common-name forms; ip_sans = primary LAN IP + localhost. Matches what ansible's /etc/vault-cert-manager/config.yaml currently produces. ---

@@ -73,3 +73,8 @@ default[cookbook]['consul_service_file'] = '/etc/consul.d/vault-cert-manager.jso
 # -------------------------------------------------------------------------------
 
 default[cookbook]['certificates'] = []
+
+# --- Owners install ensures exist (in addition to those derived from certificates) ---
+default[cookbook]['ensure_users'] = [
+  { user: 'consul', group: 'consul' },
+]

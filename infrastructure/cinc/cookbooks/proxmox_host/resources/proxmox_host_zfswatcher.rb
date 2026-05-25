@@ -108,7 +108,7 @@ action :configure do
     action :nothing
   end
 
-  # --- Consul service registration with a real http health check (ansible-era external-service registration on phantom 'rubirosa-external' node had no checks). Gated on consul user existence so first converge on a greenfield node (where consul hasn't installed yet) doesn't blow up; written on subsequent converge. notifies :reload so consul picks it up without a restart. ---
+  # --- Consul service registration with a tcp health check ---
   template new_resource.consul_service_path do
     cookbook cookbook_name_str
     source   'zfswatcher-consul-service.json.erb'
@@ -120,7 +120,6 @@ action :configure do
       check_host: '127.0.0.1'
     )
     notifies :reload, 'service[consul]', :delayed
-    only_if { ::Etc.getpwnam('consul') rescue false }
   end
 
   service 'consul' do

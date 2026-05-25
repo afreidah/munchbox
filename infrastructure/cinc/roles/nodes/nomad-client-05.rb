@@ -12,7 +12,7 @@ name 'nomad-client-05'
 description 'nomad-client-05: cluster nomad+consul client on a proxmox VM'
 
 run_list(
-  'role[proxmox_node]',
+  'role[proxmox_vm]',
   # --- Ingress-side WG tunnel into the oracle wg1 mesh (10.200.0.0/24). Only the ingress proxmox node needs this. ---
   'recipe[wireguard::install]',
   'recipe[wireguard::configure]',
