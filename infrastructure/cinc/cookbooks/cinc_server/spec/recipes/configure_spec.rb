@@ -43,8 +43,8 @@ RSpec.describe 'cinc_server::configure' do
   it 'renders chef-server.rb with derived nginx settings' do
     template = chef_run.template('/etc/opscode/chef-server.rb')
     expect(template.variables[:settings]).to include(
-      "nginx['server_name']"         => "'cinc-server.munchbox.cc'",
-      "nginx['ssl_certificate']"     => "'/etc/opscode/certs/cinc-server.munchbox.cc.crt'",
+      "nginx['server_name']" => "'cinc-server.munchbox.cc'",
+      "nginx['ssl_certificate']" => "'/etc/opscode/certs/cinc-server.munchbox.cc.crt'",
       "nginx['ssl_certificate_key']" => "'/etc/opscode/certs/cinc-server.munchbox.cc.key'"
     )
   end
