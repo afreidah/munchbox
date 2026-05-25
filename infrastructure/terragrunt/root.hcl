@@ -809,6 +809,8 @@ locals {
       "vault-cert-manager/secret-id",
       # SSH break-glass pubkey (added to root's authorized_keys by munchbox_base::sshd ssh_ca path)
       "ssh/break-glass",
+      # zfswatcher http auth proxy password hash (rubirosa only at runtime, fleet-wide policy)
+      "proxmox/zfswatcher-proxy",
     ]
 
     # --- Non-KV Vault reads chef-managed nodes need (SSH signer CA pubkeys). ---

@@ -18,3 +18,11 @@ default[cookbook]['client'] = {
   # --- Per-node additions appended at converge time so a single node can add a mount without redefining the shared list (chef merges hashes deep but replaces arrays). ---
   extra_mounts: [],
 }
+
+# --- Server side. exports = list of hashes {path:, clients:, options:}; empty = recipe is a no-op. mccoy + rubirosa are the only consumers today. ---
+default[cookbook]['server'] = {
+  package:      'nfs-kernel-server',
+  service_name: 'nfs-server',
+  exports_path: '/etc/exports',
+  exports:      [],
+}

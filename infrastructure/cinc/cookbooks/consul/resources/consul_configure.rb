@@ -130,35 +130,12 @@ action :configure do
       telemetry_prometheus_retention_time: new_resource.telemetry_prometheus_retention_time,
       telemetry_disable_hostname: new_resource.telemetry_disable_hostname
     )
-    notifies :restart, 'systemd_unit[consul.service]', :delayed
+    notifies :restart, 'service[consul]', :delayed
   end
 
-  # --- Systemd unit; Type=notify lets systemd track agent readiness ---
-  systemd_unit 'consul.service' do
-    content <<~UNIT
-      [Unit]
-      Description=Consul Agent
-      Documentation=https://www.consul.io/docs/
-      Requires=network-online.target
-      After=network-online.target
-      ConditionFileNotEmpty=#{new_resource.config_dir}/consul.hcl
-
-      [Service]
-      Type=notify
-      User=#{new_resource.user}
-      Group=#{new_resource.group}
-      ExecStart=#{new_resource.bin_path} agent -config-dir=#{new_resource.config_dir}
-      ExecReload=/bin/kill --signal HUP $MAINPID
-      KillMode=process
-      KillSignal=SIGTERM
-      Restart=on-failure
-      RestartSec=5
-      LimitNOFILE=65536
-
-      [Install]
-      WantedBy=multi-user.target
-    UNIT
-    action %i(create enable start)
+  # --- Systemd unit is rendered by consul_install (it's static deployment plumbing). Here we just ensure the service is enabled + started; restart on hcl change is notified above. ---
+  service 'consul' do
+    action %i(enable start)
   end
 end
 

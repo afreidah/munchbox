@@ -46,8 +46,12 @@ action :install do
       action :install
     end
 
+    # --- Read codename from /etc/os-release (always present on debian/ubuntu) rather than node['lsb']['codename'] -- ohai's lsb fact is nil on greenfield nodes that don't have the lsb-release package yet at compile time, which renders an apt entry with no distribution and breaks apt-get update. ---
+    codename = ::File.read('/etc/os-release')[/^VERSION_CODENAME=(\S+)$/, 1] || node['lsb']&.dig('codename')
+
     apt_repository 'hashicorp' do
       uri          new_resource.apt_repo_uri
+      distribution codename
       components   %w(main)
       key          new_resource.apt_repo_key
       action       :add

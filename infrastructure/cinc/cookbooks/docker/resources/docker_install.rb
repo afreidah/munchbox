@@ -50,7 +50,8 @@ action :install do
 
   # --- Resolve arch + platform + lsb_release at converge time so the line matches the running OS. ---
   arch     = node['kernel']['machine'] == 'aarch64' ? 'arm64' : 'amd64'
-  release  = node['lsb']['codename']
+  # --- Codename from /etc/os-release rather than node['lsb']['codename'] -- ohai's lsb fact is nil on greenfield nodes that don't yet have the lsb-release package installed at compile time. ---
+  release  = ::File.read('/etc/os-release')[/^VERSION_CODENAME=(\S+)$/, 1] || node['lsb']&.dig('codename')
   platform = node['platform'] # 'ubuntu' or 'debian'
 
   # --- Docker has separate apt paths per distro; codename only matches the matching distro tree. ---

@@ -64,6 +64,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CINC_SERVER_URL='https://cinc-server.munchbox.cc/organizations/munchbox'
 VALIDATOR_CLIENT_NAME='munchbox-validator'
 
+# --- Skip sudo when SSH user is root. Minimal proxmox installs don't ship sudo and we SSH as root there; oracle/ubuntu nodes still need it. ---
+SSH_USER="${TARGET%%@*}"
+if [[ "$TARGET" == *"@"* && "$SSH_USER" == "root" ]]; then
+  SUDO=""
+else
+  SUDO="sudo"
+fi
+
 # -------------------------------------------------------------------------------
 # Step 1 -- data-bag decryption secret on the node
 # -------------------------------------------------------------------------------
@@ -88,7 +96,7 @@ echo "==> [2/5] uploading encrypted vault_agent/$NODE to cinc-server"
 CINC_VERSION='19.3.14'
 echo
 echo "==> [3/5] installing cinc-client $CINC_VERSION on $TARGET"
-ssh "$TARGET" "sudo bash -c 'if command -v cinc-client >/dev/null; then echo \"cinc already installed: \$(cinc-client --version)\"; else curl -L https://omnitruck.cinc.sh/install.sh | bash -s -- -P cinc -v $CINC_VERSION; fi'"
+ssh "$TARGET" "$SUDO bash -c 'if command -v cinc-client >/dev/null; then echo \"cinc already installed: \$(cinc-client --version)\"; else curl -L https://omnitruck.cinc.sh/install.sh | bash -s -- -P cinc -v $CINC_VERSION; fi'"
 
 # -------------------------------------------------------------------------------
 # Step 4 -- pull validator + cinc-server cert from Vault, stage on node, write client.rb + first-boot.json
@@ -118,7 +126,7 @@ JSON
 
 scp -q "$VALIDATOR_FILE" "$CINC_CRT_FILE" "$FIRSTBOOT_FILE" "$TARGET:/tmp/"
 
-ssh "$TARGET" "sudo bash -c '
+ssh "$TARGET" "$SUDO bash -c '
   set -e
   install -d -m 0755 -o root -g root /etc/cinc /etc/cinc/trusted_certs /var/log/cinc
   install -m 0600 -o root -g root /tmp/validation.pem  /etc/cinc/validation.pem
@@ -145,7 +153,7 @@ EOF
 # -------------------------------------------------------------------------------
 echo
 echo "==> [5/5] first cinc-client run on $TARGET (registers + applies role[$ROLE])"
-ssh "$TARGET" 'sudo cinc-client -j /etc/cinc/first-boot.json' || true
+ssh "$TARGET" "$SUDO cinc-client -j /etc/cinc/first-boot.json" || true
 
 # --- `-j first-boot.json` only sets the run_list for that single run; persist it on cinc-server so subsequent runs (timer-driven or manual `cinc-client` without -j) keep applying the role ---
 echo
