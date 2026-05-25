@@ -36,7 +36,7 @@ job "cleanup-worker" {
 
   constraint {
     attribute = "${node.unique.name}"
-    value     = "stabler.munchbox.cc"
+    value     = "stabler"
   }
 
   # ---------------------------------------------------------------------------

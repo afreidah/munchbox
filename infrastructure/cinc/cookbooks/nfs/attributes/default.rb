@@ -13,7 +13,7 @@ cookbook = 'nfs'
 
 default[cookbook]['client'] = {
   package: 'nfs-common',
-  # --- Shared mounts every node in a role gets (e.g. gdrive on proxmox_node). ---
+  # --- Shared mounts every node in a role gets (e.g. gdrive on proxmox_vm). ---
   mounts: [],
   # --- Per-node additions appended at converge time so a single node can add a mount without redefining the shared list (chef merges hashes deep but replaces arrays). ---
   extra_mounts: [],

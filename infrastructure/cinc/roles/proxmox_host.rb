@@ -4,8 +4,7 @@
 # Role:: proxmox_host
 #
 # Proxmox VE HYPERVISORS (cabot, mccoy, fontana, rubirosa). NOT the
-# proxmox-hosted VMs -- those are role[proxmox_node] (misnamed; should
-# be role[proxmox_vm], rename tracked separately).
+# proxmox-hosted VMs -- those are role[proxmox_vm].
 #
 # Universal baseline only. Per-host concerns (GPU enablement, NFS
 # server exports, zfswatcher) live in the per-node role's run_list so
@@ -41,10 +40,11 @@ override_attributes(
   munchbox_base: {
     vault_pki_trust: {
       reload_docker: false,
-      # --- Drop the /opt/nomad/tls/ destination -- hypervisors don't run nomad, so creating /opt/nomad just to hold a CA cert is dead weight. System trust store path stays. ---
-      destinations: %w(
-        /usr/local/share/ca-certificates/vault-pki-ca.crt
-      ),
+      # --- Drop /opt/nomad/tls (hypervisors don't run nomad); keep system trust + ca-chain.crt ---
+      destinations: [
+        '/usr/local/share/ca-certificates/vault-pki-ca.crt',
+        { 'path' => '/etc/consul.d/tls/ca-chain.crt', 'owner' => 'consul', 'group' => 'consul', 'mode' => '0644', 'chain' => true },
+      ],
     },
   }
 )

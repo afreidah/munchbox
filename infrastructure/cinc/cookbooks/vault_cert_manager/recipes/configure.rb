@@ -79,7 +79,7 @@ execute 'systemctl daemon-reload vault-cert-manager' do
   action :nothing
 end
 
-# --- Consul service registration for the prometheus scrape. Gated by consul user existence so chef can run on a greenfield node where consul cookbook hasn't installed yet (vault_cert_manager comes BEFORE consul_client in the run_list so certs are issued before consul tries to start). Next converge -- after consul::install creates the user -- writes this file. ---
+# --- Consul service registration for the prometheus scrape ---
 template service_file do
   source 'consul-service.json.erb'
   owner  'consul'
@@ -89,7 +89,6 @@ template service_file do
     metrics_port: config['metrics_port']
   )
   notifies :reload, 'service[consul]', :delayed
-  only_if { ::Etc.getpwnam('consul') rescue false }
 end
 
 service 'vault-cert-manager' do

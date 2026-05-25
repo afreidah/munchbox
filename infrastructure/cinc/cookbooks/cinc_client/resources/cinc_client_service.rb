@@ -21,8 +21,9 @@ unified_mode true
 
 provides :cinc_client_service
 
-property :timer_enabled, [true, false], required: true
-property :on_calendar,   String,                  required: true
+property :timer_enabled,         [true, false], required: true
+property :on_calendar,           String,         required: true
+property :randomized_delay_sec,  String,         default: '30m'
 
 default_action :configure
 
@@ -54,6 +55,7 @@ action :configure do
 
       [Timer]
       OnCalendar=#{new_resource.on_calendar}
+      RandomizedDelaySec=#{new_resource.randomized_delay_sec}
       Persistent=true
 
       [Install]

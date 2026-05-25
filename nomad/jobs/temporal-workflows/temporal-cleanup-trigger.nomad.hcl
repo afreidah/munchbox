@@ -32,7 +32,7 @@ job "temporal-cleanup-trigger" {
   constraint {
     attribute = "${node.unique.name}"
     operator  = "set_contains_any"
-    value     = "goren,stabler.munchbox.cc"
+    value     = "goren,stabler"
   }
 
   # ---------------------------------------------------------------------------

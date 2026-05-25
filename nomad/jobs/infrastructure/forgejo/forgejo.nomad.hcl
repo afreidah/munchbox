@@ -52,7 +52,7 @@ job "forgejo" {
     # --- Constraint: Require gdrive NFS mount ---
     constraint {
       attribute = "${node.unique.name}"
-      value     = "stabler.munchbox.cc"
+      value     = "stabler"
     }
 
     # --- Network Configuration ---

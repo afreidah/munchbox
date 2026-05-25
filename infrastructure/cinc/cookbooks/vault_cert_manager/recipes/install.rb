@@ -24,6 +24,24 @@ directory install['config_dir'] do
   mode  '0755'
 end
 
+# --- Ensure every cert/registration owner exists before the daemon chowns ---
+pairs  = node[cookbook]['ensure_users'].map { |e| [e['user'], e['group']] }
+pairs += node[cookbook]['certificates'].map { |c| [c['owner'], c['group']] }
+pairs.uniq.each do |user, group|
+  next if user.nil? || group.nil?
+
+  group group do
+    system true
+  end
+
+  user user do
+    group group
+    system true
+    shell '/bin/false'
+    manage_home false
+  end
+end
+
 # --- Stub for notifications; configure recipe upgrades to :enable+:start. ---
 service 'vault-cert-manager' do
   action :nothing

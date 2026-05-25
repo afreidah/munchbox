@@ -42,7 +42,7 @@ job "github-runner-moat-vm" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "!="
-      value     = "stabler.munchbox.cc"
+      value     = "stabler"
     }
 
     network {

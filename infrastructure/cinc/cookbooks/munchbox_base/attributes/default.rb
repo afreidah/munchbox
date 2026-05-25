@@ -224,16 +224,31 @@ default[cookbook]['ssh'] = {
 
 default[cookbook]['vault_pki_trust'] = {
   mount: 'pki_int',
-  destinations: %w(
-    /opt/nomad/tls/vault-intermediate-ca.pem
-    /usr/local/share/ca-certificates/vault-pki-ca.crt
-  ),
+  destinations: [
+    '/opt/nomad/tls/vault-intermediate-ca.pem',
+    '/usr/local/share/ca-certificates/vault-pki-ca.crt',
+    { 'path' => '/etc/consul.d/tls/ca-chain.crt', 'owner' => 'consul', 'group' => 'consul', 'mode' => '0644', 'chain' => true },
+  ],
   reload_docker: true,
   # --- Files ansible's distribute-vault-pki-ca / consul-enable-tls used to drop. Chef writes its CA to vault-intermediate-ca.pem now; these legacy names are ignored by everything but still sit on disk confusing operators. ---
   stale_paths: %w(
     /opt/nomad/tls/vault-ca-chain.pem
     /opt/nomad/tls/nomad-agent-ca.pem
   ),
+}
+
+default[cookbook]['etc_hosts'] = {
+  hosts_path:        '/etc/hosts',
+  domain:            'munchbox.cc',
+  marker_begin:      '# BEGIN MUNCHBOX CLUSTER HOSTS',
+  marker_end:        '# END MUNCHBOX CLUSTER HOSTS',
+  ip_attribute_path: %w(consul config bind_addr),
+  cloud_init_dropin: '/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg',
+  # --- Hosts not yet under chef (pihole/unbound boxes on original Pis); appended after chef-search results ---
+  static_entries: [
+    { 'ip' => '192.168.68.62', 'hostname' => 'green' },
+    { 'ip' => '192.168.68.64', 'hostname' => 'logan' },
+  ],
 }
 
 default[cookbook]['ssh_ca'] = {

@@ -49,7 +49,7 @@ job "github-runner-moat" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "!="
-      value     = "stabler.munchbox.cc"
+      value     = "stabler"
     }
 
     # Spread allocations across distinct hosts.

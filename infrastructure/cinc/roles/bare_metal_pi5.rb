@@ -25,7 +25,11 @@ run_list(
   'recipe[munchbox_base::vault_pki_trust]',
   'role[vault_cert_manager]',
   'role[consul_server]',
+  # --- Local dnsmasq -> consul/CoreDNS routing; per-node sets node[:global][:dns_endpoint_ip]. ---
+  'recipe[consul::dns]',
   'role[nomad_server]',
+  # --- /etc/resolv.conf -> bind_addr (not 127.0.0.53) so nomad's docker driver doesn't trip its systemd-resolved heuristic. ---
+  'recipe[munchbox_base::resolv_conf]',
   # --- gdrive NFS mounts from mccoy (same as proxmox clients). ---
   'recipe[nfs::client]'
 )
