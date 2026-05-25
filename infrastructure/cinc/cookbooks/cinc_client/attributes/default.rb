@@ -59,4 +59,6 @@ default[cookbook]['config'] = {
 default[cookbook]['service'] = {
   timer_enabled: false,
   on_calendar: 'hourly',
+  # --- Each node picks a random offset within this window so the fleet doesn't thundering-herd cinc-server / Vault every hour ---
+  randomized_delay_sec: '30m',
 }
