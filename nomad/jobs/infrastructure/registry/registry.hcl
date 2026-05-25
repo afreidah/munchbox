@@ -14,7 +14,7 @@ image = "registry:3"
 port  = 5000
 static_port = 5000
 host_network = true
-node = "stabler.munchbox.cc"
+node = "stabler"
 size = "large"
 
 # --- Storage ---
