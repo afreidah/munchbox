@@ -32,12 +32,19 @@ run_list(
   'recipe[munchbox_base::vault_pki_trust]',
   'role[vault_cert_manager]',
   'role[consul_server]',
+  # --- Local dnsmasq -> consul/CoreDNS routing; reads global.dns_endpoint_ip. ---
+  'recipe[consul::dns]',
   'role[nomad_server]',
+  # --- /etc/resolv.conf -> bind_addr (not 127.0.0.53) so nomad's docker driver doesn't trip its systemd-resolved heuristic. ---
+  'recipe[munchbox_base::resolv_conf]',
   # --- Vault server takeover pilot. restart_on_change=false (cookbook default) so chef rewrites vault.hcl + systemd unit but does NOT bounce the daemon (shamir-sealed; restart = manual unseal x3). Next planned restart picks up chef config. ---
   'role[vault_server]'
 )
 
 default_attributes(
+  global: {
+    dns_endpoint_ip: '192.168.68.58',
+  },
   consul: {
     config: {
       bind_addr:  '192.168.68.58',

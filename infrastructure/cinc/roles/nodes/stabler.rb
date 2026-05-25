@@ -20,6 +20,9 @@ run_list(
 )
 
 default_attributes(
+  global: {
+    dns_endpoint_ip: '192.168.68.61',
+  },
   consul: {
     config: {
       bind_addr: '192.168.68.61',
