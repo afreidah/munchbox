@@ -1,0 +1,63 @@
+<%#
+  Cookbook:: proxmox_host
+  Template:: zfswatcher.conf.erb
+
+  Rendered to /etc/zfswatcher/zfswatcher.conf. Matches the existing
+  rubirosa conf 1:1 except the proxy password hash is read from Vault
+  at converge time (never baked into the cookbook).
+%>
+;
+; zfswatcher.conf -- managed by chef (proxmox_host::zfswatcher)
+;
+; ZFS pool monitoring configuration.
+;
+
+[main]
+zpoolstatusrefresh = 5
+zpoolstatuscmd = "/sbin/zpool status"
+zfslistrefresh = 30
+zfslistcmd = "/sbin/zfs list -H -o name,avail,used,usedsnap,usedds,usedrefreserv,usedchild,refer,mountpoint -d 0"
+zfslistusagecmd = "/sbin/zfs list -H -o name,avail,used,usedsnap,usedds,usedrefreserv,usedchild,refer,mountpoint -r -t all"
+pidfile = /var/run/zfswatcher.pid
+
+[severity]
+poolstatemap = OFFLINE:info REMOVED:crit FAULTED:alert SPLIT:info UNAVAIL:alert DEGRADED:crit ONLINE:info UNKNOWN:alert
+pooladded = notice
+poolremoved = notice
+poolstatuschanged = err
+poolstatuscleared = notice
+poolerrorschanged = err
+devstatemap = OFFLINE:info REMOVED:err FAULTED:err SPLIT:info UNAVAIL:err DEGRADED:err ONLINE:info UNKNOWN:err INUSE:err AVAIL:info
+devadded = notice
+devremoved = notice
+devreaderrorsincreased = err
+devwriteerrorsincreased = err
+devcksumerrorsincreased = err
+devadditionalinfochanged = notice
+devadditionalinfocleared = notice
+usedspace = 80%:info 85%:notice 90%:err 95%:crit
+
+[leds]
+enable = false
+
+[logfile "main"]
+enable = true
+level = info
+file = <%= @log_dir %>/zfswatcher.log
+
+[www]
+enable = true
+level = debug
+bind = <%= @bind %>
+templatedir = <%= @template_dir %>
+resourcedir = <%= @resource_dir %>
+logbuffer = 1000
+severitycssclassmap = emerg:alert alert:alert crit:alert err:error warning:warning notice:success info:info debug:debug
+poolstatecssclassmap = OFFLINE:text-warning REMOVED:text-error FAULTED:text-error SPLIT:text-warning UNAVAIL:text-error DEGRADED:text-warning ONLINE:text-success UNKNOWN:text-error
+devstatecssclassmap = OFFLINE:text-warning REMOVED:text-error FAULTED:text-error SPLIT:text-warning UNAVAIL:text-error DEGRADED:text-warning ONLINE:text-success UNKNOWN:text-error INUSE:text-success AVAIL:text-success
+usedstatecssclassmap = none:success info:success notice:info err:warning crit:important
+
+; --- Proxy user for traefik passthrough; real auth handled by oauth2-proxy upstream. ---
+[wwwuser "<%= @proxy_user %>"]
+enable = true
+password = <%= @proxy_password_hash %>
