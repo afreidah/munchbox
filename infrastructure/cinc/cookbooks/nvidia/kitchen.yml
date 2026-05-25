@@ -1,0 +1,31 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for nvidia.
+#
+# No suites: kitchen is intentionally skipped because (a) the proprietary
+# nvidia-driver requires real NVIDIA hardware on the test VM and (b) DKMS
+# wants matching kernel headers compiled against a kernel that the libvirt
+# guest doesn't run. Chefspec covers the resource shape; live verification
+# happens on the GPU host (nomad-client-04) via cinc-client + nvidia-smi.
+#
+# See README.md.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  chef_license: accept
+
+verifier:
+  name: inspec
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites: []

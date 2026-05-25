@@ -52,16 +52,16 @@ RSpec.describe 'consul::configure' do
     end
 
     # --- Systemd unit lifecycle ---
-    it 'installs + enables + starts the consul.service systemd unit' do
-      expect(chef_run).to create_systemd_unit('consul.service')
-      expect(chef_run).to enable_systemd_unit('consul.service')
-      expect(chef_run).to start_systemd_unit('consul.service')
+    # --- systemd_unit is rendered by consul_install (static plumbing); configure only enables + starts the service ---
+    it 'enables + starts the consul service' do
+      expect(chef_run).to enable_service('consul')
+      expect(chef_run).to start_service('consul')
     end
 
     # --- Restart notification on config drift ---
-    it 'restarts consul.service when consul.hcl changes (delayed)' do
+    it 'restarts consul (delayed) when consul.hcl changes' do
       expect(chef_run.template('/etc/consul.d/consul.hcl'))
-        .to notify('systemd_unit[consul.service]').to(:restart).delayed
+        .to notify('service[consul]').to(:restart).delayed
     end
   end
 

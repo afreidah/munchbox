@@ -32,4 +32,12 @@ RSpec.describe 'vault_agent::install' do
   it 'waits for the apt lock before touching apt' do
     expect(chef_run).to wait_munchbox_base_apt_lock_wait('vault_agent_install')
   end
+
+  it 'declares the apt_update periodic resource for the hashicorp repo' do
+    expect(chef_run).to periodic_apt_update('vault_agent_install')
+  end
+
+  it 'installs the apt-repo prerequisite packages (gnupg etc.) once' do
+    expect(chef_run).to install_package(%w(gnupg apt-transport-https ca-certificates))
+  end
 end

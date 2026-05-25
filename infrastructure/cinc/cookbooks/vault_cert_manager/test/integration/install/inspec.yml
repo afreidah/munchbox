@@ -1,0 +1,10 @@
+---
+name: vault-cert-manager-install
+title: vault-cert-manager install integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged vault_cert_manager::install -- package, config dir, prereq users.
+version: 0.1.0
+supports:
+  - platform: debian

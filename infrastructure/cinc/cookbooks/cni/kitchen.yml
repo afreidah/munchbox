@@ -1,0 +1,40 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for cni.
+#
+# Single suite: downloads the CNI plugins tarball + extracts under /opt/cni/bin.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 512
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: default
+    run_list:
+      - recipe[cni::install]
+    verifier:
+      inspec_tests:
+        - test/integration/default

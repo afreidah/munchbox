@@ -43,6 +43,22 @@ RSpec.describe 'nomad::configure' do
         .with(owner: 'root', group: 'root', mode: '0640')
     end
 
+    it 'sweeps the default ansible-era stale_paths' do
+      %w(
+        /etc/nomad.d/nomad.hcl.bak
+        /etc/nomad.d/nomad.hcl.broken
+        /etc/nomad.d/consul_token.env
+        /etc/nomad.d/010-client-tags.hcl
+        /etc/systemd/system/nomad.service.d/10-consul-token.conf
+      ).each do |p|
+        expect(chef_run).to delete_file(p)
+      end
+    end
+
+    it 'declares the daemon-reload execute (notified by stale_paths sweep)' do
+      expect(chef_run.execute('systemctl daemon-reload (nomad stale-paths sweep)')).to do_nothing
+    end
+
     # --- Per-node attrs propagate ---
     it 'passes node_name, bind_addr, advertise_ip, server_enabled=false through to the template' do
       template = chef_run.template('/etc/nomad.d/nomad.hcl')

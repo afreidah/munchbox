@@ -37,7 +37,7 @@ property :client_enabled,             [true, false], default: true
 property :servers,                    Array, default: []
 property :node_pool,                  String, default: 'default'
 property :node_class,                 [String, nil]
-property :client_meta,                Hash,   default: {}
+property :client_meta,                Hash, default: {}
 property :network_interface,          [String, nil]
 property :gc_disk_usage_threshold,    Integer, default: 80
 property :gc_inode_usage_threshold,   Integer, default: 70

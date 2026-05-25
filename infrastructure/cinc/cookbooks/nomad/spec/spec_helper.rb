@@ -7,9 +7,22 @@
 
 require 'chefspec'
 
+# --- Load vault_fetch lib so MunchboxLibVaultFetch exists for the stub below ---
+require File.expand_path('../../munchbox_lib/libraries/vault_fetch.rb', __dir__)
+
 Dir[File.expand_path('support/**/*.rb', __dir__)].each { |f| require f }
 
 ChefSpec::Coverage.start! { add_filter 'munchbox_lib' }
+
+# --- Stub vault_fetch globally; module monkey-patch is the only reliable way
+#     (allow_any_instance_of misses lazy-block calls on resource properties).
+RSpec.configure do |c|
+  c.before(:each) do
+    MunchboxLibVaultFetch.module_eval do
+      define_method(:vault_fetch) { |_path, _field| 'fake-vault-value' }
+    end
+  end
+end
 
 RSpec.configure do |config|
   config.cookbook_path = [

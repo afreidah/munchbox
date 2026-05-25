@@ -49,7 +49,7 @@ default[cookbook]['config'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['vault_paths'] = {
-  role_id:   { path: 'secret/data/vault-cert-manager/role-id',   field: 'role_id' },
+  role_id: { path: 'secret/data/vault-cert-manager/role-id', field: 'role_id' },
   secret_id: { path: 'secret/data/vault-cert-manager/secret-id', field: 'secret_id' },
 }
 

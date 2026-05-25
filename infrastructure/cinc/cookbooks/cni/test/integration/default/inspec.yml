@@ -1,0 +1,10 @@
+---
+name: cni
+title: cni integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged cni::install -- plugin binaries under /opt/cni/bin.
+version: 0.1.0
+supports:
+  - platform: debian

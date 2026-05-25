@@ -1,0 +1,10 @@
+---
+name: nfs-client
+title: nfs client integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged nfs::client -- nfs-common installed; actual mounts not exercised (no reachable peer in kitchen).
+version: 0.1.0
+supports:
+  - platform: debian

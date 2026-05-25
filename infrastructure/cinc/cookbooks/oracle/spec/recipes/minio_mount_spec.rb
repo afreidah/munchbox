@@ -3,32 +3,36 @@
 require 'spec_helper'
 
 # -------------------------------------------------------------------------------
-# minio_mount recipe spec
-#
-# Covers: blkid UUID lookup, the legacy /dev/sdb fstab cleanup, and the
-# UUID-based mount. blkid is stubbed (chefspec doesn't shell out).
+# minio_mount recipe spec -- steps into oracle_minio_mount to cover the
+# blkid lookup, legacy /dev/sdb cleanup, and the UUID mount. shell_out is
+# stubbed per-provider via chefspec's stubs_for_provider helper.
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'oracle::minio_mount' do
-  # --- Fake shell_out for the blkid lookup; we test both the "found" + "missing" paths ---
-  let(:blkid_result) do
-    instance_double('Mixlib::ShellOut', stdout: "9c4a5d6e-1111-2222-3333-444455556666\n")
-  end
-
   context 'with a labeled volume present' do
     cached(:chef_run) do
-      runner_blkid = instance_double('Mixlib::ShellOut', stdout: "9c4a5d6e-1111-2222-3333-444455556666\n")
-      allow_any_instance_of(Chef::Recipe).to receive(:shell_out).and_return(runner_blkid)
-      ChefSpec::SoloRunner.new.converge('oracle::minio_mount')
+      stubs_for_provider('oracle_minio_mount[/mnt/minio-data]') do |provider|
+        allow(provider).to receive_shell_out(
+          'blkid', '-t', 'LABEL=minio-data', '-o', 'value', '-s', 'UUID',
+          stdout: "9c4a5d6e-1111-2222-3333-444455556666\n"
+        )
+      end
+      allow(::File).to receive(:read).and_call_original
+      allow(::File).to receive(:read).with('/etc/fstab')
+                                     .and_return("/dev/sdb /mnt/minio-data ext4 defaults 0 2\n")
+      ChefSpec::SoloRunner.new(step_into: %w(oracle_minio_mount)).converge('oracle::minio_mount')
     end
 
-    # --- Mount point directory ---
+    it 'declares the oracle_minio_mount wrapping resource' do
+      expect(chef_run).to mount_oracle_minio_mount('/mnt/minio-data')
+        .with(label: 'minio-data', fstype: 'ext4')
+    end
+
     it 'creates the mount point' do
       expect(chef_run).to create_directory('/mnt/minio-data')
         .with(owner: 'root', group: 'root', mode: '0755')
     end
 
-    # --- UUID-based mount lands in fstab + mounted ---
     it 'enables the UUID-based mount in fstab' do
       expect(chef_run).to enable_mount('/mnt/minio-data')
         .with(device: '9c4a5d6e-1111-2222-3333-444455556666',
@@ -42,17 +46,20 @@ RSpec.describe 'oracle::minio_mount' do
         .with(device: '9c4a5d6e-1111-2222-3333-444455556666')
     end
 
-    # --- Legacy /dev/sdb entry is only touched if the fstab regex matches; in chefspec File.read is real, so a synthetic fstab keeps this check trivial ---
-    it 'declares the legacy fstab cleanup' do
-      expect(chef_run.mount('remove legacy /dev/sdb entry at /mnt/minio-data')).to_not be_nil
+    it 'disables the legacy /dev/sdb fstab entry (only_if fstab regex matches)' do
+      expect(chef_run).to disable_mount('remove legacy /dev/sdb entry at /mnt/minio-data')
     end
   end
 
-  context 'with no labeled volume found (recipe is a no-op)' do
+  context 'with no labeled volume found (resource action is a no-op past the mount point)' do
     cached(:chef_run) do
-      empty_blkid = instance_double('Mixlib::ShellOut', stdout: "\n")
-      allow_any_instance_of(Chef::Recipe).to receive(:shell_out).and_return(empty_blkid)
-      ChefSpec::SoloRunner.new.converge('oracle::minio_mount')
+      stubs_for_provider('oracle_minio_mount[/mnt/minio-data]') do |provider|
+        allow(provider).to receive_shell_out(
+          'blkid', '-t', 'LABEL=minio-data', '-o', 'value', '-s', 'UUID',
+          stdout: "\n"
+        )
+      end
+      ChefSpec::SoloRunner.new(step_into: %w(oracle_minio_mount)).converge('oracle::minio_mount')
     end
 
     it 'creates the mount point' do

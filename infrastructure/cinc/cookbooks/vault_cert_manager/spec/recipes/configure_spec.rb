@@ -22,16 +22,16 @@ RSpec.describe 'vault_cert_manager::configure' do
     ChefSpec::SoloRunner.new do |node|
       node.override['vault_cert_manager']['certificates'] = [
         {
-          'name'        => 'consul-client',
-          'role'        => 'consul-client',
+          'name' => 'consul-client',
+          'role' => 'consul-client',
           'common_name' => 'client.munchbox.consul',
           'certificate' => '/etc/consul.d/tls/consul.crt',
-          'key'         => '/etc/consul.d/tls/consul.key',
-          'ttl'         => '720h',
-          'alt_names'   => %w(localhost test-node),
-          'ip_sans'     => %w(10.200.0.99 127.0.0.1),
-          'owner'       => 'consul',
-          'group'       => 'consul',
+          'key' => '/etc/consul.d/tls/consul.key',
+          'ttl' => '720h',
+          'alt_names' => %w(localhost test-node),
+          'ip_sans' => %w(10.200.0.99 127.0.0.1),
+          'owner' => 'consul',
+          'group' => 'consul',
         },
       ]
     end.converge('vault_cert_manager::configure')
