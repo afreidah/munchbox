@@ -22,11 +22,14 @@ property :bin_path,            String, default: '/opt/zfswatcher/zfswatcher'
 property :config_path,         String, default: '/etc/zfswatcher/zfswatcher.conf'
 property :log_dir,             String, default: '/var/log/zfswatcher'
 property :bind,                String, default: '0.0.0.0:8800'
+property :http_port,           Integer, default: 8800
 property :template_dir,        String, default: '/opt/zfswatcher/src/www/templates'
 property :resource_dir,        String, default: '/opt/zfswatcher/src/www/resources'
 property :proxy_user,          String, default: 'proxy'
 property :proxy_password_hash, String, sensitive: true
 property :service_name,        String, default: 'zfswatcher'
+property :advertise_ip,        String, default: '0.0.0.0'
+property :consul_service_path, String, default: '/etc/consul.d/zfswatcher.json'
 
 default_action :configure
 
@@ -103,6 +106,26 @@ action :configure do
   end
 
   service new_resource.service_name do
+    action :nothing
+  end
+
+  # --- Consul service registration with a real http health check (ansible-era external-service registration on phantom 'rubirosa-external' node had no checks). Gated on consul user existence so first converge on a greenfield node (where consul hasn't installed yet) doesn't blow up; written on subsequent converge. notifies :reload so consul picks it up without a restart. ---
+  template new_resource.consul_service_path do
+    cookbook cookbook_name_str
+    source   'zfswatcher-consul-service.json.erb'
+    owner    'consul'
+    group    'consul'
+    mode     '0640'
+    variables(
+      port:       new_resource.http_port,
+      address:    new_resource.advertise_ip,
+      check_host: '127.0.0.1'
+    )
+    notifies :reload, 'service[consul]', :delayed
+    only_if { ::Etc.getpwnam('consul') rescue false }
+  end
+
+  service 'consul' do
     action :nothing
   end
 

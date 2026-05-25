@@ -1,0 +1,13 @@
+{
+  "service": {
+    "name": "zfswatcher",
+    "tags": ["traefik.enable=false"],
+    "port": <%= @port %>,
+    "address": "<%= @address %>",
+    "check": {
+      "http": "http://<%= @check_host %>:<%= @port %>/",
+      "interval": "30s",
+      "timeout": "5s"
+    }
+  }
+}
