@@ -108,7 +108,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.60.9"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.60.18"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -278,8 +278,8 @@ backends:
 
 circuit_breaker:
   failure_threshold: 3
-  open_timeout: 15s
-  cache_ttl: 60s
+  open_timeout: 1200s
+  cache_ttl: 120s
 
 backend_circuit_breaker:
   enabled: true
@@ -339,7 +339,7 @@ rebalance:
 replication:
   factor: 2
   batch_size: 20
-  worker_interval: "5m"
+  worker_interval: "2m"
 
 ui:
   enabled: true

@@ -228,7 +228,7 @@ func main() {
 		// List workflows using visibility query via the workflow service
 		resp, err := temporalClient.WorkflowService().ListWorkflowExecutions(ctx, &workflowservice.ListWorkflowExecutionsRequest{
 			Namespace: "default",
-			Query:     "WorkflowType = 'TrivyScanWorkflow' AND ExecutionStatus = 'Running'",
+			Query:     "WorkflowType = 'Scan' AND TaskQueue = 'trivy-task-queue' AND ExecutionStatus = 'Running'",
 		})
 		if err != nil {
 			json.NewEncoder(w).Encode(map[string]interface{}{
@@ -274,8 +274,8 @@ func main() {
 		workflowID := fmt.Sprintf("trivy-scan-%s", time.Now().Format("20060102-150405"))
 		run, err := temporalClient.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 			ID:        workflowID,
-			TaskQueue: "backup-task-queue",
-		}, "TrivyScanWorkflow")
+			TaskQueue: "trivy-task-queue",
+		}, "Scan")
 
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
