@@ -35,6 +35,29 @@ RSpec.describe 'cinc_server::bootstrap' do
       )
   end
 
+  it 'sources the admin password from vault_fetch (stubbed)' do
+    # --- lazy{} resolves on property read; stub returns "fake-vault-password" ---
+    expect(chef_run.cinc_server_user('alex').password).to eq('fake-vault-password')
+  end
+
+  context 'with an explicit password attribute override (break-glass)' do
+    before do
+      stub_command("chef-server-ctl org-show 'munchbox'").and_return(false)
+      stub_command("chef-server-ctl user-show 'alex'").and_return(false)
+      stub_command("chef-server-ctl user-show 'alex' --with-orgs | grep -E '^organizations:' | grep -wq 'munchbox'").and_return(false)
+    end
+
+    cached(:override_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(cinc_server_org cinc_server_user)) do |node|
+        node.normal['cinc_server']['bootstrap']['user']['password'] = 'literal-override'
+      end.converge('cinc_server::bootstrap')
+    end
+
+    it 'wins over the vault fetch when set' do
+      expect(override_run.cinc_server_user('alex').password).to eq('literal-override')
+    end
+  end
+
   # --- /etc/cinc-bootstrap dir is created before user-create writes the pem there ---
   it 'creates the bootstrap key directory with restrictive perms' do
     expect(chef_run).to create_directory('/etc/cinc-bootstrap')

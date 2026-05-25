@@ -88,8 +88,8 @@ action :configure do
 
   # --- Derive nginx settings: point at our cert + key, set server_name from api_fqdn ---
   nginx_derived = {
-    "nginx['server_name']"         => "'#{new_resource.api_fqdn}'",
-    "nginx['ssl_certificate']"     => "'#{cert_path}'",
+    "nginx['server_name']" => "'#{new_resource.api_fqdn}'",
+    "nginx['ssl_certificate']" => "'#{cert_path}'",
     "nginx['ssl_certificate_key']" => "'#{key_path}'",
   }
   rendered_settings = new_resource.settings.merge(nginx_derived)

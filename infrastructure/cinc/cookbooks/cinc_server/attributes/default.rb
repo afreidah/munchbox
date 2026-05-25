@@ -60,7 +60,24 @@ default[cookbook]['bootstrap'] = {
     first_name: 'Alex',
     last_name: 'Freidah',
     email: 'alex.freidah@gmail.com',
-    password: 'CHANGEME-set-via-attribute-override',
+    # --- nil by default; recipe lazy-fetches from Vault. Override to a literal string only for break-glass / kitchen runs. ---
+    password: nil,
     key_path: '/etc/cinc-bootstrap/alex.pem',
+  },
+}
+
+# -------------------------------------------------------------------------------
+# Vault paths
+#
+# Bootstrap-time secrets. vault_agent::configure has gated on the token sink
+# at /run/vault-agent/token by the time bootstrap converges (cinc_server_host
+# role layers role[vault_agent] before the cinc_server recipes), so the
+# lazy{} vault_fetch in bootstrap.rb is safe.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['vault_paths'] = {
+  admin_password: {
+    path: 'secret/data/cinc-server/admin/alex',
+    field: 'password',
   },
 }
