@@ -244,6 +244,11 @@ default[cookbook]['etc_hosts'] = {
   marker_end:        '# END MUNCHBOX CLUSTER HOSTS',
   ip_attribute_path: %w(consul config bind_addr),
   cloud_init_dropin: '/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg',
+  # --- Hosts not yet under chef (pihole/unbound boxes on original Pis); appended after chef-search results ---
+  static_entries: [
+    { 'ip' => '192.168.68.62', 'hostname' => 'green' },
+    { 'ip' => '192.168.68.64', 'hostname' => 'logan' },
+  ],
 }
 
 default[cookbook]['ssh_ca'] = {

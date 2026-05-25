@@ -22,6 +22,7 @@ property :marker_begin,      String, default: '# BEGIN MUNCHBOX CLUSTER HOSTS'
 property :marker_end,        String, default: '# END MUNCHBOX CLUSTER HOSTS'
 property :ip_attribute_path, Array,  default: %w(consul config bind_addr)
 property :cloud_init_dropin, String, default: '/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg'
+property :static_entries,    Array,  default: []
 
 default_action :configure
 
@@ -39,13 +40,21 @@ action :configure do
   attr_path = new_resource.ip_attribute_path
   domain    = new_resource.domain
 
-  entries = search(:node, '*:*').filter_map do |n|
+  search_entries = search(:node, '*:*').filter_map do |n|
     ip = n.dig(*attr_path)
     next nil unless ip
 
     short = n.name
     "#{ip}\t#{short} #{short}.#{domain}"
-  end.sort
+  end
+
+  static_entries = new_resource.static_entries.map do |e|
+    ip    = e['ip']
+    short = e['hostname']
+    "#{ip}\t#{short} #{short}.#{domain}"
+  end
+
+  entries = (search_entries + static_entries).sort
 
   desired_block = ([new_resource.marker_begin] + entries + [new_resource.marker_end]).join("\n")
   pattern       = /#{Regexp.escape(new_resource.marker_begin)}.*?#{Regexp.escape(new_resource.marker_end)}/m
