@@ -28,7 +28,6 @@ property :resource_dir,        String, default: '/opt/zfswatcher/src/www/resourc
 property :proxy_user,          String, default: 'proxy'
 property :proxy_password_hash, String, sensitive: true
 property :service_name,        String, default: 'zfswatcher'
-property :advertise_ip,        String, default: '0.0.0.0'
 property :consul_service_path, String, default: '/etc/consul.d/zfswatcher.json'
 
 default_action :configure
@@ -118,7 +117,6 @@ action :configure do
     mode     '0640'
     variables(
       port:       new_resource.http_port,
-      address:    new_resource.advertise_ip,
       check_host: '127.0.0.1'
     )
     notifies :reload, 'service[consul]', :delayed
