@@ -33,9 +33,12 @@ default_attributes(
     config: {
       retry_join: ['192.168.68.60', '192.168.68.61', '192.168.68.58'],
     },
-  },
+  }
+)
+
+# --- override_attributes for the vault_pki_trust knobs. The cookbook's attribute file sets `default[cookbook]['vault_pki_trust'] = { whole hash literal }`, which Chef stores as a single leaf at `vault_pki_trust` -- role default_attributes at the SAME precedence level can't deep-merge into a leaf assignment and silently no-op. Override precedence wins cleanly. ---
+override_attributes(
   munchbox_base: {
-    # --- No docker on the proxmox hypervisors; only the guest VMs run containers. Skip the post-CA-update docker restart so vault_pki_trust doesn't blow up trying to restart a service that isn't installed. ---
     vault_pki_trust: {
       reload_docker: false,
       # --- Drop the /opt/nomad/tls/ destination -- hypervisors don't run nomad, so creating /opt/nomad just to hold a CA cert is dead weight. System trust store path stays. ---
