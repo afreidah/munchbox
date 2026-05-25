@@ -71,3 +71,12 @@ default_attributes(
     ],
   }
 )
+
+# --- override_attributes (not default_attributes) because munchbox_base sets timesync as a hash literal that role defaults can't deep-merge into. Skip the chef-managed systemd-timesyncd recipe -- rubirosa runs chrony, no systemd-timesyncd unit installed, and chrony is already correctly time-synced. ---
+override_attributes(
+  munchbox_base: {
+    timesync: {
+      enabled: false,
+    },
+  }
+)
