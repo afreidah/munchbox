@@ -38,6 +38,10 @@ default_attributes(
     # --- No docker on the proxmox hypervisors; only the guest VMs run containers. Skip the post-CA-update docker restart so vault_pki_trust doesn't blow up trying to restart a service that isn't installed. ---
     vault_pki_trust: {
       reload_docker: false,
+      # --- Drop the /opt/nomad/tls/ destination -- hypervisors don't run nomad, so creating /opt/nomad just to hold a CA cert is dead weight. System trust store path stays. ---
+      destinations: %w(
+        /usr/local/share/ca-certificates/vault-pki-ca.crt
+      ),
     },
   }
 )
