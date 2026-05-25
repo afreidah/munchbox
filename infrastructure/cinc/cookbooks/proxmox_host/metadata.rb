@@ -5,7 +5,7 @@ maintainer       'Alex Freidah'
 maintainer_email 'alex.freidah@gmail.com'
 license          'All Rights Reserved'
 description      'Proxmox VE hypervisor concerns: ZFS arc cap, GPU enablement (GVT-g + PCI passthrough), zfswatcher.'
-version          '0.1.2'
+version          '0.1.3'
 chef_version     '>= 19.0'
 
 supports 'debian'
