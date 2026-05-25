@@ -63,7 +63,7 @@ job "patroni" {
     constraint {
       attribute = "${node.unique.name}"
       operator  = "set_contains_any"
-      value     = "stabler.munchbox.cc,nomad-client-05"
+      value     = "stabler,nomad-client-05"
     }
 
     # --- Network Configuration ---

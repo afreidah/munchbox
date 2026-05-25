@@ -53,7 +53,7 @@ job "aptly" {
     constraint {
       attribute = "${attr.unique.hostname}"
       operator  = "set_contains_any"
-      value     = "goren,stabler.munchbox.cc,nomad-client-01,nomad-client-02,nomad-client-03"
+      value     = "goren,stabler,nomad-client-01,nomad-client-02,nomad-client-03"
     }
 
     network {

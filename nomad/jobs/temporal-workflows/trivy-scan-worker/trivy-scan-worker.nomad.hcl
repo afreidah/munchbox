@@ -35,7 +35,7 @@ job "trivy-scan-worker" {
   constraint {
     attribute = "${node.unique.name}"
     operator  = "set_contains_any"
-    value     = "goren,stabler.munchbox.cc"
+    value     = "goren,stabler"
   }
 
   # ---------------------------------------------------------------------------
