@@ -10,6 +10,12 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'docker::install' do
+  before do
+    # --- resource reads /etc/os-release for VERSION_CODENAME (greenfield-safe). Stub for determinism. ---
+    allow(::File).to receive(:read).and_call_original
+    allow(::File).to receive(:read).with('/etc/os-release').and_return("VERSION_CODENAME=bookworm\n")
+  end
+
   cached(:chef_run) do
     ChefSpec::SoloRunner.new(step_into: %w(docker_install)) do |node|
       node.automatic[:lsb][:codename]   = 'bookworm'
@@ -68,6 +74,15 @@ RSpec.describe 'docker::install' do
     expect(chef_run.group('docker'))
       .to notify('service[nomad]').to(:restart).delayed
   end
+
+  it 'waits for the apt lock around prereqs + packages' do
+    expect(chef_run).to wait_munchbox_base_apt_lock_wait('docker_install_prereqs')
+    expect(chef_run).to wait_munchbox_base_apt_lock_wait('docker_install_packages')
+  end
+
+  it 'adds the docker apt repository (action :add)' do
+    expect(chef_run).to add_apt_repository('docker')
+  end
 end
 
 # -------------------------------------------------------------------------------
@@ -98,6 +113,11 @@ end
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'docker::install on amd64' do
+  before do
+    allow(::File).to receive(:read).and_call_original
+    allow(::File).to receive(:read).with('/etc/os-release').and_return("VERSION_CODENAME=bookworm\n")
+  end
+
   cached(:chef_run) do
     ChefSpec::SoloRunner.new(step_into: %w(docker_install)) do |node|
       node.automatic[:lsb][:codename]   = 'bookworm'
@@ -116,6 +136,11 @@ end
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'docker::install on ubuntu noble' do
+  before do
+    allow(::File).to receive(:read).and_call_original
+    allow(::File).to receive(:read).with('/etc/os-release').and_return("VERSION_CODENAME=noble\n")
+  end
+
   cached(:chef_run) do
     ChefSpec::SoloRunner.new(step_into: %w(docker_install)) do |node|
       node.automatic[:lsb][:codename]   = 'noble'

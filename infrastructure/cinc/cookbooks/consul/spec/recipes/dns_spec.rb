@@ -11,10 +11,12 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'consul::dns' do
-  context 'with defaults (oracle-ish: ipaddress derived)' do
+  context 'with defaults (oracle-ish: ipaddress derived) + manage_resolv_conf on' do
     cached(:chef_run) do
       ChefSpec::SoloRunner.new(step_into: %w(consul_dns)) do |node|
         node.automatic[:ipaddress] = '10.200.0.14'
+        # --- attribute default is now false (per-node opt-in); flip on to exercise the template ---
+        node.normal['consul']['dns']['manage_resolv_conf'] = true
       end.converge('consul::dns')
     end
 
@@ -26,6 +28,10 @@ RSpec.describe 'consul::dns' do
     # --- dnsmasq installed, conflicting services stopped ---
     it 'installs dnsmasq' do
       expect(chef_run).to install_apt_package('dnsmasq')
+    end
+
+    it 'waits for the apt lock before installing dnsmasq' do
+      expect(chef_run).to wait_munchbox_base_apt_lock_wait('consul_dns_install')
     end
 
     it 'stops and disables systemd-resolved' do
@@ -51,8 +57,10 @@ RSpec.describe 'consul::dns' do
         .to notify('service[dnsmasq]').to(:restart).delayed
     end
 
-    # --- /etc/resolv.conf takeover is on by default ---
+    # --- /etc/resolv.conf takeover (manage_resolv_conf overridden true above) ---
     it 'renders /etc/resolv.conf pointing at the loopback dnsmasq listener' do
+      expect(chef_run).to create_template('/etc/resolv.conf')
+        .with(owner: 'root', group: 'root', mode: '0644')
       tpl = chef_run.template('/etc/resolv.conf')
       expect(tpl.variables[:listen_address]).to eq('127.0.0.53')
       expect(tpl.variables[:search]).to eq('munchbox.cc')

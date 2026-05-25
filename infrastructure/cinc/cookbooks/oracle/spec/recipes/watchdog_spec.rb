@@ -12,17 +12,23 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'oracle::watchdog' do
-  before do
-    # --- Stub both contexts; lazy{} on the template variables evaluates against Chef::Resource ---
-    allow_any_instance_of(Chef::Recipe).to receive(:vault_fetch).and_return('test-oracle-watchdog-token')
-    allow_any_instance_of(Chef::Resource).to receive(:vault_fetch).and_return('test-oracle-watchdog-token')
+  # vault_fetch is stubbed globally in spec_helper via MunchboxLibVaultFetch module_eval.
+
+  cached(:chef_run) do
+    ChefSpec::SoloRunner.new(step_into: %w(oracle_watchdog)).converge('oracle::watchdog')
   end
 
-  cached(:chef_run) { ChefSpec::SoloRunner.new.converge('oracle::watchdog') }
+  it 'declares the oracle_watchdog wrapping resource' do
+    expect(chef_run).to configure_oracle_watchdog('baseline')
+  end
 
   # --- Package install (apt repo registered by munchbox_base::apt_repo elsewhere in the run_list) ---
   it 'upgrades the oracle-watchdog apt package' do
     expect(chef_run).to upgrade_apt_package('oracle-watchdog')
+  end
+
+  it 'waits for the apt lock before installing oracle-watchdog' do
+    expect(chef_run).to wait_munchbox_base_apt_lock_wait('oracle_watchdog_install_baseline')
   end
 
   # --- Config dir ---
@@ -52,13 +58,13 @@ RSpec.describe 'oracle::watchdog' do
   # --- daemon-reload + watchdog restart fire when the override changes ---
   it 'notifies daemon-reload (immediate) + oracle-watchdog restart (delayed) on override change' do
     template = chef_run.template('/etc/systemd/system/oracle-watchdog.service.d/override.conf')
-    expect(template).to notify('execute[systemctl daemon-reload]').to(:run).immediately
+    expect(template).to notify('execute[oracle_watchdog daemon-reload]').to(:run).immediately
     expect(template).to notify('service[oracle-watchdog]').to(:restart).delayed
   end
 
   # --- Daemon-reload is declared :nothing so it only runs when notified ---
-  it 'declares systemctl daemon-reload as :nothing' do
-    expect(chef_run.execute('systemctl daemon-reload')).to do_nothing
+  it 'declares oracle_watchdog daemon-reload as :nothing' do
+    expect(chef_run.execute('oracle_watchdog daemon-reload')).to do_nothing
   end
 
   # --- Consul service registration; consul user/group exist on oracle nodes already (consul cookbook ran first) ---

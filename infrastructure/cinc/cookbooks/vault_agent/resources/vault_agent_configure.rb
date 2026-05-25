@@ -75,11 +75,11 @@ action :configure do
     group  'root'
     mode   '0640'
     variables(
-      vault_addr:     new_resource.vault_addr,
-      auth_mount:     new_resource.auth_mount,
-      sink_path:      new_resource.sink_path,
-      sink_mode:      new_resource.sink_mode,
-      role_id_path:   role_id_path,
+      vault_addr: new_resource.vault_addr,
+      auth_mount: new_resource.auth_mount,
+      sink_path: new_resource.sink_path,
+      sink_mode: new_resource.sink_mode,
+      role_id_path: role_id_path,
       secret_id_path: secret_id_path
     )
     notifies :restart, 'systemd_unit[vault-agent.service]', :delayed

@@ -29,4 +29,14 @@ RSpec.describe 'vault_cert_manager::install' do
     expect(chef_run.apt_package('vault-cert-manager'))
       .to notify('service[vault-cert-manager]').to(:restart).delayed
   end
+
+  it 'waits for the apt lock before touching apt' do
+    expect(chef_run).to wait_munchbox_base_apt_lock_wait('vault_cert_manager_install')
+  end
+
+  it 'ensures the consul system group + user exist (cert owner prereq)' do
+    expect(chef_run).to create_group('consul').with(system: true)
+    expect(chef_run).to create_user('consul')
+      .with(group: 'consul', system: true, shell: '/bin/false', manage_home: false)
+  end
 end

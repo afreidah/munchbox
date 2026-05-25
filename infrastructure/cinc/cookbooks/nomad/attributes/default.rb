@@ -144,43 +144,43 @@ default[cookbook]['config'] = {
 
 default[cookbook]['auto_restart_webhook'] = {
   # --- Identity / service ---
-  service_name:        'nomad-auto-restart-webhook',
+  service_name: 'nomad-auto-restart-webhook',
   service_description: 'AlertManager Webhook for Nomad Job Auto-Restart',
-  user:                'root',
-  group:               'root',
+  user: 'root',
+  group: 'root',
 
   # --- Network / receiver behavior ---
-  port:                9095,
-  bind_address:        '0.0.0.0',
-  cooldown_seconds:    300,
-  cooldown_dir:        '/tmp/nomad-restart-cooldown',
-  log_file:            '/var/log/nomad-auto-restart.log',
+  port: 9095,
+  bind_address: '0.0.0.0',
+  cooldown_seconds: 300,
+  cooldown_dir: '/tmp/nomad-restart-cooldown',
+  log_file: '/var/log/nomad-auto-restart.log',
 
   # --- On-disk paths ---
-  python_bin:          '/usr/bin/python3',
-  script_path:         '/usr/local/bin/nomad-auto-restart-webhook.py',
+  python_bin: '/usr/bin/python3',
+  script_path: '/usr/local/bin/nomad-auto-restart-webhook.py',
 
   # --- Systemd dependencies ---
-  after_units:         %w(network.target nomad.service),
-  wants_units:         %w(nomad.service),
-  restart_policy:      'always',
-  restart_sec:         5,
+  after_units: %w(network.target nomad.service),
+  wants_units: %w(nomad.service),
+  restart_policy: 'always',
+  restart_sec: 5,
 
   # --- Nomad client env (mTLS to the local agent) ---
-  nomad_addr:          'https://127.0.0.1:4646',
-  nomad_cacert:        '/etc/nomad.d/tls/ca.crt',
-  nomad_client_cert:   '/etc/nomad.d/tls/nomad.crt',
-  nomad_client_key:    '/etc/nomad.d/tls/nomad.key',
+  nomad_addr: 'https://127.0.0.1:4646',
+  nomad_cacert: '/etc/nomad.d/tls/ca.crt',
+  nomad_client_cert: '/etc/nomad.d/tls/nomad.crt',
+  nomad_client_key: '/etc/nomad.d/tls/nomad.key',
 
   # --- Consul service registration ---
-  consul_service_file:     '/etc/consul.d/nomad-auto-restart-webhook.json',
-  consul_service_name:     'nomad-auto-restart-webhook',
-  consul_service_tags:     %w(alertmanager webhook infrastructure),
-  consul_check_path:       '/',
-  consul_check_interval:   '30s',
-  consul_check_timeout:    '5s',
-  consul_user:             'consul',
-  consul_group:            'consul',
+  consul_service_file: '/etc/consul.d/nomad-auto-restart-webhook.json',
+  consul_service_name: 'nomad-auto-restart-webhook',
+  consul_service_tags: %w(alertmanager webhook infrastructure),
+  consul_check_path: '/',
+  consul_check_interval: '30s',
+  consul_check_timeout: '5s',
+  consul_user: 'consul',
+  consul_group: 'consul',
 
   # --- Bash predecessor (replaced by python); swept on every converge. ---
   stale_paths: [

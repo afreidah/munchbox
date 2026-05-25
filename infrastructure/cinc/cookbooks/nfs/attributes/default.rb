@@ -21,8 +21,8 @@ default[cookbook]['client'] = {
 
 # --- Server side. exports = list of hashes {path:, clients:, options:}; empty = recipe is a no-op. mccoy + rubirosa are the only consumers today. ---
 default[cookbook]['server'] = {
-  package:      'nfs-kernel-server',
+  package: 'nfs-kernel-server',
   service_name: 'nfs-server',
   exports_path: '/etc/exports',
-  exports:      [],
+  exports: [],
 }

@@ -26,13 +26,13 @@
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  version:    '2.0.1',
-  bin_path:   '/usr/local/bin/vault',
-  user:       'vault',
-  group:      'vault',
+  version: '2.0.1',
+  bin_path: '/usr/local/bin/vault',
+  user: 'vault',
+  group: 'vault',
   config_dir: '/etc/vault.d',
-  data_dir:   '/opt/vault/data',
-  tls_dir:    '/etc/vault.d/tls',
+  data_dir: '/opt/vault/data',
+  tls_dir: '/etc/vault.d/tls',
 }
 
 # -------------------------------------------------------------------------------
@@ -52,41 +52,41 @@ default[cookbook]['install'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['config'] = {
-  cluster_name:    'munchbox-vault',
-  log_level:       'info',
-  ui_enabled:      true,
-  disable_mlock:   false,
+  cluster_name: 'munchbox-vault',
+  log_level: 'info',
+  ui_enabled: true,
+  disable_mlock: false,
 
-  advertise_ip:    nil, # required, per-node
+  advertise_ip: nil, # required, per-node
 
   # --- Listener ---
   listener_address: '0.0.0.0:8200',
   listener_tls_disable: false,
   listener_tls_cert_file: '/etc/vault.d/tls/vault.crt',
-  listener_tls_key_file:  '/etc/vault.d/tls/vault.key',
+  listener_tls_key_file: '/etc/vault.d/tls/vault.key',
 
   # --- Cluster (api_addr / cluster_addr scheme + port; addr IP comes from advertise_ip) ---
-  api_scheme:      'https',
-  api_port:        8200,
-  cluster_port:    8201,
+  api_scheme: 'https',
+  api_port: 8200,
+  cluster_port: 8201,
 
   # --- Consul storage backend ---
-  storage_enabled:    true,
-  storage_address:    '127.0.0.1:8501',
-  storage_scheme:     'https',
-  storage_path:       'vault/',
-  storage_tls_ca_file:   '/etc/consul.d/tls/ca-chain.crt',
+  storage_enabled: true,
+  storage_address: '127.0.0.1:8501',
+  storage_scheme: 'https',
+  storage_path: 'vault/',
+  storage_tls_ca_file: '/etc/consul.d/tls/ca-chain.crt',
   storage_tls_cert_file: '/etc/consul.d/tls/consul.crt',
-  storage_tls_key_file:  '/etc/consul.d/tls/consul.key',
+  storage_tls_key_file: '/etc/consul.d/tls/consul.key',
 
   # --- Service registration (also via consul) ---
   service_registration_enabled: true,
 
   # --- Telemetry ---
-  telemetry_disable_hostname:           false,
-  telemetry_prometheus_retention_time:  '30s',
-  telemetry_usage_gauge_period:         '10m',
-  telemetry_enable_hostname_label:      true,
+  telemetry_disable_hostname: false,
+  telemetry_prometheus_retention_time: '30s',
+  telemetry_usage_gauge_period: '10m',
+  telemetry_enable_hostname_label: true,
 
   # --- Restart safety knob; shamir = manual unseal x3 per restart. Default off; only flip true during planned maintenance windows. ---
   restart_on_change: false,
@@ -105,7 +105,7 @@ default[cookbook]['config'] = {
 
 default[cookbook]['vault_paths'] = {
   consul_storage_token: {
-    path:  'secret/data/consul/vault-storage-token',
+    path: 'secret/data/consul/vault-storage-token',
     field: 'token',
   },
 }

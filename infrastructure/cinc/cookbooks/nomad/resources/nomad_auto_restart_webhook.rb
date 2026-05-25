@@ -132,11 +132,11 @@ action :configure do
     mode   '0640'
     variables(
       service_name: new_resource.consul_service_name,
-      tags:         new_resource.consul_service_tags,
-      port:         new_resource.port,
-      check_path:   new_resource.consul_check_path,
-      interval:     new_resource.consul_check_interval,
-      timeout:      new_resource.consul_check_timeout
+      tags: new_resource.consul_service_tags,
+      port: new_resource.port,
+      check_path: new_resource.consul_check_path,
+      interval: new_resource.consul_check_interval,
+      timeout: new_resource.consul_check_timeout
     )
     notifies :reload, 'service[consul]', :delayed
   end

@@ -1,0 +1,42 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for oracle.
+#
+# Both recipes need live infrastructure to actually exercise end-to-end:
+#   - watchdog needs Vault for the consul ACL token + the consul daemon to
+#     reload on service-file change.
+#   - minio_mount needs an OCI block volume labeled `minio-data` attached
+#     to the guest -- not viable in libvirt.
+#
+# Kitchen here only proves the suites load + resources resolve. The
+# inspec controls assert what's *visible* without the underlying systems
+# (e.g. /etc/oracle-watchdog dir + the consul-service JSON). Real
+# verification happens on live oracle nodes via cinc-client -W.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 512
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 1
+  chef_license: accept
+  log_level: warn
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites: []

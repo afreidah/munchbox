@@ -84,7 +84,13 @@ action :install do
     members ['vault']
     append true
     action :modify
-    only_if { ::Etc.getgrnam('consul') rescue false }
+    only_if do
+      begin
+                ::Etc.getgrnam('consul')
+      rescue
+        false
+              end
+    end
   end
 
   # --- Config + data + tls dirs are vault:vault 0750; matches what ansible left. ---

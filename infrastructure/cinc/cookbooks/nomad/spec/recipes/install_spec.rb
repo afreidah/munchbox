@@ -46,4 +46,18 @@ RSpec.describe 'nomad::install' do
   it 'installs unzip' do
     expect(chef_run).to install_package('unzip')
   end
+
+  it 'fetches the nomad release archive' do
+    expect(chef_run).to create_remote_file(%r{/tmp/nomad_.+_linux_.+\.zip})
+  end
+
+  it 'declares the nomad service (action :nothing; notified by install)' do
+    expect(chef_run.service('nomad')).to do_nothing
+  end
+
+  it 'installs the nomad binary via the install execute resource' do
+    matched = chef_run.find_resources(:execute).find { |r| r.name.start_with?('install nomad ') }
+    expect(matched).not_to be_nil
+    ChefSpec::Coverage.cover!(matched)
+  end
 end

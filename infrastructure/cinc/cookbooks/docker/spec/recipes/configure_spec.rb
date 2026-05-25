@@ -22,6 +22,10 @@ RSpec.describe 'docker::configure' do
       expect(chef_run).to configure_docker_configure('daemon')
     end
 
+    it 'creates /etc/docker (where daemon.json lives)' do
+      expect(chef_run).to create_directory('/etc/docker')
+    end
+
     # --- Template lands with the right perms ---
     it 'renders /etc/docker/daemon.json 0644 root:root' do
       expect(chef_run).to create_template('/etc/docker/daemon.json')
@@ -33,10 +37,12 @@ RSpec.describe 'docker::configure' do
       tpl = chef_run.template('/etc/docker/daemon.json')
       cfg = tpl.variables[:config]
       expect(cfg['dns']).to eq(['10.200.0.13'])
-      expect(cfg['dns-search']).to eq(['.'])
+      # --- dns_search defaults to nil in attributes (recipe passes nil), so the resource skips the key entirely ---
+      expect(cfg).not_to have_key('dns-search')
       expect(cfg['log-driver']).to eq('json-file')
       expect(cfg['log-opts']).to eq('max-file' => '3', 'max-size' => '10m')
-      expect(cfg['storage-driver']).to eq('overlay2')
+      # --- storage_driver default intentionally not set in attributes (would break overlayfs nodes); recipe passes nil → resource skips ---
+      expect(cfg).not_to have_key('storage-driver')
     end
 
     # --- daemon.json change triggers a docker restart ---

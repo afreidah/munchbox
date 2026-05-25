@@ -1,0 +1,33 @@
+# -------------------------------------------------------------------------------
+# Cookstyle (rubocop) config for nvidia.
+# -------------------------------------------------------------------------------
+
+require:
+  - cookstyle
+
+inherit_gem:
+  cookstyle: config/cookstyle.yml
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.1
+  Exclude:
+    - 'Berksfile.lock'
+    - 'Gemfile.lock'
+    - 'tmp/**/*'
+    - 'vendor/**/*'
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - 'test/**/*'
+
+# --- nvidia_install drops the debian-nonfree sources list as a plain file
+#     (notified to a deferred execute "apt-get update"). Can't use apt_update
+#     here because the apt_repository abstraction would force a signed-by=
+#     pointing at our empty keyring, breaking bookworm signature verification.
+Chef/Modernize/ExecuteAptUpdate:
+  Enabled: false

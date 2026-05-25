@@ -1,0 +1,10 @@
+---
+name: nfs-server
+title: nfs server integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged nfs::server -- nfs-kernel-server installed, exports rendered, service running.
+version: 0.1.0
+supports:
+  - platform: debian

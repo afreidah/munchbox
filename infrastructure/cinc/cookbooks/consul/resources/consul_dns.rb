@@ -95,14 +95,14 @@ action :configure do
     group 'root'
     mode  '0644'
     variables(
-      listen_address:  new_resource.listen_address,
-      host_ip:         new_resource.host_ip,
+      listen_address: new_resource.listen_address,
+      host_ip: new_resource.host_ip,
       consul_dns_port: new_resource.consul_dns_port,
-      coredns_port:    new_resource.coredns_port,
-      pihole_servers:  new_resource.pihole_servers,
-      cache_size:      new_resource.cache_size,
+      coredns_port: new_resource.coredns_port,
+      pihole_servers: new_resource.pihole_servers,
+      cache_size: new_resource.cache_size,
       dns_forward_max: new_resource.dns_forward_max,
-      filter_aaaa:     new_resource.filter_aaaa
+      filter_aaaa: new_resource.filter_aaaa
     )
     notifies :restart, 'service[dnsmasq]', :delayed
   end
@@ -118,7 +118,7 @@ action :configure do
       mode  '0644'
       variables(
         listen_address: new_resource.listen_address,
-        search:         new_resource.resolv_conf_search
+        search: new_resource.resolv_conf_search
       )
     end
   end

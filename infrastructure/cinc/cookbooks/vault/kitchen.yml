@@ -1,0 +1,49 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for vault.
+#
+# Only exercises the install side -- binary download + user/group/dirs. The
+# configure recipe + vault server start are deliberately NOT under kitchen
+# because:
+#   - configure needs a real consul + vault_fetch'd storage token to even
+#     render vault.hcl (consul isn't deployed in this kitchen).
+#   - the daemon comes up sealed; usable testing would need the unseal x3
+#     flow which is a manual operator workflow, not idempotent provisioning.
+#
+# See README.md for the rationale + how to test configure changes (per-node
+# role + chef-client -W against a staging vault server).
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 1024
+    cpus: 1
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: install
+    run_list:
+      - recipe[vault::install]
+    verifier:
+      inspec_tests:
+        - test/integration/install

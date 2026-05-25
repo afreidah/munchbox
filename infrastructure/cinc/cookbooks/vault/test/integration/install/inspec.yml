@@ -1,0 +1,10 @@
+---
+name: vault-install
+title: vault install integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged vault::install -- binary, user/group, dirs.
+version: 0.1.0
+supports:
+  - platform: debian
