@@ -892,15 +892,40 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # DNS MODULE INPUTS
+  # DNS  (composition lives in _env_helpers/dns.hcl)
   # ---------------------------------------------------------------------------
-  # Cloudflare DNS records, tunnel configuration, and rate limiting
 
   cloudflare_account_id          = "02e53aa2113dc76e57f9598af2f74939"
   cloudflare_alexfreidah_zone_id = "79e647e591f69cc27254bf4771464619"
   cloudflare_munchbox_zone_id    = "bd3f7236466255155ab59b9d21cd88fd"
   cloudflare_tunnel_id           = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
   cloudflare_tunnel_cname        = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
+
+  # --- alexfreidah-zone CNAMEs to the tunnel; map key = TF state key ---
+  alexfreidah_tunnel_cnames = {
+    "alexfreidah-apex"       = "@"
+    "alexfreidah-www"        = "www"
+    "alexfreidah-resume"     = "resume"
+    "alexfreidah-resume-www" = "www.resume"
+    "alexfreidah-k3s-status" = "k3s-status"
+    "alexfreidah-analytics"  = "analytics"
+  }
+
+  # --- munchbox-zone records; wg = non-proxied A, kept current by oracle-watchdog ---
+  munchbox_zone_records = {
+    "munchbox-wildcard" = {
+      name    = "*"
+      type    = "CNAME"
+      content = local.cloudflare_tunnel_cname
+    }
+    "munchbox-wg" = {
+      name    = "wg"
+      type    = "A"
+      content = "23.240.245.39"
+      proxied = false
+      ttl     = 60
+    }
+  }
 
   # ---------------------------------------------------------------------------
   # CLOUDFLARE R2 MODULE INPUTS
@@ -910,148 +935,6 @@ locals {
   cloudflare_r2_inputs = {
     account_id  = local.cloudflare_account_id
     bucket_name = "munchbox-backups"
-  }
-
-  dns_inputs = {
-    dns_records = {
-      "alexfreidah-apex" = {
-        zone_id = local.cloudflare_alexfreidah_zone_id
-        name    = "@"
-        content = local.cloudflare_tunnel_cname
-        type    = "CNAME"
-      }
-      "alexfreidah-www" = {
-        zone_id = local.cloudflare_alexfreidah_zone_id
-        name    = "www"
-        content = local.cloudflare_tunnel_cname
-        type    = "CNAME"
-      }
-      "alexfreidah-resume" = {
-        zone_id = local.cloudflare_alexfreidah_zone_id
-        name    = "resume"
-        content = local.cloudflare_tunnel_cname
-        type    = "CNAME"
-      }
-      "alexfreidah-resume-www" = {
-        zone_id = local.cloudflare_alexfreidah_zone_id
-        name    = "www.resume"
-        content = local.cloudflare_tunnel_cname
-        type    = "CNAME"
-      }
-      "alexfreidah-k3s-status" = {
-        zone_id = local.cloudflare_alexfreidah_zone_id
-        name    = "k3s-status"
-        content = local.cloudflare_tunnel_cname
-        type    = "CNAME"
-      }
-      "alexfreidah-analytics" = {
-        zone_id = local.cloudflare_alexfreidah_zone_id
-        name    = "analytics"
-        content = local.cloudflare_tunnel_cname
-        type    = "CNAME"
-      }
-      "munchbox-wildcard" = {
-        zone_id = local.cloudflare_munchbox_zone_id
-        name    = "*"
-        content = local.cloudflare_tunnel_cname
-        type    = "CNAME"
-      }
-      # WireGuard server endpoint. Explicit A record overrides the wildcard
-      # CNAME above for this single name so the record is not proxied (the
-      # Cloudflare proxy is HTTP/HTTPS-only and WireGuard runs over UDP).
-      # Initial content is the home WAN IP at bootstrap; oracle-watchdog
-      # (agent mode, wan_dns block) keeps the record in sync with the live
-      # WAN IP from then on. Re-running terragrunt apply may temporarily
-      # reset the record to the bootstrap value, which oracle-watchdog
-      # re-corrects on its next poll cycle (default 5m).
-      "munchbox-wg" = {
-        zone_id = local.cloudflare_munchbox_zone_id
-        name    = "wg"
-        content = "23.240.245.39"
-        type    = "A"
-        proxied = false
-        ttl     = 60
-      }
-    }
-
-    # Account-scoped rulesets require Account:Account Rulesets:Edit on the
-    # CLOUDFLARE_API_TOKEN, which the current token lacks. Refresh fails
-    # with Authentication error (10000) and blocks every plan. Empty map
-    # disables Terraform management until the token scope is widened and
-    # the existing ruleset is reimported. Tracked separately from the WG
-    # cutover.
-    rate_limiting_rulesets = {}
-
-    # Original rate_limiting_rulesets kept here for reference until state
-    # import:
-    #
-    # rate_limiting_rulesets = {
-    #   "munchbox-auth" = {
-    #     zone_id     = local.cloudflare_munchbox_zone_id
-    #     name        = "Munchbox Rate Limiting"
-    #     description = "Rate limiting rules for munchbox.cc services"
-    #     rules = [
-    #       {
-    #         action              = "block"
-    #         expression          = "(http.request.uri.path contains \"/Users/AuthenticateByName\")"
-    #         description         = "Rate limit authentication attempts"
-    #         characteristics     = ["cf.colo.id", "ip.src"]
-    #         period              = 10
-    #         requests_per_period = 3
-    #         mitigation_timeout  = 10
-    #       }
-    #     ]
-    #   }
-    # }
-
-    # Cloudflare tunnel ingress config. Currently NOT under Terraform state
-    # management - the actual tunnel exists in the Cloudflare control plane
-    # and is consumed by the cloudflared sidecar in the traefik Nomad job
-    # (token mode, remote-managed). Set to null until the missing state can
-    # be reimported with a token that has Account:Cloudflare Tunnel:Edit.
-    # Tracked separately from the WG-HA cutover.
-    tunnel_config = null
-
-    # Original tunnel_config kept here for reference until state import:
-    #
-    # tunnel_config = {
-    #   account_id = local.cloudflare_account_id
-    #   tunnel_id  = local.cloudflare_tunnel_id
-    #   ingress_rules = [
-    #     {
-    #       hostname       = "alexfreidah.com"
-    #       service        = "http://127.0.0.1:80"
-    #       origin_request = { http_host_header = "alexfreidah.com" }
-    #     },
-    #     {
-    #       hostname       = "www.alexfreidah.com"
-    #       service        = "http://127.0.0.1:80"
-    #       origin_request = { http_host_header = "www.alexfreidah.com" }
-    #     },
-    #     {
-    #       hostname       = "resume.alexfreidah.com"
-    #       service        = "http://127.0.0.1:80"
-    #       origin_request = { http_host_header = "resume.alexfreidah.com" }
-    #     },
-    #     {
-    #       hostname       = "k3s-status.alexfreidah.com"
-    #       service        = "http://127.0.0.1:80"
-    #       origin_request = { http_host_header = "k3s-status.alexfreidah.com" }
-    #     },
-    #     {
-    #       hostname       = "analytics.alexfreidah.com"
-    #       service        = "http://127.0.0.1:80"
-    #       origin_request = { http_host_header = "analytics.alexfreidah.com" }
-    #     },
-    #     {
-    #       hostname = "*.munchbox.cc"
-    #       service  = "http://127.0.0.1:80"
-    #     },
-    #     {
-    #       service = "http_status:404"
-    #     }
-    #   ]
-    # }
   }
 
   # ---------------------------------------------------------------------------
