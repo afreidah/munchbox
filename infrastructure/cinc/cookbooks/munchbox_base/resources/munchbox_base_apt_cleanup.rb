@@ -40,12 +40,16 @@ action :run do
     execute "apt-get autoremove#{purge_flag} -y" do
       command "apt-get autoremove#{purge_flag} -y"
       environment 'DEBIAN_FRONTEND' => 'noninteractive'
+      # --- only fire when apt actually has packages to autoremove (kitchen idempotency check) ---
+      only_if 'apt-get -s autoremove 2>/dev/null | grep -qE "^Remv "'
     end
   end
 
   if new_resource.clean_cache
     execute 'apt-get clean' do
       command 'apt-get clean'
+      # --- only fire when there are cached .debs to wipe (kitchen idempotency check) ---
+      only_if 'find /var/cache/apt/archives -maxdepth 1 -name "*.deb" -print -quit | grep -q .'
     end
   end
 end

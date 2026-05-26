@@ -4,6 +4,6 @@
 # Berksfile for oracle
 # -------------------------------------------------------------------------------
 
-source chef_repo: '../..'
+source({ chef_repo: '../..' })
 
 metadata

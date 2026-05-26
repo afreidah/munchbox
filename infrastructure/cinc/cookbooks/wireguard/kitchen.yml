@@ -57,3 +57,29 @@ suites:
                 public_key: 9ldPtASfhe4YO5vXIpJa2GmjKsGaSTZCL3T0mcoAm2s=
                 allowed_ips:
                   - 10.99.0.2/32
+
+  - name: route
+    # --- The recipe renders a oneshot systemd unit and runs `ip route replace`
+    #     against a gateway IP. Libvirt's default network gateway (192.168.121.1)
+    #     is reachable from the guest, so the route can actually install. The
+    #     "network" override picks an unused CIDR so we don't trample real routes.
+    run_list:
+      - recipe[wireguard::route]
+    attributes:
+      wireguard:
+        route:
+          network: 198.51.100.0/24    # RFC 5737 TEST-NET-2
+          gateway: 192.168.121.1      # libvirt default bridge
+    verifier:
+      inspec_tests:
+        - test/integration/route
+
+  - name: ingress_prereqs
+    # --- modprobe wireguard will be attempted; debian-12's stock kernel
+    #     ships with wireguard built-in / loadable, so the modprobe should
+    #     succeed. wireguard-tools comes from main repo.
+    run_list:
+      - recipe[wireguard::ingress_prereqs]
+    verifier:
+      inspec_tests:
+        - test/integration/ingress_prereqs

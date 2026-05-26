@@ -32,7 +32,7 @@ action :configure do
     group  'root'
     mode   '0644'
     variables(
-      search:     new_resource.search,
+      search: new_resource.search,
       nameserver: new_resource.nameserver
     )
   end

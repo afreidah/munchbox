@@ -51,3 +51,20 @@ suites:
             - 127.0.0.1
           tls_enabled: false
           acl_enabled: false
+
+  - name: dns
+    run_list:
+      # --- standalone: dnsmasq + systemd-resolved-off + optional resolv.conf
+      #     takeover. Doesn't need a consul agent on the host; dnsmasq will
+      #     fail to actually answer .consul queries (no :8600 listener) but
+      #     the on-disk state is fully testable.
+      - recipe[consul::dns]
+    verifier:
+      inspec_tests:
+        - test/integration/dns
+    attributes:
+      consul:
+        dns:
+          host_ip: 127.0.0.1
+          # --- exercise the resolv.conf takeover path; attr default is false ---
+          manage_resolv_conf: true

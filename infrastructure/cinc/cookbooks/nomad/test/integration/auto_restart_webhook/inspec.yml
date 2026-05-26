@@ -1,0 +1,10 @@
+---
+name: nomad-auto-restart-webhook
+title: nomad::auto_restart_webhook integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates on-disk state for the alertmanager webhook receiver (script, systemd unit, consul service file). Daemon will crash-loop in kitchen (no nomad agent on :4646) -- assertions stay on the configured files, not on the running process.
+version: 0.1.0
+supports:
+  - platform: debian

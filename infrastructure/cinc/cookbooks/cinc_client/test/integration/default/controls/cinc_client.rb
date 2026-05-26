@@ -95,3 +95,20 @@ control 'service' do
     it { should_not be_running }
   end
 end
+
+control 'disable-apt-daily' do
+  impact 1.0
+  title 'unattended-upgrades-style apt timers + services are stopped, disabled, and masked'
+
+  %w(apt-daily.timer apt-daily-upgrade.timer apt-daily.service apt-daily-upgrade.service).each do |unit|
+    describe command("systemctl is-enabled #{unit}") do
+      # `masked` is what `systemd_unit action :mask` produces; `disabled` is the pre-mask state
+      its('stdout') { should match(/^(masked|disabled)$/) }
+    end
+
+    describe command("systemctl is-active #{unit}") do
+      # timers report 'inactive' when not running; services report same
+      its('stdout') { should match(/^(inactive|failed)$/) }
+    end
+  end
+end

@@ -20,7 +20,7 @@ control 'consul-binary' do
   end
 
   describe command('/usr/local/bin/consul version') do
-    its('stdout') { should match(/Consul v1\.22\.7/) }
+    its('stdout') { should match(/Consul v2\.0\.0/) }
   end
 end
 

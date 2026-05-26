@@ -44,9 +44,9 @@ default[cookbook]['gvt_g'] = {
 }
 
 default[cookbook]['pci_passthrough'] = {
-  enabled:    false,
+  enabled: false,
   device_ids: [],
-  modules:    %w(vfio vfio_iommu_type1 vfio_pci),
+  modules: %w(vfio vfio_iommu_type1 vfio_pci),
 }
 
 # -------------------------------------------------------------------------------
@@ -60,16 +60,36 @@ default[cookbook]['pci_passthrough'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['zfswatcher'] = {
-  enabled:     false,
-  bin_path:    '/opt/zfswatcher/zfswatcher',
+  enabled: false,
+  bin_path: '/opt/zfswatcher/zfswatcher',
   config_path: '/etc/zfswatcher/zfswatcher.conf',
-  log_dir:     '/var/log/zfswatcher',
-  bind:        '0.0.0.0:8800',
+  log_dir: '/var/log/zfswatcher',
+  bind: '0.0.0.0:8800',
+  # --- nil by default; recipe lazy-fetches from Vault. Override to a literal for kitchen / break-glass. ---
+  proxy_password_hash: nil,
+}
+
+# -------------------------------------------------------------------------------
+# zfswatcher build-from-source
+#
+# rouben/zfswatcher isn't packaged anywhere we trust, so the cookbook
+# builds it on-host from the pinned ref. First converge installs the go
+# toolchain and clones; subsequent converges skip the build when the
+# recorded commit matches the resolved ref. Bumping `ref` triggers a
+# rebuild on the next converge.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['zfswatcher_build'] = {
+  repo_url: 'https://github.com/rouben/zfswatcher.git',
+  ref: 'master',
+  install_dir: '/opt/zfswatcher',
+  src_dir: '/opt/zfswatcher/src',
+  build_cmd: 'go build -o zfswatcher .',
 }
 
 default[cookbook]['vault_paths'] = {
   zfswatcher_proxy_password: {
-    path:  'secret/data/proxmox/zfswatcher-proxy',
+    path: 'secret/data/proxmox/zfswatcher-proxy',
     field: 'password_hash',
   },
 }

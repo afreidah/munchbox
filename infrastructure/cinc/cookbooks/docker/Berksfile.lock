@@ -1,0 +1,12 @@
+DEPENDENCIES
+  docker
+    path: .
+    metadata: true
+
+GRAPH
+  docker (0.3.1)
+    munchbox_base (>= 0.0.0)
+    munchbox_lib (>= 0.0.0)
+  munchbox_base (0.9.1)
+    munchbox_lib (>= 0.0.0)
+  munchbox_lib (0.6.1)

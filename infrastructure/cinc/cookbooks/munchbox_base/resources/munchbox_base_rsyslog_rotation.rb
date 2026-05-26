@@ -51,6 +51,12 @@ default_action :configure
 # -------------------------------------------------------------------------------
 
 action :configure do
+  # --- rsyslog brings in the syslog user/group + /usr/lib/rsyslog/rsyslog-rotate.
+  #     debian standard installs include it, but bare-image kitchen guests don't --
+  #     ensure it's present so the logrotate fragment (which references the syslog
+  #     group via `su` and the postrotate hook) actually validates.
+  package 'rsyslog'
+
   template new_resource.config_path do
     source 'logrotate-rsyslog.erb'
     cookbook 'munchbox_base'
@@ -75,6 +81,12 @@ action :configure do
 
   execute "force-rotate #{new_resource.config_path}" do
     command "logrotate -f #{new_resource.config_path}"
+    # --- only_if the syslog su_group exists. Bare debian images install rsyslog
+    #     without creating the syslog user/group until the package's postinst
+    #     hooks fire (which may not have run by the time chef gets here on the
+    #     same converge). Skip the force-rotate rather than fail the whole run --
+    #     the fragment is on disk; next logrotate cycle picks it up.
+    only_if "getent group #{new_resource.su_group} >/dev/null"
     action :nothing
   end
 end

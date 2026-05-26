@@ -105,3 +105,82 @@ control 'rsyslog_rotation' do
     its('content') { should match(%r{^\s+/usr/lib/rsyslog/rsyslog-rotate$}) }
   end
 end
+
+control 'pki_trust' do
+  impact 1.0
+  title 'munchbox_base::pki_trust drops root + intermediate CAs into the system trust store'
+
+  describe file('/usr/local/share/ca-certificates/munchbox-root-ca.crt') do
+    it { should exist }
+    its('mode') { should cmp '0644' }
+    its('content') { should match(/-----BEGIN CERTIFICATE-----/) }
+  end
+
+  describe file('/usr/local/share/ca-certificates/munchbox-intermediate-ca.crt') do
+    it { should exist }
+    its('mode') { should cmp '0644' }
+    its('content') { should match(/-----BEGIN CERTIFICATE-----/) }
+  end
+
+  # update-ca-certificates folds new PEMs into /etc/ssl/certs/ca-certificates.crt
+  describe file('/etc/ssl/certs/ca-certificates.crt') do
+    it { should exist }
+  end
+end
+
+control 'sysctl' do
+  impact 1.0
+  title 'munchbox_base::sysctl drops the cluster-wide kernel knobs'
+
+  describe file('/etc/sysctl.d/99-munchbox.conf') do
+    it { should exist }
+    its('mode') { should cmp '0644' }
+    its('content') { should match(/^vm\.overcommit_memory\s*=\s*1$/) }
+  end
+end
+
+control 'disable_ipv6_ra' do
+  impact 1.0
+  title 'munchbox_base::disable_ipv6_ra drops the RA-ignore sysctl'
+
+  describe file('/etc/sysctl.d/99-disable-ipv6-ra.conf') do
+    it { should exist }
+    its('mode') { should cmp '0644' }
+    its('content') { should match(/^net\.ipv6\.conf\.all\.accept_ra\s*=\s*0$/) }
+    its('content') { should match(/^net\.ipv6\.conf\.default\.accept_ra\s*=\s*0$/) }
+  end
+end
+
+control 'resolv_conf' do
+  impact 1.0
+  title 'munchbox_base::resolv_conf templates /etc/resolv.conf with the configured nameserver + search'
+
+  describe file('/etc/resolv.conf') do
+    it { should exist }
+    its('mode') { should cmp '0644' }
+    its('content') { should match(/^search munchbox\.cc$/) }
+    its('content') { should match(/^nameserver 1\.1\.1\.1$/) }
+  end
+end
+
+control 'etc_hosts' do
+  impact 1.0
+  title 'munchbox_base::etc_hosts renders the MUNCHBOX block with the configured static entries'
+
+  describe file('/etc/hosts') do
+    it { should exist }
+    its('content') { should match(/^# BEGIN MUNCHBOX CLUSTER HOSTS$/) }
+    its('content') { should match(/^# END MUNCHBOX CLUSTER HOSTS$/) }
+    its('content') { should match(/^192\.168\.68\.62\s+green\s+green\.munchbox\.cc$/) }
+    its('content') { should match(/^192\.168\.68\.64\s+logan\s+logan\.munchbox\.cc$/) }
+  end
+
+  describe file('/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg') do
+    # only created if /etc/cloud/cloud.cfg.d exists on the guest; assert if present
+    it 'pins cloud-init off /etc/hosts when the dir exists' do
+      if directory('/etc/cloud/cloud.cfg.d').exist?
+        expect(file('/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg')).to exist
+      end
+    end
+  end
+end

@@ -1,0 +1,10 @@
+---
+name: wireguard-route
+title: wireguard::route integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates the wireguard-route.service oneshot systemd unit + the actual installed route.
+version: 0.1.0
+supports:
+  - platform: debian

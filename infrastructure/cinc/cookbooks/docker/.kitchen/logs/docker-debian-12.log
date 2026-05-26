@@ -1,0 +1,6 @@
+I, [2026-05-25T19:47:11.613099 #1534362]  INFO -- docker-debian-12: -----> Destroying <docker-debian-12>...
+I, [2026-05-25T19:47:12.606220 #1534362]  INFO -- docker-debian-12: [fog][WARNING] Unrecognized arguments: libvirt_ip_command
+I, [2026-05-25T19:47:12.819949 #1534362]  INFO -- docker-debian-12: ==> default: Removing domain...
+I, [2026-05-25T19:47:13.516887 #1534362]  INFO -- docker-debian-12: ==> default: Deleting the machine folder
+I, [2026-05-25T19:47:13.539106 #1534362]  INFO -- docker-debian-12: Vagrant instance <docker-debian-12> destroyed.
+I, [2026-05-25T19:47:13.539836 #1534362]  INFO -- docker-debian-12: Finished destroying <docker-debian-12> (0m1.93s).

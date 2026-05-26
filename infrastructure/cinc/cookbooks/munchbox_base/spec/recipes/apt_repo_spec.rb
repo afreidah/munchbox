@@ -30,4 +30,12 @@ RSpec.describe 'munchbox_base::apt_repo' do
   it 'waits for the apt lock before touching apt' do
     expect(chef_run).to wait_munchbox_base_apt_lock_wait('munchbox_base_apt_repo')
   end
+
+  it 'declares the apt_update periodic resource for the munchbox repo' do
+    expect(chef_run).to periodic_apt_update('munchbox_base_apt_repo')
+  end
+
+  it 'installs the prereq packages (gnupg / apt-transport-https / ca-certificates)' do
+    expect(chef_run).to install_package(%w(gnupg apt-transport-https ca-certificates))
+  end
 end

@@ -1,0 +1,10 @@
+---
+name: proxmox-host-gvt-g
+title: proxmox_host::gvt_g integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates the on-disk state for Intel iGPU GVT-g enablement (grub cmdline + kernel modules). Does NOT prove the iGPU is actually mediated -- needs real Intel hardware.
+version: 0.1.0
+supports:
+  - platform: debian

@@ -17,6 +17,12 @@ elif systemctl list-unit-files | grep -q '^cloudflare-warp'; then
   svc_name="cloudflare-warp"
 fi
 
+# Release the Consul split-DNS override BEFORE disconnecting, so WARP can
+# restore the normal resolv.conf on its way down. dnsmasq is only needed
+# while the tunnel is up, so stop it too.
+sudo chattr -i /etc/resolv.conf 2>/dev/null || true
+sudo systemctl stop dnsmasq 2>/dev/null || true
+
 # Try to disconnect first (daemon must be running for this step)
 warp-cli disconnect || true
 

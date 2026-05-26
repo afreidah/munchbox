@@ -41,10 +41,11 @@ action :install do
   url           = "#{new_resource.release_url}/v#{new_resource.version}/cni-plugins-linux-#{arch}-v#{new_resource.version}.tgz"
 
   directory new_resource.install_dir do
-    owner 'root'
-    group 'root'
-    mode  '0755'
-    not_if { ::File.directory?(new_resource.install_dir) }
+    owner     'root'
+    group     'root'
+    mode      '0755'
+    recursive true
+    # --- no not_if guard: tar extract below stomps the dir mode to 0775 from the archive's leading `./` entry; chef re-enforces 0755 on every converge ---
   end
 
   already_installed = ::File.exist?(version_stamp) &&

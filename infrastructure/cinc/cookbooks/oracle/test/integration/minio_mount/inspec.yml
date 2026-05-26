@@ -1,0 +1,10 @@
+---
+name: oracle-minio-mount
+title: oracle::minio_mount integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates the mount-point directory + legacy /dev/sdb fstab sweep. No live block volume in kitchen, so the UUID-based mount itself is not exercised here.
+version: 0.1.0
+supports:
+  - platform: debian

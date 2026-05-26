@@ -1,0 +1,10 @@
+---
+name: wireguard-ingress-prereqs
+title: wireguard::ingress_prereqs integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates host-side ingress prereqs -- modules-load.d entry, wireguard-tools package, sysctl sweep.
+version: 0.1.0
+supports:
+  - platform: debian

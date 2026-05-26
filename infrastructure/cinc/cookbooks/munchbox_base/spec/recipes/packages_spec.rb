@@ -24,4 +24,9 @@ RSpec.describe 'munchbox_base::packages' do
     expect(chef_run).to install_package('baseline')
       .with(package_name: %w(curl jq vim))
   end
+
+  it 'purges the recipe-level purge list (default empty -> resource declared no-op)' do
+    # --- recipe declares apt_package 'munchbox_base purge list' unconditionally; default purge list is empty ---
+    expect(chef_run).to purge_apt_package('munchbox_base purge list')
+  end
 end

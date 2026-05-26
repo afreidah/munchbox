@@ -2,16 +2,15 @@
 # -------------------------------------------------------------------------------
 # Test-Kitchen config for oracle.
 #
-# Both recipes need live infrastructure to actually exercise end-to-end:
-#   - watchdog needs Vault for the consul ACL token + the consul daemon to
-#     reload on service-file change.
-#   - minio_mount needs an OCI block volume labeled `minio-data` attached
-#     to the guest -- not viable in libvirt.
-#
-# Kitchen here only proves the suites load + resources resolve. The
-# inspec controls assert what's *visible* without the underlying systems
-# (e.g. /etc/oracle-watchdog dir + the consul-service JSON). Real
-# verification happens on live oracle nodes via cinc-client -W.
+#   minio_mount       - In a libvirt guest there's no block volume labeled
+#                       `minio-data`, so `blkid -t LABEL=minio-data` returns
+#                       empty and the resource warn-and-returns after creating
+#                       the mount-point directory. The legacy /dev/sdb fstab
+#                       sweep path IS exercised: pre_converge stages a fake
+#                       /dev/sdb entry and the recipe is asserted to remove it.
+#   watchdog          - NOT under kitchen: needs Vault for the consul ACL
+#                       token + the consul daemon to reload on service-file
+#                       change. Chefspec covers the resource shape.
 # -------------------------------------------------------------------------------
 
 driver:
@@ -26,7 +25,8 @@ provisioner:
   product_name: cinc
   product_version: latest
   install_strategy: once
-  multiple_converge: 1
+  multiple_converge: 2
+  enforce_idempotency: true
   chef_license: accept
   log_level: warn
 
@@ -39,4 +39,19 @@ platforms:
     driver:
       box: generic/debian12
 
-suites: []
+suites:
+  - name: minio_mount
+    # --- pre_converge appends a stale `/dev/sdb /mnt/minio-data` fstab line
+    #     (without actually mounting anything) so the recipe's `mount ...
+    #     action :disable` path runs end-to-end and we can inspec-verify the
+    #     line gets removed.
+    lifecycle:
+      pre_converge:
+        - remote: |
+            grep -qE '^/dev/sdb\s+/mnt/minio-data\s' /etc/fstab || \
+              echo '/dev/sdb /mnt/minio-data ext4 defaults 0 2' | sudo tee -a /etc/fstab
+    run_list:
+      - recipe[oracle::minio_mount]
+    verifier:
+      inspec_tests:
+        - test/integration/minio_mount

@@ -1,0 +1,10 @@
+---
+name: consul-dns
+title: consul::dns integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged consul::dns -- dnsmasq config, systemd-resolved disabled, /etc/resolv.conf takeover. Does NOT prove .consul queries resolve (no consul agent on :8600 in the kitchen guest).
+version: 0.1.0
+supports:
+  - platform: debian

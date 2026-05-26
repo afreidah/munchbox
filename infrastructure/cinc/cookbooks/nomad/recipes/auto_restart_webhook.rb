@@ -49,6 +49,6 @@ nomad_auto_restart_webhook 'baseline' do
   consul_group        w['consul_group']
 
   stale_paths         w['stale_paths'].to_a
-  # --- Lazy: vault_fetch defers to converge phase so vault-agent's token sink is guaranteed present. ---
-  nomad_token(lazy { vault_fetch(paths['nomad_token']['path'], paths['nomad_token']['field']) })
+  # --- attribute override wins (kitchen / break-glass); otherwise lazy vault_fetch at converge time ---
+  nomad_token(lazy { w['nomad_token'] || vault_fetch(paths['nomad_token']['path'], paths['nomad_token']['field']) })
 end
