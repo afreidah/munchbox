@@ -229,36 +229,8 @@ locals {
   # ---------------------------------------------------------------------------
 
   # ---------------------------------------------------------------------------
-  # NOMAD-CONFIG MODULE INPUTS
+  # NOMAD-CONFIG  (data + composition live in _env_helpers/nomad-config.hcl)
   # ---------------------------------------------------------------------------
-  # Cluster-level Nomad scheduler and node pool configuration
-
-  nomad_config_inputs = {
-    scheduler_algorithm             = "spread"
-    memory_oversubscription_enabled = false
-
-    preemption_config = {
-      batch    = false
-      service  = false
-      sysbatch = false
-      system   = true
-    }
-
-    # Only the "oracle" pool is managed here. On-prem nodes use the built-in
-    # "default" pool. Workload placement within pools is handled by meta tag
-    # constraints in job specs:
-    #
-    #   meta.role  = "ingress"   → goren, nomad-client-05
-    #   meta.gpu   = "true"      → nomad-client-04
-    #   meta.arch  = "arm64"     → oraclearm1, oraclearm2
-    #   meta.arch  = "amd64"     → all other nodes
-    #   meta.tier  = "micro"     → oraclenode1, oraclenode2
-    node_pools = {
-      "oracle" = {
-        description = "Oracle Cloud nodes connected via WireGuard tunnel for remote/edge workloads"
-      }
-    }
-  }
 
   # ---------------------------------------------------------------------------
   # OAUTH2-PROXY  (composition lives in _env_helpers/oauth2-proxy-secrets.hcl)
