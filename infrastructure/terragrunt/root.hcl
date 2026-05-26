@@ -871,25 +871,6 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # KMS-OCI MODULE INPUTS
-  # ---------------------------------------------------------------------------
-  # OCI KMS vault and key for HashiCorp Vault auto-unseal
-
-  kms_oci_inputs = {
-    compartment_id     = local.oci_defaults.compartment_id
-    vault_display_name = "munchbox-vault-unseal"
-    vault_type         = "DEFAULT"
-    key_display_name   = "vault-auto-unseal-key"
-    protection_mode    = "SOFTWARE"
-
-    tags = {
-      Project   = "munchbox"
-      ManagedBy = "terragrunt"
-      Purpose   = "vault-auto-unseal"
-    }
-  }
-
-  # ---------------------------------------------------------------------------
   # DNS  (composition lives in _env_helpers/dns.hcl)
   # ---------------------------------------------------------------------------
 
