@@ -949,43 +949,8 @@ locals {
   # ---------------------------------------------------------------------------
 
   # ---------------------------------------------------------------------------
-  # FORGEJO-SECRETS MODULE INPUTS
+  # FORGEJO-SECRETS  (data + composition live in _env_helpers/forgejo-secrets.hcl)
   # ---------------------------------------------------------------------------
-  # Syncs secrets from Vault to Forgejo for CI/CD pipelines
-
-  forgejo_secrets_inputs = {
-    vault_mount      = "secret"
-    repository_owner = "alex"
-    repository_name  = "munchbox"
-
-    secrets = {
-      "aptly-pass" = {
-        vault_path  = "aptly"
-        vault_field = "password"
-        secret_name = "APTLY_PASS"
-      }
-      "nomad-token" = {
-        vault_path  = "nomad/management-token"
-        vault_field = "token"
-        secret_name = "NOMAD_TOKEN"
-      }
-      "consul-token" = {
-        vault_path  = "consul/bootstrap-token"
-        vault_field = "token"
-        secret_name = "CONSUL_HTTP_TOKEN"
-      }
-      "vault-token" = {
-        vault_path  = "ci-runner"
-        vault_field = "token"
-        secret_name = "VAULT_TOKEN"
-      }
-      "vault-addr" = {
-        vault_path  = "ci-runner"
-        vault_field = "addr"
-        secret_name = "VAULT_ADDR"
-      }
-    }
-  }
 
   # ---------------------------------------------------------------------------
   # BOOTSTRAP MODULE INPUTS
