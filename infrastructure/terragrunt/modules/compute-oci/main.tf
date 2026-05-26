@@ -53,6 +53,14 @@ resource "oci_core_instance" "this" {
   display_name        = var.name
   shape               = var.shape
 
+  # --- in-transit encryption between hypervisor and boot volume (CKV_OCI_4) ---
+  is_pv_encryption_in_transit_enabled = true
+
+  # --- disable IMDSv1 / legacy metadata endpoint (CKV_OCI_5) ---
+  instance_options {
+    are_legacy_imds_endpoints_disabled = true
+  }
+
   # Shape config only for flexible shapes (ARM A1)
   dynamic "shape_config" {
     for_each = var.ocpus != null ? [1] : []
@@ -85,12 +93,14 @@ resource "oci_core_instance" "this" {
 
     # --- Don't replace a running node when Oracle bumps the "latest ubuntu"
     #     image OCID or when seed metadata (ssh keys / user_data) is edited
-    #     post-bootstrap. Both fields force replacement; the live config of a
-    #     running node is owned by chef (sshd_ca for keys, recipes for the
-    #     rest), so cloud-init drift after the first converge is noise. ---
+    #     post-bootstrap. The hardening fields (is_pv_encryption_in_transit_enabled,
+    #     instance_options) are ignored too: they apply to NEW instances; existing
+    #     nodes keep their original setting so we don't bounce them. ---
     ignore_changes = [
       source_details,
       metadata,
+      instance_options,
+      is_pv_encryption_in_transit_enabled,
     ]
   }
 }

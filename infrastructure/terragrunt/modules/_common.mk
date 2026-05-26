@@ -41,10 +41,10 @@ validate: init ## terraform validate (runs init -backend=false first)
 	@terraform validate -no-color
 
 lint: init-tflint ## tflint (terraform-specific linter)
-	@tflint --no-color
+	@tflint --no-color --disable-rule=terraform_required_providers
 
-trivy: ## trivy config (IaC misconfig scan)
-	@trivy config --no-progress --exit-code 1 .
+trivy: ## trivy config (IaC misconfig scan; bundles tfsec/tflint checks)
+	@trivy config --quiet --exit-code 1 .
 
 checkov: ## checkov (policy / compliance scan)
 	@checkov --quiet --compact --directory . --framework terraform

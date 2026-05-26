@@ -69,7 +69,7 @@ resource "oci_kms_key" "this" {
 
   key_shape {
     algorithm = "AES"
-    length    = 32  # 256-bit key for AES-256 encryption
+    length    = 32 # 256-bit key for AES-256 encryption
   }
 
   freeform_tags = var.tags

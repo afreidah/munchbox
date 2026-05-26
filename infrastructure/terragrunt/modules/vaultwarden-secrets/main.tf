@@ -74,7 +74,7 @@ resource "bitwarden_item_secure_note" "secure_notes" {
 
   name      = each.value.name
   folder_id = each.value.folder_key != null ? bitwarden_folder.folders[each.value.folder_key].id : null
-  notes     = join("\n\n", [
+  notes = join("\n\n", [
     lookup(each.value, "notes", "Synced from HashiCorp Vault"),
     data.vault_kv_secret_v2.secure_notes[each.key].data[each.value.content_field],
   ])

@@ -46,9 +46,9 @@ variable "policies" {
 variable "tokens" {
   description = "Map of Nomad ACL tokens to create"
   type = map(object({
-    type        = optional(string, "client")
-    policies    = list(string)
-    expiration  = optional(string, null)
+    type       = optional(string, "client")
+    policies   = list(string)
+    expiration = optional(string, null)
   }))
   default = {}
 }

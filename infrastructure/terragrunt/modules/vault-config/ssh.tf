@@ -28,17 +28,17 @@ resource "vault_ssh_secret_backend_ca" "host" {
 }
 
 resource "vault_ssh_secret_backend_role" "host_signer" {
-  count                    = var.ssh_ca_enabled ? 1 : 0
-  name                     = "host-signer"
-  backend                  = vault_mount.ssh_host_signer[0].path
-  key_type                 = "ca"
-  allow_host_certificates  = true
-  allow_bare_domains       = true
-  allow_subdomains         = true
-  allowed_domains          = "*"
-  ttl                      = "8760h"
-  max_ttl                  = "87600h"
-  algorithm_signer         = "rsa-sha2-256"
+  count                   = var.ssh_ca_enabled ? 1 : 0
+  name                    = "host-signer"
+  backend                 = vault_mount.ssh_host_signer[0].path
+  key_type                = "ca"
+  allow_host_certificates = true
+  allow_bare_domains      = true
+  allow_subdomains        = true
+  allowed_domains         = "*"
+  ttl                     = "8760h"
+  max_ttl                 = "87600h"
+  algorithm_signer        = "rsa-sha2-256"
 }
 
 # -------------------------------------------------------------------------
@@ -60,15 +60,15 @@ resource "vault_ssh_secret_backend_ca" "client" {
 
 # Interactive user access - short-lived certs for human SSH sessions
 resource "vault_ssh_secret_backend_role" "client_user" {
-  count                    = var.ssh_ca_enabled ? 1 : 0
-  name                     = "client-user"
-  backend                  = vault_mount.ssh_client_signer[0].path
-  key_type                 = "ca"
-  allow_user_certificates  = true
-  allowed_users            = "root,ubuntu"
-  default_user             = "root"
-  ttl                      = "8h"
-  max_ttl                  = "24h"
+  count                   = var.ssh_ca_enabled ? 1 : 0
+  name                    = "client-user"
+  backend                 = vault_mount.ssh_client_signer[0].path
+  key_type                = "ca"
+  allow_user_certificates = true
+  allowed_users           = "root,ubuntu"
+  default_user            = "root"
+  ttl                     = "8h"
+  max_ttl                 = "24h"
 
   default_extensions = {
     "permit-pty"              = ""
@@ -78,15 +78,15 @@ resource "vault_ssh_secret_backend_role" "client_user" {
 
 # Service access - medium-lived certs for automated SSH (temporal worker, etc.)
 resource "vault_ssh_secret_backend_role" "client_service" {
-  count                    = var.ssh_ca_enabled ? 1 : 0
-  name                     = "client-service"
-  backend                  = vault_mount.ssh_client_signer[0].path
-  key_type                 = "ca"
-  allow_user_certificates  = true
-  allowed_users            = "root,ubuntu"
-  default_user             = "root"
-  ttl                      = "24h"
-  max_ttl                  = "8760h"
+  count                   = var.ssh_ca_enabled ? 1 : 0
+  name                    = "client-service"
+  backend                 = vault_mount.ssh_client_signer[0].path
+  key_type                = "ca"
+  allow_user_certificates = true
+  allowed_users           = "root,ubuntu"
+  default_user            = "root"
+  ttl                     = "24h"
+  max_ttl                 = "8760h"
 
   default_extensions = {
     "permit-pty" = ""

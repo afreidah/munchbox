@@ -7,7 +7,7 @@
 # Required environment variables:
 #   IC_API_KEY         - IBM Cloud API key
 #   IBM_RESOURCE_GROUP - IBM Cloud resource group name (default: Default)
-#   IBM_REGION         - IBM Cloud region (default: us-south)
+#   IBM_REGION         - IBM Cloud region (default: us-east)
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -19,9 +19,9 @@ terraform {
 inputs = {
   resource_group = get_env("IBM_RESOURCE_GROUP", "Default")
   instance_name  = "Cloud Object Storage-wx"
-  region         = get_env("IBM_REGION", "us-south")
+  region         = get_env("IBM_REGION", "us-east")
   bucket_name    = "munchbox-backup-storage"
-  storage_class  = "standard"
+  storage_class  = "smart"
   plan           = "standard"
 
   tags = {
