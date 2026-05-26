@@ -1055,59 +1055,31 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # PI-HOLE DNS MODULE INPUTS
+  # PI-HOLE DNS  (composition lives in _env_helpers/pihole-dns.hcl)
   # ---------------------------------------------------------------------------
-  # Local DNS records for split-horizon DNS. Routes internal traffic directly
-  # to services without going through Cloudflare tunnel.
+  # Local DNS records for split-horizon DNS: internal traffic skips the
+  # cloudflare tunnel and lands directly on traefik (or, for the handful
+  # of non-traefik records, wherever the host actually lives).
 
   pihole_primary_url   = "http://192.168.68.62"  # green
   pihole_secondary_url = "http://192.168.68.64"  # logan
   traefik_vip          = "192.168.68.50"
 
-  pihole_dns_inputs = {
-    # Local DNS A records pointing to Traefik VIP
-    dns_records = {
-      "alertmanager"    = { domain = "alertmanager.munchbox.cc",    ip = local.traefik_vip }
-      "analytics"       = { domain = "analytics.munchbox.cc",       ip = local.traefik_vip }
-      "apt"             = { domain = "apt.munchbox.cc",             ip = local.traefik_vip }
-      "auth"            = { domain = "auth.munchbox.cc",            ip = local.traefik_vip }
-      "consul"          = { domain = "consul.munchbox.cc",          ip = local.traefik_vip }
-      "dashboard"       = { domain = "dashboard.munchbox.cc",       ip = local.traefik_vip }
-      "deluge"          = { domain = "deluge.munchbox.cc",          ip = local.traefik_vip }
-      "ersatz"          = { domain = "ersatz.munchbox.cc",          ip = local.traefik_vip }
-      "git"             = { domain = "git.munchbox.cc",             ip = local.traefik_vip }
-      "grafana"         = { domain = "grafana.munchbox.cc",         ip = local.traefik_vip }
-      "jellyfin"        = { domain = "jellyfin.munchbox.cc",        ip = local.traefik_vip }
-      "kavita"          = { domain = "kavita.munchbox.cc",          ip = local.traefik_vip }
-      "lidarr"          = { domain = "lidarr.munchbox.cc",          ip = local.traefik_vip }
-      "nextcloud"       = { domain = "nextcloud.munchbox.cc",       ip = local.traefik_vip }
-      "nomad"           = { domain = "nomad.munchbox.cc",           ip = local.traefik_vip }
-      "photos"          = { domain = "photos.munchbox.cc",          ip = local.traefik_vip }
-      "prometheus"      = { domain = "prometheus.munchbox.cc",      ip = local.traefik_vip }
-      "prowlarr"        = { domain = "prowlarr.munchbox.cc",        ip = local.traefik_vip }
-      "radarr"          = { domain = "radarr.munchbox.cc",          ip = local.traefik_vip }
-      "readarr"         = { domain = "readarr.munchbox.cc",         ip = local.traefik_vip }
-      "registry-ui"     = { domain = "registry-ui.munchbox.cc",     ip = local.traefik_vip }
-      "registry"        = { domain = "registry.munchbox.cc",        ip = local.traefik_vip }
-      "sonarr"          = { domain = "sonarr.munchbox.cc",          ip = local.traefik_vip }
-      "temporal"        = { domain = "temporal.munchbox.cc",        ip = local.traefik_vip }
-      "themes"          = { domain = "themes.munchbox.cc",          ip = local.traefik_vip }
-      "traefik-logs"    = { domain = "traefik-logs.munchbox.cc",    ip = local.traefik_vip }
-      "traefik"         = { domain = "traefik.munchbox.cc",         ip = local.traefik_vip }
-      "trivy-dashboard" = { domain = "trivy-dashboard.munchbox.cc", ip = local.traefik_vip }
-      "vault-ui"        = { domain = "vault-ui.munchbox.cc",        ip = local.traefik_vip }
-      "vault"           = { domain = "vault.munchbox.cc",           ip = local.traefik_vip }
-      "vaultwarden"     = { domain = "vaultwarden.munchbox.cc",     ip = local.traefik_vip }
-      "pihole"          = { domain = "pihole.munchbox.cc",          ip = local.traefik_vip }
-      "pihole-green"    = { domain = "pihole-green.munchbox.cc",    ip = local.traefik_vip }
-      "pihole-logan"    = { domain = "pihole-logan.munchbox.cc",    ip = local.traefik_vip }
-      "s3"              = { domain = "s3.munchbox.cc",              ip = local.traefik_vip }
-      "forgejo"         = { domain = "forgejo.munchbox.cc",         ip = local.traefik_vip }
-      # --- cinc-server API isn't fronted by Traefik; clients hit the VM directly ---
-      "cinc-server"     = { domain = "cinc-server.munchbox.cc",     ip = "192.168.68.99" }
-    }
+  # Hosts whose <name>.munchbox.cc A-record points at the traefik VIP.
+  # env_helper expands each entry into { domain = "<name>.munchbox.cc", ip = traefik_vip }.
+  traefik_fronted_hosts = [
+    "alertmanager", "analytics", "apt", "auth", "consul", "dashboard",
+    "deluge", "ersatz", "git", "grafana", "jellyfin", "kavita", "lidarr",
+    "nextcloud", "nomad", "photos", "prometheus", "prowlarr", "radarr",
+    "readarr", "registry", "registry-ui", "sonarr", "temporal", "themes",
+    "traefik", "traefik-logs", "trivy-dashboard", "vault", "vault-ui",
+    "vaultwarden", "pihole", "pihole-green", "pihole-logan", "s3", "forgejo",
+  ]
 
-    cname_records = {}
+  # Records that point somewhere other than the traefik VIP (cinc-server API
+  # isn't fronted by traefik; clients hit the VM directly).
+  pihole_special_dns_records = {
+    "cinc-server" = { domain = "cinc-server.munchbox.cc", ip = "192.168.68.99" }
   }
 
   # ---------------------------------------------------------------------------
