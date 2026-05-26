@@ -592,17 +592,15 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # OAUTH2-PROXY-SECRETS MODULE INPUTS
+  # OAUTH2-PROXY  (composition lives in _env_helpers/oauth2-proxy-secrets.hcl)
   # ---------------------------------------------------------------------------
-  # Google OAuth credentials for oauth2-proxy, stored in Vault KV
 
-  oauth2_proxy_secrets_inputs = {
-    vault_mount    = "secret"
-    client_id      = get_env("OAUTH2_PROXY_CLIENT_ID", "")
-    client_secret  = get_env("OAUTH2_PROXY_CLIENT_SECRET", "")
-    cookie_secret  = get_env("OAUTH2_PROXY_COOKIE_SECRET", "")
-    allowed_emails = ["alex.freidah@gmail.com", "afreidah@gmail.com", "hart.koko@gmail.com"]
-  }
+  # --- SSO-allowed emails ---
+  oauth2_proxy_allowed_emails = [
+    "alex.freidah@gmail.com",
+    "afreidah@gmail.com",
+    "hart.koko@gmail.com",
+  ]
 
   # ---------------------------------------------------------------------------
   # VAULT-CONFIG MODULE INPUTS
