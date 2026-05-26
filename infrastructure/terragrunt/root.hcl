@@ -1107,11 +1107,9 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # BLOCK-VOLUME-OCI MODULE INPUTS
+  # BLOCK-VOLUME-OCI  (composition lives in _env_helpers/block-volume-oci.hcl)
   # ---------------------------------------------------------------------------
-  # OCI block volumes attached to existing instances. Keyed by the terragrunt
-  # directory name (e.g. "minio-volume") so the env_helper can look up config
-  # from the directory path automatically.
+  # --- keyed by terragrunt dir name; env_helper looks up by basename ---
 
   block_volume_oci_configs = {
     "minio-volume-1" = {
