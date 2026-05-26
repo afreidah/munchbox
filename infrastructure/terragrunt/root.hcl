@@ -945,76 +945,8 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # VAULTWARDEN-SECRETS MODULE INPUTS
+  # VAULTWARDEN-SECRETS  (data + composition live in _env_helpers/vaultwarden-secrets.hcl)
   # ---------------------------------------------------------------------------
-  # Syncs credentials from Vault to Vaultwarden for human access
-
-  vaultwarden_secrets_inputs = {
-    vault_mount = "secret"
-
-    folders = {
-      admin  = "Admin Services"
-      shared = "Shared"
-    }
-
-    login_items = {
-      nextcloud = {
-        name           = "Nextcloud Admin"
-        uri            = "https://nextcloud.munchbox.cc"
-        vault_path     = "nextcloud"
-        password_field = "admin_password"
-        folder_key     = "admin"
-      }
-      grafana = {
-        name           = "Grafana Admin"
-        uri            = "https://grafana.munchbox.cc"
-        vault_path     = "grafana"
-        username_field = "admin_user"
-        password_field = "admin_password"
-        folder_key     = "admin"
-      }
-      pihole_green = {
-        name           = "Pi-hole (green)"
-        uri            = "https://pihole-green.munchbox.cc/admin"
-        vault_path     = "pihole/green"
-        password_field = "password"
-        folder_key     = "admin"
-      }
-      pihole_logan = {
-        name           = "Pi-hole (logan)"
-        uri            = "https://pihole-logan.munchbox.cc/admin"
-        vault_path     = "pihole/logan"
-        password_field = "password"
-        folder_key     = "admin"
-      }
-      deluge = {
-        name           = "Deluge"
-        uri            = "https://deluge.munchbox.cc"
-        vault_path     = "deluge"
-        password_field = "web_password"
-        folder_key     = "shared"
-        notes          = "Synced from HashiCorp Vault - Shared with family"
-      }
-      aptly = {
-        name           = "Aptly Package Repo"
-        uri            = "https://apt.munchbox.cc/ui/"
-        vault_path     = "aptly"
-        username       = "admin"
-        password_field = "password"
-        folder_key     = "admin"
-      }
-    }
-
-    secure_note_items = {
-      break_glass = {
-        name          = "SSH Break-Glass Key"
-        vault_path    = "ssh/break-glass"
-        content_field = "private_key"
-        folder_key    = "admin"
-        notes         = "Emergency SSH access to all cluster nodes when Vault/certs are unavailable. Save to file (chmod 600), then: ssh -i /path/to/key root@<node>"
-      }
-    }
-  }
 
   # ---------------------------------------------------------------------------
   # FORGEJO-SECRETS MODULE INPUTS
