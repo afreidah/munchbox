@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules//nomad-acls"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules//nomad-acls"
 }
 
 locals {

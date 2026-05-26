@@ -82,5 +82,15 @@ resource "oci_core_instance" "this" {
 
   lifecycle {
     prevent_destroy = false
+
+    # --- Don't replace a running node when Oracle bumps the "latest ubuntu"
+    #     image OCID or when seed metadata (ssh keys / user_data) is edited
+    #     post-bootstrap. Both fields force replacement; the live config of a
+    #     running node is owned by chef (sshd_ca for keys, recipes for the
+    #     rest), so cloud-init drift after the first converge is noise. ---
+    ignore_changes = [
+      source_details,
+      metadata,
+    ]
   }
 }

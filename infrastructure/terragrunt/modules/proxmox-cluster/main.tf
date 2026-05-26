@@ -83,5 +83,22 @@ resource "proxmox_vm_qemu" "vm" {
 
   lifecycle {
     prevent_destroy = false
+
+    # --- Stopgap: telmate's state disagrees with proxmox's actual layout on
+    #     `disk` (slot/type ordering for the cloudinit drive) and silently
+    #     drops `serial` / `startup_shutdown` blocks every refresh; `sshkeys`
+    #     is a seed-only field (chef's sshd_ca recipe owns runtime keys).
+    #     Cleaner long-term fix is to align state with reality via
+    #     `terragrunt state` / targeted re-imports per resource. ---
+    ignore_changes = [
+      disk,
+      serial,
+      startup_shutdown,
+      sshkeys,
+      # --- pci: nomad-client-04 GPU passthrough is real on the VM but absent
+      #     from state (predates the gpu_passthrough declaration). Adding it
+      #     would cause a telmate-driven VM reboot to re-attach. ---
+      pci,
+    ]
   }
 }

@@ -8,7 +8,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules/cloudflare-r2"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules/cloudflare-r2"
 }
 
 locals {

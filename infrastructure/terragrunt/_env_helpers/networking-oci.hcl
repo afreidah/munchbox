@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules//network"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules//network"
 }
 
 locals {

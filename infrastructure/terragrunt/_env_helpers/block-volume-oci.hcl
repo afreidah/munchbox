@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules//block-volume-oci"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules//block-volume-oci"
 }
 
 locals {

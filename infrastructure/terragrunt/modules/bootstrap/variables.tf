@@ -403,3 +403,21 @@ variable "hosts_overrides" {
     "cinc-server.munchbox.cc" = "192.168.68.99"
   }
 }
+
+# -----------------------------------------------------------------------------
+# MUNCHBOX PKI -- root + intermediate CA PEMs to trust on first converge
+# -----------------------------------------------------------------------------
+# Read by the env_helper from the chef cookbook's files/ dir so terragrunt
+# doesn't have to reach across infrastructure/ trees from inside its cache.
+
+variable "munchbox_root_ca" {
+  description = "PEM-encoded Munchbox root CA cert. Loaded by the env_helper from infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-root-ca.crt"
+  type        = string
+  sensitive   = false
+}
+
+variable "munchbox_intermediate_ca" {
+  description = "PEM-encoded Munchbox intermediate CA cert. Loaded by the env_helper from infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-intermediate-ca.crt"
+  type        = string
+  sensitive   = false
+}

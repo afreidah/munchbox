@@ -13,20 +13,20 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules/object-storage-ibm"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules/object-storage-ibm"
 }
 
 inputs = {
   resource_group = get_env("IBM_RESOURCE_GROUP", "Default")
-  instance_name  = "munchbox-cos"
+  instance_name  = "Cloud Object Storage-wx"
   region         = get_env("IBM_REGION", "us-south")
-  bucket_name    = "munchbox-s3-orchestrator"
+  bucket_name    = "munchbox-backup-storage"
   storage_class  = "standard"
   plan           = "standard"
 
   tags = {
     project    = "munchbox"
     managed_by = "terragrunt"
-    purpose    = "s3-orchestrator-backend"
+    purpose    = "backup-storage"
   }
 }

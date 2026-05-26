@@ -8,7 +8,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules/oauth2-proxy-secrets"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules/oauth2-proxy-secrets"
 }
 
 locals {

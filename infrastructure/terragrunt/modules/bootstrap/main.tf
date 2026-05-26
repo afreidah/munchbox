@@ -77,9 +77,11 @@ locals {
     wireguard_endpoint          = var.wireguard_endpoint
     wireguard_allowed_ips       = var.wireguard_allowed_ips
 
-    # --- Munchbox PKI (loaded from the chef cookbook's files dir so there's one source of truth) ---
-    munchbox_root_ca         = file("${path.module}/../../cinc/cookbooks/munchbox_base/files/default/munchbox-root-ca.crt")
-    munchbox_intermediate_ca = file("${path.module}/../../cinc/cookbooks/munchbox_base/files/default/munchbox-intermediate-ca.crt")
+    # --- Munchbox PKI (passed in via vars; the env_helper reads from the chef
+    #     cookbook so there's one source of truth, and terragrunt-cache copies
+    #     of this module can't reach across to infrastructure/cinc/). ---
+    munchbox_root_ca         = var.munchbox_root_ca
+    munchbox_intermediate_ca = var.munchbox_intermediate_ca
 
     # --- /etc/hosts pin so the node can reach cinc-server before consul::dns runs ---
     hosts_overrides = var.hosts_overrides

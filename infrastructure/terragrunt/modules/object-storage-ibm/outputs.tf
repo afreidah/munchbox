@@ -25,6 +25,7 @@ output "s3_endpoint" {
 output "s3_access_key" {
   description = "S3 access key ID (HMAC)"
   value       = ibm_resource_key.s3_credentials.credentials["cos_hmac_keys.access_key_id"]
+  sensitive   = true
 }
 
 output "s3_secret_key" {

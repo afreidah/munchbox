@@ -11,7 +11,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules/proxmox-users"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules/proxmox-users"
 }
 
 locals {

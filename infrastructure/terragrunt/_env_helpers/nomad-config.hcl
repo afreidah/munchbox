@@ -9,7 +9,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules//nomad-config"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules//nomad-config"
 }
 
 locals {

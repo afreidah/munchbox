@@ -8,7 +8,7 @@
 # -----------------------------------------------------------------------------
 
 terraform {
-  source = "${get_repo_root()}/infrastructure/modules/pihole-dns"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules/pihole-dns"
 }
 
 locals {

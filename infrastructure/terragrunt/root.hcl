@@ -63,14 +63,10 @@ locals {
   # SSH CONFIGURATION
   # ---------------------------------------------------------------------------
 
-  # Local workstation key (ed25519)
-  ssh_public_key_local = get_env("MUNCHBOX_SSH_PUBKEY", fileexists("~/.ssh/id_ed25519.pub") ? trimspace(file("~/.ssh/id_ed25519.pub")) : "")
-
-  # Stabler (WireGuard gateway) key - allows SSH from within the cluster
-  ssh_public_key_stabler = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD58AJEEPLCyHpvCrTN+vUaAZfiqeIqE3B+q1qiNz2zNVRgJc9+0uzBzGcC9dDbwb/8a9+LeIDRAgIMtPZbzyU6/bZzXFk+cP3hdbyzBrpExksr0J/USBl1b9X+LRG85NoN8fHnjASXQz4yxV5KXn+8LtZowzS92ymwI5tjrePtMYYyzsKwoYDUQTAsjt9HCdXjcQO8CSUvGZMMCT3Cigfm3rK6c/Rt6CU+RX29X/QIK7GJ0Bd0XafGFecKR/voBcDs/0eJItyUcl5KBkOFZINIHHEvLEj/UroJtpcCtSf5WYbPTXV2Ul5Oqk3eOGmbSzyFe5gLDHjz/mHOwPTsBV041FroDpLBXq+EznmaMb2CEvVgWAztLie3MDG7khuh8JCAgR4a6w3f6gVqztULp57HP0Uchr/LvkvoHgaPg/kq+TrPFcVUDk6yt2n1MslOgaJqWOBfutnp4xxvRCMH3jc/M1cy9iexdamhyKELJVBia8mAmIaPgpncuFo/ROVWEAu6yhKsSJhVvujy+Tii8m1lS0jYRUTrptGp7i9S5FM1f2Jxj05r/ZsZG1+SnPc+h6Z4c2AXWFZJbl0VLPxzzJs4xBpULRbK0qcwFAImuBSRGV+DrvlI5jiWzAGWB1Sr6EYegKhlfhYAWQZz9EYTzP+e5fxzGAKi4lnWKm/gGzysDQ== root@stabler"
-
-  # Combined keys for cloud instances (newline-separated)
-  ssh_public_key = "${local.ssh_public_key_local}\n${local.ssh_public_key_stabler}"
+  # --- Cloud-init seed key: workstation ed25519 only. Cluster-side SSH
+  #     (stabler → oracle, break-glass keys, etc.) is managed by the
+  #     sshd_ca recipe at converge time, not via cloud-init metadata. ---
+  ssh_public_key = get_env("MUNCHBOX_SSH_PUBKEY", fileexists("~/.ssh/id_ed25519.pub") ? trimspace(file("~/.ssh/id_ed25519.pub")) : "")
 
   # ---------------------------------------------------------------------------
   # PROVIDER-SPECIFIC DEFAULTS
@@ -1106,6 +1102,7 @@ locals {
       "pihole-green"    = { domain = "pihole-green.munchbox.cc",    ip = local.traefik_vip }
       "pihole-logan"    = { domain = "pihole-logan.munchbox.cc",    ip = local.traefik_vip }
       "s3"              = { domain = "s3.munchbox.cc",              ip = local.traefik_vip }
+      "forgejo"         = { domain = "forgejo.munchbox.cc",         ip = local.traefik_vip }
       # --- cinc-server API isn't fronted by Traefik; clients hit the VM directly ---
       "cinc-server"     = { domain = "cinc-server.munchbox.cc",     ip = "192.168.68.99" }
     }
@@ -1455,7 +1452,11 @@ generate "providers" {
     }
 
     provider "forgejo" {
-      host      = "http://forgejo.service.consul:30028"
+      # --- Default points at the in-cluster consul-DNS name (works when terragrunt
+      #     runs on cinc-server / stabler / any consul-DNS-resolving node). Operators
+      #     running off-cluster set FORGEJO_HOST to a reachable URL (SSH-tunnel to
+      #     cinc-server's port 30028, public bypass route, etc.).
+      host      = "${get_env("FORGEJO_HOST", "http://forgejo.service.consul:30028")}"
       api_token = "${get_env("FORGEJO_API_TOKEN", "")}"
     }
 
@@ -1472,8 +1473,13 @@ generate "providers" {
     }
 
     provider "ibm" {
-      # Uses IC_API_KEY env var
-      region = "${get_env("IBM_REGION", "us-south")}"
+      # --- ibmcloud_api_key wired explicitly: the env-var fallback isn't honored
+      #     by every sub-service client in the provider (resource-manager in
+      #     particular skips it and errors with "BearerToken property is required"
+      #     at read time). IC_API_KEY itself is populated by munchbox-env.sh from
+      #     vault: secret/ibm-cloud. ---
+      ibmcloud_api_key = "${get_env("IC_API_KEY", "")}"
+      region           = "${get_env("IBM_REGION", "us-south")}"
     }
   EOF
 }

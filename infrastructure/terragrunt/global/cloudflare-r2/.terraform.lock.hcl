@@ -213,6 +213,7 @@ provider "registry.terraform.io/svalabs/forgejo" {
   constraints = "~> 1.1"
   hashes = [
     "h1:LYf/Et3dHrl6OLm/JwA7lXklgHZdlZoimRtWM8Tg1QM=",
+    "h1:RVWqiQRVDMHLaG9LpT5seCvM0Vuh7eJLyZcpD35EfB4=",
     "zh:26d2df5c1f135938b396a130df106464c5657ee8b35d5c5f3e276592f77d2951",
     "zh:29366e931fa5903c6f77e023567131491c8b7b1e61c0049e829c11fd5db7e49b",
     "zh:2982501a377b5b5062f74b7abeadaa3d0449114c5ed68cb9390de2dea6c793cb",

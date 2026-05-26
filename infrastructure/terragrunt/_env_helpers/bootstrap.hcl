@@ -10,7 +10,7 @@
 
 terraform {
   # Double-slash copies entire modules dir but uses bootstrap as root
-  source = "${get_repo_root()}/infrastructure/modules//bootstrap"
+  source = "${get_repo_root()}/infrastructure/terragrunt/modules//bootstrap"
 }
 
 dependency "networking" {
@@ -107,5 +107,12 @@ inputs = merge(
       local.root.locals.bootstrap_inputs.tags,
       try(local.node_config.tags, {})
     )
+
+    # --- Munchbox PKI: read here in the helper (which runs from the in-repo
+    #     leaf, NOT from the terragrunt-cache copy of the module) and pass
+    #     the PEM contents into the module as variables. Single source of
+    #     truth stays in the chef cookbook's files/ dir.
+    munchbox_root_ca         = file("${get_repo_root()}/infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-root-ca.crt")
+    munchbox_intermediate_ca = file("${get_repo_root()}/infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-intermediate-ca.crt")
   }
 )

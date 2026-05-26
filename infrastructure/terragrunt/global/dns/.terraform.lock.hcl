@@ -212,6 +212,7 @@ provider "registry.terraform.io/svalabs/forgejo" {
   version     = "1.4.4"
   constraints = "~> 1.1"
   hashes = [
+    "h1:RVWqiQRVDMHLaG9LpT5seCvM0Vuh7eJLyZcpD35EfB4=",
     "h1:U+Q9hcBFGRxFNAsxzuZFn88fgSCxysFFaUK2E5ZB+Y0=",
     "zh:26d2df5c1f135938b396a130df106464c5657ee8b35d5c5f3e276592f77d2951",
     "zh:29366e931fa5903c6f77e023567131491c8b7b1e61c0049e829c11fd5db7e49b",
