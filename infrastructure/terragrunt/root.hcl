@@ -318,55 +318,8 @@ locals {
   # ---------------------------------------------------------------------------
 
   # ---------------------------------------------------------------------------
-  # BOOTSTRAP MODULE INPUTS
+  # BOOTSTRAP  (data + composition live in _env_helpers/bootstrap.hcl)
   # ---------------------------------------------------------------------------
-  # These get merged with node-specific config in the env_helper
-
-  bootstrap_inputs = {
-    datacenter     = local.default_datacenter
-    node_class     = local.default_node_class
-    ssh_public_key = local.ssh_public_key
-
-    wireguard_subnet            = local.wireguard_subnet
-    wireguard_server_public_key = local.wireguard_server_public_key
-    wireguard_endpoint          = local.wireguard_endpoint
-    wireguard_allowed_ips       = "${local.network_cidrs.wireguard}, ${local.network_cidrs.homelab}"
-
-    consul_servers = local.consul_servers
-    nomad_servers  = local.nomad_servers
-
-    # Software versions (legacy direct-install path; chef cookbooks pin separately).
-    consul_version = "1.17.0"
-    nomad_version  = "1.7.0"
-
-    # Docker (legacy direct-install path).
-    allow_privileged_docker = false
-    docker_user             = "ubuntu"
-
-    # --- Chef bootstrap (cloud-init path; the cookbooks take over after first converge) ---
-    # The bootstrap module reads chef_validator + encrypted_data_bag_secret from Vault at
-    # apply time via vault_kv_secret_v2 data sources. Per-node values (chef_node_name,
-    # chef_run_list, bootstrap_wireguard, static_ip, etc.) are set in the env_helper.
-    chef_server_url            = "https://cinc-server.munchbox.cc/organizations/munchbox"
-    chef_validator_client_name = "munchbox-validator"
-    cinc_version               = "19.2.12"
-
-    chef_validator_vault_mount       = "secret"
-    chef_validator_vault_name        = "cinc/validator"
-    chef_validator_vault_field       = "pem"
-    chef_data_bag_secret_vault_mount = "secret"
-    chef_data_bag_secret_vault_name  = "cinc/encrypted_data_bag_secret"
-    chef_data_bag_secret_vault_field = "value"
-
-    hosts_overrides = {
-      "cinc-server.munchbox.cc" = "192.168.68.99"
-    }
-
-    tags = {
-      Project   = "munchbox"
-      ManagedBy = "terragrunt"
-    }
-  }
 
   # ---------------------------------------------------------------------------
   # BLOCK-VOLUME-OCI  (composition lives in _env_helpers/block-volume-oci.hcl)

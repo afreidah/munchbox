@@ -3,13 +3,17 @@
 # -----------------------------------------------------------------------------
 #
 # Include this in node-specific terragrunt.hcl files to deploy a complete
-# Munchbox cluster node using the bootstrap module.
+# Munchbox cluster node using the bootstrap module. Inputs are assembled
+# from project-wide locals in root.hcl (network, ssh, wireguard, consul/
+# nomad server lists), bootstrap-shape constants (chef server, cinc
+# version, vault paths for validator/data-bag), and the node's own
+# node.yaml + directory name.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
 
 terraform {
-  # Double-slash copies entire modules dir but uses bootstrap as root
+  # --- double-slash: copy whole modules/ but use bootstrap as root ---
   source = "${get_repo_root()}/infrastructure/terragrunt/modules//bootstrap"
 }
 
@@ -24,17 +28,15 @@ dependency "networking" {
 }
 
 locals {
-  # Get root config
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
-  # Node-specific config (loaded from node.yaml in the node's directory)
+  # --- per-node config loaded from <node-dir>/node.yaml ---
   node_config_path = "${get_terragrunt_dir()}/node.yaml"
   node_config      = yamldecode(file(local.node_config_path))
 
-  # Determine provider from path
   provider_type = local.root.locals.provider_type
 
-  # Build provider-specific config based on provider_type
+  # --- per-provider config: merge defaults from root with node overrides ---
   aws_config = local.provider_type == "aws" ? merge(
     local.root.locals.aws_defaults,
     try(local.node_config.aws_config, {})
@@ -51,68 +53,97 @@ locals {
   ) : null
 }
 
-inputs = merge(
-  local.root.locals.bootstrap_inputs,
-  {
-    # Required - from path parsing or node config
-    provider_type = local.provider_type
-    name          = try(local.node_config.name, local.root.locals.node_name)
+inputs = {
+  # --- Cluster-wide defaults pulled from root.hcl ---
+  ssh_public_key = local.root.locals.ssh_public_key
 
-    # Compute resources - from node config with defaults
-    cpu       = try(local.node_config.cpu, 2)
-    memory_gb = try(local.node_config.memory_gb, 4)
-    disk_gb   = try(local.node_config.disk_gb, 20)
+  wireguard_subnet            = local.root.locals.wireguard_subnet
+  wireguard_server_public_key = local.root.locals.wireguard_server_public_key
+  wireguard_endpoint          = local.root.locals.wireguard_endpoint
+  wireguard_allowed_ips       = "${local.root.locals.network_cidrs.wireguard}, ${local.root.locals.network_cidrs.homelab}"
 
-    # WireGuard - must be specified per node
-    wireguard_address     = local.node_config.wireguard_address
-    wireguard_private_key = get_env("WG_PRIVATE_KEY_${upper(replace(local.root.locals.node_name, "-", "_"))}", "")
+  consul_servers = local.root.locals.consul_servers
+  nomad_servers  = local.root.locals.nomad_servers
 
-    # Optional overrides from node config
-    datacenter = try(local.node_config.datacenter, local.root.locals.default_datacenter)
-    node_class = try(local.node_config.node_class, local.root.locals.default_node_class)
-    node_pool  = try(local.node_config.node_pool, "")
-    node_meta  = try(local.node_config.node_meta, {})
+  # --- Legacy direct-install software versions (chef cookbooks pin their own) ---
+  consul_version          = "1.17.0"
+  nomad_version           = "1.7.0"
+  allow_privileged_docker = false
+  docker_user             = "ubuntu"
 
-    # Network config
-    create_network              = try(local.node_config.create_network, false)
-    vpc_cidr                    = try(local.node_config.vpc_cidr, local.root.locals.network_cidrs[local.provider_type])
-    existing_subnet_id          = dependency.networking.outputs.subnet_id
-    existing_security_group_id  = dependency.networking.outputs.security_group_id
-    existing_security_group_ids = try(local.node_config.existing_security_group_ids, null)
+  # --- Chef bootstrap (cloud-init path; cookbooks take over after first converge) ---
+  chef_server_url            = "https://cinc-server.munchbox.cc/organizations/munchbox"
+  chef_validator_client_name = "munchbox-validator"
+  cinc_version               = "19.2.12"
 
-    # Provider-specific configs
-    aws_config     = local.aws_config
-    oci_config     = local.oci_config
-    proxmox_config = local.proxmox_config
+  chef_validator_vault_mount       = "secret"
+  chef_validator_vault_name        = "cinc/validator"
+  chef_validator_vault_field       = "pem"
+  chef_data_bag_secret_vault_mount = "secret"
+  chef_data_bag_secret_vault_name  = "cinc/encrypted_data_bag_secret"
+  chef_data_bag_secret_vault_field = "value"
 
-    # --- Chef bootstrap (per-node values; shared ones are in bootstrap_inputs) ---
-    # chef_node_name defaults to the hyphen-stripped node_name to match the
-    # existing convention (oracle_arm_1.rb uses 'oraclearm1' not 'oracle-arm-1').
-    chef_node_name = try(local.node_config.chef_node_name, replace(local.root.locals.node_name, "-", ""))
-    # chef_run_list defaults to role[<underscored node_name>] which matches
-    # roles/nodes/<node>.rb conventions (e.g. role[oracle_arm_1]).
-    chef_run_list = try(local.node_config.chef_run_list, "role[${replace(local.root.locals.node_name, "-", "_")}]")
-    # Oracle/cloud nodes need wg0 to reach 192.168.68.x; proxmox/bare-metal already on the LAN.
-    bootstrap_wireguard = try(local.node_config.bootstrap_wireguard, local.provider_type != "proxmox")
-
-    # --- Optional static IP via netplan (proxmox VMs commonly pin DHCP-allocated IPs) ---
-    static_ip           = try(local.node_config.static_ip, "")
-    static_netmask_bits = try(local.node_config.static_netmask_bits, 24)
-    gateway             = try(local.node_config.gateway, "")
-    dns_servers         = try(local.node_config.dns_servers, [])
-    network_interface   = try(local.node_config.network_interface, "ens18")
-
-    # Additional tags from node config
-    tags = merge(
-      local.root.locals.bootstrap_inputs.tags,
-      try(local.node_config.tags, {})
-    )
-
-    # --- Munchbox PKI: read here in the helper (which runs from the in-repo
-    #     leaf, NOT from the terragrunt-cache copy of the module) and pass
-    #     the PEM contents into the module as variables. Single source of
-    #     truth stays in the chef cookbook's files/ dir.
-    munchbox_root_ca         = file("${get_repo_root()}/infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-root-ca.crt")
-    munchbox_intermediate_ca = file("${get_repo_root()}/infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-intermediate-ca.crt")
+  hosts_overrides = {
+    "cinc-server.munchbox.cc" = "192.168.68.99"
   }
-)
+
+  # --- Required from path/node config ---
+  provider_type = local.provider_type
+  name          = try(local.node_config.name, local.root.locals.node_name)
+
+  # --- Compute shape: node.yaml with defaults ---
+  cpu       = try(local.node_config.cpu, 2)
+  memory_gb = try(local.node_config.memory_gb, 4)
+  disk_gb   = try(local.node_config.disk_gb, 20)
+
+  # --- WireGuard per-node ---
+  wireguard_address     = local.node_config.wireguard_address
+  wireguard_private_key = get_env("WG_PRIVATE_KEY_${upper(replace(local.root.locals.node_name, "-", "_"))}", "")
+
+  # --- Optional node-level overrides ---
+  datacenter = try(local.node_config.datacenter, local.root.locals.default_datacenter)
+  node_class = try(local.node_config.node_class, local.root.locals.default_node_class)
+  node_pool  = try(local.node_config.node_pool, "")
+  node_meta  = try(local.node_config.node_meta, {})
+
+  # --- Network ---
+  create_network              = try(local.node_config.create_network, false)
+  vpc_cidr                    = try(local.node_config.vpc_cidr, local.root.locals.network_cidrs[local.provider_type])
+  existing_subnet_id          = dependency.networking.outputs.subnet_id
+  existing_security_group_id  = dependency.networking.outputs.security_group_id
+  existing_security_group_ids = try(local.node_config.existing_security_group_ids, null)
+
+  # --- Provider-specific configs (merged above) ---
+  aws_config     = local.aws_config
+  oci_config     = local.oci_config
+  proxmox_config = local.proxmox_config
+
+  # --- Per-node chef bootstrap values ---
+  # chef_node_name defaults to hyphen-stripped node_name (matches roles/nodes/<n>.rb)
+  chef_node_name = try(local.node_config.chef_node_name, replace(local.root.locals.node_name, "-", ""))
+  chef_run_list  = try(local.node_config.chef_run_list, "role[${replace(local.root.locals.node_name, "-", "_")}]")
+  # Oracle/cloud nodes need wg0 to reach 192.168.68.x; proxmox/bare-metal already on the LAN.
+  bootstrap_wireguard = try(local.node_config.bootstrap_wireguard, local.provider_type != "proxmox")
+
+  # --- Optional static IP via netplan (proxmox VMs commonly pin DHCP-allocated IPs) ---
+  static_ip           = try(local.node_config.static_ip, "")
+  static_netmask_bits = try(local.node_config.static_netmask_bits, 24)
+  gateway             = try(local.node_config.gateway, "")
+  dns_servers         = try(local.node_config.dns_servers, [])
+  network_interface   = try(local.node_config.network_interface, "ens18")
+
+  # --- Tags: module default + node overrides ---
+  tags = merge(
+    {
+      Project   = "munchbox"
+      ManagedBy = "terragrunt"
+    },
+    try(local.node_config.tags, {}),
+  )
+
+  # --- Munchbox PKI passed as vars; the env_helper runs from the in-repo
+  #     leaf so it can reach across into the chef cookbook tree (the
+  #     terragrunt-cache copy of the bootstrap module can't).
+  munchbox_root_ca         = file("${get_repo_root()}/infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-root-ca.crt")
+  munchbox_intermediate_ca = file("${get_repo_root()}/infrastructure/cinc/cookbooks/munchbox_base/files/default/munchbox-intermediate-ca.crt")
+}
