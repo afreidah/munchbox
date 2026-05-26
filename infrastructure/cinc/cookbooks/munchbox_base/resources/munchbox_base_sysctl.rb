@@ -28,7 +28,7 @@ default_action :configure
 # -------------------------------------------------------------------------------
 
 action :configure do
-  body  = ['# Managed by chef (munchbox_base::sysctl) -- do not edit by hand.']
+  body = ['# Managed by chef (munchbox_base::sysctl) -- do not edit by hand.']
   new_resource.settings.sort.each { |k, v| body << "#{k} = #{v}" }
 
   file new_resource.path do

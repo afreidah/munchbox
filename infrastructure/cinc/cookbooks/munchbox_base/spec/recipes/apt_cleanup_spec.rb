@@ -7,6 +7,12 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'munchbox_base::apt_cleanup' do
+  # --- only_if shell guards on the autoremove + clean executes; stub positive so the actions fire ---
+  before do
+    stub_command('apt-get -s autoremove 2>/dev/null | grep -qE "^Remv "').and_return(true)
+    stub_command('find /var/cache/apt/archives -maxdepth 1 -name "*.deb" -print -quit | grep -q .').and_return(true)
+  end
+
   cached(:chef_run) do
     ChefSpec::SoloRunner.new(step_into: %w(munchbox_base_apt_cleanup))
                         .converge('munchbox_base::apt_cleanup')
@@ -34,6 +40,7 @@ RSpec.describe 'munchbox_base::apt_cleanup' do
   # --- Defaults can be turned off via attribute ---
   context 'with autoremove disabled via attribute' do
     cached(:chef_run) do
+      stub_command('find /var/cache/apt/archives -maxdepth 1 -name "*.deb" -print -quit | grep -q .').and_return(true)
       ChefSpec::SoloRunner.new(step_into: %w(munchbox_base_apt_cleanup)) do |node|
         node.override[:munchbox_base][:apt_cleanup][:autoremove] = false
       end.converge('munchbox_base::apt_cleanup')

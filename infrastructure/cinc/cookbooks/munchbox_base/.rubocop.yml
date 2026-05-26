@@ -28,3 +28,9 @@ Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
     - 'test/**/*'
+
+# --- sysctl drop-ins go in named files (/etc/sysctl.d/99-munchbox.conf,
+#     99-disable-ipv6-ra.conf) for operator discoverability rather than chef's
+#     opaque sysctl_<knob>.conf scheme. file+execute is intentional.
+Chef/Modernize/ExecuteSysctl:
+  Enabled: false

@@ -20,7 +20,7 @@ control 'nomad-binary' do
   end
 
   describe command('/usr/local/bin/nomad version') do
-    its('stdout') { should match(/Nomad v1\.11\.1/) }
+    its('stdout') { should match(/Nomad v2\.0\.2/) }
   end
 end
 

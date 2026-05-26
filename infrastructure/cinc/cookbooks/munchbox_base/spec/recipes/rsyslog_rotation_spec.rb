@@ -17,6 +17,10 @@ RSpec.describe 'munchbox_base::rsyslog_rotation' do
     expect(chef_run).to configure_munchbox_base_rsyslog_rotation('baseline')
   end
 
+  it 'ensures rsyslog is installed (brings in the syslog user/group + rsyslog-rotate)' do
+    expect(chef_run).to install_package('rsyslog')
+  end
+
   # --- Template lands with the right perms ---
   it 'renders the logrotate fragment 0644 root:root' do
     expect(chef_run).to create_template('/etc/logrotate.d/rsyslog')

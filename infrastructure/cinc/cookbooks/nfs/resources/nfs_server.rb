@@ -29,7 +29,25 @@ default_action :configure
 action :configure do
   return if new_resource.exports.empty?
 
+  # --- ensure the apt package list is fresh so chef's apt_package doesn't pin a
+  #     stale version (greenfield / kitchen guests don't otherwise apt-update).
+  apt_update 'nfs-server' do
+    action :periodic
+    frequency 86_400
+  end
+
   apt_package new_resource.package
+
+  # --- exportfs -ra refuses any line whose path doesn't exist on disk; ensure
+  #     each exported directory is materialized before /etc/exports references it.
+  new_resource.exports.each do |e|
+    directory e['path'] do
+      owner 'root'
+      group 'root'
+      mode  '0755'
+      recursive true
+    end
+  end
 
   # --- Render /etc/exports as a managed block; preserve any user-added comments outside the block. Simplest path: full file overwrite (the comments at the head of the default /etc/exports are vendor docs we don't need to keep). ---
   file new_resource.exports_path do

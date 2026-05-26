@@ -10,6 +10,13 @@
 
 client = node[cookbook]['client']
 
+# --- ensure the apt package list is fresh so chef's apt_package doesn't pin a
+#     stale version (greenfield / kitchen guests don't otherwise apt-update).
+apt_update 'nfs-client' do
+  action :periodic
+  frequency 86_400
+end
+
 apt_package client['package'] do
   action :install
 end

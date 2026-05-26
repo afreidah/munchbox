@@ -11,6 +11,10 @@ RSpec.describe 'munchbox_base::pki_trust' do
     ChefSpec::SoloRunner.new(step_into: %w(munchbox_base_pki_trust)).converge('munchbox_base::pki_trust')
   end
 
+  it 'declares the wrapping resource keyed by munchbox-pki' do
+    expect(chef_run).to install_munchbox_base_pki_trust('munchbox-pki')
+  end
+
   %w(munchbox-root-ca.crt munchbox-intermediate-ca.crt).each do |basename|
     it "drops #{basename} under /usr/local/share/ca-certificates/ with 0644 root:root" do
       expect(chef_run).to create_cookbook_file("/usr/local/share/ca-certificates/#{basename}")

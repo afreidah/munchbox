@@ -28,8 +28,8 @@ action :configure do
   # --- Per-iface lines are required: the kernel ORs all.accept_ra with <iface>.accept_ra, so all=0 alone leaves RA-accepting interfaces unaffected. Enumerate live ifaces but skip container/virtual ones (veth*, br-*, cni*, lo): they churn with container lifecycle and would force a sysctl rewrite every converge. New stable interfaces created later (rare) inherit default=0. ---
   iface_skip = /\A(lo|all|default|veth|br-|cni)/
   ifaces     = ::Dir['/proc/sys/net/ipv6/conf/*'].map { |p| ::File.basename(p) }
-                                                  .reject { |i| i =~ iface_skip }
-                                                  .sort
+                                                 .reject { |i| i =~ iface_skip }
+                                                 .sort
 
   body  = ['# Managed by chef (munchbox_base::disable_ipv6_ra) -- do not edit by hand.']
   body << 'net.ipv6.conf.all.accept_ra = 0'

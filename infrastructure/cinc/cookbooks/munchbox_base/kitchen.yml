@@ -36,6 +36,10 @@ platforms:
 suites:
   - name: default
     run_list:
+      # --- resolv_conf first: subsequent converges (pass 2 idempotency) start with
+      #     whatever /etc/resolv.conf the previous converge left behind, so we need
+      #     the recipe to normalize DNS before any network-dependent resource runs.
+      - recipe[munchbox_base::resolv_conf]
       - recipe[munchbox_base::apt_repo]
       - recipe[munchbox_base::packages]
       - recipe[munchbox_base::timesync]
@@ -43,6 +47,10 @@ suites:
       - recipe[munchbox_base::sshd]
       - recipe[munchbox_base::rsyslog_rotation]
       - recipe[munchbox_base::apt_cleanup]
+      - recipe[munchbox_base::pki_trust]
+      - recipe[munchbox_base::sysctl]
+      - recipe[munchbox_base::disable_ipv6_ra]
+      - recipe[munchbox_base::etc_hosts]
     verifier:
       inspec_tests:
         - test/integration/default
@@ -61,3 +69,24 @@ suites:
         packages:
           - curl
           - jq
+        resolv_conf:
+          # Use a real public resolver in kitchen: the recipe overwrites
+          # /etc/resolv.conf, and the second converge (idempotency check)
+          # needs working DNS to re-validate the apt repo's signing key.
+          # A localhost placeholder breaks pass 2 with a getaddrinfo error.
+          nameserver: 1.1.1.1
+        etc_hosts:
+          # static_entries proves the literal-additions path without needing
+          # a populated chef-search index inside chef-zero.
+          static_entries:
+            - ip: 192.168.68.62
+              hostname: green
+            - ip: 192.168.68.64
+              hostname: logan
+
+# -------------------------------------------------------------------------------
+# Recipes intentionally NOT in any suite (need live Vault):
+#   sshd_ca         - vault_fetch'd SSH CA host signer.
+#   vault_pki_trust - vault_fetch'd PKI intermediate CA.
+# Both are chefspec'd; verify live via `cinc-client -W` on a managed node.
+# -------------------------------------------------------------------------------

@@ -39,7 +39,8 @@ control 'configure' do
     its('mode') { should cmp '0644' }
     its('content') { should match(/"dns":/) }
     its('content') { should match(/"1\.1\.1\.1"/) }
-    its('content') { should match(/"storage-driver":\s*"overlay2"/) }
+    # --- storage-driver intentionally omitted from attribute defaults; would stomp overlayfs nodes ---
+    its('content') { should_not match(/"storage-driver"/) }
     its('content') { should match(/"log-driver":\s*"json-file"/) }
   end
 

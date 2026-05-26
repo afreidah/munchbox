@@ -8,6 +8,6 @@
 # pulls dep declarations from metadata.rb in this dir.
 # -------------------------------------------------------------------------------
 
-source chef_repo: '../..'
+source({ chef_repo: '../..' })
 
 metadata

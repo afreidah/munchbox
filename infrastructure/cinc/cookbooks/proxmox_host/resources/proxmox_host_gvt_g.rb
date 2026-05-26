@@ -15,7 +15,7 @@ unified_mode true
 
 provides :proxmox_host_gvt_g
 
-property :enabled,       [true, false], default: false
+property :enabled, [true, false], default: false
 property :cmdline_default, String, default: 'quiet intel_iommu=on i915.enable_gvt=1'
 property :modules,       Array, default: %w(kvmgt vfio-iommu-type1 vfio-mdev)
 property :grub_path,     String, default: '/etc/default/grub'

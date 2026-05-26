@@ -1,0 +1,10 @@
+---
+name: proxmox-host-pci-passthrough
+title: proxmox_host::pci_passthrough integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates the on-disk state for full PCI passthrough (grub cmdline + vfio modules + modprobe.d device IDs). Does NOT prove the device actually binds at boot.
+version: 0.1.0
+supports:
+  - platform: debian

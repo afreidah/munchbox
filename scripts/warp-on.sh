@@ -45,5 +45,16 @@ for i in {1..20}; do
   sleep 0.5
 done
 
+# Route .consul lookups over the tunnel via the local dnsmasq split-resolver.
+# (.consul -> homelab DNS; everything else -> WARP's DoH proxy. See
+# /etc/dnsmasq.d/consul.conf.) Lock resolv.conf so WARP can't reclaim it.
+if [[ -f /etc/dnsmasq.d/consul.conf ]]; then
+  sudo systemctl restart dnsmasq
+  sudo chattr -i /etc/resolv.conf 2>/dev/null || true
+  printf 'nameserver 127.0.0.1\n' | sudo tee /etc/resolv.conf > /dev/null
+  sudo chattr +i /etc/resolv.conf 2>/dev/null || true
+  echo "Consul split-DNS active (resolv.conf -> 127.0.0.1, locked)."
+fi
+
 # Show interface summary (optional)
 ip -4 addr show CloudflareWARP 2>/dev/null || true

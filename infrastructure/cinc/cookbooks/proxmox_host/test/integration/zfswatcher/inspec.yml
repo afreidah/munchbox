@@ -1,0 +1,10 @@
+---
+name: proxmox-host-zfswatcher
+title: proxmox_host::zfswatcher integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates a converged proxmox_host::zfswatcher -- binary built from source, config rendered, systemd unit installed, consul service file written. The daemon itself may flap in a kitchen guest because no ZFS pools exist.
+version: 0.1.0
+supports:
+  - platform: debian

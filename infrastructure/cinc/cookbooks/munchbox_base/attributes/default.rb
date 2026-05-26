@@ -238,10 +238,10 @@ default[cookbook]['vault_pki_trust'] = {
 }
 
 default[cookbook]['etc_hosts'] = {
-  hosts_path:        '/etc/hosts',
-  domain:            'munchbox.cc',
-  marker_begin:      '# BEGIN MUNCHBOX CLUSTER HOSTS',
-  marker_end:        '# END MUNCHBOX CLUSTER HOSTS',
+  hosts_path: '/etc/hosts',
+  domain: 'munchbox.cc',
+  marker_begin: '# BEGIN MUNCHBOX CLUSTER HOSTS',
+  marker_end: '# END MUNCHBOX CLUSTER HOSTS',
   ip_attribute_path: %w(consul config bind_addr),
   cloud_init_dropin: '/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg',
   # --- Hosts not yet under chef (pihole/unbound boxes on original Pis); appended after chef-search results ---

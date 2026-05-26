@@ -92,7 +92,20 @@ action :install do
     not_if   "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{new_resource.version}'"
   end
 
-  # --- Render the systemd unit here, not in configure. The unit content is static deployment plumbing (binary path, user/group, config dir) -- no dynamic Vault state -- so it belongs with install. Single source of truth: configure declares no systemd_unit, just starts service[consul]. Greenfield ordering works because the unit file lands BEFORE the binary-install execute's restart notify fires. ConditionFileNotEmpty on consul.hcl makes the unit a no-op start until configure renders the config. ---
+  # --- Shadow service declaration so the version-bump notify below resolves inside this custom resource's collection (unified_mode true sandboxes notify lookups per-action). ---
+  service 'consul' do
+    action :nothing
+  end
+
+  # --- Extract the binary BEFORE rendering the systemd unit. The unit's ExecStart points at bin_path; systemd-analyze (run as the verify-step of file/systemd_unit) refuses content whose ExecStart binary is absent. Greenfield ordering: download -> unzip -> unit. ---
+  execute "install consul #{new_resource.version}" do
+    command "unzip -o #{archive_path} -d /usr/local/bin && chmod 0755 #{new_resource.bin_path} && rm -f #{archive_path}"
+    not_if  "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{new_resource.version}'"
+    # --- Bounce consul after a version change so the running process actually uses the new binary. ---
+    notifies :restart, 'service[consul]', :delayed
+  end
+
+  # --- Static deployment plumbing (binary path, user/group, config dir) -- no dynamic Vault state -- so the unit belongs with install. ConditionFileNotEmpty on consul.hcl makes the unit a no-op start until configure renders the config. ---
   systemd_unit 'consul.service' do
     content <<~UNIT
       [Unit]
@@ -118,18 +131,6 @@ action :install do
       WantedBy=multi-user.target
     UNIT
     action :create
-  end
-
-  # --- Shadow service declaration so the version-bump notify below resolves inside this custom resource's collection (unified_mode true sandboxes notify lookups per-action). ---
-  service 'consul' do
-    action :nothing
-  end
-
-  execute "install consul #{new_resource.version}" do
-    command "unzip -o #{archive_path} -d /usr/local/bin && chmod 0755 #{new_resource.bin_path} && rm -f #{archive_path}"
-    not_if  "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{new_resource.version}'"
-    # --- Bounce consul after a version change so the running process actually uses the new binary. Unit file is rendered above first, so the restart resolves cleanly even on greenfield. ---
-    notifies :restart, 'service[consul]', :delayed
   end
 end
 

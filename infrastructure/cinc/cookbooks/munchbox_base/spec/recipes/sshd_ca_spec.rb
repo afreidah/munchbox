@@ -32,6 +32,20 @@ RSpec.describe 'munchbox_base::sshd_ca' do
       ChefSpec::SoloRunner.new(step_into: %w(munchbox_base_sshd)).converge('munchbox_base::sshd_ca')
     end
 
+    it 'declares the munchbox_base_sshd wrapping resource (action :configure_ca)' do
+      expect(chef_run).to configure_ca_munchbox_base_sshd('ca')
+    end
+
+    it 'declares the sshd_config.d drop-in file resource' do
+      expect(chef_run).to create_file('/etc/ssh/sshd_config.d/10-munchbox-ssh-ca.conf')
+    end
+
+    it 'creates /root/.ssh and pins the host CA in known_hosts via ruby_block' do
+      expect(chef_run).to create_directory('/root/.ssh')
+      expect(chef_run).to run_ruby_block('pin host CA in /root/.ssh/known_hosts')
+      expect(chef_run).to run_ruby_block('break-glass key in root authorized_keys')
+    end
+
     it 'writes the trusted_user_ca file' do
       expect(chef_run).to create_file('/etc/ssh/trusted-user-ca-keys.pem')
         .with(owner: 'root', group: 'root', mode: '0644')
@@ -65,7 +79,7 @@ RSpec.describe 'munchbox_base::sshd_ca' do
     cached(:chef_run) do
       ChefSpec::SoloRunner.new(step_into: %w(munchbox_base_sshd)) do |node|
         node.override[:munchbox_base][:ssh_ca][:principals] = {
-          'root'   => ['root'],
+          'root' => ['root'],
           'ubuntu' => ['ubuntu'],
         }
       end.converge('munchbox_base::sshd_ca')

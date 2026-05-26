@@ -59,3 +59,25 @@ suites:
           acl_enabled: false
           tls_http: false
           tls_rpc: false
+
+  - name: auto_restart_webhook
+    # --- python3 is the script's shebang; ensure it's present so the systemd
+    #     unit's ExecStart resolves. The webhook daemon WILL crash-loop because
+    #     there's no nomad agent on :4646 in this suite, but on-disk state +
+    #     systemd unit installation + consul-service json are all verifiable.
+    lifecycle:
+      pre_converge:
+        - remote: sudo apt-get update -q && sudo apt-get install -y -q python3
+    run_list:
+      - recipe[nomad::auto_restart_webhook]
+    attributes:
+      nomad:
+        auto_restart_webhook:
+          # --- bypass vault_fetch; consul user owns the consul-service template
+          #     so we also need to disable that path OR install consul first.
+          nomad_token: kitchen-fake-nomad-token
+          consul_user: root
+          consul_group: root
+    verifier:
+      inspec_tests:
+        - test/integration/auto_restart_webhook

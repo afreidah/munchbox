@@ -66,11 +66,11 @@ action :configure do
     mode     '0640'
     sensitive true
     variables(
-      bind:                new_resource.bind,
-      template_dir:        new_resource.template_dir,
-      resource_dir:        new_resource.resource_dir,
-      log_dir:             new_resource.log_dir,
-      proxy_user:          new_resource.proxy_user,
+      bind: new_resource.bind,
+      template_dir: new_resource.template_dir,
+      resource_dir: new_resource.resource_dir,
+      log_dir: new_resource.log_dir,
+      proxy_user: new_resource.proxy_user,
       proxy_password_hash: new_resource.proxy_password_hash
     )
     notifies :restart, "service[#{new_resource.service_name}]", :delayed
@@ -116,7 +116,7 @@ action :configure do
     group    'consul'
     mode     '0640'
     variables(
-      port:       new_resource.http_port,
+      port: new_resource.http_port,
       check_host: '127.0.0.1'
     )
     notifies :reload, 'service[consul]', :delayed
@@ -124,10 +124,5 @@ action :configure do
 
   service 'consul' do
     action :nothing
-  end
-
-  log "zfswatcher binary missing at #{new_resource.bin_path} -- daemon will fail to start until built (see rouben/zfswatcher README)" do
-    level :warn
-    not_if { ::File.exist?(new_resource.bin_path) }
   end
 end
