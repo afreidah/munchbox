@@ -15,7 +15,10 @@
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
 
-MODULES := $(shell find . -mindepth 2 -maxdepth 2 -name Makefile -printf '%h\n' | sed 's|^\./||' | sort)
+# --- pihole-dns declares configuration_aliases (pihole.primary, pihole.secondary) ---
+# so it can't be validated standalone — only via its consuming leaf. Skip it.
+SKIP_MODULES := pihole-dns
+MODULES := $(shell find . -mindepth 2 -maxdepth 2 -name Makefile -printf '%h\n' | sed 's|^\./||' | sort | grep -vxF -e $(SKIP_MODULES))
 TARGETS := fmt fmt-fix validate lint trivy checkov test verify clean
 
 .DEFAULT_GOAL := help

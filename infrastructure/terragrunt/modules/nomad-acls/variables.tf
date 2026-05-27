@@ -14,6 +14,8 @@
 # CORE CONFIGURATION
 # -------------------------------------------------------------------------
 
+# nomad provider reads NOMAD_TOKEN from env; var kept for env_helper contract
+# tflint-ignore: terraform_unused_declarations
 variable "nomad_bootstrap_token" {
   description = "Nomad ACL bootstrap token (from 'nomad acl bootstrap' command)"
   type        = string

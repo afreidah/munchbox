@@ -39,6 +39,8 @@ default_attributes(
     config: {
       node_name:    'nomad-client-04',
       advertise_ip: '192.168.68.73',
+      # --- meta.gpu = true gates the media stack (sonarr/radarr/jellyfin/etc.) to this node ---
+      client_meta:  { gpu: 'true' },
     },
   },
   # --- GPU host: preserve the nvidia container runtime block that ansible's nvidia role wrote into daemon.json. Without this, chef's docker::configure would wipe it and break the media stack on dockerd restart. ---

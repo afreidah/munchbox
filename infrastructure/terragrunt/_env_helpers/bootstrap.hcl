@@ -17,8 +17,10 @@ terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules//bootstrap"
 }
 
-dependency "networking" {
-  config_path = "${dirname(get_original_terragrunt_dir())}/networking"
+# --- network source: sibling node (when node.yaml.share_network_from is set)
+#     or sibling networking/ folder otherwise. Both export subnet_id + security_group_id. ---
+dependency "network_source" {
+  config_path = local.share_network_from != "" ? "${dirname(get_original_terragrunt_dir())}/${local.share_network_from}" : "${dirname(get_original_terragrunt_dir())}/networking"
 
   mock_outputs = {
     subnet_id         = "mock-subnet-id"
@@ -33,6 +35,9 @@ locals {
   # --- per-node config loaded from <node-dir>/node.yaml ---
   node_config_path = "${get_terragrunt_dir()}/node.yaml"
   node_config      = yamldecode(file(local.node_config_path))
+
+  # --- optional: borrow subnet + SG from another node instead of a fresh networking sibling ---
+  share_network_from = try(local.node_config.share_network_from, "")
 
   provider_type = local.root.locals.provider_type
 
@@ -109,8 +114,8 @@ inputs = {
   # --- Network ---
   create_network              = try(local.node_config.create_network, false)
   vpc_cidr                    = try(local.node_config.vpc_cidr, local.root.locals.network_cidrs[local.provider_type])
-  existing_subnet_id          = dependency.networking.outputs.subnet_id
-  existing_security_group_id  = dependency.networking.outputs.security_group_id
+  existing_subnet_id          = dependency.network_source.outputs.subnet_id
+  existing_security_group_id  = dependency.network_source.outputs.security_group_id
   existing_security_group_ids = try(local.node_config.existing_security_group_ids, null)
 
   # --- Provider-specific configs (merged above) ---

@@ -46,13 +46,13 @@ lint: init-tflint ## tflint (terraform-specific linter)
 trivy: ## trivy config (IaC misconfig scan; bundles tfsec/tflint checks)
 	@trivy config --quiet --exit-code 1 .
 
-checkov: ## checkov (policy / compliance scan)
-	@checkov --quiet --compact --directory . --framework terraform
+checkov: ## checkov (policy / compliance scan; skip list in modules/.checkov.yaml)
+	@checkov --quiet --compact --directory . --framework terraform --config-file ../.checkov.yaml
 
 test: init ## terraform test (plan-only suite from tests/)
 	@terraform test -no-color
 
-verify: fmt validate lint trivy checkov test ## fmt + validate + lint + trivy + checkov + test
+verify: fmt validate lint test ## fmt + validate + lint + test (trivy/checkov are plan-time hooks; run ad-hoc if needed)
 
 clean: ## remove .terraform/ + lockfile
 	@rm -rf .terraform .terraform.lock.hcl

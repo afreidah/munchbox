@@ -33,6 +33,15 @@ resource "aws_vpc" "this" {
   })
 }
 
+# --- lock down the auto-created default SG (CKV2_AWS_12); no ingress/egress rules ---
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.this.id
+
+  tags = merge(var.tags, {
+    Name = "${var.name}-default-sg-locked"
+  })
+}
+
 # -----------------------------------------------------------------------------
 # INTERNET GATEWAY
 # -----------------------------------------------------------------------------
