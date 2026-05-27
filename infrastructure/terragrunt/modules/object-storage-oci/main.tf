@@ -16,10 +16,6 @@ data "oci_objectstorage_namespace" "this" {
   compartment_id = var.compartment_id
 }
 
-data "oci_identity_user" "current" {
-  user_id = var.user_ocid
-}
-
 # -------------------------------------------------------------------------
 # OBJECT STORAGE BUCKET
 # -------------------------------------------------------------------------
@@ -32,6 +28,9 @@ resource "oci_objectstorage_bucket" "this" {
   storage_tier   = var.storage_tier
 
   versioning = var.versioning_enabled ? "Enabled" : "Disabled"
+
+  # --- emit change events to OCI Events service (CKV_OCI_7); free unless subscribed ---
+  object_events_enabled = true
 
   metadata = var.metadata
 }

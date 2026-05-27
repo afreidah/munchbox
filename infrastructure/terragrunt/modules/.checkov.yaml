@@ -1,0 +1,32 @@
+# -------------------------------------------------------------------------------
+# Shared checkov skip list for standalone per-module scans
+# -------------------------------------------------------------------------------
+# Mirrors the .checkov.yaml that root.hcl generates into each terragrunt leaf
+# at plan time. Standalone `make checkov` (from inside a module dir) walks up
+# and finds this file.
+
+skip-check:
+  # --- checkov 3.2.471 bugs: looks in wrong HCL location for these OCI checks ---
+  - CKV_OCI_19
+  - CKV_OCI_20
+  - CKV_OCI_4
+  # --- intentional: cloud nodes need public IPs ---
+  - CKV_AWS_130
+  # --- intentional: bootstrap SSH access, gated by var.allow_ssh when unused ---
+  - CKV_AWS_24
+  # --- intentional: ICMP for ping, gated by var.allow_icmp when unused ---
+  - CKV_AWS_277
+  # --- homelab: VPC flow logs not paying for ---
+  - CKV2_AWS_11
+  # --- false positive: module SG is attached by caller via output reference ---
+  - CKV2_AWS_5
+  # --- default SG is AWS-managed; cannot restrict from module here ---
+  - CKV2_AWS_12
+  # --- homelab: no OCI KMS keys for block-volume + object-storage CMK encryption ---
+  - CKV_OCI_3
+  - CKV_OCI_9
+  # --- homelab: paying for OCI backup policies not worth it ---
+  - CKV_OCI_2
+  # --- homelab: object event streams + versioning not needed for backup bucket ---
+  - CKV_OCI_7
+  - CKV_OCI_8

@@ -1,6 +1,12 @@
+# tflint-ignore-file: terraform_unused_declarations
 # -----------------------------------------------------------------------------
 # BOOTSTRAP MODULE - VARIABLES
 # -----------------------------------------------------------------------------
+#
+# Many vars accept legacy values from the env_helper (nomad/consul versions,
+# docker flags, cluster server lists) that bootstrap no longer uses directly
+# -- chef installs and configures all of that post-first-converge. The vars
+# stay for env_helper API compatibility.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------

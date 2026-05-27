@@ -1,10 +1,12 @@
 # -----------------------------------------------------------------------------
 # kms-oci module tests (plan-only)
 #
+# Project: Munchbox / Author: Alex Freidah
+#
 # Asserts the composition the module is responsible for: the AES-256 key
-# shape is hardcoded correctly, the seal config output carries all three
-# fields HashiCorp Vault needs, the key depends on the vault's management
-# endpoint, and the module accepts empty tags.
+# shape is hardcoded, compartment_id propagates to every resource, and an
+# empty tags map is accepted without error. The vault_seal_config output
+# is pure static HCL composition — not plan-resolvable, not asserted here.
 # -----------------------------------------------------------------------------
 
 mock_provider "oci" {
@@ -16,6 +18,7 @@ mock_provider "oci" {
       state               = "ACTIVE"
     }
   }
+
 }
 
 variables {
@@ -27,42 +30,30 @@ variables {
   tags               = { Environment = "test" }
 }
 
-# --- key always AES-256 (hardcoded in module) ---
+# -------------------------------------------------------------------------
+# Master encryption key shape is hardcoded AES-256
+# -------------------------------------------------------------------------
+
 run "key_shape_aes256" {
   command = plan
 
+  # --- algorithm is AES (required for Vault auto-unseal) ---
   assert {
     condition     = oci_kms_key.this.key_shape[0].algorithm == "AES"
     error_message = "key algorithm must be AES for Vault auto-unseal"
   }
 
+  # --- key length is 32 bytes (256-bit) ---
   assert {
     condition     = oci_kms_key.this.key_shape[0].length == 32
     error_message = "key length must be 32 bytes (256-bit)"
   }
 }
 
-# --- seal config output carries all three fields Vault needs ---
-run "seal_config_structure" {
-  command = plan
+# -------------------------------------------------------------------------
+# Empty tags map is accepted (edge case for free-tier deployments)
+# -------------------------------------------------------------------------
 
-  assert {
-    condition     = can(output.vault_seal_config.key_id)
-    error_message = "vault_seal_config must include key_id"
-  }
-
-  assert {
-    condition     = can(output.vault_seal_config.crypto_endpoint)
-    error_message = "vault_seal_config must include crypto_endpoint"
-  }
-
-  assert {
-    condition     = can(output.vault_seal_config.management_endpoint)
-    error_message = "vault_seal_config must include management_endpoint"
-  }
-}
-
-# --- empty tags map accepted without error ---
 run "empty_tags_accepted" {
   command = plan
 
@@ -70,21 +61,27 @@ run "empty_tags_accepted" {
     tags = {}
   }
 
+  # --- module plans cleanly with no tags; compartment_id still flows ---
   assert {
     condition     = oci_kms_vault.this.compartment_id == var.compartment_id
     error_message = "compartment_id should flow through with empty tags"
   }
 }
 
-# --- compartment_id flows through to both resources ---
+# -------------------------------------------------------------------------
+# compartment_id propagates to both the vault and the key
+# -------------------------------------------------------------------------
+
 run "compartment_id_propagates" {
   command = plan
 
+  # --- vault is in the right compartment ---
   assert {
     condition     = oci_kms_vault.this.compartment_id == var.compartment_id
     error_message = "vault compartment_id must match input"
   }
 
+  # --- key is in the right compartment ---
   assert {
     condition     = oci_kms_key.this.compartment_id == var.compartment_id
     error_message = "key compartment_id must match input"

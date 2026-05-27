@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# OCI NODE - oracle-node-2
+# OCI NODE - oracle-node-2 (shares network with oracle-node-1 via node.yaml)
 # -----------------------------------------------------------------------------
 
 include "root" {
@@ -9,13 +9,4 @@ include "root" {
 include "bootstrap" {
   path   = "${get_repo_root()}/infrastructure/terragrunt/_env_helpers/bootstrap.hcl"
   expose = true
-}
-
-dependency "oracle_node_1" {
-  config_path = "../oracle-node-1"
-}
-
-inputs = {
-  existing_subnet_id         = dependency.oracle_node_1.outputs.subnet_id
-  existing_security_group_id = dependency.oracle_node_1.outputs.security_group_id
 }

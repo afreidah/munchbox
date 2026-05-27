@@ -30,9 +30,9 @@ oci_config:
   availability_domain: "AD-1"
   shape: "VM.Standard.E2.1.Micro"
 
-# Network - uses existing VCN from oracle-node-1
+# Network - borrow subnet + security group from oracle-node-1 (consumed by bootstrap env_helper)
 create_network: false
-# subnet_id and security_group_id come from dependency
+share_network_from: oracle-node-1
 
 # Additional tags
 tags:
