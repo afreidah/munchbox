@@ -108,7 +108,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.60.18"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.60.22"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -118,7 +118,7 @@ job "s3-orchestrator" {
       env {
         TZ         = "America/Los_Angeles"
         GOMAXPROCS = "1"
-        GOMEMLIMIT = "900MiB"
+        GOMEMLIMIT = "200MiB"
       }
       template {
         data        = <<EOH
@@ -280,11 +280,19 @@ circuit_breaker:
   failure_threshold: 3
   open_timeout: 1200s
   cache_ttl: 120s
+  parallel_broadcast: true
+  degraded_broadcast_parallelism: 4
 
 backend_circuit_breaker:
   enabled: true
   failure_threshold: 3
-  open_timeout: 15s
+  open_timeout: 30m
+
+write_path:
+  pending_pattern:
+    reaper_tick: 10m
+    min_age: 15m
+    batch_size: 10
 
 integrity:
   enabled: true
@@ -316,7 +324,7 @@ admin:
 
 cache:
   enabled: true
-  max_size: "256MB"
+  max_size: "32MB"
   max_object_size: "5MB"
   ttl: "15m"
 
@@ -327,6 +335,7 @@ reconcile:
 cleanup_queue:
   concurrency: 4
   multipart_stale_timeout: "24h"
+  claim_grace_period: "10m"
 
 rebalance:
   enabled: true
@@ -380,8 +389,8 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 500
-        memory = 1024
+        cpu    = 200
+        memory = 256
       }
 
       # --- Termination ---

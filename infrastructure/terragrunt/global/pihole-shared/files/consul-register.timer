@@ -1,0 +1,9 @@
+[Unit]
+Description=Periodic Consul service re-registration
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target

@@ -12,6 +12,26 @@
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
+# BITWARDEN PROVIDER AUTH
+# -----------------------------------------------------------------------------
+
+variable "bitwarden_server" {
+  description = "Vaultwarden/Bitwarden server URL the provider talks to."
+  type        = string
+}
+
+variable "bitwarden_email" {
+  description = "Login email for the Vaultwarden account that owns the synced items."
+  type        = string
+}
+
+variable "bitwarden_master_password" {
+  description = "Master password; sourced from VAULTWARDEN_MASTER_PASSWORD via the env_helper."
+  type        = string
+  sensitive   = true
+}
+
+# -----------------------------------------------------------------------------
 # VAULT
 # -----------------------------------------------------------------------------
 

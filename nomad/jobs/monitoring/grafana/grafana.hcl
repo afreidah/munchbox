@@ -64,6 +64,7 @@ templates = [
   { src = "dashboards/prometheus-blackbox-exporter.json", dest = "/etc/grafana/provisioning/dashboards/json/prometheus-blackbox-exporter.json", vault = false },
   { src = "dashboards/proxmox-via-prometheus.json", dest = "/etc/grafana/provisioning/dashboards/json/proxmox-via-prometheus.json", vault = false },
   { src = "dashboards/traefik-official-standalone-dashboard.json", dest = "/etc/grafana/provisioning/dashboards/json/traefik-official-standalone-dashboard.json", vault = false },
+  { src = "dashboards/pihole-exporter.json", dest = "/etc/grafana/provisioning/dashboards/json/pihole-exporter.json", vault = false },
 ]
 
 # --- Service tags ---

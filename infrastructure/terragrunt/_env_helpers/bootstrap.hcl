@@ -17,6 +17,39 @@ terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules//bootstrap"
 }
 
+# --- bootstrap calls module.network / module.compute with count, which
+#     forbids those children from carrying their own provider {} blocks.
+#     Providers must live at the leaf-cache root and inherit down through
+#     the whole count-tree, so we generate them here rather than in any
+#     individual module's providers.tf. ---
+generate "providers" {
+  path      = "providers.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<-EOF
+    provider "oci" {}
+
+    provider "proxmox" {
+      pm_tls_insecure = true
+    }
+
+    provider "aws" {
+      region = "us-east-1"
+
+      skip_credentials_validation = true
+      skip_requesting_account_id  = true
+      skip_metadata_api_check     = true
+      skip_region_validation      = true
+
+      default_tags {
+        tags = {
+          Project   = "munchbox"
+          ManagedBy = "terragrunt"
+        }
+      }
+    }
+  EOF
+}
+
 # --- network source: sibling node (when node.yaml.share_network_from is set)
 #     or sibling networking/ folder otherwise. Both export subnet_id + security_group_id. ---
 dependency "network_source" {
@@ -26,7 +59,7 @@ dependency "network_source" {
     subnet_id         = "mock-subnet-id"
     security_group_id = "mock-security-group-id"
   }
-  mock_outputs_allowed_terraform_commands = ["validate"]
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
 }
 
 locals {

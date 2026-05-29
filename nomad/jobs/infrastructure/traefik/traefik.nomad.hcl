@@ -904,8 +904,8 @@ EOH
     # Cloudflare tunnel connector — tied to Traefik lifecycle so the
     # connector stops when Traefik dies, preventing Cloudflare from routing
     # traffic to a node with no working reverse proxy.
-    # Tunnel ingress configuration is managed by Terraform
-    # (infrastructure/terraform/dns/main.tf) via cloudflare_tunnel_config.
+    # Tunnel ingress configuration is managed by Terragrunt
+    # (infrastructure/terragrunt/modules/dns/main.tf) via cloudflare_tunnel_config.
     # -----------------------------------------------------------------------
 
     task "cloudflared-tunnel" {

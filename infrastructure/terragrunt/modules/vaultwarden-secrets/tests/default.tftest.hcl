@@ -25,6 +25,10 @@ mock_provider "vault" {
 }
 
 variables {
+  bitwarden_server          = "https://mock.example.com"
+  bitwarden_email           = "mock@example.com"
+  bitwarden_master_password = "mock-master"
+
   folders = {
     "admin"  = "Admin Services"
     "shared" = "Shared"

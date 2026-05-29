@@ -5,6 +5,21 @@
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# FORGEJO PROVIDER AUTH
+# -----------------------------------------------------------------------------
+
+variable "forgejo_host" {
+  description = "Forgejo URL the provider talks to; sourced from FORGEJO_HOST via env_helper."
+  type        = string
+}
+
+variable "forgejo_api_token" {
+  description = "Forgejo API token; sourced from FORGEJO_API_TOKEN via env_helper."
+  type        = string
+  sensitive   = true
+}
+
 variable "vault_mount" {
   description = "Vault KV v2 mount path"
   type        = string

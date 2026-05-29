@@ -12,6 +12,10 @@ terraform {
 }
 
 inputs = {
+  # --- forgejo provider auth (was in root.hcl's generate "providers") ---
+  forgejo_host      = get_env("FORGEJO_HOST", "http://forgejo.service.consul:30028")
+  forgejo_api_token = get_env("FORGEJO_API_TOKEN", "")
+
   vault_mount      = "secret"
   repository_owner = "alex"
   repository_name  = "munchbox"

@@ -147,7 +147,6 @@ Consul (8600)        CoreDNS (5353)         │
 
 **Configuration:**
 
-- Ansible playbook: `infrastructure/ansible/playbooks/configure-local-consul-dns.yml`
 - CoreDNS job: `nomad/jobs/infrastructure/coredns/coredns.nomad.hcl`
 - Bridge-mode containers use `${attr.unique.network.ip-address}` for DNS with Pi-hole fallbacks
 
@@ -183,10 +182,10 @@ Consul (8600)        CoreDNS (5353)         │
 │       └── munchbox-service/    # Reusable service pack
 │
 ├── infrastructure/
-│   ├── ansible/                 # Configuration management
-│   │   ├── inventory/           # Host inventory and group vars
-│   │   ├── playbooks/           # Deployment playbooks
-│   │   └── roles/               # Reusable roles
+│   ├── cinc/                    # Cinc (Chef) cookbooks + roles
+│   ├── terragrunt/              # Terragrunt modules + leaves
+│   ├── providers/               # Local-fork terraform providers (pihole)
+│   └── scripts/                 # Operator scripts (fix-vault, oracle-arm-retry, ...)
 │   │       ├── consul/          # Consul agent setup
 │   │       ├── nomad/           # Nomad agent setup
 │   │       ├── vault/           # Vault server setup
@@ -310,11 +309,8 @@ terragrunt apply
 
 ### Node Configuration
 
-Ansible playbooks configure nodes:
-```bash
-cd infrastructure/ansible
-ansible-playbook playbooks/vault-cert-manager.yml -l nomad_cluster
-```
+Cinc cookbooks (`infrastructure/cinc/`) run on each node via `cinc-client`.
+Roles at `infrastructure/cinc/roles/`, cookbooks at `infrastructure/cinc/cookbooks/`.
 
 ### Service Access
 
@@ -455,10 +451,9 @@ make tf-output                # Show VM details
 make tf-destroy               # Destroy all VMs
 
 # Node Management
-make generate                 # Generate inventory from nodes.yml
 make show-nodes               # Display node configuration
 make add-node VM=<name>       # Configure node (VM or bare-metal)
-make add-vm VM=<name>         # Full VM workflow: generate + tf-apply + add-node
+make add-vm VM=<name>         # Full VM workflow: tf-apply + add-node
 
 # Consul ACL Management
 make consul-prereqs           # Copy certs and enable Vault KV
@@ -488,15 +483,6 @@ make security                 # Run all security scans
 # Multi-Architecture Builds
 make buildx-setup             # Set up BuildKit for multi-arch
 make publish-multiarch        # Build and push amd64 + arm64 images
-```
-
-### Ansible Playbooks (`cd infrastructure/ansible`)
-
-```bash
-# Run playbooks directly with ansible-playbook
-ansible-playbook playbooks/nomad-cluster.yml        # Full cluster setup
-ansible-playbook playbooks/add-node.yml -e target_host=<node>
-ansible-playbook playbooks/vault-cert-manager.yml   # Deploy cert manager
 ```
 
 ---
@@ -686,7 +672,7 @@ This is a personal homelab project, but suggestions and improvements are welcome
 
 - **Go**: Follow standard Go conventions, use `gofmt` and `golangci-lint`
 - **HCL**: Use `nomad fmt` for Nomad job files, `terraform fmt` for Terraform
-- **Ansible**: Follow ansible-lint conventions
+- **Ruby/Chef**: Use `cookstyle` (cinc cookbooks)
 - **Documentation**: Update README for significant changes
 
 ---

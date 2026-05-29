@@ -7,6 +7,16 @@
 # group and region for bucket creation and HMAC credential generation.
 # -------------------------------------------------------------------------------
 
+# -----------------------------------------------------------------------------
+# IBM PROVIDER AUTH
+# -----------------------------------------------------------------------------
+
+variable "ibmcloud_api_key" {
+  description = "IBM Cloud API key; sourced from IC_API_KEY via env_helper."
+  type        = string
+  sensitive   = true
+}
+
 variable "resource_group" {
   description = "IBM Cloud resource group name"
   type        = string

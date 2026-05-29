@@ -25,24 +25,6 @@ default[cookbook]['install'] = {
 # -------------------------------------------------------------------------------
 # Agent configuration
 #
-# Per-node knobs to override in the role:
-#   node_name        -- nomad agent name; pin per-node to match the
-#                       existing catalog identity (per #32 the form is
-#                       the OS hostname with hyphens stripped, e.g.
-#                       'oraclearm1', NOT 'oracle-arm-1'). REQUIRED.
-#   bind_addr        -- IP the agent binds to. REQUIRED (oracle: WG IP).
-#   advertise_ip     -- IP advertised for http/rpc/serf. REQUIRED.
-#   server / client  -- enabled flags. server defaults false, client defaults true.
-#   bootstrap_expect -- only meaningful when server.enabled=true.
-#   servers          -- client-mode list of "<server-ip>:4647" entries (REQUIRED for clients).
-#   server_join      -- server-mode list of serf "<peer-ip>:4648" entries.
-#   node_pool        -- client node_pool string (default 'default').
-#   client_meta      -- extra Hash merged into client.meta {}.
-#   network_interface -- client bridge interface (e.g. 'wg1' on oracle).
-#
-# Cookbook-wide constants (datacenter, region, ports, consul/vault
-# integration, docker plugin, telemetry) match the live cluster config.
-#
 # TLS cert paths point at the layout vault-cert-manager already writes
 # (/etc/nomad.d/tls/{nomad.crt, nomad.key, ca-chain.crt}); this cookbook
 # never touches the cert files themselves.
@@ -92,6 +74,7 @@ default[cookbook]['config'] = {
 
   # --- Vault integration (workload identity; nomad signs JWTs that vault accepts via nomad-jwt mount) ---
   vault_enabled: true,
+
   # --- Pinned to stabler for parity with the live ansible-managed config; revisit when the cluster vault_addr standardizes. ---
   vault_address: 'https://192.168.68.61:8200',
   vault_ca_file: '/opt/nomad/tls/vault-intermediate-ca.pem',
@@ -127,8 +110,6 @@ default[cookbook]['config'] = {
 }
 
 # -------------------------------------------------------------------------------
-# Auto-restart webhook (nomad::auto_restart_webhook recipe)
-#
 # AlertManager POSTs alerts here; the receiver scans for labels
 # `auto_restart=true` + `nomad_job=<name>` and shells out to
 # `nomad job restart` (with a per-job cooldown to absorb flapping).

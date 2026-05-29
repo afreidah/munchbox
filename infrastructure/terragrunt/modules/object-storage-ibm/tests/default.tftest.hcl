@@ -16,6 +16,8 @@ mock_provider "ibm" {
 }
 
 variables {
+  ibmcloud_api_key = "mock-api-key"
+
   resource_group = "Default"
   instance_name  = "test-cos"
   bucket_name    = "test-bucket"

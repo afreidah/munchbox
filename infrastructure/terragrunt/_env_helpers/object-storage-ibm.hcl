@@ -17,6 +17,9 @@ terraform {
 }
 
 inputs = {
+  # --- ibm provider auth (was in root.hcl's generate "providers") ---
+  ibmcloud_api_key = get_env("IC_API_KEY", "")
+
   resource_group = get_env("IBM_RESOURCE_GROUP", "Default")
   instance_name  = "Cloud Object Storage-wx"
   region         = get_env("IBM_REGION", "us-east")

@@ -1,0 +1,13 @@
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/node_exporter \
+  --web.listen-address=:9100 \
+  --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|run/.+)($|/)
+
+[Install]
+WantedBy=multi-user.target

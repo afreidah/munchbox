@@ -50,7 +50,8 @@ Oracle nodes use a WireGuard tunnel to one of the bare metal Nomad nodes to enab
 
 - `nomad/jobs/` - Nomad job definitions organized by category
 - `nomad/packs/registry/` - Nomad packs (including munchbox-service)
-- `infrastructure/ansible/` - Ansible playbooks and roles
+- `infrastructure/cinc/` - Cinc (Chef) cookbooks + roles
+- `infrastructure/terragrunt/` - Terraform/Terragrunt modules + leaves
 - `src/vault-cert-manager/` - Vault PKI certificate lifecycle manager
 
 ## Certificate Management
@@ -59,7 +60,7 @@ Oracle nodes use a WireGuard tunnel to one of the bare metal Nomad nodes to enab
 Manages certificates for infrastructure services:
 - Consul server/client certs
 - Nomad server/client certs
-- Deployed via: `infrastructure/ansible/playbooks/vault-cert-manager.yml`
+- Deployed via the `vault_cert_manager` cinc cookbook.
 
 ### Nomad Template Certs
 Some containerized services get certs via Nomad templates with Vault PKI:
