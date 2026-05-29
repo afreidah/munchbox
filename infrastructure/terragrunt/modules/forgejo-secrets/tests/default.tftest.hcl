@@ -23,6 +23,9 @@ mock_provider "vault" {
 }
 
 variables {
+  forgejo_host      = "http://mock.example.com"
+  forgejo_api_token = "mock-token"
+
   repository_owner = "alex"
   repository_name  = "munchbox"
   secrets = {

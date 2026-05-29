@@ -1,0 +1,50 @@
+{
+  "Node": "${host}",
+  "Address": "${ip}",
+  "NodeMeta": {
+    "node_type": "raspberry-pi-zero",
+    "role": "dns-server",
+    "arch": "armv6"
+  },
+  "Service": {
+    "ID": "pihole-lb-${host}",
+    "Service": "pihole-lb",
+    "Port": 80,
+    "Tags": [
+      "traefik.enable=true",
+      "traefik.http.routers.pihole.rule=Host(`pihole.munchbox.cc`)",
+      "traefik.http.routers.pihole.entrypoints=websecure",
+      "traefik.http.routers.pihole.tls=true",
+      "traefik.http.routers.pihole.middlewares=pihole-lb-redirect-admin@consulcatalog",
+      "traefik.http.routers.pihole-http.rule=Host(`pihole.munchbox.cc`)",
+      "traefik.http.routers.pihole-http.entrypoints=web",
+      "traefik.http.routers.pihole-http.middlewares=pihole-lb-redirect-admin@consulcatalog",
+      "traefik.http.middlewares.pihole-lb-redirect-admin.redirectregex.regex=^https?://pihole\\\\.munchbox\\\\.cc/?$$",
+      "traefik.http.middlewares.pihole-lb-redirect-admin.redirectregex.replacement=https://pihole.munchbox.cc/admin/",
+      "traefik.http.middlewares.pihole-lb-redirect-admin.redirectregex.permanent=false",
+      "traefik.http.services.pihole-lb.loadbalancer.server.port=80",
+      "external",
+      "dns",
+      "pihole",
+      "loadbalanced",
+      "${host}"
+    ],
+    "Meta": {
+      "node_type": "raspberry-pi-zero",
+      "role": "dns-server",
+      "host": "${host}"
+    }
+  },
+  "Check": {
+    "Node": "${host}",
+    "CheckID": "pihole-lb-${host}-health",
+    "Name": "Pi-hole LB Health",
+    "Status": "passing",
+    "ServiceID": "pihole-lb-${host}",
+    "Definition": {
+      "HTTP": "http://${ip}/admin/",
+      "Interval": "30s",
+      "Timeout": "5s"
+    }
+  }
+}

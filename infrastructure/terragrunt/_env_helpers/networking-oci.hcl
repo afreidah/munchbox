@@ -12,6 +12,37 @@ terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules//network"
 }
 
+# --- network dispatches to oci_networking / aws_networking / security-list-oci
+#     / security-group via count, so those children can't carry their own
+#     provider blocks. Providers must live at the leaf-cache root. ---
+generate "providers" {
+  path      = "providers.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<-EOF
+    provider "oci" {}
+
+    provider "proxmox" {
+      pm_tls_insecure = true
+    }
+
+    provider "aws" {
+      region = "us-east-1"
+
+      skip_credentials_validation = true
+      skip_requesting_account_id  = true
+      skip_metadata_api_check     = true
+      skip_region_validation      = true
+
+      default_tags {
+        tags = {
+          Project   = "munchbox"
+          ManagedBy = "terragrunt"
+        }
+      }
+    }
+  EOF
+}
+
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 }

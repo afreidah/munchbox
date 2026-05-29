@@ -1,0 +1,50 @@
+{
+  "Node": "${host}",
+  "Address": "${ip}",
+  "NodeMeta": {
+    "node_type": "raspberry-pi-zero",
+    "role": "dns-server",
+    "arch": "armv6"
+  },
+  "Service": {
+    "ID": "pihole-webui-${host}",
+    "Service": "pihole-webui",
+    "Port": 80,
+    "Tags": [
+      "traefik.enable=true",
+      "traefik.http.routers.pihole-${host}.rule=Host(`pihole-${host}.munchbox.cc`)",
+      "traefik.http.routers.pihole-${host}.entrypoints=websecure",
+      "traefik.http.routers.pihole-${host}.tls=true",
+      "traefik.http.routers.pihole-${host}.middlewares=pihole-redirect-admin-${host}@consulcatalog",
+      "traefik.http.routers.pihole-${host}-http.rule=Host(`pihole-${host}.munchbox.cc`)",
+      "traefik.http.routers.pihole-${host}-http.entrypoints=web",
+      "traefik.http.routers.pihole-${host}-http.middlewares=pihole-redirect-admin-${host}@consulcatalog",
+      "traefik.http.middlewares.pihole-redirect-admin-${host}.redirectregex.regex=^https?://pihole-${host}\\\\.munchbox\\\\.cc/?$$",
+      "traefik.http.middlewares.pihole-redirect-admin-${host}.redirectregex.replacement=https://pihole-${host}.munchbox.cc/admin/",
+      "traefik.http.middlewares.pihole-redirect-admin-${host}.redirectregex.permanent=false",
+      "traefik.http.services.pihole-${host}.loadbalancer.server.port=80",
+      "external",
+      "dns",
+      "pihole",
+      "webui",
+      "${host}"
+    ],
+    "Meta": {
+      "node_type": "raspberry-pi-zero",
+      "role": "dns-server",
+      "host": "${host}"
+    }
+  },
+  "Check": {
+    "Node": "${host}",
+    "CheckID": "pihole-webui-${host}-health",
+    "Name": "Pi-hole Web UI Health",
+    "Status": "passing",
+    "ServiceID": "pihole-webui-${host}",
+    "Definition": {
+      "HTTP": "http://${ip}/admin/",
+      "Interval": "30s",
+      "Timeout": "5s"
+    }
+  }
+}

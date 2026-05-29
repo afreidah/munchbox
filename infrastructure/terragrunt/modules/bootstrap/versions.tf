@@ -14,33 +14,9 @@ terraform {
       source  = "telmate/proxmox"
       version = "3.0.2-rc07"
     }
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 5.0"
-    }
-    ibm = {
-      source  = "IBM-Cloud/ibm"
-      version = "~> 2.0"
-    }
-    bitwarden = {
-      source  = "maxlaverse/bitwarden"
-      version = "~> 0.12"
-    }
-    forgejo = {
-      source  = "svalabs/forgejo"
-      version = "~> 1.1"
-    }
-    pihole = {
-      source  = "ryanwholey/pihole"
-      version = "~> 0.2"
-    }
     vault = {
       source  = "hashicorp/vault"
       version = "~> 5.0"
-    }
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.0"
     }
   }
 }

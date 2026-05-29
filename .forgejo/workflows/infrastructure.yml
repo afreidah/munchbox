@@ -23,10 +23,7 @@ jobs:
   detect:
     runs-on: docker
     outputs:
-      terraform: ${{ steps.detect.outputs.terraform }}
       terragrunt: ${{ steps.detect.outputs.terragrunt }}
-      ansible: ${{ steps.detect.outputs.ansible }}
-      terraform_dirs: ${{ steps.detect.outputs.terraform_dirs }}
       terragrunt_dirs: ${{ steps.detect.outputs.terragrunt_dirs }}
     steps:
       - uses: actions/checkout@v4
@@ -62,17 +59,6 @@ jobs:
           echo "Changed files:"
           echo "$CHANGED"
 
-          # Check for terraform changes
-          if [ -n "$CHANGED" ] && echo "$CHANGED" | grep -q "^infrastructure/terraform/"; then
-            echo "terraform=true" >> $GITHUB_OUTPUT
-            TF_DIRS=$(echo "$CHANGED" | grep "^infrastructure/terraform/" | cut -d'/' -f3 | sort -u | grep -v "^modules$" | grep -v "^consul-acls$" | tr '\n' ' ' || true)
-            echo "terraform_dirs=$TF_DIRS" >> $GITHUB_OUTPUT
-            echo "Terraform directories with changes: $TF_DIRS"
-          else
-            echo "terraform=false" >> $GITHUB_OUTPUT
-            echo "terraform_dirs=" >> $GITHUB_OUTPUT
-          fi
-
           # Check for terragrunt changes
           if [ -n "$CHANGED" ] && echo "$CHANGED" | grep -q "^infrastructure/terragrunt/"; then
             echo "terragrunt=true" >> $GITHUB_OUTPUT
@@ -83,134 +69,6 @@ jobs:
             echo "terragrunt=false" >> $GITHUB_OUTPUT
             echo "terragrunt_dirs=" >> $GITHUB_OUTPUT
           fi
-
-          # Check for ansible changes
-          if [ -n "$CHANGED" ] && echo "$CHANGED" | grep -q "^infrastructure/ansible/"; then
-            echo "ansible=true" >> $GITHUB_OUTPUT
-          else
-            echo "ansible=false" >> $GITHUB_OUTPUT
-          fi
-
-  # -------------------------------------------------------------------------
-  # Terraform validation and plan (posts own comment)
-  # -------------------------------------------------------------------------
-
-  terraform:
-    runs-on: docker
-    needs: detect
-    if: needs.detect.outputs.terraform == 'true' && github.event_name == 'pull_request'
-    container:
-      image: registry.munchbox.cc/ops-build-image:v3
-      options: --dns 192.168.68.64 --dns 192.168.68.62
-    env:
-      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
-      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-      VAULT_SKIP_VERIFY: "true"
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
-      TF_VAR_consul_bootstrap_token: ${{ secrets.CONSUL_BOOTSTRAP_TOKEN }}
-      FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Terraform validation and plan
-        run: |
-          cd infrastructure/terraform
-          COMMENT_FILE="/tmp/comment.md"
-          MARKER="<!-- ci:terraform-validation -->"
-          echo "$MARKER" > "$COMMENT_FILE"
-          echo "## Terraform Validation Results" >> "$COMMENT_FILE"
-          echo "" >> "$COMMENT_FILE"
-
-          # Format check
-          echo "### Format Check" >> "$COMMENT_FILE"
-          if terraform fmt -check -recursive -diff > /tmp/fmt-output.txt 2>&1; then
-            echo "[PASS] All files properly formatted" >> "$COMMENT_FILE"
-          else
-            echo "[FAIL] Format issues found:" >> "$COMMENT_FILE"
-            echo '```diff' >> "$COMMENT_FILE"
-            head -100 /tmp/fmt-output.txt >> "$COMMENT_FILE"
-            echo '```' >> "$COMMENT_FILE"
-          fi
-          echo "" >> "$COMMENT_FILE"
-
-          # Validate and plan each directory
-          echo "### Validation and Plan" >> "$COMMENT_FILE"
-
-          DIRS="${{ needs.detect.outputs.terraform_dirs }}"
-          echo "Processing directories: $DIRS"
-
-          if [ -z "$DIRS" ]; then
-            echo "No terraform directories to process"
-            echo "" >> "$COMMENT_FILE"
-            echo "No terraform changes detected." >> "$COMMENT_FILE"
-          fi
-
-          for dir in $DIRS; do
-            [ -d "$dir" ] || continue
-            echo "" >> "$COMMENT_FILE"
-            echo "<details>" >> "$COMMENT_FILE"
-            echo "<summary><b>$dir</b></summary>" >> "$COMMENT_FILE"
-            echo "" >> "$COMMENT_FILE"
-
-            cd "$dir"
-            if terraform init -input=false -reconfigure > /tmp/init.txt 2>&1; then
-              if terraform validate > /tmp/validate.txt 2>&1; then
-                echo "[PASS] Validation passed" >> "$COMMENT_FILE"
-                echo "" >> "$COMMENT_FILE"
-                echo "**Plan output:**" >> "$COMMENT_FILE"
-                if terraform plan -input=false -no-color -out=/tmp/tfplan > /tmp/plan.txt 2>&1; then
-                  echo '```hcl' >> "$COMMENT_FILE"
-                  tail -100 /tmp/plan.txt >> "$COMMENT_FILE"
-                  echo '```' >> "$COMMENT_FILE"
-                else
-                  echo '```' >> "$COMMENT_FILE"
-                  tail -50 /tmp/plan.txt >> "$COMMENT_FILE"
-                  echo '```' >> "$COMMENT_FILE"
-                fi
-              else
-                echo "[FAIL] Validation failed:" >> "$COMMENT_FILE"
-                echo '```' >> "$COMMENT_FILE"
-                cat /tmp/validate.txt >> "$COMMENT_FILE"
-                echo '```' >> "$COMMENT_FILE"
-              fi
-            else
-              echo "[WARN] Init failed:" >> "$COMMENT_FILE"
-              echo '```' >> "$COMMENT_FILE"
-              tail -30 /tmp/init.txt >> "$COMMENT_FILE"
-              echo '```' >> "$COMMENT_FILE"
-            fi
-            echo "" >> "$COMMENT_FILE"
-            echo "</details>" >> "$COMMENT_FILE"
-            cd ..
-          done
-
-          echo "" >> "$COMMENT_FILE"
-          echo "---" >> "$COMMENT_FILE"
-          echo "_Generated by Infrastructure Validation workflow_" >> "$COMMENT_FILE"
-
-          # Find existing comment with our marker and update, or create new
-          COMMENTS_URL="${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
-          EXISTING_ID=$(curl -s -H "Authorization: token ${FORGEJO_TOKEN}" "$COMMENTS_URL" \
-            | jq -r ".[] | select(.body | contains(\"$MARKER\")) | .id" | head -1)
-
-          jq -n --rawfile body "$COMMENT_FILE" '{body: $body}' > /tmp/comment.json
-
-          if [ -n "$EXISTING_ID" ]; then
-            curl -s -X PATCH \
-              -H "Authorization: token ${FORGEJO_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d @/tmp/comment.json \
-              "$COMMENTS_URL/$EXISTING_ID"
-          else
-            curl -s -X POST \
-              -H "Authorization: token ${FORGEJO_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d @/tmp/comment.json \
-              "$COMMENTS_URL"
-          fi
-        continue-on-error: true
 
   # -------------------------------------------------------------------------
   # Terragrunt validation and plan (posts own comment)
@@ -318,80 +176,3 @@ jobs:
           fi
         continue-on-error: true
 
-  # -------------------------------------------------------------------------
-  # Ansible validation (posts own comment)
-  # -------------------------------------------------------------------------
-
-  ansible:
-    runs-on: docker
-    needs: detect
-    if: needs.detect.outputs.ansible == 'true' && github.event_name == 'pull_request'
-    container:
-      image: registry.munchbox.cc/ops-build-image:v3
-      options: --dns 192.168.68.64 --dns 192.168.68.62
-    env:
-      FORGEJO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Ansible validation
-        run: |
-          cd infrastructure/ansible
-          COMMENT_FILE="/tmp/comment.md"
-          MARKER="<!-- ci:ansible-validation -->"
-          echo "$MARKER" > "$COMMENT_FILE"
-          echo "## Ansible Validation Results" >> "$COMMENT_FILE"
-          echo "" >> "$COMMENT_FILE"
-
-          # Lint check
-          echo "### Lint Check" >> "$COMMENT_FILE"
-          if ansible-lint --nocolor playbooks/ roles/ > /tmp/lint-output.txt 2>&1; then
-            echo "[PASS] No linting issues found" >> "$COMMENT_FILE"
-          else
-            echo "[WARN] Linting issues:" >> "$COMMENT_FILE"
-            echo '```' >> "$COMMENT_FILE"
-            head -100 /tmp/lint-output.txt >> "$COMMENT_FILE"
-            echo '```' >> "$COMMENT_FILE"
-          fi
-          echo "" >> "$COMMENT_FILE"
-
-          # Syntax check
-          echo "### Syntax Check" >> "$COMMENT_FILE"
-          for playbook in playbooks/*.yml; do
-            [ -f "$playbook" ] || continue
-            name=$(basename "$playbook")
-            if ansible-playbook --syntax-check "$playbook" > /tmp/syntax.txt 2>&1; then
-              echo "[PASS] $name" >> "$COMMENT_FILE"
-            else
-              echo "[FAIL] $name" >> "$COMMENT_FILE"
-              echo '```' >> "$COMMENT_FILE"
-              cat /tmp/syntax.txt >> "$COMMENT_FILE"
-              echo '```' >> "$COMMENT_FILE"
-            fi
-          done
-
-          echo "" >> "$COMMENT_FILE"
-          echo "---" >> "$COMMENT_FILE"
-          echo "_Generated by Infrastructure Validation workflow_" >> "$COMMENT_FILE"
-
-          # Find existing comment with our marker and update, or create new
-          COMMENTS_URL="${{ github.api_url }}/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
-          EXISTING_ID=$(curl -s -H "Authorization: token ${FORGEJO_TOKEN}" "$COMMENTS_URL" \
-            | jq -r ".[] | select(.body | contains(\"$MARKER\")) | .id" | head -1)
-
-          jq -n --rawfile body "$COMMENT_FILE" '{body: $body}' > /tmp/comment.json
-
-          if [ -n "$EXISTING_ID" ]; then
-            curl -s -X PATCH \
-              -H "Authorization: token ${FORGEJO_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d @/tmp/comment.json \
-              "$COMMENTS_URL/$EXISTING_ID"
-          else
-            curl -s -X POST \
-              -H "Authorization: token ${FORGEJO_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d @/tmp/comment.json \
-              "$COMMENTS_URL"
-          fi
-        continue-on-error: true

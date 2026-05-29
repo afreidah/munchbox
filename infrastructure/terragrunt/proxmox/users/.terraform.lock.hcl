@@ -2,8 +2,7 @@
 # Manual edits may be lost in future updates.
 
 provider "registry.opentofu.org/bpg/proxmox" {
-  version     = "0.107.0"
-  constraints = "~> 0.95"
+  version = "0.107.0"
   hashes = [
     "h1:W/DuNEQCgP510F1LfeRCvJa4vXGNT2byH7DzbknpEO4=",
     "zh:3c1e298f4f0d954e83d11aaf2400ec242b835ca294f8a94d67bb5ce0b30da0e9",

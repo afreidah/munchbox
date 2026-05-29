@@ -181,7 +181,8 @@ inputs = {
     "readarr",
     "prowlarr",
     "g3",
-    "wireguard"
+    "wireguard",
+    "pihole/green"
   ]
 
   # --- AppRole auth for chef-managed nodes ---

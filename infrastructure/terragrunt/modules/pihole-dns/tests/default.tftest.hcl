@@ -17,6 +17,11 @@ mock_provider "pihole" {
 }
 
 variables {
+  pihole_primary_url        = "http://mock-primary.test"
+  pihole_secondary_url      = "http://mock-secondary.test"
+  pihole_password_primary   = "mock-primary-pass"
+  pihole_password_secondary = "mock-secondary-pass"
+
   dns_records = {
     "alpha" = { domain = "alpha.test.cc", ip = "10.0.0.10" }
     "beta"  = { domain = "beta.test.cc", ip = "10.0.0.11" }

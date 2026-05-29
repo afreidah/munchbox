@@ -14,6 +14,11 @@ terraform {
 }
 
 inputs = {
+  # --- bitwarden provider auth (was in root.hcl's generate "providers") ---
+  bitwarden_server          = "https://vaultwarden.munchbox.cc"
+  bitwarden_email           = "alex.freidah@gmail.com"
+  bitwarden_master_password = get_env("VAULTWARDEN_MASTER_PASSWORD", "")
+
   vault_mount = "secret"
 
   folders = {

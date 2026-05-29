@@ -49,6 +49,7 @@ nomad_auto_restart_webhook 'baseline' do
   consul_group        w['consul_group']
 
   stale_paths         w['stale_paths'].to_a
+
   # --- attribute override wins (kitchen / break-glass); otherwise lazy vault_fetch at converge time ---
   nomad_token(lazy { w['nomad_token'] || vault_fetch(paths['nomad_token']['path'], paths['nomad_token']['field']) })
 end

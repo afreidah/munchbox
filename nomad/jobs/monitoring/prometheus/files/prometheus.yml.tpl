@@ -239,14 +239,32 @@ scrape_configs:
         target_label: "instance"
 
   # -----------------------------------------------------------------------
-  # Blackbox Exporter - Consul service discovery
+  # Pi-hole Exporter - Consul service discovery (single nomad job scrapes both nodes)
+  # -----------------------------------------------------------------------
+  - job_name: "pihole-exporter"
+    metrics_path: "/metrics"
+    consul_sd_configs:
+      - server: "127.0.0.1:8500"
+        scheme: "http"
+        services: ["pihole-exporter"]
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
+        separator: ":"
+        target_label: "__address__"
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+
+  # -----------------------------------------------------------------------
+  # Blackbox Exporters (external + internal) - Consul service discovery
   # -----------------------------------------------------------------------
   - job_name: "blackbox"
     metrics_path: "/metrics"
     consul_sd_configs:
       - server: "127.0.0.1:8500"
         scheme: "http"
-        services: ["blackbox-exporter"]
+        services: ["blackbox-exporter-external", "blackbox-exporter-internal"]
         datacenter: "munchbox"
         token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
     relabel_configs:
@@ -329,6 +347,7 @@ scrape_configs:
     static_configs:
       - targets:
           # External sites
+          - "https://alexfreidah.com"
           - "https://resume.alexfreidah.com/"
           - "https://k3s-status.alexfreidah.com/"
           # Public munchbox.cc services (via Cloudflare tunnel, no Authentik)
@@ -339,7 +358,7 @@ scrape_configs:
       - source_labels: ["__param_target"]
         target_label: "instance"
       - target_label: "__address__"
-        replacement: "blackbox-exporter.service.consul:9115"
+        replacement: "blackbox-exporter-external.service.consul:9115"
 
   # -----------------------------------------------------------------------
   # Site monitoring (HTTP) — for sites that are public via Cloudflare tunnel
@@ -355,13 +374,39 @@ scrape_configs:
     static_configs:
       - targets:
           - "http://s3-orchestrator.munchbox.cc/"
+          - "http://oracle-watchdog.munchbox.cc/"
+          - "http://cloudflare-log-collector.munchbox.cc/"
+          - "http://g3.munchbox.cc/"
+          - "http://nomad-temporal-jobs.munchbox.cc/"
     relabel_configs:
       - source_labels: ["__address__"]
         target_label: "__param_target"
       - source_labels: ["__param_target"]
         target_label: "instance"
       - target_label: "__address__"
-        replacement: "blackbox-exporter.service.consul:9115"
+        replacement: "blackbox-exporter-external.service.consul:9115"
+
+  # -----------------------------------------------------------------------
+  # Pi-hole probes — internal-only DNS names + LAN traefik VIP.
+  # Routed through the internal blackbox so a WireGuard flap doesn't
+  # masquerade as a real pihole outage.
+  # -----------------------------------------------------------------------
+  - job_name: "pihole_probes"
+    metrics_path: "/probe"
+    params:
+      module: ["http_2xx"]
+    static_configs:
+      - targets:
+          - "http://pihole.munchbox.cc/admin/"
+          - "http://pihole-green.munchbox.cc/admin/"
+          - "http://pihole-logan.munchbox.cc/admin/"
+    relabel_configs:
+      - source_labels: ["__address__"]
+        target_label: "__param_target"
+      - source_labels: ["__param_target"]
+        target_label: "instance"
+      - target_label: "__address__"
+        replacement: "blackbox-exporter-internal.service.consul:9115"
 
   # -----------------------------------------------------------------------
   # Alertmanager - Self-monitoring for alerting system health

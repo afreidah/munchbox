@@ -29,6 +29,12 @@ locals {
 }
 
 inputs = {
+  # --- pihole provider auth (was in root.hcl's generate "providers") ---
+  pihole_primary_url        = local.root.locals.pihole_primary_url
+  pihole_secondary_url      = local.root.locals.pihole_secondary_url
+  pihole_password_primary   = get_env("TF_VAR_pihole_password_primary", "")
+  pihole_password_secondary = get_env("TF_VAR_pihole_password_secondary", "")
+
   dns_records   = merge(local.traefik_records, local.root.locals.pihole_special_dns_records)
   cname_records = {}
 }

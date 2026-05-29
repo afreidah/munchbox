@@ -9,11 +9,10 @@
 # -----------------------------------------------------------------------------
 
 locals {
+
   # ---------------------------------------------------------------------------
   # PATH PARSING
   # ---------------------------------------------------------------------------
-  # Parse the directory structure to determine provider and node name
-  # Expected structure: terragrunt/<provider>/<node_name>/terragrunt.hcl
 
   # get_original_terragrunt_dir() returns the dir of the file that initiated the include
   terragrunt_dir = get_original_terragrunt_dir()
@@ -23,7 +22,6 @@ locals {
   # ---------------------------------------------------------------------------
   # ENVIRONMENT CONFIG
   # ---------------------------------------------------------------------------
-  # Load provider-specific configuration if it exists
 
   env_config_path = "${get_terragrunt_dir()}/../env.yaml"
   env_config      = fileexists(local.env_config_path) ? yamldecode(file(local.env_config_path)) : {}
@@ -33,9 +31,8 @@ locals {
   default_node_class = "cloud"
 
   # ---------------------------------------------------------------------------
-  # WIREGUARD CONFIGURATION
-  # ---------------------------------------------------------------------------
-  # These should be overridden per-node or via environment variables
+  # WIREGUARD CONFIGURATION should be overridden per-node 
+  # --------------------------------------------------------------------------- 
 
   wireguard_subnet            = "10.200.0.0/24"
   wireguard_server_public_key = get_env("MUNCHBOX_WG_SERVER_PUBKEY", "")
@@ -63,9 +60,7 @@ locals {
   # SSH CONFIGURATION
   # ---------------------------------------------------------------------------
 
-  # --- Cloud-init seed key: workstation ed25519 only. Cluster-side SSH
-  #     (stabler → oracle, break-glass keys, etc.) is managed by the
-  #     sshd_ca recipe at converge time, not via cloud-init metadata. ---
+  # --- Cloud-init seed key: workstation ed25519 only. Cluster-side SSH is vault managed ---
   ssh_public_key = get_env("MUNCHBOX_SSH_PUBKEY", fileexists("~/.ssh/id_ed25519.pub") ? trimspace(file("~/.ssh/id_ed25519.pub")) : "")
 
   # ---------------------------------------------------------------------------
@@ -99,8 +94,6 @@ locals {
   # `proxmox_vm_groups.cinc-server`, etc.
 
   proxmox_vm_groups = {
-    # The main Nomad/Consul/Vault cluster. Existing VMs are managed via
-    # Ansible post-provision; cloud-init only set for the few that need it.
     cluster = {
       "nomad-server-03" = {
         target_node = "fontana"
@@ -166,8 +159,7 @@ locals {
       }
     }
 
-    # Cinc/Chef server host. Provisioned as its own group so it can be
-    # applied independently of the cluster.
+    # --- Cinc server host. Provisioned as its own group so it can be applied independently of the cluster ---
     cinc-server = {
       "cinc-server" = {
         target_node = "rubirosa"
@@ -189,9 +181,8 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # PROXMOX USERS & ROLES
+  # PROXMOX USERS & ROLES - Service accounts for monitoring, backups, etc.
   # ---------------------------------------------------------------------------
-  # Service accounts for monitoring, backups, etc.
 
   proxmox_roles = {
     "prometheus-exporter" = {
@@ -270,7 +261,6 @@ locals {
   # ---------------------------------------------------------------------------
   # CLOUDFLARE R2 MODULE INPUTS
   # ---------------------------------------------------------------------------
-  # Cloudflare R2 object storage bucket configuration
 
   cloudflare_r2_inputs = {
     account_id  = local.cloudflare_account_id
@@ -280,35 +270,88 @@ locals {
   # ---------------------------------------------------------------------------
   # PI-HOLE DNS  (composition lives in _env_helpers/pihole-dns.hcl)
   # ---------------------------------------------------------------------------
-  # Local DNS records for split-horizon DNS: internal traffic skips the
-  # cloudflare tunnel and lands directly on traefik (or, for the handful
-  # of non-traefik records, wherever the host actually lives).
 
   pihole_primary_url   = "http://192.168.68.62"  # green
   pihole_secondary_url = "http://192.168.68.64"  # logan
   traefik_vip          = "192.168.68.50"
 
-  # Hosts whose <name>.munchbox.cc A-record points at the traefik VIP.
-  # env_helper expands each entry into { domain = "<name>.munchbox.cc", ip = traefik_vip }.
+  # --- SSH-reachable Pi-hole nodes for pihole/unbound ---
+  pihole_nodes = [
+    { name = "green", host = "192.168.68.62" },
+    { name = "logan", host = "192.168.68.64" },
+  ]
+
+  # --- hosts that route to traefik VIP ---
   traefik_fronted_hosts = [
     "alertmanager", "analytics", "apt", "auth", "consul", "dashboard",
     "deluge", "ersatz", "git", "grafana", "jellyfin", "kavita", "lidarr",
     "nextcloud", "nomad", "photos", "prometheus", "prowlarr", "radarr",
     "readarr", "registry", "registry-ui", "sonarr", "temporal", "themes",
     "traefik", "traefik-logs", "trivy-dashboard", "vault", "vault-ui",
-    "vaultwarden", "pihole", "pihole-green", "pihole-logan", "s3", "forgejo",
+    "vaultwarden", "pihole", "s3", "forgejo",
   ]
 
-  # Records that point somewhere other than the traefik VIP (cinc-server API
-  # isn't fronted by traefik; clients hit the VM directly).
+  # --- hosts reached directly by ip ---
   pihole_special_dns_records = {
-    "cinc-server" = { domain = "cinc-server.munchbox.cc", ip = "192.168.68.99" }
+    "cinc-server"  = { domain = "cinc-server.munchbox.cc", ip = "192.168.68.99" }
+    "pihole-green" = { domain = "pihole-green.munchbox.cc", ip = "192.168.68.62" }
+    "pihole-logan" = { domain = "pihole-logan.munchbox.cc", ip = "192.168.68.64" }
   }
 
   # ---------------------------------------------------------------------------
-  # BLOCK-VOLUME-OCI  (composition lives in _env_helpers/block-volume-oci.hcl)
+  # REMOTE-FILES  (composition lives in _env_helpers/remote-files.hcl)
   # ---------------------------------------------------------------------------
-  # --- keyed by terragrunt dir name; env_helper looks up by basename ---
+  # --- keyed by leaf dir name (node_name). Each entry feeds the remote-files
+  #     module: targets to ship to + bundles of files with a check/restart
+  #     hook. File CONTENT is not in this map; each leaf owns a files/ dir
+  #     and the env_helper loads bytes by file_key. ---
+
+  remote_files_configs = {
+    pihole-shared = {
+      targets = local.pihole_nodes
+      bundles = {
+        unbound = {
+          files = {
+            "pi-hole.conf" = { destination = "/etc/unbound/unbound.conf.d/pi-hole.conf" }
+          }
+          # --- mkdir+chown: logfile dir missing pre-existing; checkconf fails without it ---
+          check_command   = "mkdir -p /var/log/unbound && chown unbound:unbound /var/log/unbound && unbound-checkconf /etc/unbound/unbound.conf.d/pi-hole.conf"
+          restart_command = "systemctl restart unbound && systemctl is-active --quiet unbound"
+        }
+
+        dnsmasq = {
+          files = {
+            "10-munchbox-vips.conf" = { destination = "/etc/dnsmasq.d/10-munchbox-vips.conf" }
+            "munchbox-no-ipv6.conf" = { destination = "/etc/dnsmasq.d/munchbox-no-ipv6.conf" }
+          }
+          # --- reloaddns reloads dnsmasq.d w/o FTL restart (avoids the 30s outage window) ---
+          check_command   = "pihole-FTL dnsmasq-test"
+          restart_command = "pihole reloaddns"
+        }
+
+        node_exporter = {
+          files = {
+            "node_exporter.service" = { destination = "/etc/systemd/system/node_exporter.service" }
+          }
+          restart_command = "systemctl daemon-reload && systemctl enable --now node_exporter && systemctl is-active --quiet node_exporter"
+        }
+
+        consul_register = {
+          files = {
+            "consul-register.sh"      = { destination = "/usr/local/bin/consul-register.sh", mode = "0755" }
+            "consul-register.service" = { destination = "/etc/systemd/system/consul-register.service" }
+            "consul-register.timer"   = { destination = "/etc/systemd/system/consul-register.timer" }
+          }
+          # --- daemon-reload, enable timer, kick the one-shot once so JSON deltas land immediately ---
+          restart_command = "systemctl daemon-reload && systemctl enable --now consul-register.timer && systemctl start consul-register.service"
+        }
+      }
+    }
+  }
+
+  # ---------------------------------------------------------------------------
+  # BLOCK-VOLUME-OCI - keyed by terragrunt dir name
+  # ---------------------------------------------------------------------------
 
   block_volume_oci_configs = {
     "minio-volume-1" = {
@@ -425,98 +468,4 @@ remote_state {
     path      = "backend.tf"
     if_exists = "overwrite_terragrunt"
   }
-}
-
-# -----------------------------------------------------------------------------
-# PROVIDER GENERATION
-# -----------------------------------------------------------------------------
-
-generate "providers" {
-  path      = "providers.tf"
-  if_exists = "overwrite_terragrunt"
-  contents  = <<-EOF
-    # --- required_providers + version pins live in each module's versions.tf ---
-
-    provider "aws" {
-      region = "us-east-1"
-
-      skip_credentials_validation = true
-      skip_requesting_account_id  = true
-      skip_metadata_api_check     = true
-      skip_region_validation      = true
-
-      default_tags {
-        tags = {
-          Project   = "munchbox"
-          ManagedBy = "terragrunt"
-        }
-      }
-    }
-
-    provider "oci" {
-      # Uses OCI config file (~/.oci/config) or environment variables
-    }
-
-    provider "proxmox" {
-      # Uses PM_API_URL, PM_API_TOKEN_ID, PM_API_TOKEN_SECRET env vars
-      pm_tls_insecure = true
-    }
-
-    provider "consul" {
-      # Uses CONSUL_HTTP_ADDR and CONSUL_HTTP_TOKEN env vars
-    }
-
-    provider "vault" {
-      # Uses VAULT_ADDR and VAULT_TOKEN env vars
-    }
-
-    provider "nomad" {
-      # Uses NOMAD_ADDR and NOMAD_TOKEN env vars
-    }
-
-    provider "random" {
-      # No configuration needed
-    }
-
-    provider "cloudflare" {
-      # Uses CLOUDFLARE_API_TOKEN env var
-    }
-
-    provider "bitwarden" {
-      server          = "https://vaultwarden.munchbox.cc"
-      email           = "alex.freidah@gmail.com"
-      master_password = "${get_env("VAULTWARDEN_MASTER_PASSWORD", "")}"
-    }
-
-    provider "forgejo" {
-      # --- Default points at the in-cluster consul-DNS name (works when terragrunt
-      #     runs on cinc-server / stabler / any consul-DNS-resolving node). Operators
-      #     running off-cluster set FORGEJO_HOST to a reachable URL (SSH-tunnel to
-      #     cinc-server's port 30028, public bypass route, etc.).
-      host      = "${get_env("FORGEJO_HOST", "http://forgejo.service.consul:30028")}"
-      api_token = "${get_env("FORGEJO_API_TOKEN", "")}"
-    }
-
-    provider "pihole" {
-      alias    = "primary"
-      url      = "http://192.168.68.62"
-      password = "${get_env("TF_VAR_pihole_password_primary", "")}"
-    }
-
-    provider "pihole" {
-      alias    = "secondary"
-      url      = "http://192.168.68.64"
-      password = "${get_env("TF_VAR_pihole_password_secondary", "")}"
-    }
-
-    provider "ibm" {
-      # --- ibmcloud_api_key wired explicitly: the env-var fallback isn't honored
-      #     by every sub-service client in the provider (resource-manager in
-      #     particular skips it and errors with "BearerToken property is required"
-      #     at read time). IC_API_KEY itself is populated by munchbox-env.sh from
-      #     vault: secret/ibm-cloud. ---
-      ibmcloud_api_key = "${get_env("IC_API_KEY", "")}"
-      region           = "${get_env("IBM_REGION", "us-south")}"
-    }
-  EOF
 }

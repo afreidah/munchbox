@@ -1,0 +1,20 @@
+{
+  "Node": "${host}",
+  "Address": "${ip}",
+  "NodeMeta": {
+    "node_type": "raspberry-pi-zero",
+    "role": "dns-server",
+    "arch": "armv6"
+  },
+  "Service": {
+    "ID": "node-exporter-${host}",
+    "Service": "node-exporter",
+    "Port": 9100,
+    "Tags": ["monitoring", "external", "node-exporter", "${host}"],
+    "Meta": {
+      "node_type": "raspberry-pi-zero",
+      "role": "dns-server",
+      "host": "${host}"
+    }
+  }
+}
