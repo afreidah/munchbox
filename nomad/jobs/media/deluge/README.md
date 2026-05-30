@@ -1,54 +1,46 @@
-# Deluge
+# deluge
 
-BitTorrent client with all traffic routed through a Mullvad VPN tunnel via
-gluetun sidecar. The bridge networking model ensures torrent traffic never
-touches the home IP address, and gluetun's built-in iptables kill switch
-blocks all non-VPN internet traffic if the tunnel drops.
+BitTorrent client with all traffic routed through a Mullvad WireGuard tunnel
+via a gluetun sidecar. Bridge networking ensures torrent traffic never sees
+the home IP, and gluetun's iptables kill switch drops non-VPN traffic if the
+tunnel goes down.
 
-## Architecture
+## Image
 
-Two-task group in bridge networking mode. Gluetun runs as a prestart sidecar
-and establishes the VPN tunnel before Deluge starts. Deluge shares gluetun's
-network namespace via bridge mode, so all its traffic routes through the VPN
-automatically. Port mappings are defined at the group level and forwarded
-through gluetun's network stack.
+- gluetun: `qmcgaw/gluetun:v3.41.0`
+- deluge: `linuxserver/deluge:2.2.0`
+- cleanup-vpn: `alpine:3.21`
 
-## Components
+## Hostname / exposure
 
-| Task | Role | Lifecycle |
-|------|------|-----------|
-| gluetun | Mullvad OpenVPN tunnel, exposes ports for Deluge | prestart sidecar |
-| deluge | BitTorrent client using gluetun's network | main |
+- `deluge.munchbox.cc`
+- HTTPS + HTTP routers via Traefik, both gated by `oauth2-proxy@file`
+- Service `deluge` advertised at node IP, port 8112 (mapped through bridge
+  via gluetun)
 
-## Data Flow
+## Placement
 
-Inbound/outbound torrent traffic flows through the Mullvad VPN endpoint.
-Web UI traffic enters via Traefik on port 8112, which maps through the
-bridge network to gluetun's exposed port. LAN subnets (192.168.68.0/24 and
-10.200.0.0/24) are whitelisted in gluetun's firewall for web UI and local
-service access. Downloaded files land on /tank via bind mount.
-
-## Failure Modes
-
-- **VPN tunnel drop**: gluetun's iptables rules immediately block all
-  internet traffic. The `vpn-tunnel` health check polls gluetun's status API
-  every 30s and triggers a full group restart after 3 consecutive failures
-  (90s grace period).
-- **Mullvad credential rotation**: Update the Vault secret at
-  `secret/data/mullvad` and restart the job.
+- Constraint: `meta.gpu = true` (pin to GPU node for `/tank` access alongside
+  the rest of the media stack)
+- Bridge networking; static ports 8112 (web), 6881 (torrent), 8000 (gluetun
+  control)
 
 ## Dependencies
 
-**Requires:**
-- Vault (Mullvad credentials, Deluge web UI password hash)
+- Vault `secret/data/mullvad` (WireGuard private key, address) and
+  `secret/data/deluge` (web UI pwd salt + sha1)
+- Host volumes: `/opt/nomad/data/deluge` -> `/config`, `/tank` -> `/data`
+- theme.park `catppuccin-mocha` via DOCKER_MODS
 
-**Required by:**
-- Sonarr, Radarr, Lidarr, Readarr, Prowlarr (download client)
+## Notable configuration
 
-## Notable Configuration
-
-- Gluetun runs privileged with NET_ADMIN capability and /dev/net/tun access
-  for VPN tunnel creation
-- OPENVPN_ENDPOINT_IP is hardcoded to avoid DNS resolution issues during VPN
-  tunnel bootstrap
-- Pinned to nomad-client-04 for /tank ZFS pool access
+- gluetun: `VPN_SERVICE_PROVIDER=mullvad`, `VPN_TYPE=wireguard` (OpenVPN
+  certs expired -- WG path)
+- `SERVER_CITIES=Los Angeles CA`,
+  `FIREWALL_OUTBOUND_SUBNETS=192.168.68.0/24,10.200.0.0/24`,
+  `HTTP_CONTROL_SERVER_ADDRESS=:8000`
+- `vpn-tunnel` HTTP check on gluetun `/v1/vpn/status`; `check_restart` of 3
+  with 90s grace forces a full group restart on tunnel loss
+- Prestart `cleanup-vpn` (alpine, privileged, host net) deletes stale `tun0`
+  / `wg0` interfaces from a dirty exit
+- gluetun runs privileged with NET_ADMIN and `/dev/net/tun`

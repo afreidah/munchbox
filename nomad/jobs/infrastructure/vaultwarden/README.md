@@ -1,27 +1,41 @@
-# Vaultwarden
+# vaultwarden
 
-Self-hosted password manager compatible with all Bitwarden clients (browser
-extensions, mobile apps, CLI). Stores encrypted vault data on the
-`gdrive-secondary` NFS mount for durability.
+Self-hosted Bitwarden-compatible password manager. Web UI sits behind
+oauth2-proxy, but the `/api`, `/identity`, `/icons`, and `/notifications`
+paths bypass it so Bitwarden CLI, browser extensions, and mobile apps can
+authenticate directly against Vaultwarden.
 
-## Architecture
+## image
 
-Vaultwarden runs as a single task in bridge mode with separate HTTP and
-WebSocket ports. Traefik routing splits API paths (`/api`, `/identity`,
-`/icons`, `/notifications`) from the web vault UI. API routes bypass
-oauth2-proxy because Bitwarden clients authenticate directly with
-Vaultwarden -- wrapping them in OAuth would break all client sync.
+`vaultwarden/server:1.35.2`
 
-## Notable Configuration
+## hostname / exposure
 
-- Uses Nomad 1.11 native `secret` block for Vault credential injection
-  instead of template-based env files
-- Canary deployment with auto-promote for zero-downtime updates
-- WebSocket support enabled for real-time sync notifications
-- Admin panel token stored in Vault; signups controlled via Vault secret
-- Dual routers for both direct HTTPS and Cloudflare tunnel access
+- `vaultwarden.munchbox.cc`
+- web UI routers: `oauth2-proxy-errors@file,oauth2-proxy@file`
+  (plus `cf-tunnel-https@file` on the HTTP entrypoint)
+- API routers: no oauth2-proxy (priority 20), so clients can hit
+  `/api`, `/identity`, `/icons`, `/notifications` directly
+- separate routers for direct HTTPS and the Cloudflare tunnel path
 
-## Dependencies
+## placement
 
-- **OAuth2 Proxy** -- protects web vault UI (API paths bypass it)
-- **Vault** -- admin token and signup configuration
+- constraint: `attr.cpu.arch = amd64`
+- single instance, no node pin; Nomad schedules wherever amd64 capacity exists
+
+## dependencies
+
+- Patroni Postgres `vaultwarden` database, reached via
+  `haproxy-postgres.service.consul:5433` (`DATABASE_URL=postgresql://...`)
+- Vault `secret/data/vaultwarden`: admin token, DB creds, SMTP creds,
+  signups flag, base64-encoded RSA key for JWT signing
+- SMTP relay (creds from Vault) for invitations and password resets
+
+## notable configuration
+
+- `I_REALLY_WANT_VOLATILE_STORAGE=true` -- attachments live on the alloc's
+  ephemeral disk; Postgres holds the vault itself
+- RSA key materialized to `secrets/rsa_key.pem` from base64 in Vault
+- websocket port `3012` is declared on the alloc but no Traefik router
+  currently exposes it
+- `kill_timeout = 30s`, `SIGTERM`

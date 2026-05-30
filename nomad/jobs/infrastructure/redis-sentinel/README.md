@@ -1,91 +1,47 @@
-# Redis Sentinel
+# redis-sentinel
 
-High-availability Redis cluster with automatic failover managed by Sentinel.
-Runs 2 Redis instances (master + replica) and 3 Sentinels for quorum.
-Provides the caching and session storage layer for services that need Redis.
+HA Redis cluster (2 servers + 3 Sentinels) with automatic failover.
+Provides cache, session, and queue storage for Nextcloud, Forgejo, Immich,
+Trivy Server, etc.
 
-## Architecture
+## Image
 
-Two task groups operate together. The `redis` group (count=2) runs on
-distinct bare-metal hosts, each containing a Redis server, a co-located
-Sentinel, and a metrics exporter. The `sentinel-quorum` group (count=1) runs
-a standalone Sentinel on a third node to satisfy the quorum requirement of 3.
+- `redis:8-alpine` (redis server + sentinel)
+- `oliver006/redis_exporter:v1.80.1` (metrics sidecar)
+- `busybox:1.37.0` (prestart init-storage)
 
-Host networking is used for the same reason as Patroni: Redis clients across
-the cluster connect via Consul DNS, and addresses must be routable from all
-network namespaces including bridge-mode containers.
+## Hostname / exposure
 
-Allocation index 0 bootstraps as master. Other allocations discover the
-master via the `redis-primary` Consul service and configure themselves as
-replicas. Sentinel monitors the master and promotes a replica automatically
-if the master becomes unreachable.
+- All Consul services tagged `traefik.enable=false`; internal-only
+- Static ports: redis 6379, sentinel 26379, exporter 9121
+- Clients connect via `haproxy-redis.service.consul:6380`; HAProxy uses
+  `INFO replication` checks to track the current master
 
-## Components
+## Placement
 
-**redis group (x2):**
-
-| Task | Role | Lifecycle |
-|------|------|-----------|
-| init-storage | Creates data directories, cleans stale sentinel config | prestart |
-| redis | Redis server (master or replica depending on Sentinel state) | main |
-| sentinel | Sentinel instance for failover voting | main (concurrent) |
-| redis-exporter | Prometheus metrics sidecar | poststart sidecar |
-
-**sentinel-quorum group (x1):**
-
-| Task | Role | Lifecycle |
-|------|------|-----------|
-| sentinel | Standalone Sentinel for quorum (no local Redis) | main |
-
-The standalone sentinel waits for a valid master IP in its config template
-before starting, avoiding a race condition where Consul service resolution
-has not yet completed.
-
-## Data Flow
-
-Application traffic routes through HAProxy at
-`haproxy-redis.service.consul:6380`, which checks `INFO replication` on each
-Redis instance and forwards to the current master on port 6379. On failover,
-HAProxy kills stale connections and re-routes to the new master automatically.
-
-Replication is asynchronous from master to replica. Persistence uses both
-RDB snapshots (every 60s if at least 1 key changed) and AOF with everysec
-fsync.
-
-Sentinel consensus requires 2 of 3 Sentinels to agree a master is down
-(`quorum 2`) before triggering failover. Failover timeout is 60s with a
-down-after-milliseconds of 5s.
-
-## Failure Modes
-
-- **Master crash**: Sentinel detects failure within 5s, initiates failover
-  after quorum agreement. The replica is promoted, and Consul service routing
-  updates automatically via the script-based health checks that inspect
-  `INFO replication` output.
-- **Replica crash**: No impact on write availability. Read-only service
-  becomes unavailable until replica recovers.
-- **Split brain prevention**: Quorum of 3 Sentinels prevents split-brain.
-  `parallel-syncs 1` ensures only one replica re-syncs at a time during
-  failover.
-- **Stale sentinel config**: The init-storage task removes sentinel.conf on
-  every start to prevent stale master references from a previous allocation.
+- `redis` group, `count = 2`: spread across distinct hosts, restricted to
+  `stabler,goren,nomad-server-03,nomad-client-01..05` (whitelist excludes
+  Oracle nodes -- WG tunnel latency is too high for a latency-sensitive
+  data store)
+- `sentinel-quorum` group, `count = 1`: pinned to `nomad-client-04` (needs
+  Consul ACL access for service queries)
+- Host networking so Consul DNS-resolved addresses are routable from
+  bridge-mode containers
 
 ## Dependencies
 
-**Requires:**
-- Vault (Redis password at `secret/data/redis-shared`)
+- Vault `secret/data/redis-shared` (Redis auth password)
+- Consul (service discovery for primary, plus quorum sentinel resolution)
+- HAProxy fronts traffic on 6380
 
-**Required by:**
-- HAProxy (proxies connections from apps to the current master)
-- Nextcloud, Forgejo, Immich, Trivy Server (via HAProxy)
+## Notable configuration
 
-## Notable Configuration
-
-- Priority 80 ensures Redis starts before application services
-- Constrained to bare-metal nodes only (excludes Oracle Cloud nodes) to
-  avoid WireGuard tunnel latency on a latency-sensitive data store
-- Memory capped at 512MB with noeviction policy -- Redis returns errors
-  rather than silently dropping keys when full
-- The `redis` generic service (healthy on all instances via TCP check)
-  exists solely for bootstrap: the quorum sentinel uses it to discover any
-  Redis instance and let Sentinel resolve the actual master
+- All instances start standalone; Sentinel manages topology and persists via
+  `CONFIG REWRITE` -- no hard-coded master/replica in Nomad templates
+- Quorum 2 of 3 with `down-after-milliseconds 5s`, failover-timeout 60s,
+  `parallel-syncs 1`
+- 512 MiB cap with `noeviction` -- writes fail instead of silently evicting
+- Persistence: RDB (60s/1 key) + AOF everysec
+- init-storage task wipes stale `sentinel.conf` on every start to avoid
+  cross-allocation master leakage
+- Priority 80 so Redis comes up before app services

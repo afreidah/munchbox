@@ -1,14 +1,33 @@
-# Nginx Resume
+# nginx-resume
 
-Static resume website served through NGINX. Handles routing for both the
-`resume.alexfreidah.com` subdomain and the `alexfreidah.com` apex domain,
-redirecting all variations to the canonical resume URL. Exposed publicly
-through the Cloudflare tunnel without OAuth protection.
+Static nginx site serving the resume at `resume.alexfreidah.com`. The apex
+`alexfreidah.com` is NOT handled here -- that lives in the `personal-site` job.
 
-## Notable Configuration
+## image
 
-- Runs three instances across three distinct nodes (`distinct_hosts`
-  constraint) for high availability -- this is a public-facing professional
-  resume that should tolerate any single node failure without downtime
-- Uses bridge networking; Traefik discovers instances via Consul and
-  load-balances across all three automatically
+`registry.munchbox.cc/alex-resume:v0.0.1`
+
+## hostname / exposure
+
+- `resume.alexfreidah.com` and `www.resume.alexfreidah.com`
+- Traefik router `resume-public` on the `web` entrypoint only (Cloudflare
+  tunnel fronts TLS); priority `100`
+- middlewares: `redirect-resume-www@file,resume-sec@file,resume-ratelimit@file`
+
+## placement
+
+- `node = any`, `count = 3`, `distinct_hosts = true`
+- one instance per node for redundancy behind Traefik / cloudflared
+- size `tiny` (50 MHz CPU, 32 MiB memory), ephemeral storage
+
+## dependencies
+
+- none -- pure static content baked into the image
+- fronted by Traefik, which is fronted by cloudflared
+
+## notable configuration
+
+- `vault = false`; no secrets needed
+- health check path `/`
+- image is built and pushed to the in-house registry; bumping the resume
+  means a new image tag and a redeploy

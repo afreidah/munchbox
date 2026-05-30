@@ -1,32 +1,41 @@
-# Keepalived
+# keepalived
 
-VRRP-based virtual IP failover for Traefik high availability. Runs as a
-system job on ingress-role nodes, providing a single VIP (192.168.68.50)
-with active-passive failover.
+VRRP-based virtual IP failover for ingress HA. Two VIPs:
 
-## Architecture
+- `192.168.68.50` -- Traefik VIP; all `*.munchbox.cc` DNS points here
+- `192.168.68.49` -- WireGuard VIP; floats to whichever ingress node has a
+  healthy `wg0` peer
 
-One ingress node (goren) runs as VRRP MASTER with priority 101, the
-other (nomad-client-05) as BACKUP with priority 100. A health check
-script curls the local Traefik ping endpoint every two seconds. If
-Traefik becomes unresponsive after three consecutive failures, the
-check weight drops the node's priority, causing the backup to assume
-the VIP within approximately six seconds. The `nopreempt` flag prevents
-flapping when a recovered node rejoins.
+System job on ingress-role nodes, active/passive with goren as MASTER.
 
-All DNS records point to the single VIP. During a failure, the backup
-node claims the VIP via gratuitous ARP and serves all traffic until
-the primary recovers.
+## Image
 
-## Notable Configuration
+`alpine:3.21` (keepalived, curl, wireguard-tools installed at task start)
 
-- System job constrained to `meta.role = "ingress"` nodes
-- Uses `alpine:3.21` with keepalived installed at runtime for multi-arch
-  support (goren is ARM64)
-- Privileged container with NET_ADMIN/NET_RAW capabilities for VIP management
-- VRRP interface configured per-node via `meta.vrrp_interface`
-- Priority 95 ensures keepalived starts before most other services
+## Hostname / exposure
+
+- Internal-only Consul service `keepalived` (`traefik.enable=false`)
+- VIPs are layer-2 (gratuitous ARP); no service port
+
+## Placement
+
+- System job, `constraint meta.role = ingress`
+- Priority 95 so it starts before most services
+- MASTER on `goren` (priority 101), BACKUP on `nomad-client-05` (priority 100)
+- VRRP interface taken from `meta.vrrp_interface` per node
 
 ## Dependencies
 
-- **Traefik** -- health check target; keepalived has no purpose without it
+- Traefik on `127.0.0.1:8081/ping` (track script for VI_TRAEFIK)
+- WireGuard `wg0` interface with a recent peer handshake (<180s) for
+  VI_WIREGUARD
+
+## Notable configuration
+
+- `check_traefik.sh` weights `-50` on 3 consecutive failures, `rise 2`
+- `check_wireguard.sh` checks `wg show wg0 latest-handshakes` -- distinguishes
+  "service up" from "actually exchanging traffic"
+- VI_WIREGUARD intentionally does NOT use `use_vmac`: home router (TP-Link
+  Deco) binds the port-forward to goren's MAC+IP, so failover to
+  nomad-client-05 currently requires a manual Deco reconfig
+- Privileged container with `NET_ADMIN` / `NET_RAW`, host networking

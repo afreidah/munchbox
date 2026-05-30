@@ -1,25 +1,35 @@
-# CoreDNS
+# coredns
 
-DNS load balancer that distributes queries across both Pi-hole servers.
-Runs as a system job so every node has a local DNS forwarder on port 5353,
-which each node's dnsmasq uses for non-Consul query resolution.
+DNS load balancer that distributes queries across both Pi-holes (var.pihole_1
+and var.pihole_2). Runs as a system job so every node has a local DNS
+forwarder on port 5354, which each node's dnsmasq uses for non-Consul lookups.
 
-## Architecture
+## Image
 
-CoreDNS forwards all queries to both Pi-holes using round-robin with
-health checks. If one Pi-hole goes down, CoreDNS automatically routes
-all queries to the healthy instance. A local cache (5 minutes for
-positive, 1 minute for negative responses) reduces upstream load.
+`coredns/coredns:1.13.2`
 
-## Notable Configuration
+## Hostname / exposure
 
-- System job type ensures every cluster node gets local DNS automatically
-- Sends traces to Tempo via the Zipkin endpoint for DNS query observability
-- Prometheus metrics on port 9153 for query rate and latency monitoring
-- Priority 80 ensures DNS is available before most services start
+- Internal-only Consul service `coredns` on port 5354 (host network)
+- Prometheus metrics on static 9153 (`coredns-metrics` Consul service)
+- `traefik.enable=false`
+
+## Placement
+
+- `type = system`, `node_pool = all`, priority 80
+- Lands on every node so dnsmasq can point at localhost
 
 ## Dependencies
 
-- **Pi-hole (green, logan)** -- upstream DNS servers
-- **Tempo** -- receives Zipkin traces
-- **Prometheus** -- scrapes DNS metrics
+- Pi-holes at `var.pihole_1` (192.168.68.62) and `var.pihole_2`
+  (192.168.68.64) -- upstreams via `forward .` with round_robin + health check
+- Tempo (`tempo.service.consul:9411`) for Zipkin traces
+- Consul agent DNS on `127.0.0.1:8600` for `.consul` queries
+- Prometheus scrapes 9153
+
+## Notable configuration
+
+- Cache: 300s success / 60s denial
+- Health endpoint on `:8053` (avoid 8080 conflicts)
+- 300 MHz / 64 MiB; CPU sized for query bursts under load
+- Update strategy: `max_parallel = 1`, `stagger = 30s`

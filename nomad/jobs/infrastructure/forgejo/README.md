@@ -1,35 +1,47 @@
-# Forgejo
+# forgejo
 
-Self-hosted Git repository service providing GitHub-compatible workflows,
-push mirroring to GitHub, and integrated CI via Forgejo Actions. All
-munchbox infrastructure code and application source lives here.
+Self-hosted Git service with push mirroring to GitHub and an integrated Actions
+runner. All munchbox infra/app code lives here.
 
-## Architecture
+## Image
 
-The job runs in bridge mode with two exposed ports: HTTP for the web
-interface and API, and a static SSH port (2222) for git+ssh operations.
-A prestart init-config task renders the full `app.ini` configuration from
-Vault secrets and copies it to the persistent data volume before the main
-Forgejo task starts.
+`codeberg.org/forgejo/forgejo:14.0.3` (plus `busybox:1.37.0` for the prestart
+init-config task)
 
-The static SSH port prevents canary deployments -- two instances cannot
-bind the same port simultaneously. Updates use rolling deploys instead.
+## Hostname / exposure
 
-## Notable Configuration
+- `git.munchbox.cc`
+- Six Traefik routers in total, split across HTTPS (`websecure`) and HTTP
+  (`web`, for the Cloudflare tunnel):
+  - `forgejo-api` / `forgejo-api-http` -- `PathPrefix(/api/)`, no oauth2-proxy,
+    priority 10, rate-limited
+  - `forgejo-git` / `forgejo-git-http` -- `PathRegexp(/.+\.git/.*)`, no
+    oauth2-proxy, priority 10
+  - `forgejo` / `forgejo-http` -- catch-all web UI gated by `oauth2-proxy@file`
+- SSH on static host port 2222 (Consul service `forgejo-ssh`,
+  `traefik.enable=false`)
 
-- Multiple Traefik routers with different priority levels separate API
-  and git operations (no OAuth) from the web UI (with OAuth)
-- Uses PostgreSQL, Redis cache, Redis sessions, and Redis queues --
-  all pointing at the shared cluster infrastructure
-- Push mirroring enabled with 8-hour default interval
-- Webhook ALLOWED_HOST_LIST restricts callbacks to internal services
-  and `*.munchbox.cc` to prevent SSRF
-- Data persists on gdrive NFS mount at `/mnt/gdrive/forgejo`
-- OpenTelemetry tracing enabled to Tempo
+## Placement
+
+- Pinned to `stabler` (`node.unique.name = stabler`) for the gdrive NFS mount
+- Bridge networking; static host port 2222 prevents canaries (rolling only)
 
 ## Dependencies
 
-- **Patroni** -- PostgreSQL database backend (forgejo database)
-- **Redis Sentinel** -- cache, sessions, and task queues
-- **OAuth2 Proxy** -- web UI authentication (API and git bypass it)
-- **Forgejo Runner** -- executes CI workflows submitted to this server
+- Postgres `forgejo` via `haproxy-postgres.service.consul:5433`
+- Redis (cache / session / queue) via
+  `haproxy-redis.service.consul:6380` db 2
+- Vault `secret/data/forgejo` (LFS JWT, DB creds, secret/internal tokens,
+  oauth2 JWT) and `secret/data/redis-shared`
+- gdrive NFS host volume `/mnt/gdrive/forgejo` -> `/data`
+- Tempo OTLP `tempo.service.consul:4317`
+- oauth2-proxy (web UI only)
+
+## Notable configuration
+
+- Prestart `init-config` (busybox) renders `app.ini` from Vault, chowns
+  `/data/gitea` to 1000:1000, then exits
+- Push mirroring enabled, 8h default interval
+- Webhook `ALLOWED_HOST_LIST` = `loopback,*.service.consul,*.munchbox.cc`
+  (SSRF guard)
+- Bridge-mode DNS pointed at node IP + `var.pihole_1`/`var.pihole_2`
