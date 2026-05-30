@@ -243,6 +243,11 @@ scrape_configs:
   # -----------------------------------------------------------------------
   - job_name: "pihole-exporter"
     metrics_path: "/metrics"
+    # eko exporter polls both pihole API endpoints synchronously on each
+    # /metrics hit; 3-4s typical, occasionally longer when pihole is busy.
+    # Defaults (10s timeout / 15s interval) blow up; widen both.
+    scrape_interval: 30s
+    scrape_timeout: 25s
     consul_sd_configs:
       - server: "127.0.0.1:8500"
         scheme: "http"

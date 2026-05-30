@@ -748,14 +748,16 @@ groups:
           description: "NFS mount {{"{{"}} $labels.mountpoint {{"}}"}} has device errors - mount may be stale."
 
       - alert: NFSMountMissing
+        # Expected mounters: goren + stabler (bare_metal_pi5) + nomad-client-01..05
+        # (proxmox_vm) = 7. Threshold catches any single missing mount.
         expr: |
-          count(node_filesystem_avail_bytes{fstype="nfs4",mountpoint="/mnt/gdrive-secondary"}) < 4
+          count(node_filesystem_avail_bytes{fstype="nfs4",mountpoint="/mnt/gdrive-secondary"}) < 7
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "NFS mount missing on some nodes"
-          description: "Expected 4 nodes with NFS mount, found {{"{{"}} $value {{"}}"}}."
+          summary: "NFS /mnt/gdrive-secondary missing on at least one node"
+          description: "Only {{"{{"}} $value {{"}}"}} of 7 expected nodes report /mnt/gdrive-secondary mounted. Run 'for h in goren stabler nomad-client-0{1..5}; do ssh $h mountpoint /mnt/gdrive-secondary; done' to find which."
 
       - alert: NFSHighRetransmissions
         expr: rate(node_nfs_rpc_retransmissions_total[5m]) > 10

@@ -156,6 +156,8 @@ GITEA_RUNNER_LABELS=self-hosted:host,docker:docker://catthehacker/ubuntu:act-lat
 EOF
         destination = "secrets/runner.env"
         env         = true
+        # --- env consumed only at first-register; re-render must NOT bounce ---
+        change_mode = "noop"
       }
 
       resources {
