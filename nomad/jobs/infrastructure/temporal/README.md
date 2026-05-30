@@ -1,21 +1,41 @@
-# Temporal
+# temporal
 
-Workflow orchestration engine that powers the automated backup and
-vulnerability scanning systems. The server exposes a gRPC API for workflow
-submissions and uses Patroni PostgreSQL as its persistence backend. The UI
-provides a web interface for monitoring workflow executions and debugging
-failures.
+Workflow orchestration engine that powers automated backups and vulnerability
+scanning. The server exposes a gRPC API on 7233; the UI is a separate job.
 
-Two separate jobs deploy the server and UI independently, allowing the UI
-to be updated without affecting running workflows.
+## Image
 
-## Notable Configuration
+- temporal-server: `temporalio/server:1.29.1`
+- temporal-ui: `temporalio/ui:2.44.1`
 
-- The UI is unpinned from any specific node; Nomad schedules it on the
-  best available node (excluding Oracle nodes) and reschedules
-  automatically on failure
+## Hostname / exposure
+
+- temporal-server: internal-only, gRPC on static 7233, no Traefik
+- temporal-ui: `temporal.munchbox.cc`, HTTPS + HTTP routers, both gated by
+  `oauth2-proxy@file`
+
+## Placement
+
+- temporal-server: pinned to `nomad-client-03` (`node = "nomad-client-03"`),
+  host-networked
+- temporal-ui: any node except `oraclenode1` / `oraclenode2`
 
 ## Dependencies
 
-- **Patroni** -- persistence backend (temporal and temporal_visibility databases)
-- **Temporal backup/trivy workers** -- submit and execute workflows via the gRPC API
+- Patroni (Postgres) -- `temporal` and `temporal_visibility` databases.
+  Server is currently wired through hardcoded DNS to goren (`dns =
+  ["192.168.68.60"]`) because multi-IP Consul DNS for haproxy-postgres
+  bypasses the HAProxy port and lands on raw 5432
+- temporal-ui uses Pi-hole DNS (`192.168.68.64`, `192.168.68.62`) to resolve
+  `temporal-server.service.consul:7233`
+- Vault: TLS material + env via `temporal-env.tpl` and `ca.crt.tpl`
+- Tempo OTLP `tempo.service.consul:4317` (gRPC)
+
+## Notable configuration
+
+- Server runs all four services in one process
+  (`SERVICES=frontend,history,matching,worker`)
+- UI explicitly disables TLS host verification and server name (server is
+  reached over the LAN, not via Traefik)
+- 500 MHz / 512 MiB server reservation
+- Health check disabled on the server (gRPC, not HTTP)

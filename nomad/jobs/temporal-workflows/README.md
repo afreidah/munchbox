@@ -22,6 +22,7 @@ domains and bundled into the backup-worker image.
 | temporal-backup-trigger  | batch   | backup-worker   | --                  | Daily 2 AM  | Triggers backup workflow               |
 | temporal-trivy-trigger   | batch   | backup-worker   | --                  | Daily 3 AM  | Triggers trivy scan workflow           |
 | temporal-cleanup-trigger | batch   | backup-worker   | --                  | Daily 5 AM  | Triggers cleanup workflow              |
+| temporal-registry-gc-trigger | batch | backup-worker | --                  | Weekly Sun 2 AM | Triggers Docker Registry GC workflow (scales registry to 0, runs `registry garbage-collect`, scales back to 1) |
 
 ## Data Flow
 

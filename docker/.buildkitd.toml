@@ -1,3 +1,0 @@
-[registry."registry.munchbox.cc:5000"]
-  http = true
-  insecure = true

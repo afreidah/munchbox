@@ -165,7 +165,7 @@ stream_over_http_enabled: true
 
 server:
   http_listen_port: 3200
-  grpc_listen_port: 9196  # Avoid conflict with promtail on 9095
+  grpc_listen_port: 9196  # historical: kept off 9095 (was promtail; now alloy)
   log_level: info
 
 # Distributor receives traces from clients

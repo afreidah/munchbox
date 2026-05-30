@@ -1,19 +1,35 @@
-# Trivy Server
+# trivy-server
 
-Runs Aqua Trivy in persistent server mode to handle vulnerability scan
-requests over HTTP. The backup worker and other clients call this server's
-API instead of spawning individual CLI processes, which avoids redundant
-database downloads and enables concurrent scanning.
+Aqua Trivy in persistent server mode. The backup worker and other clients
+call the HTTP API instead of spawning CLI processes, avoiding redundant
+vuln-database downloads and enabling concurrent scans.
 
-## Notable Configuration
+## Image
 
-- Uses Redis as the vulnerability database cache backend, sharing the
-  cluster-wide Redis Sentinel instance
-- Canary deployment with auto-promote ensures zero-downtime updates
-- Unpinned from any specific node; Nomad schedules it on the best
-  available node and reschedules automatically on failure
+`aquasec/trivy:0.68.2`
+
+## Hostname / exposure
+
+- Internal-only Consul service `trivy-server`
+- HTTP API on static port 4954
+- No Traefik tags
+
+## Placement
+
+- Constraint: `meta.cloud != oracle` (Oracle pulls are slow and the vuln-DB
+  sync is bandwidth-heavy)
+- `count = 1`, otherwise unconstrained; Nomad reschedules on failure
+- Canary 1 with `auto_promote = true` for zero-downtime updates
 
 ## Dependencies
 
-- **Redis Sentinel** -- vulnerability database cache storage
-- **Temporal backup worker** -- primary client submitting scan requests
+- Redis via `haproxy-redis.service.consul:6380` as the vuln-DB cache backend
+- Vault `secret/data/redis-shared` (Redis password) via `nomad-workloads` role
+- Temporal backup worker is the main caller
+
+## Notable configuration
+
+- `TRIVY_CACHE_BACKEND=redis://...` rendered from Vault
+- 100 MHz / 512 MiB; memory left at 512 because vuln-DB sync spikes OOM'd at
+  256
+- Health: `GET /healthz`, `require_healthy` on update

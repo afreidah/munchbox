@@ -9,9 +9,9 @@ source munchbox-env.sh
 
 ## General Guidelines
 
-- **All code generated must follow `MUNCHBOX_STYLE_GUIDE.md`**
+- **Code must follow the per-area style guide.** Each major code area has its own self-contained `STYLE_GUIDE.md` next to the code it covers: `infrastructure/cinc/STYLE_GUIDE.md` (Ruby/Chef), `infrastructure/terragrunt/STYLE_GUIDE.md` (HCL), `nomad/jobs/STYLE_GUIDE.md` (Nomad jobs).
 - **Always use Makefile tasks where possible**
-- **When editing things on nodes, codify changes with Terraform/Terragrunt/Ansible wherever possible** - avoid manual changes that aren't tracked in code
+- **When editing things on nodes, codify changes with Terraform/Terragrunt/Cinc wherever possible** - avoid manual changes that aren't tracked in code
 
 ## Deploying Nomad Jobs
 

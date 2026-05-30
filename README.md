@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="munchbox.png" alt="munchbox" width="400">
+<img src="assets/munchbox.png" alt="munchbox" width="400">
 
-# Munchbox Cloud — Homelab Infrastructure Platform
+# Munchbox Cloud - Homelab Infrastructure Platform
 
 ### Production-Grade Self-Hosted Infrastructure on HashiCorp Stack
 
@@ -13,706 +13,507 @@
 [![Traefik](https://img.shields.io/badge/Traefik-v3.6.6-24A1C1?logo=traefikproxy)](https://traefik.io/)
 [![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go)](https://golang.org/)
 
----
-
-**A complete infrastructure platform featuring workload orchestration, service discovery, secrets management, and comprehensive monitoring—all managed as code with Terragrunt/Terraform and Ansible.**
-
-[Features](#key-features) • [Architecture](#architecture) • [Quick Start](#quick-start) • [Documentation](#documentation)
-
 </div>
 
 ---
 
-## Table of Contents
+A homelab cluster the size of a small production environment. Roughly **76
+Nomad services**, **16 Cinc (Chef) cookbooks**, and **32 Terragrunt
+modules**, running on bare-metal Pi 5s, Proxmox VMs, and Oracle Free Tier,
+joined by a WireGuard mesh and fronted by Cloudflare.
 
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-  - [Core Stack](#core-stack)
-  - [Infrastructure Services](#infrastructure-services)
-  - [DNS Architecture](#dns-architecture)
-- [Directory Structure](#directory-structure)
-- [Technology Stack](#technology-stack)
-- [Quick Start](#quick-start)
-  - [Prerequisites](#prerequisites)
-  - [Initial Setup](#initial-setup)
-  - [Service Access](#service-access)
-- [Feature Details](#feature-details)
-  - [vault-cert-manager](#vault-cert-manager)
-  - [Nomad Pack Templates](#nomad-pack-templates)
-  - [High Availability Databases](#high-availability-databases)
-  - [Security Scanning](#security-scanning)
-  - [Backup Strategy](#backup-strategy)
-- [Make Targets Reference](#make-targets-reference)
-- [Nomad Job Categories](#nomad-job-categories)
-- [Security Considerations](#security-considerations)
-- [Contributing](#contributing)
-- [License](#license)
+It hosts media (Jellyfin, the *arr stack, Immich, Nextcloud), the operator's
+public personal-site stack (`alexfreidah.com`), self-hosted Git + CI
+(Forgejo + runners + GitHub Actions self-hosted runners), and infrastructure
+dense enough that it borders on a small startup's prod: HA PostgreSQL via
+Patroni, mTLS everywhere via Vault PKI, OAuth2-fronted ingress, multi-cloud
+S3 replication across **13 backends**, distributed tracing through Tempo,
+and a Temporal-driven backup / scan / cleanup loop.
+
+> This file is the project-wide overview. **Per-area READMEs and style
+> guides live next to the code they document** -- `infrastructure/cinc/`,
+> `infrastructure/terragrunt/`, and `nomad/jobs/` each have their own
+> `README.md` + `STYLE_GUIDE.md`.
 
 ---
 
-## Overview
-
-This project implements a complete homelab infrastructure using modern DevOps practices and cloud-native technologies. It provides a robust foundation for running containerized workloads, managing secrets, service discovery, and monitoring across a distributed hybrid cluster spanning on-premises Proxmox nodes and Oracle Cloud Infrastructure.
-
-Built on the HashiCorp stack (Nomad, Consul, Vault) and managed through Infrastructure as Code using Terragrunt/Terraform modules and Ansible, this platform demonstrates enterprise-grade patterns in a self-hosted environment.
-
----
-
-## Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **Infrastructure as Code** | Terragrunt + Terraform modules for multi-cloud infrastructure (Proxmox, OCI, AWS) |
-| **Configuration Management** | Ansible playbooks and roles for node provisioning and configuration |
-| **Workload Orchestration** | Nomad with pure HCL jobs and Nomad Pack templates (munchbox-service pack) |
-| **Secrets Management** | HashiCorp Vault with workload identity and PKI certificate automation |
-| **Certificate Lifecycle** | vault-cert-manager for automated PKI cert issuance, renewal, and health monitoring |
-| **Service Discovery** | Consul for service discovery, health checking, and DNS |
-| **High Availability** | Active-passive ingress with keepalived VIP, Patroni for PostgreSQL HA, Redis Sentinel for Redis HA |
-| **Full Observability** | Prometheus, Grafana, Loki, Tempo, Alertmanager with Telegram notifications |
-| **Security Scanning** | Trivy for container and infrastructure vulnerability scanning |
-| **CI/CD** | Forgejo with self-hosted act_runner for GitHub Actions-compatible workflows |
-
----
-
-## Architecture
-
-### Core Stack
-
-| Component | Version | Purpose |
-|-----------|---------|---------|
-| **HashiCorp Nomad** | v1.11.1 | Workload scheduling and deployment |
-| **HashiCorp Consul** | v1.22.2 | Service discovery and DNS |
-| **HashiCorp Vault** | v1.15.4 | Secrets management and PKI |
-| **Traefik** | v3.6.6 | Dynamic routing with automatic TLS |
-| **Prometheus** | Latest | Metrics collection and alerting |
-| **Grafana** | Latest | Metrics visualization |
-| **Loki** | Latest | Log aggregation |
-| **Tempo** | Latest | Distributed tracing |
-
-### Infrastructure Services
-
-- **Ingress HA**: Traefik on two ingress nodes with keepalived VIP (192.168.68.50) for automatic failover
-- **Edge Access**: Cloudflare Tunnel with redundant connectors on both ingress nodes
-- **Authentication**: OAuth2 Proxy on both ingress nodes for Google SSO
-- **Container Registry**: Private Docker registry with web UI
-- **Database HA**: Patroni for PostgreSQL, Redis Sentinel for Redis, HAProxy for failover-safe connection routing
-- **Certificate Management**: vault-cert-manager for automated PKI lifecycle, ACME for public TLS
-- **SSH Certificate Authority**: Vault-backed SSH CA for host and client certificate signing
-- **Logging**: Loki + Promtail for log aggregation
-- **Alerting**: Clustered Alertmanager with Telegram notifications (deduplication across instances)
-- **Monitoring**: Dual Prometheus instances on ingress nodes for metric collection redundancy
-- **Backup**: Temporal workflows for automated backup orchestration
-- **DNS**: CoreDNS with dnsmasq for Consul DNS forwarding
-
-### DNS Architecture
-
-Each node runs a local DNS stack that provides service discovery and external resolution:
+## Cluster topology
 
 ```
-Container/Process → dnsmasq (127.0.0.53)
-                         ↓
-      ┌──────────────────┴──────────────────┐
-      │ .consul queries    │ other queries  │
-      ↓                    ↓                │
-Consul (8600)        CoreDNS (5353)         │
-                           ↓                │
-                     Pi-holes (round-robin) │
-                           ↓                │
-                        Unbound             │
-                           ↓                │
-                   Root DNS Servers         │
-                           ↓                │
-                [fallback if CoreDNS down]──┘
+                          CLOUDFLARE EDGE  (public, *.munchbox.cc + alexfreidah.com)
+                                   |
+                            cloudflared tunnel
+                                   |
+                                   v
+              +-------------------------------------+
+              |       INGRESS PAIR (keepalived)     |
+              |                                     |
+              |  goren  192.168.68.60   * VRRP A    |       * holds VIPs:
+              |  Pi5 ARM, server + ingress          |         .50 = traefik
+              |                                     |         .49 = wireguard
+              |  nomad-client-05  192.168.68.74     |
+              |  Proxmox VM (rubirosa), 28G RAM     |
+              |                                     |
+              |  Both: Traefik + cloudflared        |
+              |        + oauth2-proxy + keepalived  |
+              +-------------------------------------+
+                                   |
+                                   v
+   +-- server fleet (consul + nomad + vault) ----+
+   |  goren            192.168.68.60   Pi5 ARM   |
+   |  stabler          192.168.68.61   Pi5 ARM   |
+   |  nomad-server-03  192.168.68.58   x86 VM    |
+   +---------------------------------------------+
+
+   +-- client fleet (Proxmox VMs) ---------------+ +-- hypervisors -----+
+   |  nomad-client-01  fontana       .67 (13G)   | | cabot      .59     |
+   |  nomad-client-02  mccoy         .72 (15G)   | | fontana    .65     |
+   |  nomad-client-03  cabot         .71 ( 7G)   | | mccoy      .63 (*) |   (*) NFS exports
+   |  nomad-client-04  rubirosa  **  .73 (28G)   | | rubirosa   .69 (*) |       /mnt/gdrive
+   |  nomad-client-05  rubirosa      .74 (28G)   | +--------------------+       /tank
+   +---------------------------------------------+
+       (**) GPU passthrough + /tank media SSD
+
+   +-- Cinc/Chef server -------------------------+
+   |  cinc-server      192.168.68.99             | <- Proxmox VM on rubirosa
+   +---------------------------------------------+
+
+   +-- DNS (not Chef-managed; armv6 Pi 1) -------+
+   |  green   192.168.68.62   Pi-hole + unbound  | <- managed by terragrunt
+   |  logan   192.168.68.64   Pi-hole + unbound  |    remote-files module
+   +---------------------------------------------+
+
+   +-- Oracle Free Tier (WireGuard mesh, 10.200.0.0/24) ---------------+
+   |  oracle-node-1   E2.1.Micro x86 AMD       wg 10.200.0.11   1G RAM |
+   |  oracle-node-2   E2.1.Micro x86 AMD       wg 10.200.0.12   1G RAM |
+   |  oracle-arm-1    A1.Flex ARM 2c           wg 10.200.0.13  12G RAM | <- MinIO (80G OCI block vol)
+   |  oracle-arm-2    A1.Flex ARM 2c           wg 10.200.0.14  12G RAM | <- MinIO (80G OCI block vol)
+   |                                                                   |
+   |  Runs: oauth2-proxy, oracle-watchdog, theme-server, vault-ui,     |
+   |        forgejo-runner, blackbox-exporter-external, kavita         |
+   +-------------------------------------------------------------------+
 ```
 
-**Components:**
+**Network zones**
 
-| Component | Port | Purpose |
-|-----------|------|---------|
-| **dnsmasq** | 127.0.0.53 | Local DNS forwarder, routes queries to appropriate upstream |
-| **Consul DNS** | 8600 | Service discovery for `.consul` domain (e.g., `redis-primary.service.consul`) |
-| **CoreDNS** | 5353 | System job on every node, load balances to Pi-holes with health checks |
-| **Pi-hole** | 53 | Ad-blocking DNS servers (green, logan) |
-| **Unbound** | 5335 | Recursive resolver on Pi-hole hosts, queries root servers directly |
-
-**Key Features:**
-
-- **Local-first resolution**: Every node has its own DNS stack, no single point of failure
-- **Automatic failover**: dnsmasq falls back to Pi-holes directly if CoreDNS is down
-- **Service discovery**: Consul DNS enables dynamic service lookup across the cluster
-- **Health-checked upstreams**: CoreDNS monitors Pi-hole health and removes failed servers
-- **Privacy-focused**: Unbound resolves directly from root servers, no third-party DNS
-
-**Configuration:**
-
-- CoreDNS job: `nomad/jobs/infrastructure/coredns/coredns.nomad.hcl`
-- Bridge-mode containers use `${attr.unique.network.ip-address}` for DNS with Pi-hole fallbacks
+| Zone | CIDR | Where |
+|---|---|---|
+| Home LAN | `192.168.68.0/24` | Bare metal + Proxmox + Pi-hole hosts |
+| WireGuard mesh | `10.200.0.0/24` | Oracle <-> ingress (`wg0` / `wg1`) |
+| Traefik VIP | `192.168.68.50` | keepalived VRRP, MASTER holds it |
+| WireGuard VIP | `192.168.68.49` | keepalived; oracle peers handshake here |
+| OCI VCN | `10.100.0.0/16` | Oracle subnet (out-of-band; nodes reach LAN via WG) |
 
 ---
 
-## Directory Structure
+## Compositional architecture
+
+Three layers, each owning a stable interface to the next:
 
 ```
-.
-├── .github/workflows/           # CI/CD pipelines
-│   └── docker-ci.yml            # Waypoint Docker build pipeline
-│
-├── src/                         # Custom applications
-│   ├── vault-cert-manager/      # Vault PKI certificate lifecycle manager (Go)
-│   ├── trivy-dashboard/         # Vulnerability dashboard for Trivy (Go)
-│   ├── temporal-jobs/           # Temporal workflow workers
-│   │   └── temporal-backup-worker/
-│   ├── dashboard/               # Hugo-based link dashboard
-│   ├── resume/                  # Personal resume site
-│   ├── s3-orchestrator/         # S3 orchestrator service (Go)
-│   └── theme-server/            # Theme server for dashboards
-│
-├── nomad/                       # Nomad workload definitions
-│   ├── jobs/                    # Job specifications
-│   │   ├── backup/              # Backup jobs (Temporal triggers)
-│   │   ├── games/               # Game servers (Zomboid)
-│   │   ├── infrastructure/      # Core services (Traefik, Patroni, Redis, etc.)
-│   │   ├── logging/             # Loki, Promtail, Tempo
-│   │   ├── media/               # Media stack (Jellyfin, *arr apps, Deluge)
-│   │   ├── monitoring/          # Prometheus, Grafana, exporters
-│   │   └── web/                 # Web apps (Nextcloud, Vaultwarden, dashboard)
-│   └── packs/registry/          # Nomad Pack templates
-│       └── munchbox-service/    # Reusable service pack
-│
-├── infrastructure/
-│   ├── cinc/                    # Cinc (Chef) cookbooks + roles
-│   ├── terragrunt/              # Terragrunt modules + leaves
-│   ├── providers/               # Local-fork terraform providers (pihole)
-│   └── scripts/                 # Operator scripts (fix-vault, oracle-arm-retry, ...)
-│   │       ├── consul/          # Consul agent setup
-│   │       ├── nomad/           # Nomad agent setup
-│   │       ├── vault/           # Vault server setup
-│   │       ├── vault-cert-manager/  # Certificate manager deployment
-│   │       ├── wireguard/       # WireGuard VPN tunnels
-│   │       └── ...              # Other roles
-│   │
-│   ├── terraform/modules/       # Reusable Terraform modules
-│   │   ├── bootstrap/           # Node bootstrap (cloud-init)
-│   │   ├── compute-oci/         # OCI compute instances
-│   │   ├── compute-proxmox/     # Proxmox VMs
-│   │   ├── consul-acls/         # Consul ACL policies and tokens
-│   │   ├── nomad-acls/          # Nomad ACL policies and tokens
-│   │   ├── vault-config/        # Vault configuration
-│   │   ├── kms-oci/             # OCI KMS for Vault auto-unseal
-│   │   └── ...                  # Other modules
-│   │
-│   └── terragrunt/              # Environment configurations
-│       ├── _env_helpers/        # Shared Terragrunt includes
-│       ├── global/              # Global resources (ACLs, DNS, secrets)
-│       ├── oci/                 # Oracle Cloud nodes
-│       ├── proxmox/             # On-prem Proxmox cluster
-│       └── aws/                 # AWS resources
-│
-└── docker/                      # Custom Docker images
-    ├── Makefile                 # Docker build automation
-    ├── deluge-vpn/              # VPN-enabled torrent client
-    ├── patroni/                 # Custom Patroni image
-    └── ops-build-image/         # CI/CD toolchain image
++---------------------------------------------------------------------+
+|  TERRAGRUNT       declarative substrate                             |
+|                                                                     |
+|  +- provisions    OCI VCN + instances + block volumes               |
+|  |                Proxmox VMs                                       |
+|  |                OCI / IBM / Cloudflare R2 S3 buckets + HMAC creds |
+|  |                OCI KMS key (Vault auto-unseal)                   |
+|  |                Cloudflare DNS + tunnel config                    |
+|  |                Pi-hole DNS records + runtime config              |
+|  |                                                                  |
+|  +- manages       Vault mounts / policies / PKI / SSH-CA /          |
+|  |                JWT / AppRole                                     |
+|  |                Consul ACLs, Nomad ACLs                           |
+|  |                Forgejo CI secrets (sync from Vault)              |
+|  |                Vaultwarden items (sync from Vault)               |
+|  |                oauth2-proxy secret material                      |
+|  |                Proxmox PVE users                                 |
+|  |                                                                  |
+|  +- ships         Static files + restart hooks to non-Chef Pi-hole  |
+|                   nodes via the remote-files module                 |
+|                                                                     |
++-------------------------------+-------------------------------------+
+                                |
+                                v  (bootstrap module renders cloud-init
+                                    that triggers first cinc-client run)
++-------------------------------+-------------------------------------+
+|  CINC / CHEF      per-node convergence                              |
+|                                                                     |
+|  Cloud-init drops the org validator + encrypted_data_bag_secret +   |
+|  client.rb + first-boot.json. cinc-client runs role[<hostname>]:    |
+|                                                                     |
+|  munchbox_base   ->  OS baseline: PKI trust, apt + munchbox repo,   |
+|                      time, journald, sshd hardening, /etc/hosts,    |
+|                      sysctl, resolv.conf                            |
+|  cinc_client     ->  hourly timer + data-bag secret                 |
+|  vault_agent     ->  AppRole -> /run/vault-agent/token              |
+|  sshd_ca         ->  Vault SSH-CA host + user cert wiring           |
+|  vault_pki_trust ->  pki_int CA into system trust + /opt/nomad/tls  |
+|  vault_cert_mgr  ->  daemon: renews consul/nomad/vault mTLS certs   |
+|  consul + dns    ->  cluster join + dnsmasq forwarder for .consul   |
+|  docker          ->  daemon.json with insecure registry on Consul   |
+|  nomad           ->  cluster join with workload identity to Vault   |
+|  wireguard       ->  static route to oracle mesh (proxmox VMs)      |
+|  cni             ->  bridge networking plugins for Nomad            |
+|  nfs::client     ->  mount /mnt/gdrive from mccoy                   |
+|                                                                     |
+|  Oracle nodes add: wireguard interface, oracle::watchdog,           |
+|                    minio_mount (arm-1/2)                            |
+|  GPU node adds:    nvidia::install                                  |
+|  Hypervisors get:  proxmox_host (ZFS ARC cap, gvt_g, vfio,          |
+|                    zfswatcher)                                      |
+|                                                                     |
++-------------------------------+-------------------------------------+
+                                |
+                                v  (Nomad agents up, registered in Consul)
++-------------------------------+-------------------------------------+
+|  NOMAD JOBS       workloads                                         |
+|                                                                     |
+|  38 jobs via the munchbox-service pack (one concern per service),   |
+|  38 raw .nomad.hcl (system jobs, multi-task groups, weird drivers). |
+|                                                                     |
+|  Every pack job gets uniformly: Vault wiring, Traefik tags via the  |
+|  consulcatalog provider, health checks, Consul registration,        |
+|  Prometheus scrape via Consul SD, OTel traces to Tempo, structured  |
+|  JSON logs to Loki (via Alloy).                                     |
+|                                                                     |
++---------------------------------------------------------------------+
 ```
+
+**Rule of composition** -- terragrunt provisions, chef configures, nomad
+runs. Each layer hands stable identity (Vault PKI, AppRole, JWT) to the
+next. None reaches across the boundary directly.
 
 ---
 
-## Technology Stack
+## Traffic flow - public service (e.g. `photos.munchbox.cc`)
 
-### Infrastructure Layer
+```
+browser
+   | HTTPS
+Cloudflare edge                          (cert terminated here)
+   | tunnel
+cloudflared task                         (sidecar inside Traefik alloc on VRRP MASTER)
+   | plain HTTP to 127.0.0.1
+Traefik :80
+   |- cf-tunnel-https@file               sets X-Forwarded-Proto=https
+   |- oauth2-proxy-errors@file           401 -> /oauth2/start redirect
+   |- oauth2-proxy@file                  forward-auth -> oauth2-proxy.service.consul:4180
+   |                                       |- Google OAuth, 3 allowed emails
+   |                                       +- injects X-Auth-Request-{User,Email,Token}
+   +- consulcatalog routes to immich-server (on nomad-client-04, the GPU node)
+                                       |
+                                       |- postgres `immich` via haproxy-postgres.service.consul:5433
+                                       |- redis      via haproxy-redis.service.consul:6380
+                                       +- /mnt/gdrive/immich  (NFS from mccoy)
+```
 
-- **IaC**: Terragrunt + Terraform modules for multi-cloud (Proxmox, OCI, AWS)
-- **Configuration**: Ansible playbooks and roles
-- **Orchestration**: Nomad with Docker driver, Nomad Pack templates
-- **Service Discovery**: Consul with DNS via CoreDNS/dnsmasq
-- **Secrets**: HashiCorp Vault with workload identity (JWT auth)
-- **Networking**: WireGuard tunnels, Traefik reverse proxy
-- **Virtualization**: Proxmox VE for on-prem, OCI for cloud
+## Traffic flow - LAN-only service (e.g. `consul.munchbox.cc`)
 
-### Monitoring & Observability
+```
+browser
+   | DNS query
+local dnsmasq        on each cluster node (consul::dns recipe)
+   | everything not .consul -> 127.0.0.1:5354
+CoreDNS              system job on every node
+   | round-robin, health-checked, 5min cache
+green / logan        Pi-hole + custom dnsmasq.d
+   | wildcard *.munchbox.cc -> 192.168.68.50 (Traefik VIP)
+ARP
+keepalived MASTER    (goren or nomad-client-05)
+   | :443 HTTPS, wildcard ACME cert from Let's Encrypt via Cloudflare DNS-01
+Traefik
+   |- dashboard-allowlan      enforces src in 192.168.68.0/24 + 10.200.0.0/24
+   +- consulcatalog -> consul UI on each node's local agent :8500
+```
 
-- **Metrics**: Prometheus, Node Exporter, Blackbox Exporter, custom exporters
-- **Visualization**: Grafana with pre-configured dashboards
-- **Logging**: Loki + Promtail for log aggregation
-- **Tracing**: Tempo for distributed tracing
-- **Alerting**: Alertmanager with Telegram integration
-- **Security Scanning**: Trivy server with custom dashboard
-
-### Security
-
-- **Vulnerability Scanning**: Trivy for containers and infrastructure
-- **TLS**: Vault PKI with vault-cert-manager for automated rotation
-- **SSH CA**: Vault-backed SSH certificate authority for host and client cert signing
-- **ACLs**: Fine-grained access control across Nomad, Consul, Vault
-- **Encryption**: Gossip encryption, mTLS for service communication
-- **Secrets**: Vault workload identity, no hardcoded credentials
-- **Authentication**: OAuth2 Proxy for web service SSO
-
-### Development Tools
-
-- **CI/CD**: Forgejo with act_runner (GitHub Actions compatible)
-- **Registry**: Private Docker registry with web UI
-- **Workflows**: Temporal for backup orchestration and automation
-- **Linting**: golangci-lint for Go code
+External hits to `*.munchbox.cc` over the CF tunnel can't satisfy
+`dashboard-allowlan`, so they 403 -- that's the LAN-only enforcement.
 
 ---
 
-## Quick Start
+## Security spine
 
-### Prerequisites
+**mTLS everywhere.** Every consul <-> nomad <-> vault <-> docker handshake
+is mutual-TLS. The PKI tree:
 
-- **Ansible** for node configuration
-- **Terraform** and **Terragrunt** for infrastructure provisioning
-- **Consul**, **Nomad**, and **Vault** CLI tools
-- **Docker** for container builds
-- **Go** 1.23+ for building custom applications
-- **Make** for automation
+- Munchbox internal root + intermediate (cookbook-shipped) -- primary trust
+- Vault PKI intermediate (`pki_int` mount) -- issues consul-server,
+  consul-client, nomad-server, nomad-client, vault-server, traefik,
+  postgres certs
+- `vault_cert_manager` daemon renews certs in-place; on change it reloads
+  consul (`systemctl reload`), restarts nomad, reloads vault via SIGHUP
+  (**never** restart Vault -- shamir-sealed, would require manual unseal)
 
-### Environment Setup
+**Auth axes**
 
-Always source the environment file before running commands:
+| Surface | Mechanism |
+|---|---|
+| SSH (human + cinc-client + ci) | Vault SSH CA, host CA + short-lived user certs (8h `client-user`, 24h `client-service`) |
+| Chef -> Vault | AppRole; per-node `role_id` + `secret_id` in encrypted data bag, token sink at `/run/vault-agent/token` |
+| Nomad jobs -> Vault | Workload identity (JWT) via `jwt-nomad` backend; default role `nomad-workloads`; per-job roles bind on `nomad_job_id` |
+| Humans -> public services | Google OAuth via oauth2-proxy forward-auth (3 allowed emails) |
+| External ingress | Cloudflare tunnel -- no inbound NAT rules |
+| Internal service ACLs | Consul ACL default-deny + Nomad ACLs; per-service tokens in Vault |
+| Vulnerability scanning | Trivy server + Temporal scan-worker enumerates running images, stores CVEs in Postgres, dashboard reads the replica |
+
+---
+
+## HA + state
+
+| Concern | Replication | Failover |
+|---|---|---|
+| Ingress (Traefik + cloudflared + oauth2-proxy) | 2 (goren + nc05) | keepalived VRRP, prio 95 |
+| Consul / Nomad / Vault servers | 3 (goren + stabler + nomad-server-03) | Raft, `bootstrap_expect=3` |
+| Patroni Postgres | 2 (stabler + nc05) | Patroni leader election, HAProxy reads `/primary` |
+| Redis | 2 + Sentinel (bare metal) | Sentinel CONFIG REWRITE, HAProxy reads role |
+| Pi-hole DNS | 2 (green + logan) | CoreDNS per-node round-robin with health check |
+| Recursive DNS | 1 per Pi-hole (unbound on each) | independent -- no shared state |
+
+**Acknowledged single points of failure**
+
+- Loki + Tempo pinned to `nomad-client-02` (single host volume)
+- Temporal-server pinned to `nomad-client-03` (single replica, NFS-bound)
+- Docker registry pinned to `stabler` (NFS-backed)
+- `cinc-server` is single-VM on `rubirosa`
+- VRRP ingress pool is 2 nodes; lose both -> no Traefik
+
+---
+
+## Data tiers
+
+| Tier | Service | Storage |
+|---|---|---|
+| Object (blob) | s3-orchestrator -- 13 backends | OCI / R2 / IBM / e2 / GCS / B2 / Tigris / Supabase / C2 / 2x MinIO / g3-proxy / aptly |
+| SQL | Patroni PG18 (15+ app DBs auto-created) | Host volume `/opt/nomad/data/patroni-${ALLOC_INDEX}` |
+| K/V cache | Redis + Sentinel | Host volume on bare metal nodes |
+| Container images | Docker registry v2 | NFS `/mnt/gdrive/munchbox-data/registry` |
+| Apt repo | aptly | s3-orchestrator `aptly` bucket + NFS metadata |
+| Media (read-heavy) | Jellyfin / *arr / Deluge | `/tank` SSD on nomad-client-04 |
+| User files | Nextcloud / Immich | NFS `/mnt/gdrive/nextcloud`, `/mnt/gdrive/immich` |
+| Time-series | Prometheus | Host volume |
+| Logs | Loki | Host volume on nc02 |
+| Traces | Tempo | Host volume on nc02 |
+| Secrets | Vault | Consul-backed storage |
+| ACME certs | Traefik | Per-ingress-node host volume (independent) |
+
+---
+
+## Backup + scheduled ops (Temporal)
+
+```
+Daily 1 AM PT   ->  backup workflow      Nomad + Consul Raft snapshots, pg_dumpall,
+                                         registry tarball -> /mnt/gdrive (7d local) +
+                                         S3 via s3-orchestrator (30d)
+
+Daily 3 AM PT   ->  trivy scan workflow  every running image via Nomad API -> trivy-server,
+                                         results in postgres `trivy`
+
+Daily 5 AM PT   ->  cleanup workflow     SSH each Nomad client, remove orphan alloc dirs
+                                         older than 7d grace
+
+Weekly Sun 2 AM ->  registry GC workflow scale registry to 0, run garbage-collect,
+                                         scale back (saga-style with deferred cleanup)
+```
+
+All workflows emit OTel traces, structured logs, and SDK metrics.
+
+---
+
+## Observability
+
+```
+Every node             Prometheus               Grafana
+---------------        --------------           --------
+coredns         --+    | Consul SD              | + Loki
+alloy (logs +    |--->-| scrapes every          | + Tempo (service graph)
+  host metrics)  |     | exporter + tagged      | + Postgres
+                 |     | service                |   15+ dashboards
+                 |     +--> alert_rules.yml     |
+                 |          -> AlertManager     |
+                 |             -> stabler webhook
+                 |                (force-restart sick Nomad jobs)
+                 |
+                 v
+              Loki  (nc02 host vol)
+              Tempo (nc02 host vol)  <- apps OTLP gRPC to tempo.service.consul:4317
+```
+
+**Probe-shaped checks** go through `blackbox-exporter-external` (oracle) for
+public URLs and `blackbox-exporter-internal` (on-prem) for LAN-only
+probes. Cloudflare firewall events ship via `cloudflare-log-collector` ->
+Loki + Tempo.
+
+---
+
+## Repo layout
+
+```
+munchbox/
++- README.md                          <- this file (project overview)
++- CLAUDE.md                          <- repo-wide conventions for AI assistants
++- munchbox-env.sh                    <- source first; exports vault/nomad/consul creds + TF_VARs
++- assets/                            <- repo images (logo, terragrunt pug)
++- scripts/                           <- operator helpers (ssh-cert-login, warp toggles, ...)
+|
++- infrastructure/
+|  +- cinc/                           <- Cinc cookbooks + roles
+|  |  +- README.md                    <- cookbook anatomy, ops, layout
+|  |  +- STYLE_GUIDE.md               <- Ruby/Chef style + testing
+|  |  +- cookbooks/                   <- 16 cookbooks
+|  |  +- roles/                       <- 16 fleet roles + per-node roles
+|  |  +- scripts/                     <- bootstrap + ops helpers
+|  |
+|  +- terragrunt/                     <- Terraform + Terragrunt
+|  |  +- README.md                    <- module/leaf anatomy, ops
+|  |  +- STYLE_GUIDE.md               <- HCL style + testing
+|  |  +- root.hcl                     <- centralized config + remote_state
+|  |  +- _env_helpers/                <- one per module
+|  |  +- modules/                     <- 32 modules
+|  |  +- global/                      <- provider-agnostic leaves
+|  |  +- oci/ ibm/ proxmox/           <- per-provider leaves
+|  |  +- providers/                   <- submodule: local-fork pihole provider
+|  |
+|  +- scripts/                        <- bootstrap helpers (fix-vault, oracle-arm-retry)
+|
++- nomad/
+|  +- jobs/
+|  |  +- README.md                    <- pack vs raw, deploying, traefik/vault/placement
+|  |  +- STYLE_GUIDE.md               <- Nomad job style + testing
+|  |  +- infrastructure/              <- 26 jobs: traefik, patroni, vault-ui, ...
+|  |  +- monitoring/                  <- 10 jobs: prom, grafana, blackbox, exporters
+|  |  +- media/                       <- 12 jobs: jellyfin, immich, *arr, deluge
+|  |  +- web/                         <- 10 jobs: dashboards + UI fronts
+|  |  +- temporal-workflows/          <- 7 jobs: workers + periodic triggers
+|  |  +- logging/                     <- 3 jobs: loki + alloy + tempo
+|  |  +- games/                       <- 2 jobs
+|  |  +- deprecated/                  <- parked specs (kept for revival, not running)
+|  |
+|  +- packs/registry/munchbox-service/   <- the shared service pack
+|  +- shared.vars.hcl                 <- pihole IPs (used by raw jobs)
+|  +- Makefile                        <- make run JOB=<name>
+|
++- docker/                            <- container images we build + push to registry.munchbox.cc
+|  +- README.md                       <- anatomy, common ops
+|  +- STYLE_GUIDE.md                  <- Dockerfile + Makefile conventions
+|  +- patroni/                        <- PG18 + Patroni 4.0.4 (used by patroni nomad job)
+|  +- ops-build-image/                <- CI toolchain (used by forgejo-runner)
+|
++- src/                               <- operator-built apps shipped as containers
+   +- vault-cert-manager/             <- Vault PKI cert lifecycle manager (submodule)
+   +- s3-orchestrator/                <- S3 multiplexer across 13 backends
+   +- cloudflare-log-collector/       <- CF GraphQL -> Loki/Tempo (submodule)
+   +- oracle-watchdog/                <- OCI instance recovery + DDNS (submodule)
+   +- nomad-temporal-jobs/            <- backup/cleanup/trivy/registry-gc workers (submodule)
+   +- trivy-dashboard/                <- vuln dashboard UI
+   +- dashboard/                      <- Hugo-based homepage at dashboard.munchbox.cc
+   +- personal-site/                  <- alexfreidah.com
+   +- resume/                         <- resume.alexfreidah.com (submodule)
+   +- phlebotomy-game/ theme-server/  <- smaller bespoke apps
+```
+
+> **For per-area conventions, jump to the README and STYLE_GUIDE next to the
+> code.** This file stays at the architectural / cluster level.
+
+---
+
+## Getting started
+
+### Workstation prerequisites
+
+- `vault`, `consul`, `nomad`, `terragrunt`, `terraform`, `nomad-pack` CLIs
+- `gh`, `jq`, `python3`
+- A WireGuard tunnel to the home LAN (for off-LAN ops)
+- Cinc-workstation if you'll touch cookbooks (`make tools` from any cookbook dir)
+
+### Source the env
+
+Every CLI op needs the env vars from Vault. Always start with:
+
 ```bash
 source munchbox-env.sh
 ```
 
-### Deploying Nomad Jobs
+This exports `VAULT_ADDR`, `VAULT_TOKEN`, `NOMAD_ADDR`, `NOMAD_TOKEN`,
+`CONSUL_HTTP_ADDR`, `CONSUL_HTTP_TOKEN`, plus `TF_VAR_*` secrets for
+terraform/terragrunt.
 
-From the munchbox root directory:
+### Deploy a Nomad job
+
 ```bash
-source munchbox-env.sh && cd nomad && make run JOB=<jobname>
+cd nomad
+make plan JOB=<name>      # diff
+make run  JOB=<name>      # submit
+make stop JOB=<name>      # graceful stop, keep spec
 ```
 
-Examples:
+`JOB=<name>` is the directory name under `nomad/jobs/<category>/<name>/`,
+without path or extension.
+
+### Apply infrastructure
+
 ```bash
-make run JOB=grafana      # Deploy Grafana
-make run JOB=traefik      # Deploy Traefik
-make plan JOB=prometheus  # Plan changes for Prometheus
-make list                 # Show all available jobs
-```
-
-**Job Types:**
-- `.nomad.hcl` files — Pure Nomad job specifications
-- `.hcl` files — Variable files for the `munchbox-service` Nomad Pack
-
-### Infrastructure Provisioning
-
-Terragrunt manages multi-cloud infrastructure:
-```bash
-cd infrastructure/terragrunt/proxmox/cluster
-terragrunt apply
-
-cd infrastructure/terragrunt/oci/oracle-arm-1
+cd infrastructure/terragrunt/<leaf>
+terragrunt init
+terragrunt plan
 terragrunt apply
 ```
 
-### Node Configuration
+State lives in Consul at `terraform/munchbox/<provider>/<node_name>`. Each
+leaf has isolated state.
 
-Cinc cookbooks (`infrastructure/cinc/`) run on each node via `cinc-client`.
-Roles at `infrastructure/cinc/roles/`, cookbooks at `infrastructure/cinc/cookbooks/`.
+### Add a node
 
-### Service Access
+1. Add VM entry under `root.hcl` -> `proxmox_vm_groups.<group>.<hostname>`
+2. `cd infrastructure/terragrunt/proxmox/<group> && terragrunt apply` -- VM
+   provisions
+3. Create per-node Chef role at `infrastructure/cinc/roles/nodes/<host>.rb`
+4. Run `infrastructure/cinc/scripts/prepare-chef-bootstrap.sh <host>` from
+   the workstation -- mints AppRole secret, uploads vault_agent data bag,
+   uploads per-node role
+5. Run `infrastructure/cinc/scripts/bootstrap-cinc-node.sh <host>` to
+   install cinc-client + trigger first converge
 
-Once deployed, services are available at:
-
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **Nomad UI** | https://nomad.munchbox.cc | Workload management |
-| **Consul UI** | https://consul.munchbox.cc | Service discovery |
-| **Vault UI** | https://vault.munchbox.cc | Secrets management |
-| **Grafana** | https://grafana.munchbox.cc | Metrics visualization |
-| **Prometheus** | https://prometheus.munchbox.cc | Metrics collection |
-| **Traefik** | https://traefik.munchbox.cc | Reverse proxy dashboard |
-| **Alertmanager** | https://alertmanager.munchbox.cc | Alert management |
-| **Forgejo** | https://forgejo.munchbox.cc | Git hosting and CI/CD |
-| **Nextcloud** | https://cloud.munchbox.cc | File sync and sharing |
-
-> **Note**: All services are LAN-restricted via OAuth2 Proxy, except for the public resume site accessible via Cloudflare Tunnel.
+The node joins Consul + Nomad automatically once converged.
 
 ---
 
-## Feature Details
+## Architectural strengths + tensions
 
-### vault-cert-manager
+**Strengths the code expresses**
 
-Automated certificate lifecycle management for infrastructure services:
+- Single source of truth per concern. Vault paths in one terragrunt list.
+  VMs in one root.hcl map. SSH CA in two Vault mounts. PKI in one. Adding
+  a service is a small diff at every layer.
+- The munchbox-service pack standardizes every Nomad job's shape (Vault
+  wiring, Traefik tags, health checks, Prometheus scrape, OTel) so new
+  workloads slot into the observability + ingress + auth machinery for
+  free.
+- Layered fallback at every tier. CoreDNS round-robins both Pi-holes with
+  health checks; if Pi-hole is down, dnsmasq has them as upstreams too.
+  HAProxy reads Patroni REST in real time. Each Pi-hole has its own
+  unbound. s3-orchestrator has per-backend circuit breakers.
 
-- **Automated Issuance**: Issues certificates from Vault PKI when missing
-- **Renewal**: Renews certificates before expiration with jitter
-- **Web Dashboard**: Per-node UI showing certificate status with manual rotation
-- **Aggregator Mode**: Centralized dashboard discovering all instances via Consul
-- **Out-of-Sync Detection**: Identifies when disk certs differ from running services
-- **Prometheus Metrics**: `vault_cert_*` metrics for monitoring
-- **Post-Change Hooks**: Configurable scripts for service reloads
+**Tensions worth flagging**
 
-Deployed via Ansible to all cluster nodes, manages Consul and Nomad TLS certificates.
-
-### Ingress High Availability
-
-The ingress layer runs on two dedicated nodes (goren and nomad-client-05) with full redundancy:
-
-- **Keepalived**: Manages VIP 192.168.68.50 with VRRP active-passive failover (~6s failover time)
-- **Traefik**: System job on both ingress nodes, each independently managing ACME wildcard certificates via Cloudflare DNS challenge
-- **OAuth2-Proxy**: System job on both ingress nodes, discovered via Consul DNS
-- **Cloudflared Tunnel**: System job on both ingress nodes; Cloudflare distributes and fails over across connectors
-- **Prometheus**: Dual independent scrapers on ingress nodes for metrics redundancy
-- **Alertmanager**: Clustered on ingress nodes with gossip-based deduplication
-
-All stateless services are unpinned from specific nodes, allowing Nomad to reschedule them automatically on any healthy node if their current host fails.
-
-### Nomad Pack Templates
-
-The `munchbox-service` pack provides a reusable template for common service patterns:
-
-- Standardized job structure with consistent metadata
-- Vault integration for secrets
-- Traefik labels for automatic routing
-- Consul service registration
-- Resource defaults with overrides
-
-Jobs using the pack define variables (`.hcl` files), while complex jobs use pure Nomad HCL (`.nomad.hcl` files).
-
-### High Availability Databases
-
-**PostgreSQL with Patroni:**
-- Automatic leader election and failover
-- Streaming replication
-- Health checks via Consul
-
-**Redis with Sentinel:**
-- Master/replica replication
-- Sentinel quorum for automatic failover
-- Dynamic master discovery via Consul DNS
-
-**HAProxy Database Proxy:**
-- TCP proxy in front of both Patroni and Redis Sentinel
-- Applications connect to `haproxy-postgres.service.consul:5433` and `haproxy-redis.service.consul:6380`
-- Health-checks Patroni REST API and Redis replication role to route to the current primary
-- On failover, immediately kills stale connections (`on-marked-down shutdown-sessions`) so apps reconnect to the new primary without manual restart
-- Backends discovered via HAProxy DNS resolver against Consul DNS
-
-### Security Scanning
-
-Trivy server provides continuous vulnerability scanning:
-
-- Container image scanning
-- Custom dashboard (`trivy-dashboard`) for vulnerability visibility
-- Integration with Prometheus for alerting
-
-### Backup Strategy
-
-Temporal workflows orchestrate automated backups:
-
-| Data | Schedule | Retention | Location |
-|------|----------|-----------|----------|
-| **Nomad** snapshots | Daily 2 AM PT | 7 days | /mnt/gdrive/nomad-snapshots |
-| **Consul** snapshots | Daily 2 AM PT | 7 days | /mnt/gdrive/consul-snapshots |
-| **Vault** snapshots | Daily 2 AM PT | 7 days | /mnt/gdrive/vault-snapshots |
-
-The `temporal-backup-worker` runs continuously listening for workflow tasks, while `temporal-backup-trigger` dispatches the daily backup workflow.
+- The ingress pair is a 2-host SPoF (goren + nc05).
+- Loki + Tempo pinned to nc02 -- a single-host outage kills observability.
+- Temporal-server is pinned to nc03; the haproxy-postgres path is bypassed
+  via a hardcoded goren IP because Temporal can't handle the multi-IP DNS
+  answer.
+- The Pi-hole local-fork provider submodule is technical debt (issue
+  [#123](https://github.com/afreidah/munchbox/issues/123) tracks
+  consolidating onto dklesev).
+- Adding a Vault path or DNS record means a terragrunt apply *and* a
+  nomad redeploy -- tracked under the deploy-simplification issue.
 
 ---
 
-## 📖 Make Targets Reference
+## License
 
-### Nomad Jobs (`cd nomad`)
+**All Rights Reserved** -- personal homelab project. Code is provided for
+educational and reference purposes only.
 
-```bash
-source munchbox-env.sh && cd nomad
+## Maintainer
 
-make list                     # List all available jobs with types
-make run JOB=<name>           # Deploy a job (auto-detects pack vs raw HCL)
-make plan JOB=<name>          # Preview job changes
-make render JOB=<name>        # Show generated HCL (useful for debugging)
-make validate JOB=<name>      # Validate job syntax
-make stop JOB=<name>          # Stop running job
-make purge JOB=<name>         # Stop and purge job
-
-# Batch operations
-make render-all               # Render all jobs
-make plan-all                 # Plan all jobs
-make validate-all             # Validate all jobs
-```
-
-**Job Detection:**
-- Files ending in `.nomad.hcl` → raw HCL (`nomad job run`)
-- Files with `# PACK: <name>` → uses specified pack
-- All other `.hcl` files → uses `munchbox-service` pack
-
-### Infrastructure (`cd infrastructure`)
-
-```bash
-# VM Provisioning (Proxmox)
-make tf-init                  # Initialize Terraform
-make tf-plan                  # Preview VM changes
-make tf-apply                 # Provision VMs
-make tf-output                # Show VM details
-make tf-destroy               # Destroy all VMs
-
-# Node Management
-make show-nodes               # Display node configuration
-make add-node VM=<name>       # Configure node (VM or bare-metal)
-make add-vm VM=<name>         # Full VM workflow: tf-apply + add-node
-
-# Consul ACL Management
-make consul-prereqs           # Copy certs and enable Vault KV
-make consul-acl-init          # Initialize Consul ACL Terraform
-make consul-acl-plan          # Preview ACL changes
-make consul-acl-apply         # Apply ACL configuration
-
-# Vault Configuration
-make vault-config-init        # Initialize Vault config Terraform
-make vault-config-plan        # Preview Vault changes
-make vault-config-apply       # Apply Vault configuration
-```
-
-### Docker Images (`cd docker`)
-
-```bash
-make apps                     # List discovered Docker apps
-make build                    # Build all images
-make build-app APP=<name>     # Build specific app
-
-# Security Scanning
-make checkov                  # Scan Dockerfiles with Checkov
-make trivy                    # Scan configs with Trivy
-make trivy-image              # Scan built images (fails on CRITICAL)
-make security                 # Run all security scans
-
-# Multi-Architecture Builds
-make buildx-setup             # Set up BuildKit for multi-arch
-make publish-multiarch        # Build and push amd64 + arm64 images
-```
-
----
-
-## 📦 Nomad Job Categories
-
-### Infrastructure - Core Services
-
-**Purpose**: Core infrastructure required for cluster operation
-
-- `traefik` - HA reverse proxy and load balancer (system job on ingress nodes)
-- `cloudflared-tunnel` - HA edge access via Cloudflare (system job on ingress nodes)
-- `coredns` - DNS resolution for service discovery
-- `keepalived` - Virtual IP failover for Traefik HA
-- `oauth2-proxy` - HA authentication proxy (system job on ingress nodes)
-- `patroni` - HA PostgreSQL with Patroni orchestration
-- `redis-sentinel` - HA Redis with Sentinel failover
-- `haproxy` - Database failover proxy for Patroni and Redis
-- `postgres-shared` / `postgres-replica` - Standalone PostgreSQL instances
-- `redis-shared` - Standalone Redis instance
-- `temporal` - Workflow orchestration (for backups, scans)
-- `forgejo` - Self-hosted Git server (Gitea fork)
-- `forgejo-runner` - CI/CD runners (act_runner)
-- `registry` - Private Docker registry with mirror capability
-- `trivy-server` - Vulnerability scanning server
-- `theme-server` - CSS theme serving for unified UI
-- `vault-ui` - HashiCorp Vault web interface
-
-### Monitoring - Observability Stack
-
-**Purpose**: Metrics collection, visualization, and alerting
-
-- `prometheus` - HA metrics collection and alerting (system job on ingress nodes)
-- `grafana` - Metrics visualization and dashboards
-- `alertmanager` - HA alert routing with clustering (system job on ingress nodes)
-- `pve-exporter` - Proxmox VE hypervisor metrics
-- `node-exporter` - System metrics (runs on all nodes)
-- `blackbox-exporter` - External endpoint monitoring
-- `postgres-exporter` / `postgres-replica-exporter` - PostgreSQL metrics
-- `redis-exporter` - Redis metrics
-- `nextcloud-exporter` - Nextcloud metrics
-- `trivy-dashboard` - Vulnerability scan dashboard
-- `umami` - Privacy-focused web analytics
-
-### Logging - Log Aggregation
-
-**Purpose**: Centralized log collection and tracing
-
-- `loki` - Log aggregation server
-- `promtail` - Log collection agent (runs on all nodes)
-- `tempo` - Distributed tracing
-
-### Web - User Applications
-
-**Purpose**: User-facing web applications
-
-- `dashboard` - Munchbox landing page
-- `nginx-resume` - Personal resume/portfolio site
-- `nextcloud` - Self-hosted cloud storage
-- `vaultwarden` - Bitwarden-compatible password manager
-- `health-checker` - Service health status page
-
-### Media - Media Management
-
-**Purpose**: Media streaming and management (the *arr stack)
-
-- `jellyfin` - Media streaming server
-- `sonarr` - TV show management
-- `radarr` - Movie management
-- `lidarr` - Music management
-- `readarr` - Book/audiobook management
-- `prowlarr` - Indexer manager
-- `kavita` - Comic/manga reader
-- `deluge` - BitTorrent client
-- `ersatz` - Content request system
-- `cloudflaresolver` - Cloudflare bypass for indexers
-
-### Games - Game Servers
-
-**Purpose**: Self-hosted game servers
-
-- `zomboid` - Project Zomboid dedicated server
-
-### Backup - Automated Backups
-
-**Purpose**: Scheduled backup workflows via Temporal
-
-- `temporal-backup-worker` - Backup execution worker
-- `temporal-backup-trigger` - Daily backup scheduler
-- `temporal-trivy-trigger` - Scheduled vulnerability scans
-
----
-
-## 🔐 Security Considerations
-
-### Access Control
-
-**Service Protection**:
-- All services protected by Consul/Nomad ACLs
-- Vault workload identity for secret access
-- LAN-only access for sensitive dashboards
-- Traefik middleware for IP allowlisting
-
-**ACL Hierarchy**:
-```
-Management Token (admin)
-  ├── Operator Token (SRE daily use)
-  ├── Read-Only Token (dashboards/auditing)
-  ├── Service Tokens (per-service least privilege)
-  └── Workload Identity (ephemeral, scoped)
-```
-
-### Encryption
-
-**In Transit**:
-- TLS for all HTTP/RPC communication
-- mTLS for server-to-server communication (via vault-cert-manager)
-- SSH certificate authentication via Vault CA (host and client certs)
-- Gossip encryption for Consul/Nomad
-
-**At Rest**:
-- Vault-managed secrets
-- Ansible Vault for sensitive variables
-- No secrets in version control
-
-### Network Security
-
-**Firewall Rules**:
-- Host networking with UFW/iptables rules
-- Service-specific port allowlisting
-- LAN-only access by default
-
-**Container Security**:
-- No privileged containers (except where absolutely required)
-- CNI-based container networking
-- Resource limits enforced
-- Read-only root filesystems where possible
-
-### Secrets Management
-
-**Vault Integration**:
-```hcl
-# Jobs authenticate via workload identity
-identity {
-  env  = true
-  file = true
-  aud  = ["vault.io"]
-}
-
-vault {
-  role = "nomad-workloads"
-}
-
-# Secrets templated into environment
-template {
-  data = <<EOH
-{{ with secret "kv/data/myapp" }}
-API_KEY={{ .Data.data.api_key }}
-{{ end }}
-EOH
-  destination = "secrets/app.env"
-  env         = true
-}
-```
-
-**Best Practices**:
-- No hardcoded credentials
-- Secrets rotation via Vault
-- Least-privilege access policies
-- Audit logging enabled
-
----
-
-## 🤝 Contributing
-
-This is a personal homelab project, but suggestions and improvements are welcome!
-
-### How to Contribute
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add some amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Code Standards
-
-- **Go**: Follow standard Go conventions, use `gofmt` and `golangci-lint`
-- **HCL**: Use `nomad fmt` for Nomad job files, `terraform fmt` for Terraform
-- **Ruby/Chef**: Use `cookstyle` (cinc cookbooks)
-- **Documentation**: Update README for significant changes
-
----
-
-## 📄 License
-
-**All Rights Reserved** - Personal Infrastructure Project
-
-This is a personal homelab project. The code is provided for educational and reference purposes. Please respect the license terms.
-
----
-
-## 🙏 Acknowledgments
-
-Built with these excellent open-source projects:
-
-- [HashiCorp Nomad](https://www.nomadproject.io/) - Workload orchestration
-- [HashiCorp Consul](https://www.consul.io/) - Service networking
-- [HashiCorp Vault](https://www.vaultproject.io/) - Secrets management
-- [Traefik](https://traefik.io/) - Cloud-native reverse proxy
-- [Prometheus](https://prometheus.io/) - Monitoring and alerting
-- [Grafana](https://grafana.com/) - Observability platform
-- [Loki](https://grafana.com/oss/loki/) - Log aggregation
-- [Patroni](https://github.com/patroni/patroni) - HA PostgreSQL
-- [Temporal](https://temporal.io/) - Workflow orchestration
-- [Forgejo](https://forgejo.org/) - Self-hosted Git
-- [Terragrunt](https://terragrunt.gruntwork.io/) - Terraform wrapper
-
----
-
-<div align="center">
-
-**⚠️ Production Deployment Notice**
-
-This infrastructure is designed for self-hosted/homelab environments.
-
-Production deployments should review security configurations, especially TLS verification settings and ACL policies.
-
----
-
-Made with ❤️ for the homelab community
-
-</div>
+Alex Freidah -- alex.freidah@gmail.com

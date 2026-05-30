@@ -1,25 +1,39 @@
-# Oracle Watchdog
+# oracle-watchdog
 
-Monitors Oracle Cloud free-tier nodes via Consul session presence and
-triggers OCI stop/start cycles when nodes become unresponsive. Oracle's
-free-tier instances occasionally hang or lose network connectivity, and
-this agent automates recovery without manual intervention.
+Monitors Oracle Cloud free-tier nodes via Consul session presence and triggers
+OCI stop/start cycles when nodes become unresponsive. Also publishes the home
+WAN IP to Cloudflare DNS so the WireGuard endpoint stays reachable when the
+residential IP changes.
 
-## Architecture
+## Image
 
-The agent polls Consul for heartbeat keys from each monitored Oracle
-node. When a node's session is missing for longer than the configured
-timeout (5 minutes), the agent calls the OCI API to stop and restart
-the instance. A restart attempt counter (max 3) prevents infinite loops
-on hardware failures; the counter resets when a node recovers.
+`registry.munchbox.cc/oracle-watchdog:v1.4.1`
 
-## Notable Configuration
+## Hostname / exposure
 
-- Constrained to run on non-Oracle nodes to avoid the watchdog dying
-  alongside the nodes it monitors
-- Exposes Prometheus metrics on port 9105 for alerting on recovery events
-- OCI credentials (API key, config) injected from Vault
+- Internal-only Consul service `oracle-watchdog-agent`
+- Prometheus metrics on static port 9105 (`traefik.enable=false`)
+
+## Placement
+
+- Constraints: `meta.cloud != oracle` (so the watchdog can't die with its
+  target nodes), `attr.cpu.arch = amd64` (image is x86_64),
+  `node.unique.name != nomad-client-04` (keep off the GPU node)
+- `count = 1`
 
 ## Dependencies
 
-- **Consul** -- session monitoring for node liveness detection
+- Consul at `consul.service.consul:8500` for session monitoring
+- Vault `secret/data/oracle-watchdog` (OCI private key) and
+  `secret/data/cloudflare` (zone_id + api_token) via `nomad-workloads` role
+- Tempo OTLP `tempo.service.consul:4317` (tracing)
+
+## Notable configuration
+
+- Watched nodes: `oraclearm1`, `oraclearm2`, `oraclenode1`, `oraclenode2`
+- `timeout: 300s` (node missing 5m before restart), `check_interval: 60s`
+- `max_restart_attempts: 0` -- unlimited; counter resets on recovery
+- `wan_dns` keeps `wg.munchbox.cc` A record in sync with WAN IP via
+  Cloudflare API; `poll_interval: 5m`, `cooldown: 15m`
+- OCI config block (user/tenancy/fingerprint/region us-phoenix-1) baked into
+  the rendered config; private key from Vault

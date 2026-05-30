@@ -1,90 +1,49 @@
-# Patroni
+# patroni
 
-High-availability PostgreSQL 18 cluster with automatic leader election and
-streaming replication. Replaces the earlier manual postgres-shared and
-postgres-replica jobs with a self-healing cluster managed by Patroni. Serves
-as the primary relational database for the entire Munchbox infrastructure.
+High-availability PostgreSQL 18 cluster. Patroni handles leader election via
+Consul, streams WAL between instances, and exposes a REST API on `:8008` that
+HAProxy uses to find the current primary.
 
-## Architecture
+## image
 
-Two instances spread across distinct hosts (goren and stabler) using host
-networking. Patroni uses Consul as the distributed configuration store (DCS)
-for leader election and cluster state. At any time, exactly one instance is
-the primary (read-write) and the other is a streaming replica (read-only).
-Consul health checks against the Patroni REST API automatically route the
-`postgres-primary` and `postgres-replica` service names to the correct
-instance based on current role.
+`registry.munchbox.cc/patroni:pg18`
+(sidecar exporter: `quay.io/prometheuscommunity/postgres-exporter:v0.18.1`)
 
-Host networking is required because PostgreSQL clients throughout the cluster
--- including bridge-mode containers -- connect via Consul DNS, and the
-connection address must be routable from all network namespaces.
+## hostname / exposure
 
-## Components
+- internal-only, no traefik
+- Consul services: `postgres-primary`, `postgres-replica`, `patroni`,
+  plus a metrics service for the postgres_exporter sidecar
+- apps do not talk to these services directly -- they go through
+  `haproxy-postgres.service.consul:5433`
 
-| Task | Role | Lifecycle |
-|------|------|-----------|
-| init-storage | Creates pgdata directory with correct ownership (uid 999) | prestart |
-| patroni | PostgreSQL server managed by Patroni | main |
-| postgres-exporter | Prometheus metrics sidecar for database monitoring | poststart sidecar |
+## placement
 
-The init-storage task handles both fresh bootstraps and re-schedules to a node
-where the directory may not exist yet.
+- constraint: `node.unique.name set_contains_any stabler,nomad-client-05`
+- `count = 2`, `distinct_hosts`, spread by node name
+- host networking with static ports `5432` (postgres), `8008` (Patroni REST),
+  `9187` (exporter)
+- alloc data lives at `/opt/nomad/data/patroni-${NOMAD_ALLOC_INDEX}` on the host
 
-## Data Flow
+## dependencies
 
-Application traffic routes through HAProxy at
-`haproxy-postgres.service.consul:5433`, which health-checks the Patroni REST
-API and forwards to the current primary on port 5432. On failover, HAProxy
-kills stale connections and re-routes to the new primary automatically. Read
-traffic can also target `postgres-replica.service.consul:5432` directly.
+- Consul at `consul.service.consul:8500` for DCS / leader election
+  (Patroni token from Vault `secret/data/patroni`)
+- Vault PKI role `pki_int/issue/postgres` for server TLS, TTL `2160h`,
+  SANs include `haproxy-postgres.service.consul`
+- Vault `secret/data/postgres-shared/root` and `.../replication` for
+  superuser and replication accounts
+- per-database creds from Vault for bootstrap: `nextcloud`, `temporal`,
+  `forgejo`, `umami`, `trivy-dashboard`, `grafana`, `vaultwarden`, `immich`,
+  `g3`, `s3-orchestrator`, `flight-fetcher`, `sonarr`, `radarr`, `lidarr`,
+  `readarr`, `prowlarr`
 
-Streaming replication flows from primary to replica over the PostgreSQL
-replication protocol (wal_keep_size: 256MB). All external client connections
-use SCRAM-SHA-256 authentication. TLS is required for all remote connections
-via Vault PKI certificates (pki_int/issue/postgres).
+## notable configuration
 
-## Failure Modes
-
-- **Primary crash**: Patroni detects failure via Consul session TTL (30s).
-  After verifying replication lag is within `maximum_lag_on_failover` (1MB),
-  the replica is promoted automatically. Consul service routing updates
-  within seconds.
-- **Replica crash**: No impact on write availability. The read-only service
-  becomes unavailable until the replica recovers or is rescheduled.
-- **Split brain prevention**: Consul quorum requirement prevents split-brain.
-  Patroni uses `pg_rewind` to safely rejoin a demoted primary without full
-  re-sync.
-- **Both instances down**: Manual intervention required. Data persists on
-  host paths (`/opt/nomad/data/patroni-{0,1}`).
-
-## Dependencies
-
-**Requires:**
-- Consul (leader election via DCS, service registration)
-- Vault (superuser/replication credentials at `secret/data/postgres-shared/*`,
-  TLS certificates via `pki_int/issue/postgres`)
-
-**Required by:**
-- HAProxy (proxies connections from apps to the current primary)
-- Nextcloud, Temporal Server, Forgejo, Umami, Trivy Dashboard, Immich, g3 (via HAProxy)
-
-## Notable Configuration
-
-- Priority 80 ensures the database starts before application services during
-  cluster-wide restarts
-- `register_service: false` in Patroni config because Nomad's service stanza
-  handles Consul registration with role-based health checks
-- Post-init script creates all application databases and users idempotently
-  on initial cluster bootstrap
-- Custom Patroni image (`registry.munchbox.cc/patroni:pg18`) includes the
-  pgvector extension required by Immich
-
-## Operational Notes
-
-- **Add a new database**: Add a block to the post-init template, add the
-  corresponding Vault secret, and redeploy. Existing databases are not
-  affected (all CREATE statements use IF NOT EXISTS).
-- **Check replication status**: `curl http://<node>:8008/cluster` on any
-  Patroni instance returns cluster topology and lag.
-- **Manual failover**: `curl -s http://<node>:8008/switchover -XPOST
-  -d '{"leader":"<current>","candidate":"<target>"}'`
+- `priority = 80` so Patroni preempts lower-priority workloads on the DB nodes
+- `pg_hba.conf` allows `hostssl replication` from `0.0.0.0/0` with
+  scram-sha-256 -- replication is gated by TLS + Vault-issued creds, not IP
+- `init` task pre-creates `/opt/nomad/data/patroni-${idx}` via a busybox
+  prestart step
+- rolling restarts cause a brief primary failover; deploy dependent apps
+  AFTER Patroni stabilizes
