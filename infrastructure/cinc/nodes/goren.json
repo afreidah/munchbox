@@ -2,10 +2,9 @@
   "name": "goren",
   "chef_environment": "_default",
   "run_list": [
-  "role[bare_metal_pi5]",
-  "role[vault_server]"
-]
-,
+    "role[bare_metal_pi5]",
+    "role[vault_server]"
+  ],
   "normal": {
     "tags": [
       "nomad-server",
@@ -25,7 +24,8 @@
     },
     "consul": {
       "config": {
-        "bind_addr": "192.168.68.60"
+        "bind_addr": "192.168.68.60",
+        "gossip_lan_interval": "10s"
       }
     },
     "vault": {

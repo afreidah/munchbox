@@ -2,11 +2,10 @@
   "name": "stabler",
   "chef_environment": "_default",
   "run_list": [
-  "role[bare_metal_pi5]",
-  "recipe[nomad::auto_restart_webhook]",
-  "role[vault_server]"
-]
-,
+    "role[bare_metal_pi5]",
+    "recipe[nomad::auto_restart_webhook]",
+    "role[vault_server]"
+  ],
   "normal": {
     "tags": [
       "nomad-server",
@@ -26,7 +25,8 @@
     },
     "consul": {
       "config": {
-        "bind_addr": "192.168.68.61"
+        "bind_addr": "192.168.68.61",
+        "gossip_lan_interval": "10s"
       }
     },
     "nomad": {
