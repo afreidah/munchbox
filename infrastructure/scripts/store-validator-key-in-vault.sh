@@ -16,7 +16,7 @@
 #      with `chef-server-ctl org-create ... -f <file>`):
 #
 #        ssh root@cinc-server.munchbox.cc 'cat /etc/cinc-bootstrap/munchbox-validator.pem' \
-#          | infrastructure/cinc/scripts/store-validator-key-in-vault.sh
+#          | infrastructure/scripts/store-validator-key-in-vault.sh
 #
 #   2. Regenerate via knife (DESTRUCTIVE -- invalidates any old copies
 #      of the key, so any node bootstraps currently in flight will
@@ -24,7 +24,7 @@
 #      after that the node has its own client.pem):
 #
 #        knife client reregister munchbox-validator \
-#          | infrastructure/cinc/scripts/store-validator-key-in-vault.sh
+#          | infrastructure/scripts/store-validator-key-in-vault.sh
 #
 # Idempotent in the sense that re-running with the same input just
 # rewrites the KV entry. Re-running with a NEW key (e.g. after
@@ -32,7 +32,7 @@
 #
 # Usage:
 #   source munchbox-env.sh
-#   <pem-source> | infrastructure/cinc/scripts/store-validator-key-in-vault.sh [--vault-path <path>]
+#   <pem-source> | infrastructure/scripts/store-validator-key-in-vault.sh [--vault-path <path>]
 #
 # Default --vault-path is secret/cinc/validator-key. Override to match
 # your bootstrap module's chef_validator_vault_{mount,name} config.

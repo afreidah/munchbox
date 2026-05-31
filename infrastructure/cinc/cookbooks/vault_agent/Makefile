@@ -16,7 +16,7 @@ help:
 	@echo "make kitchen   - full kitchen cycle"
 
 tools:
-	../../scripts/kitchen/debian.sh
+	../../../scripts/kitchen-debian.sh
 
 lint:
 	$(COOKSTYLE) .

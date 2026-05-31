@@ -14,7 +14,7 @@
 #
 # Usage:
 #   source munchbox-env.sh
-#   infrastructure/cinc/scripts/install-data-bag-secret.sh <ssh-target>
+#   infrastructure/scripts/install-data-bag-secret.sh <ssh-target>
 #
 # Example:
 #   ./install-data-bag-secret.sh ubuntu@oraclearm2

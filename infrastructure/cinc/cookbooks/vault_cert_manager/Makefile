@@ -15,7 +15,7 @@ help:
 	@echo "make test      - chefspec/rspec"
 
 tools:
-	../../scripts/kitchen/debian.sh
+	../../../scripts/kitchen-debian.sh
 
 lint:
 	$(COOKSTYLE) .

@@ -1,0 +1,147 @@
+{
+  "name": "nomad-client-05",
+  "chef_environment": "_default",
+  "run_list": [
+  "role[proxmox_vm]",
+  "recipe[wireguard::install]",
+  "recipe[wireguard::configure]",
+  "recipe[wireguard::ingress_prereqs]"
+]
+,
+  "normal": {
+    "tags": [
+      "nomad-client",
+      "consul-client",
+      "amd64",
+      "proxmox-vm",
+      "wireguard-node",
+      "local-cloud",
+      "nfs-mounter",
+      "gdrive-mounter"
+    ],
+    "global": {
+      "dns_endpoint_ip": "192.168.68.74"
+    },
+    "consul": {
+      "config": {
+        "bind_addr": "192.168.68.74"
+      }
+    },
+    "nomad": {
+      "config": {
+        "node_name": "nomad-client-05",
+        "advertise_ip": "192.168.68.74",
+        "client_meta": {
+          "role": "ingress",
+          "vrrp_interface": "eth0"
+        }
+      }
+    },
+    "wireguard": {
+      "interfaces": {
+        "wg1": {
+          "address": "10.201.0.3/32",
+          "mtu": 1380,
+          "vault_path": "secret/data/wireguard-v2/nc05",
+          "vault_field": "private_key",
+          "peers": [
+            {
+              "name": "oracle-node-1",
+              "vault_path": "secret/data/wireguard-v2/oracle-node-1",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.11/32"
+              ],
+              "endpoint": "132.226.87.58:51820",
+              "persistent_keepalive": 25
+            },
+            {
+              "name": "oracle-node-2",
+              "vault_path": "secret/data/wireguard-v2/oracle-node-2",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.12/32"
+              ],
+              "endpoint": "158.101.33.133:51820",
+              "persistent_keepalive": 25
+            },
+            {
+              "name": "oracle-arm-1",
+              "vault_path": "secret/data/wireguard-v2/oracle-arm-1",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.13/32"
+              ],
+              "endpoint": "132.226.26.135:51820",
+              "persistent_keepalive": 25
+            },
+            {
+              "name": "oracle-arm-2",
+              "vault_path": "secret/data/wireguard-v2/oracle-arm-2",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.14/32"
+              ],
+              "endpoint": "137.131.39.64:51820",
+              "persistent_keepalive": 25
+            }
+          ]
+        }
+      }
+    },
+    "vault_cert_manager": {
+      "certificates": [
+        {
+          "name": "consul-client",
+          "role": "consul-client",
+          "common_name": "client.munchbox.consul",
+          "certificate": "/etc/consul.d/tls/consul.crt",
+          "key": "/etc/consul.d/tls/consul.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "nomad-client-05",
+            "nomad-client-05.munchbox.cc",
+            "client.munchbox.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.74",
+            "127.0.0.1"
+          ],
+          "owner": "consul",
+          "group": "consul",
+          "on_change": "systemctl reload consul",
+          "health_check": {
+            "tcp": "127.0.0.1:8501",
+            "timeout": "5s"
+          }
+        },
+        {
+          "name": "nomad-client",
+          "role": "nomad-client",
+          "common_name": "client.global.nomad",
+          "certificate": "/etc/nomad.d/tls/nomad.crt",
+          "key": "/etc/nomad.d/tls/nomad.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "nomad-client-05",
+            "nomad-client-05.munchbox.cc",
+            "client.global.nomad"
+          ],
+          "ip_sans": [
+            "192.168.68.74",
+            "127.0.0.1"
+          ],
+          "owner": "nomad",
+          "group": "nomad",
+          "on_change": "systemctl restart nomad",
+          "health_check": {
+            "tcp": "192.168.68.74:4646",
+            "timeout": "5s"
+          }
+        }
+      ]
+    }
+  }
+}

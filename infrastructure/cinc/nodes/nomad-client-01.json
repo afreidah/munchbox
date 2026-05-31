@@ -1,0 +1,87 @@
+{
+  "name": "nomad-client-01",
+  "chef_environment": "_default",
+  "run_list": [
+  "role[proxmox_vm]"
+]
+,
+  "normal": {
+    "tags": [
+      "nomad-client",
+      "consul-client",
+      "amd64",
+      "proxmox-vm",
+      "local-cloud",
+      "nfs-mounter",
+      "gdrive-mounter"
+    ],
+    "global": {
+      "dns_endpoint_ip": "192.168.68.67"
+    },
+    "consul": {
+      "config": {
+        "bind_addr": "192.168.68.67"
+      }
+    },
+    "nomad": {
+      "config": {
+        "node_name": "nomad-client-01",
+        "advertise_ip": "192.168.68.67"
+      }
+    },
+    "vault_cert_manager": {
+      "certificates": [
+        {
+          "name": "consul-client",
+          "role": "consul-client",
+          "common_name": "client.munchbox.consul",
+          "certificate": "/etc/consul.d/tls/consul.crt",
+          "key": "/etc/consul.d/tls/consul.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "nomad-client-01",
+            "nomad-client-01.munchbox.cc",
+            "client.munchbox.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.67",
+            "127.0.0.1"
+          ],
+          "owner": "consul",
+          "group": "consul",
+          "on_change": "systemctl reload consul",
+          "health_check": {
+            "tcp": "127.0.0.1:8501",
+            "timeout": "5s"
+          }
+        },
+        {
+          "name": "nomad-client",
+          "role": "nomad-client",
+          "common_name": "client.global.nomad",
+          "certificate": "/etc/nomad.d/tls/nomad.crt",
+          "key": "/etc/nomad.d/tls/nomad.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "nomad-client-01",
+            "nomad-client-01.munchbox.cc",
+            "client.global.nomad"
+          ],
+          "ip_sans": [
+            "192.168.68.67",
+            "127.0.0.1"
+          ],
+          "owner": "nomad",
+          "group": "nomad",
+          "on_change": "systemctl restart nomad",
+          "health_check": {
+            "tcp": "192.168.68.67:4646",
+            "timeout": "5s"
+          }
+        }
+      ]
+    }
+  }
+}

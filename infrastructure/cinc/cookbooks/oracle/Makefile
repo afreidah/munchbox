@@ -16,7 +16,7 @@ help:
 	@echo "make kitchen   - full kitchen cycle (NOTE: kitchen not configured for oracle yet -- requires consul running with valid token)"
 
 tools:
-	../../scripts/kitchen/debian.sh
+	../../../scripts/kitchen-debian.sh
 
 lint:
 	$(COOKSTYLE) .

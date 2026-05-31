@@ -1,0 +1,145 @@
+{
+  "name": "goren",
+  "chef_environment": "_default",
+  "run_list": [
+  "role[bare_metal_pi5]",
+  "role[vault_server]"
+]
+,
+  "normal": {
+    "tags": [
+      "nomad-server",
+      "nomad-client",
+      "consul-server",
+      "consul-client",
+      "vault-server",
+      "wireguard-node",
+      "pi5",
+      "arm64",
+      "local-cloud",
+      "nfs-mounter",
+      "gdrive-mounter"
+    ],
+    "global": {
+      "dns_endpoint_ip": "192.168.68.60"
+    },
+    "consul": {
+      "config": {
+        "bind_addr": "192.168.68.60"
+      }
+    },
+    "vault": {
+      "config": {
+        "advertise_ip": "192.168.68.60",
+        "stale_paths": [
+          "/etc/vault.d/vault.hcl.bak",
+          "/etc/vault.d/vault.hcl.bak.20251125220954",
+          "/etc/vault.d/vault.hcl.pre-tls.1764114982",
+          "/etc/vault.d/vault.hcl.719198.2026-01-25@01:14:49~",
+          "/etc/vault.d/tls/vault-csr.pem",
+          "/etc/vault.d/tls/vault.crt.bak",
+          "/etc/vault.d/tls/vault.key.bak"
+        ]
+      }
+    },
+    "nomad": {
+      "config": {
+        "node_name": "goren",
+        "advertise_ip": "192.168.68.60",
+        "server_join": [
+          "192.168.68.61:4648",
+          "192.168.68.58:4648"
+        ],
+        "vault_address": "https://192.168.68.60:8200",
+        "node_class": "batch",
+        "client_meta": {
+          "role": "ingress",
+          "vrrp_interface": "eth0",
+          "zone": "rack-a"
+        }
+      }
+    },
+    "vault_cert_manager": {
+      "certificates": [
+        {
+          "name": "consul-server",
+          "role": "consul-server",
+          "common_name": "server.munchbox.consul",
+          "certificate": "/etc/consul.d/tls/consul.crt",
+          "key": "/etc/consul.d/tls/consul.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "goren",
+            "goren.munchbox.cc",
+            "server.munchbox.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.60",
+            "127.0.0.1"
+          ],
+          "owner": "consul",
+          "group": "consul",
+          "on_change": "systemctl reload consul",
+          "health_check": {
+            "tcp": "127.0.0.1:8501",
+            "timeout": "5s"
+          }
+        },
+        {
+          "name": "nomad-server",
+          "role": "nomad-server",
+          "common_name": "server.global.nomad",
+          "certificate": "/etc/nomad.d/tls/nomad.crt",
+          "key": "/etc/nomad.d/tls/nomad.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "goren",
+            "goren.munchbox.cc",
+            "server.global.nomad",
+            "client.global.nomad",
+            "nomad.service.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.60",
+            "127.0.0.1"
+          ],
+          "owner": "nomad",
+          "group": "nomad",
+          "on_change": "systemctl restart nomad",
+          "health_check": {
+            "tcp": "192.168.68.60:4646",
+            "timeout": "5s"
+          }
+        },
+        {
+          "name": "vault-server",
+          "role": "vault-server",
+          "common_name": "goren.munchbox.cc",
+          "certificate": "/etc/vault.d/tls/vault.crt",
+          "key": "/etc/vault.d/tls/vault.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "goren",
+            "goren.munchbox.cc",
+            "vault.munchbox.cc",
+            "vault.service.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.60",
+            "127.0.0.1"
+          ],
+          "owner": "vault",
+          "group": "vault",
+          "on_change": "systemctl reload vault",
+          "health_check": {
+            "tcp": "192.168.68.60:8200",
+            "timeout": "5s"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -15,7 +15,7 @@
 # Fetched as a .deb directly from packages.cinc.sh (cinc-project's
 # packagecloud apt repo serves 404 for every codename). Pin a known-good
 # version so client upgrades are deliberate, not silent. Keep this in sync
-# with the omnibus `-v` flag in infrastructure/cinc/scripts/bootstrap-cinc-node.sh
+# with the omnibus `-v` flag in infrastructure/scripts/bootstrap-cinc-node.sh
 # so fresh nodes don't drift from the cookbook pin between bootstrap and
 # first converge.
 # -------------------------------------------------------------------------------

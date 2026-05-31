@@ -6,7 +6,7 @@
 #
 # Enforces presence + perms on /etc/cinc/encrypted_data_bag_secret. The
 # file itself is provisioned out-of-band by the workstation bootstrap
-# script (infrastructure/cinc/scripts/install-data-bag-secret.sh) -- cinc
+# script (infrastructure/scripts/install-data-bag-secret.sh) -- cinc
 # can't lay down its own decryption key, since the AppRole creds needed
 # to read the secret out of Vault themselves live behind that key.
 #
@@ -27,7 +27,7 @@ end
 ruby_block 'verify encrypted_data_bag_secret is present' do
   block do
     unless ::File.exist?(SECRET_PATH)
-      raise "#{SECRET_PATH} is missing -- run infrastructure/cinc/scripts/install-data-bag-secret.sh <node> on the workstation to provision it from Vault"
+      raise "#{SECRET_PATH} is missing -- run infrastructure/scripts/install-data-bag-secret.sh <node> on the workstation to provision it from Vault"
     end
   end
   action :run
