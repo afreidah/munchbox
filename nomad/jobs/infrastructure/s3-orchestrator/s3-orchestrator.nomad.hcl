@@ -68,6 +68,7 @@ job "s3-orchestrator" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "traefik.enable=true",
         "traefik.http.routers.s3-orchestrator.rule=Host(`s3.munchbox.cc`)",
         "traefik.http.routers.s3-orchestrator.entrypoints=websecure",

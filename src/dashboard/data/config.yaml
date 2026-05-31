@@ -20,41 +20,17 @@ services:
   - name: Apps & Media
     icon: fa-solid fa-film
     items:
-      - name: Nextcloud
-        subtitle: Files, calendar, contacts
-        url: https://nextcloud.munchbox.cc
-        tag: cloud
-        icon: nextcloud.png
-
       - name: Vaultwarden
         subtitle: Password manager
         url: https://vaultwarden.munchbox.cc
         tag: security
         icon: vaultwarden.png
 
-      - name: Home Assistant
-        subtitle: Home automation
-        url: https://homeassistant.munchbox.cc
-        tag: automation
-        icon: home-assistant.png
-
-      - name: Immich
-        subtitle: Photo Management
-        url: https://photos.munchbox.cc
-        tag: cloud
-        icon: immich.png
-
       - name: Munch TV
         subtitle: TV/Movie Media server
         url: https://jellyfin.munchbox.cc
         tag: media
         icon: munchbox_pixels.png
-
-      - name: Kavita
-        subtitle: Book Reader
-        url: https://kavita.munchbox.cc
-        tag: media
-        icon: kavita.png
 
       - name: Radarr
         subtitle: Movie management
@@ -241,12 +217,6 @@ services:
         url: http://vault-cert-manager-aggregator.service.consul:9102
         tag: security
         icon: vault.png
-
-      - name: Umami
-        subtitle: Web analytics
-        url: https://analytics.munchbox.cc
-        tag: analytics
-        icon: umami.png
 
   # -------------------------------------------------------------------------
   # Public Cloud Providers

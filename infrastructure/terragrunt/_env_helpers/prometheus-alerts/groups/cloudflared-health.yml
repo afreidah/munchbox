@@ -1,0 +1,51 @@
+# cloudflared-health alert group
+# Cloudflare tunnel daemons on the two ingress nodes: scrape liveness, HA
+# connection count, request error rate, proxy connect latency.
+
+- name: cloudflared-health
+  interval: 30s
+  rules:
+    - alert: CloudflaredDown
+      expr: up{job="cloudflared-tunnel"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Cloudflared tunnel is down on {{ $labels.instance }}"
+        description: "Cloudflared tunnel metrics are not being scraped on {{ $labels.instance }}."
+
+    - alert: CloudflaredNoHAConnections
+      expr: cloudflared_tunnel_ha_connections < 1
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Cloudflared has no HA connections on {{ $labels.instance }}"
+        description: "Cloudflared on {{ $labels.instance }} has {{ $value | printf \"%.0f\" }} HA connections. Tunnel may be disconnected."
+
+    - alert: CloudflaredLowHAConnections
+      expr: cloudflared_tunnel_ha_connections < 4
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cloudflared HA connections degraded on {{ $labels.instance }}"
+        description: "Cloudflared on {{ $labels.instance }} has only {{ $value | printf \"%.0f\" }} HA connections (expected 4)."
+
+    - alert: CloudflaredHighErrorRate
+      expr: rate(cloudflared_tunnel_request_errors[5m]) > 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cloudflared high request error rate on {{ $labels.instance }}"
+        description: "Cloudflared on {{ $labels.instance }} is seeing {{ $value | printf \"%.1f\" }} errors/second."
+
+    - alert: CloudflaredHighLatency
+      expr: histogram_quantile(0.95, rate(cloudflared_proxy_connect_latency_bucket[5m])) > 2
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Cloudflared proxy latency high"
+        description: "95th percentile proxy connect latency is above 2 seconds."

@@ -1,8 +1,7 @@
 # redis-sentinel
 
 HA Redis cluster (2 servers + 3 Sentinels) with automatic failover.
-Provides cache, session, and queue storage for Nextcloud, Forgejo, Immich,
-Trivy Server, etc.
+Provides cache, session, and queue storage for Forgejo, Trivy Server, etc.
 
 ## Image
 

@@ -146,7 +146,6 @@ inputs = {
     "redis-shared",
     "postgres-shared/root",
     "postgres-shared/replication",
-    "nextcloud",
     "deluge",
     "pia",
     "mullvad",

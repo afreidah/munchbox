@@ -63,6 +63,7 @@ templates = [
 # --- Service tags ---
 tags = [
   "monitoring",
+  "metrics",
   "alertmanager",
   "alerts",
   "traefik.http.routers.alertmanager.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",

@@ -27,13 +27,6 @@ inputs = {
   }
 
   login_items = {
-    nextcloud = {
-      name           = "Nextcloud Admin"
-      uri            = "https://nextcloud.munchbox.cc"
-      vault_path     = "nextcloud"
-      password_field = "admin_password"
-      folder_key     = "admin"
-    }
     grafana = {
       name           = "Grafana Admin"
       uri            = "https://grafana.munchbox.cc"

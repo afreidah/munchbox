@@ -1,0 +1,50 @@
+# site-uptime alert group
+# Blackbox-exporter probe results: HTTP reachability, TLS expiry, slow response.
+
+- name: site-uptime
+  interval: 30s
+  rules:
+    - alert: SiteDown
+      expr: |
+        probe_success{job=~"site_https|site_http"} == 0
+        and on (instance) (
+          probe_http_status_code{job=~"site_https|site_http"} != 401
+          and probe_http_status_code{job=~"site_https|site_http"} != 403
+        )
+      for: 2m
+      labels:
+        severity: critical
+        team: web
+      annotations:
+        summary: "Site is down: {{ $labels.instance }}"
+        description: "Site {{ $labels.instance }} has been unreachable for more than 2 minutes (non-auth failure)."
+
+    - alert: SiteTLSCertExpiring
+      expr: (probe_ssl_earliest_cert_expiry{job="site_https"} - time()) < 21*24*60*60
+      for: 5m
+      labels:
+        severity: warning
+        team: web
+      annotations:
+        summary: "TLS certificate expiring soon: {{ $labels.instance }}"
+        description: "TLS certificate for {{ $labels.instance }} expires within 21 days."
+
+    - alert: SiteSlowResponse
+      expr: probe_duration_seconds{job="site_https"} > 5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Slow response time: {{ $labels.instance }}"
+        description: "Site {{ $labels.instance }} response time is above 5 seconds."
+
+    - alert: OAuth2ProxySlowResponse
+      expr: probe_duration_seconds{job="site_https", instance=~".*auth.munchbox.cc.*"} > 2
+      for: 2m
+      labels:
+        severity: critical
+        auto_restart: "true"
+        nomad_job: "oauth2-proxy"
+      annotations:
+        summary: "oauth2-proxy is responding slowly"
+        description: "oauth2-proxy response time is above 2 seconds (current: {{ $value | printf \"%.2f\" }}s). Auto-restart triggered."

@@ -35,13 +35,60 @@ alerting:
 # Scrape configuration - what to monitor
 scrape_configs:
   # -----------------------------------------------------------------------
-  # Self-monitoring - Prometheus scrapes its own metrics
+  # Auto-discovery: any Consul service tagged `metrics` gets scraped.
+  # Defaults: service's registered port + /metrics path + global scrape
+  # interval/timeout. Tag overrides (all optional):
+  #   scrape-port=<n>      - port <n> instead of the registered service port
+  #   scrape-path=<p>      - path <p> instead of /metrics
+  #   scrape-interval=<d>  - prom duration string instead of 15s
+  #   scrape-timeout=<d>   - prom duration string instead of 10s
+  #   scrape-job=<name>    - job label <name> instead of consul service name
+  # instance label = consul node name.
   # -----------------------------------------------------------------------
-  - job_name: "prometheus"
-    static_configs:
-      - targets: ["127.0.0.1:9090"]
-        labels:
-          service: "prometheus"
+  - job_name: "consul-auto"
+    consul_sd_configs:
+      - server: "127.0.0.1:8500"
+        scheme: "http"
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+    relabel_configs:
+      # --- keep only services with the `metrics` tag ---
+      - source_labels: ["__meta_consul_tags"]
+        regex: ".*,metrics,.*"
+        action: keep
+      # --- job label = consul service name ---
+      - source_labels: ["__meta_consul_service"]
+        target_label: "job"
+      # --- instance label = consul node ---
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+      # --- optional scrape-path override (tag `scrape-path=/foo`) ---
+      - source_labels: ["__meta_consul_tags"]
+        regex: ".*,scrape-path=([^,]+),.*"
+        target_label: "__metrics_path__"
+        replacement: "$1"
+      # --- optional scrape-port override (tag `scrape-port=9617`) ---
+      # NB: single-$ form. HCL2 eats `${1}` as interpolation and renders `1`.
+      - source_labels: ["__address__", "__meta_consul_tags"]
+        separator: ";"
+        regex: "([^:]+):[0-9]+;.*,scrape-port=([0-9]+),.*"
+        target_label: "__address__"
+        replacement: "$1:$2"
+      # --- optional scrape-interval override (tag `scrape-interval=30s`) ---
+      - source_labels: ["__meta_consul_tags"]
+        regex: ".*,scrape-interval=([^,]+),.*"
+        target_label: "__scrape_interval__"
+        replacement: "$1"
+      # --- optional scrape-timeout override (tag `scrape-timeout=25s`) ---
+      - source_labels: ["__meta_consul_tags"]
+        regex: ".*,scrape-timeout=([^,]+),.*"
+        target_label: "__scrape_timeout__"
+        replacement: "$1"
+      # --- optional job label override (tag `scrape-job=node-exporter`) ---
+      - source_labels: ["__meta_consul_tags"]
+        regex: ".*,scrape-job=([^,]+),.*"
+        target_label: "job"
+        replacement: "$1"
 
   # -----------------------------------------------------------------------
   # Consul - Cluster health and RPC metrics
@@ -161,37 +208,6 @@ scrape_configs:
         replacement: "vault"
 
   # -----------------------------------------------------------------------
-  # Node Exporter - now handled by Alloy via prometheus.exporter.unix
-  # and remote_write to Prometheus (job_name=node-exporter preserved)
-  # -----------------------------------------------------------------------
-
-  # -----------------------------------------------------------------------
-  # Cloudflared Tunnel metrics - Consul service discovery
-  # -----------------------------------------------------------------------
-  - job_name: "cloudflared-tunnel"
-    scheme: "http"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["cloudflared-tunnel"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address"]
-        regex: "(.+)"
-        target_label: "__address__"
-        replacement: "$1:2000"
-      - source_labels: ["__meta_consul_service_address"]
-        regex: ""
-        target_label: "__address__"
-        replacement: "${__meta_consul_address}:2000"
-      - source_labels: ["__meta_consul_service"]
-        target_label: "service"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-
-  # -----------------------------------------------------------------------
   # Consul cluster metrics (HTTP endpoint)
   # -----------------------------------------------------------------------
   - job_name: "consul-http"
@@ -217,130 +233,6 @@ scrape_configs:
         target_label: "consul_dc"
       - target_label: "cluster"
         replacement: "consul"
-
-  # -----------------------------------------------------------------------
-  # Traefik metrics - Consul service discovery
-  # -----------------------------------------------------------------------
-  - job_name: "traefik"
-    scheme: "http"
-    honor_labels: true
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["traefik"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address"]
-        regex: "(.+)"
-        target_label: "__address__"
-        replacement: "$1:8081"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-
-  # -----------------------------------------------------------------------
-  # Pi-hole Exporter - Consul service discovery (single nomad job scrapes both nodes)
-  # -----------------------------------------------------------------------
-  - job_name: "pihole-exporter"
-    metrics_path: "/metrics"
-    # eko exporter polls both pihole API endpoints synchronously on each
-    # /metrics hit; 3-4s typical, occasionally longer when pihole is busy.
-    # Defaults (10s timeout / 15s interval) blow up; widen both.
-    scrape_interval: 30s
-    scrape_timeout: 25s
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["pihole-exporter"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-
-  # -----------------------------------------------------------------------
-  # Blackbox Exporters (external + internal) - Consul service discovery
-  # -----------------------------------------------------------------------
-  - job_name: "blackbox"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["blackbox-exporter-external", "blackbox-exporter-internal"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service"]
-        target_label: "job"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-
-  # -----------------------------------------------------------------------
-  # PostgreSQL Exporter (Primary) - Database metrics via Consul SD
-  # -----------------------------------------------------------------------
-  - job_name: "postgres-exporter"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["postgres-exporter"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "database"
-        replacement: "postgres-shared"
-      - target_label: "role"
-        replacement: "primary"
-
-  # -----------------------------------------------------------------------
-  # Redis Exporter - Cache metrics via Consul service discovery
-  # -----------------------------------------------------------------------
-  - job_name: "redis-exporter"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["redis-exporter"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "database"
-        replacement: "redis-primary"
-
-  # -----------------------------------------------------------------------
-  # Nextcloud Exporter - Cloud storage metrics via Consul service discovery
-  # -----------------------------------------------------------------------
-  - job_name: "nextcloud-exporter"
-    metrics_path: "/metrics"
-    scrape_interval: 60s
-    scrape_timeout: 30s
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["nextcloud-exporter"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "nextcloud"
 
   # -----------------------------------------------------------------------
   # Site monitoring via Blackbox Exporter
@@ -414,194 +306,6 @@ scrape_configs:
         replacement: "blackbox-exporter-internal.service.consul:9115"
 
   # -----------------------------------------------------------------------
-  # Alertmanager - Self-monitoring for alerting system health
-  # -----------------------------------------------------------------------
-  - job_name: "alertmanager"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["alertmanager"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-
-  # -----------------------------------------------------------------------
-  # Trivy Dashboard - Vulnerability scan metrics
-  # -----------------------------------------------------------------------
-  - job_name: "trivy-dashboard"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["trivy-dashboard"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "trivy-dashboard"
-
-  # -----------------------------------------------------------------------
-  # CoreDNS - DNS load balancer metrics
-  # -----------------------------------------------------------------------
-  - job_name: "coredns"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["coredns-metrics"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "coredns"
-
-  # -----------------------------------------------------------------------
-  # Forgejo - Git repository metrics
-  # -----------------------------------------------------------------------
-  - job_name: "forgejo"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["forgejo"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "forgejo"
-
-  # -----------------------------------------------------------------------
-  # Patroni - PostgreSQL HA cluster metrics (REST API)
-  # -----------------------------------------------------------------------
-  - job_name: "patroni"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["patroni"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "patroni"
-
-  # -----------------------------------------------------------------------
-  # HAProxy - Database failover proxy metrics
-  # -----------------------------------------------------------------------
-  - job_name: "haproxy"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["haproxy-metrics"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "haproxy"
-
-  # -----------------------------------------------------------------------
-  # Vault Cert Manager - Certificate lifecycle metrics
-  # -----------------------------------------------------------------------
-  - job_name: "vault-cert-manager"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["vault-cert-manager"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "vault-cert-manager"
-
-  # -----------------------------------------------------------------------
-  # Oracle Watchdog - Oracle Cloud node health monitoring
-  # -----------------------------------------------------------------------
-  - job_name: "oracle-watchdog"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["oracle-watchdog-agent"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_address", "__meta_consul_service_port"]
-        separator: ":"
-        regex: "([^:]+):(.*)"
-        replacement: "$1:$2"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "oracle-watchdog"
-
-  # -----------------------------------------------------------------------
-  # Oracle Watchdog Monitor - Session heartbeat metrics from Oracle nodes
-  # -----------------------------------------------------------------------
-  - job_name: "oracle-watchdog-monitor"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["oracle-watchdog"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_address", "__meta_consul_service_port"]
-        separator: ":"
-        regex: "([^:]+):(.*)"
-        replacement: "$1:$2"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "oracle-watchdog-monitor"
-
-  # -----------------------------------------------------------------------
   # Aptly - Debian package repository metrics
   # -----------------------------------------------------------------------
   - job_name: "aptly"
@@ -642,63 +346,3 @@ scrape_configs:
         target_label: "instance"
       - target_label: "__address__"
         replacement: "pve-exporter.service.consul:9221"
-
-  # -----------------------------------------------------------------------
-  # Cloudflare Log Collector - Analytics ingestion metrics
-  # -----------------------------------------------------------------------
-  - job_name: "cloudflare-log-collector"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["cloudflare-log-collector"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "cloudflare-log-collector"
-
-  # -----------------------------------------------------------------------
-  # Flight Fetcher - Aircraft tracking service metrics
-  # -----------------------------------------------------------------------
-  - job_name: "flight-fetcher"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["flight-fetcher"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "flight-fetcher"
-
-  # -----------------------------------------------------------------------
-  # S3 Orchestrator - Unified S3 endpoint metrics
-  # -----------------------------------------------------------------------
-  - job_name: "s3-orchestrator"
-    metrics_path: "/metrics"
-    consul_sd_configs:
-      - server: "127.0.0.1:8500"
-        scheme: "http"
-        services: ["s3-orchestrator"]
-        datacenter: "munchbox"
-        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
-    relabel_configs:
-      - source_labels: ["__meta_consul_service_address", "__meta_consul_service_port"]
-        separator: ":"
-        target_label: "__address__"
-      - source_labels: ["__meta_consul_node"]
-        target_label: "instance"
-      - target_label: "service"
-        replacement: "s3-orchestrator"

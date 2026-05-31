@@ -18,8 +18,8 @@ discovers instances via Consul DNS (`oauth2-proxy.service.consul:4180`),
 so both instances are available for forward auth requests automatically.
 
 Services that handle their own authentication (Vaultwarden API, Forgejo
-git operations, Nextcloud sync clients, Immich) bypass oauth2-proxy
-using higher-priority Traefik router rules.
+git operations) bypass oauth2-proxy using higher-priority Traefik
+router rules.
 
 ## Notable Configuration
 

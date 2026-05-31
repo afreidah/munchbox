@@ -56,10 +56,15 @@ job "alloy" {
       port     = "http"
       provider = "consul"
 
+      # --- scrape-path tag points consul-auto at the unix exporter endpoint ---
+      # --- scrape-job=node-exporter preserves the historical job label ---
       tags = [
         "traefik.enable=false",
         "logging",
         "alloy",
+        "metrics",
+        "scrape-path=/api/v0/component/prometheus.exporter.unix.node/metrics",
+        "scrape-job=node-exporter",
       ]
       check {
         name      = "alloy-health"
@@ -238,8 +243,10 @@ loki.source.journal "systemd" {
 }
 
 // -------------------------------------------------------------------------
-// NODE METRICS (replaces node-exporter)
+// NODE METRICS
 // -------------------------------------------------------------------------
+// Endpoint: :12345/api/v0/component/prometheus.exporter.unix.node/metrics
+// Both prom replicas scrape it via consul-auto (scrape-path tag on alloy).
 
 prometheus.exporter.unix "node" {
   rootfs_path = "/host"
@@ -252,46 +259,6 @@ prometheus.exporter.unix "node" {
   filesystem {
     fs_types_exclude     = "^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs|fuse\\.sshfs|tmpfs)$"
     mount_points_exclude = "^/(dev|proc|sys|var/lib/docker/.+|run/.+|mnt/gdrive)($|/)"
-  }
-}
-
-prometheus.scrape "node" {
-  targets         = prometheus.exporter.unix.node.targets
-  forward_to      = [prometheus.relabel.node_instance.receiver]
-  scrape_interval = "15s"
-  job_name        = "node-exporter"
-}
-
-prometheus.relabel "node_instance" {
-  forward_to = [prometheus.remote_write.prometheus.receiver]
-
-  rule {
-    target_label = "instance"
-    replacement  = "{{ env "node.unique.name" }}"
-  }
-}
-
-// -------------------------------------------------------------------------
-// ORACLE WATCHDOG MONITOR METRICS
-// -------------------------------------------------------------------------
-
-// Only scrape the oracle-watchdog monitor on Oracle Cloud nodes where it
-// runs as a systemd service.
-{{ if eq (env "meta.cloud") "oracle" }}
-prometheus.scrape "oracle_watchdog" {
-  targets = [{
-    __address__ = "localhost:9104",
-  }]
-  forward_to      = [prometheus.relabel.node_instance.receiver]
-  scrape_interval = "15s"
-  scrape_timeout  = "5s"
-  job_name        = "oracle-watchdog"
-}
-{{ end }}
-
-prometheus.remote_write "prometheus" {
-  endpoint {
-    url = "http://prometheus.service.consul:9090/api/v1/write"
   }
 }
 

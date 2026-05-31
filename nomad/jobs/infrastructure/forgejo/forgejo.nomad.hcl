@@ -37,8 +37,10 @@ job "forgejo" {
     max_parallel      = 1
     health_check      = "checks"
     min_healthy_time  = "30s"
-    healthy_deadline  = "5m"
-    progress_deadline = "10m"
+    # forgejo cold start (bleve indexer + DB) routinely takes 1-2 min;
+    # 5m deadline left no slack and caused false unhealthy marks.
+    healthy_deadline  = "10m"
+    progress_deadline = "15m"
     auto_revert       = true
   }
 
@@ -100,6 +102,7 @@ job "forgejo" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "traefik.enable=true",
         # HTTPS router for API (no oauth2-proxy, higher priority)
         "traefik.http.routers.forgejo-api.rule=Host(`git.munchbox.cc`) && PathPrefix(`/api/`)",
@@ -141,7 +144,7 @@ job "forgejo" {
         name     = "forgejo-health"
         type     = "http"
         path     = "/api/healthz"
-        interval = "30s"
+        interval = "10s"
         timeout  = "5s"
       }
     }

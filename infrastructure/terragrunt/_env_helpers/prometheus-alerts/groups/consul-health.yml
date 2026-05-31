@@ -1,0 +1,25 @@
+# consul-health alert group
+# Raft quorum + leader election churn on the Consul control plane.
+# The `consul` (https) and `consul-http` scrape jobs hit the same agent and
+# emit identical series; the job filter dedupes.
+
+- name: consul-health
+  interval: 30s
+  rules:
+    - alert: ConsulNoLeader
+      expr: sum(consul_raft_state_leader{job="consul-http"}) != 1
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Consul has no single raft leader"
+        description: "sum(consul_raft_state_leader) is {{ $value | printf \"%.0f\" }}; expected exactly 1. Either quorum is lost or split-brain."
+
+    - alert: ConsulLeaderElection
+      expr: changes(consul_raft_state_leader{job="consul-http"}[5m]) > 0
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Consul leader election occurred"
+        description: "The Consul raft leader changed in the last 5 minutes."

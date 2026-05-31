@@ -1,0 +1,17 @@
+# nomad-health alert group
+# Cluster-level Nomad health: leader election churn.
+# Per-server scrape liveness is covered by the generic ServiceDown rule;
+# per-job sadness is covered by NomadAllocationPending + NomadJobRestartLoop
+# in the nomad-container-health group.
+
+- name: nomad-health
+  interval: 30s
+  rules:
+    - alert: NomadLeaderElection
+      expr: increase(nomad_nomad_leader_leadership_lost_total[5m]) > 0
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Nomad leader election occurred"
+        description: "Nomad cluster experienced a leader election in the last 5 minutes."

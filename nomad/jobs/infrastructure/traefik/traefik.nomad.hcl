@@ -521,25 +521,6 @@ EOH
     customFrameOptionsValue = "SAMEORIGIN"
     referrerPolicy          = "strict-origin-when-cross-origin"
 
-  # --- Nextcloud rate limiting ---
-  [http.middlewares.nextcloud-ratelimit.rateLimit]
-    average = 100
-    burst   = 200
-    [http.middlewares.nextcloud-ratelimit.rateLimit.sourceCriterion]
-      requestHeaderName = "CF-Connecting-IP"
-
-  # --- Nextcloud security headers ---
-  [http.middlewares.nextcloud-sec.headers]
-    stsSeconds              = 31536000
-    stsIncludeSubdomains    = true
-    stsPreload              = true
-    forceSTSHeader          = true
-    contentTypeNosniff      = true
-    browserXssFilter        = true
-    customFrameOptionsValue = "SAMEORIGIN"
-    referrerPolicy          = "strict-origin-when-cross-origin"
-    permissionsPolicy       = "camera=(), microphone=(), geolocation=(), payment=()"
-
   # --- OAuth2-Proxy rate limiting (auth.munchbox.cc) ---
   [http.middlewares.auth-ratelimit.rateLimit]
     average = 10
@@ -653,7 +634,7 @@ EOH
         name     = "traefik"
         port     = "https"
         provider = "consul"
-        tags     = ["traefik.enable=false", "metrics_port=8081"]
+        tags     = ["traefik.enable=false", "metrics", "scrape-port=8081"]
 
         check {
           name            = "traefik-https"
@@ -971,6 +952,7 @@ EOH
 
       tags = [
         "traefik.enable=false",
+        "metrics",
         "infrastructure",
         "cloudflare",
         "tunnel",

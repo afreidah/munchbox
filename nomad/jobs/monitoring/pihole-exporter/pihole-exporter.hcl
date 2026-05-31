@@ -40,7 +40,7 @@ templates = [
 ]
 
 # --- Service tags ---
-tags = ["monitoring", "pihole-exporter", "metrics"]
+tags = ["monitoring", "pihole-exporter", "metrics", "scrape-interval=30s", "scrape-timeout=25s"]
 
 # --- Placement: any on-prem nomad client (NOT oracle). Needs LAN access to
 #     192.168.68.62/64; routing through the WG tunnel from oracle is pointless. ---

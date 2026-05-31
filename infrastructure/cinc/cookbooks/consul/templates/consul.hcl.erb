@@ -118,6 +118,18 @@ telemetry {
   disable_hostname          = <%= @telemetry_disable_hostname %>
 }
 
+# -------------------------------------------------------------------------------
+# Gossip (LAN)
+#
+# Loosened from upstream defaults (1s) so a wg1 blip to oracle nodes doesn't
+# block the agent's main loop and cascade into local check failures. See GH #130.
+# -------------------------------------------------------------------------------
+
+gossip_lan {
+  gossip_interval = "<%= @gossip_lan_interval %>"
+  probe_timeout   = "<%= @gossip_lan_probe_timeout %>"
+}
+
 <% if @tls_enabled -%>
 # -------------------------------------------------------------------------------
 # TLS

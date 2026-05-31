@@ -33,10 +33,9 @@ HAProxy uses to find the current primary.
   SANs include `haproxy-postgres.service.consul`
 - Vault `secret/data/postgres-shared/root` and `.../replication` for
   superuser and replication accounts
-- per-database creds from Vault for bootstrap: `nextcloud`, `temporal`,
-  `forgejo`, `umami`, `trivy-dashboard`, `grafana`, `vaultwarden`, `immich`,
-  `g3`, `s3-orchestrator`, `flight-fetcher`, `sonarr`, `radarr`, `lidarr`,
-  `readarr`, `prowlarr`
+- per-database creds from Vault for bootstrap: `temporal`, `forgejo`,
+  `trivy-dashboard`, `grafana`, `vaultwarden`, `g3`, `s3-orchestrator`,
+  `flight-fetcher`, `sonarr`, `radarr`, `lidarr`, `readarr`, `prowlarr`
 
 ## notable configuration
 
