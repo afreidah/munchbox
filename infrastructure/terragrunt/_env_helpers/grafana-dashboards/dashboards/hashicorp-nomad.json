@@ -103,7 +103,7 @@
           "format": "time_series",
           "instant": true,
           "interval": "",
-          "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ],
@@ -887,7 +887,7 @@
           "instant": false,
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{ `{{` }}instance{{ `}}` }} - candidate",
+          "legendFormat": "{{instance}} - candidate",
           "refId": "A"
         },
         {
@@ -901,7 +901,7 @@
           "instant": false,
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{ `{{` }}instance{{ `}}` }} - leader",
+          "legendFormat": "{{instance}} - leader",
           "refId": "B"
         }
       ],
@@ -1010,7 +1010,7 @@
           "expr": "nomad_raft_leader_lastContact{quantile=\"0.9\"}",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+          "legendFormat": "{{instance}}",
           "refId": "C"
         }
       ],
@@ -2099,7 +2099,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{ `{{` }}exported_job{{ `}}` }} - {{ `{{` }}task_group{{ `}}` }} - {{ `{{` }}task{{ `}}` }} - {{ `{{` }}instance{{ `}}` }} - {{ `{{` }}alloc_id{{ `}}` }} Mhz",
+          "legendFormat": "{{exported_job}} - {{task_group}} - {{task}} - {{instance}} - {{alloc_id}} Mhz",
           "refId": "A"
         }
       ],
@@ -2206,7 +2206,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{ `{{` }}exported_job{{ `}}` }} - {{ `{{` }}task_group{{ `}}` }} - {{ `{{` }}task{{ `}}` }} - {{ `{{` }}instance{{ `}}` }} - {{ `{{` }}alloc_id{{ `}}` }} Mhz",
+          "legendFormat": "{{exported_job}} - {{task_group}} - {{task}} - {{instance}} - {{alloc_id}} Mhz",
           "refId": "A"
         }
       ],
@@ -2313,7 +2313,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{ `{{` }}exported_job{{ `}}` }} - {{ `{{` }}task_group{{ `}}` }} - {{ `{{` }}task{{ `}}` }} - {{ `{{` }}instance{{ `}}` }} - {{ `{{` }}alloc_id{{ `}}` }}",
+          "legendFormat": "{{exported_job}} - {{task_group}} - {{task}} - {{instance}} - {{alloc_id}}",
           "refId": "A"
         }
       ],
@@ -2420,7 +2420,7 @@
           "format": "time_series",
           "instant": false,
           "interval": "",
-          "legendFormat": "{{ `{{` }}exported_job{{ `}}` }} - {{ `{{` }}task_group{{ `}}` }} - {{ `{{` }}task{{ `}}` }} - {{ `{{` }}instance{{ `}}` }} - {{ `{{` }}alloc_id{{ `}}` }}",
+          "legendFormat": "{{exported_job}} - {{task_group}} - {{task}} - {{instance}} - {{alloc_id}}",
           "refId": "A"
         }
       ],
@@ -2736,7 +2736,7 @@
               "hide": false,
               "instant": false,
               "interval": "",
-              "legendFormat": "{{ `{{` }}exported_job{{ `}}` }} - {{ `{{` }}task_group{{ `}}` }} - {{ `{{` }}task{{ `}}` }}",
+              "legendFormat": "{{exported_job}} - {{task_group}} - {{task}}",
               "refId": "A"
             }
           ],
@@ -2854,7 +2854,7 @@
               "hide": false,
               "instant": false,
               "interval": "",
-              "legendFormat": "{{ `{{` }}exported_job{{ `}}` }} - {{ `{{` }}task_group{{ `}}` }} - {{ `{{` }}task{{ `}}` }}",
+              "legendFormat": "{{exported_job}} - {{task_group}} - {{task}}",
               "refId": "A"
             }
           ],
@@ -3113,7 +3113,7 @@
               "expr": "nomad_raft_commitTime{quantile=\"0.9\"}",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+              "legendFormat": "{{instance}}",
               "refId": "A"
             }
           ],
@@ -3205,7 +3205,7 @@
               "exemplar": true,
               "expr": "increase(nomad_raft_apply{}[$__rate_interval])",
               "interval": "",
-              "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+              "legendFormat": "{{instance}}",
               "refId": "A"
             }
           ],
@@ -3305,7 +3305,7 @@
               "expr": "nomad_raft_rpc_appendEntries{quantile=\"0.9\"}",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+              "legendFormat": "{{instance}}",
               "refId": "A"
             }
           ],
@@ -3366,7 +3366,7 @@
               "expr": "nomad_raft_appliedIndex{}",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+              "legendFormat": "{{instance}}",
               "refId": "A"
             }
           ],
@@ -3466,7 +3466,7 @@
               "expr": "nomad_raft_fsm_apply{quantile=\"0.9\"}",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+              "legendFormat": "{{instance}}",
               "refId": "A"
             }
           ],
@@ -3819,6 +3819,6 @@
   "timezone": "",
   "title": "HashiCorp Nomad",
   "uid": "4NYOvS-7z",
-  "version": 6,
+  "version": 1,
   "weekStart": ""
 }

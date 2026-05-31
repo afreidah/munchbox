@@ -61,7 +61,7 @@
           "format": "time_series",
           "interval": "$interval",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ],
@@ -254,7 +254,7 @@
           "format": "time_series",
           "interval": "$interval",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }}phase{{ `}}` }}",
+          "legendFormat": "{{phase}}",
           "refId": "B"
         }
       ],
@@ -1067,5 +1067,5 @@
   "timezone": "",
   "title": "Prometheus Blackbox Exporter",
   "uid": "xtkCtBkiz",
-  "version": 2
+  "version": 3
 }

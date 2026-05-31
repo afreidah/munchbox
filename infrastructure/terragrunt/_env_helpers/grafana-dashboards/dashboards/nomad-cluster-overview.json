@@ -1,76 +1,76 @@
 {
+  "__elements": {},
   "__inputs": [
     {
-      "name": "DS_GRAFANACLOUD-GRAFY-PROM",
-      "label": "grafanacloud-grafy-prom",
       "description": "",
-      "type": "datasource",
+      "label": "grafanacloud-grafy-prom",
+      "name": "DS_GRAFANACLOUD-GRAFY-PROM",
       "pluginId": "prometheus",
-      "pluginName": "Prometheus"
+      "pluginName": "Prometheus",
+      "type": "datasource"
     },
     {
-      "name": "DS_GRAFANACLOUD-GRAFY-LOGS",
-      "label": "grafanacloud-grafy-logs",
       "description": "",
-      "type": "datasource",
+      "label": "grafanacloud-grafy-logs",
+      "name": "DS_GRAFANACLOUD-GRAFY-LOGS",
       "pluginId": "loki",
-      "pluginName": "Loki"
+      "pluginName": "Loki",
+      "type": "datasource"
     }
   ],
-  "__elements": {},
   "__requires": [
     {
-      "type": "panel",
       "id": "bargauge",
       "name": "Bar gauge",
+      "type": "panel",
       "version": ""
     },
     {
-      "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
+      "type": "grafana",
       "version": "9.2.7-8da65d62"
     },
     {
-      "type": "panel",
       "id": "logs",
       "name": "Logs",
+      "type": "panel",
       "version": ""
     },
     {
-      "type": "datasource",
       "id": "loki",
       "name": "Loki",
+      "type": "datasource",
       "version": "1.0.0"
     },
     {
-      "type": "panel",
       "id": "piechart",
       "name": "Pie chart",
+      "type": "panel",
       "version": ""
     },
     {
-      "type": "datasource",
       "id": "prometheus",
       "name": "Prometheus",
+      "type": "datasource",
       "version": "1.0.0"
     },
     {
-      "type": "panel",
       "id": "stat",
       "name": "Stat",
+      "type": "panel",
       "version": ""
     },
     {
-      "type": "panel",
       "id": "table",
       "name": "Table",
+      "type": "panel",
       "version": ""
     },
     {
-      "type": "panel",
       "id": "timeseries",
       "name": "Time series",
+      "type": "panel",
       "version": ""
     }
   ],
@@ -248,7 +248,7 @@
           "exemplar": false,
           "expr": "sum(nomad_client_allocs_cpu_allocated) by (exported_job)",
           "interval": "",
-          "legendFormat": "{{ "{{" }}exported_job{{ "}}" }}",
+          "legendFormat": "{{exported_job}}",
           "range": true,
           "refId": "A"
         },
@@ -287,7 +287,7 @@
           "links": [
             {
               "title": "Set time range",
-              "url": "https://mon.cinarra.com/d/4NYOvS-7z/nomad?orgId=1&var-env=$env&var-alloc_id=${__data.fields.alloc_id}﻿﻿&from=﻿﻿${__data.fields.from}&to=${__data.fields.to}"
+              "url": "https://mon.cinarra.com/d/4NYOvS-7z/nomad?orgId=1&var-env=$env&var-alloc_id=${__data.fields.alloc_id}\ufeff\ufeff&from=\ufeff\ufeff${__data.fields.from}&to=${__data.fields.to}"
             }
           ],
           "mappings": [],
@@ -586,7 +586,7 @@
           "format": "time_series",
           "instant": true,
           "interval": "",
-          "legendFormat": "{{ "{{" }}instance{{ "}}" }}",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ],
@@ -1101,7 +1101,7 @@
           "exemplar": false,
           "expr": "sum(nomad_client_allocs_memory_allocated) by (exported_job)",
           "interval": "",
-          "legendFormat": "{{ "{{" }}exported_job{{ "}}" }}",
+          "legendFormat": "{{exported_job}}",
           "range": true,
           "refId": "A"
         },
@@ -1443,7 +1443,7 @@
           "expr": "avg(nomad_client_host_disk_available{datacenter=~\"$datacenter\", host=~\"$host\"}) by (disk) / max(nomad_client_host_disk_size{datacenter=~\"$datacenter\", host=~\"$host\"}) by (disk) ",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ "{{" }}disk{{ "}}" }}",
+          "legendFormat": "{{disk}}",
           "range": true,
           "refId": "B"
         },
@@ -1457,7 +1457,7 @@
           "format": "time_series",
           "hide": true,
           "intervalFactor": 1,
-          "legendFormat": "Available - {{ "{{" }}disk{{ "}}" }}",
+          "legendFormat": "Available - {{disk}}",
           "range": true,
           "refId": "A"
         }
@@ -1914,7 +1914,7 @@
               "expr": "nomad_raft_commitTime{quantile=\"0.9\"}",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{ "{{" }} instance {{ "}}" }}",
+              "legendFormat": "{{ instance }}",
               "refId": "A"
             }
           ],
@@ -2011,7 +2011,7 @@
               "exemplar": true,
               "expr": "increase(nomad_raft_apply{}[$__rate_interval])",
               "interval": "",
-              "legendFormat": "{{ "{{" }} instance {{ "}}" }}",
+              "legendFormat": "{{ instance }}",
               "range": true,
               "refId": "A"
             }
@@ -2120,6 +2120,6 @@
   "timezone": "",
   "title": "Cluster overview",
   "uid": "masiNomadCluster",
-  "version": 11,
+  "version": 1,
   "weekStart": ""
 }
