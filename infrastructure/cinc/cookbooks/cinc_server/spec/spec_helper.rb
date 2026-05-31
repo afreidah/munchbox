@@ -26,10 +26,11 @@ RSpec.configure do |c|
 end
 
 RSpec.configure do |config|
-  # --- Point chefspec at this cookbook + munchbox_lib next door ---
+  # --- Point chefspec at this cookbook + the cookbooks we depend on ---
   config.cookbook_path = [
     File.expand_path('../../', __dir__),
     File.expand_path('../../../munchbox_lib', __dir__),
+    File.expand_path('../../../consul', __dir__),
   ]
 
   config.platform        = 'debian'
