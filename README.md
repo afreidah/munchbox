@@ -22,7 +22,7 @@ Nomad services**, **16 Cinc (Chef) cookbooks**, and **32 Terragrunt
 modules**, running on bare-metal Pi 5s, Proxmox VMs, and Oracle Free Tier,
 joined by a WireGuard mesh and fronted by Cloudflare.
 
-It hosts media (Jellyfin, the *arr stack, Immich, Nextcloud), the operator's
+It hosts media (Jellyfin, the *arr stack), the operator's
 public personal-site stack (`alexfreidah.com`), self-hosted Git + CI
 (Forgejo + runners + GitHub Actions self-hosted runners), and infrastructure
 dense enough that it borders on a small startup's prod: HA PostgreSQL via
@@ -290,7 +290,6 @@ is mutual-TLS. The PKI tree:
 | Container images | Docker registry v2 | NFS `/mnt/gdrive/munchbox-data/registry` |
 | Apt repo | aptly | s3-orchestrator `aptly` bucket + NFS metadata |
 | Media (read-heavy) | Jellyfin / *arr / Deluge | `/tank` SSD on nomad-client-04 |
-| User files | Nextcloud / Immich | NFS `/mnt/gdrive/nextcloud`, `/mnt/gdrive/immich` |
 | Time-series | Prometheus | Host volume |
 | Logs | Loki | Host volume on nc02 |
 | Traces | Tempo | Host volume on nc02 |

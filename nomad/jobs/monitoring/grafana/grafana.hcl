@@ -17,7 +17,8 @@ size         = "medium"
 vault        = true
 
 # --- Placement ---
-node = "any"
+node      = "any"
+node_pool = "default"
 
 # --- Traefik routing ---
 traefik      = true

@@ -51,3 +51,21 @@ consul_configure 'consul' do
   user                                node[cookbook]['install']['user']
   group                               node[cookbook]['install']['group']
 end
+
+# -------------------------------------------------------------------------------
+# Nomad consul-sync recovery
+#
+# When consul restarts, Nomad's consul.sync loop notices missing service IDs
+# on its next iteration but only issues UPDATE calls (404s), never re-CREATE.
+# Result: every alloc-registered service on the node disappears from consul
+# until something else kicks Nomad. Subscribing Nomad to a delayed restart on
+# the consul restart forces Nomad's full reconcile path, which re-registers
+# everything from its alloc state. Running containers stay up; only the agent
+# process recycles. No-op on nodes without nomad (cinc-server, etc.).
+# -------------------------------------------------------------------------------
+
+service 'nomad' do
+  action :nothing
+  subscribes :restart, 'service[consul]', :delayed
+  only_if { ::File.exist?('/etc/systemd/system/nomad.service') }
+end

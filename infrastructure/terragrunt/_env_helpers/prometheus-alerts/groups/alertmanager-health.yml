@@ -1,0 +1,43 @@
+# alertmanager-health alert group
+# Alertmanager itself (the thing that delivers notifications): scrape
+# liveness, notification delivery, gossip cluster membership, scrape
+# discovery (catches the case where prometheus can't find AM at all).
+
+- name: alertmanager-health
+  interval: 30s
+  rules:
+    - alert: AlertmanagerDown
+      expr: up{job="alertmanager"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Alertmanager is down on {{ $labels.instance }}"
+        description: "Alertmanager on {{ $labels.instance }} is not responding. Notifications via this replica will not be delivered."
+
+    - alert: AlertmanagerNotificationsFailing
+      expr: rate(alertmanager_notifications_failed_total[5m]) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Alertmanager notifications failing"
+        description: "Alertmanager on {{ $labels.instance }} is failing to send notifications via {{ $labels.integration }}."
+
+    - alert: AlertmanagerClusterFailed
+      expr: alertmanager_cluster_members < 1
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Alertmanager cluster has no members"
+        description: "Alertmanager on {{ $labels.instance }} reports {{ $value | printf \"%.0f\" }} cluster members - gossip is broken."
+
+    - alert: PrometheusAlertmanagerJobMissing
+      expr: absent(up{job="alertmanager"})
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Alertmanager scrape target missing"
+        description: "Prometheus cannot find any Alertmanager scrape target. Discovery is broken or the service is unregistered."

@@ -1,0 +1,46 @@
+# nomad-container-health alert group
+# Per-allocation and per-client signals: stuck-queued allocs, restart loops,
+# client resource saturation. Per-job names come through as `exported_job`
+# (Nomad prefixes the original `job` label so it doesn't collide with
+# Prometheus's scrape-job label).
+
+- name: nomad-container-health
+  interval: 30s
+  rules:
+    - alert: NomadAllocationPending
+      expr: max without(instance, __address__) (nomad_nomad_job_summary_queued{namespace!="__internal"}) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Nomad allocations pending: {{ $labels.exported_job }}"
+        description: "Job {{ $labels.exported_job }} in namespace {{ $labels.namespace }} has {{ $value | printf \"%.0f\" }} queued allocations for more than 5 minutes. Check resource availability."
+
+    - alert: NomadJobRestartLoop
+      expr: increase(nomad_client_allocs_restart[10m]) > 5
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Nomad alloc restart loop on {{ $labels.instance }}"
+        description: "A Nomad allocation has restarted {{ $value | printf \"%.0f\" }} times in 10 minutes on {{ $labels.instance }}."
+
+    - alert: NomadClientHighMemory
+      # allocated/unallocated are both MB; host_memory_total is bytes (don't mix)
+      expr: nomad_client_allocated_memory / (nomad_client_allocated_memory + nomad_client_unallocated_memory) * 100 > 90
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Nomad client memory allocation high"
+        description: "Nomad client {{ $labels.instance }} has {{ $value | printf \"%.1f\" }}% of memory allocated."
+
+    - alert: NomadClientHighCPU
+      # allocated/unallocated are both MHz; host_cpu_total is per-mode percent (wrong denominator)
+      expr: nomad_client_allocated_cpu / (nomad_client_allocated_cpu + nomad_client_unallocated_cpu) * 100 > 90
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Nomad client CPU allocation high"
+        description: "Nomad client {{ $labels.instance }} has {{ $value | printf \"%.1f\" }}% of CPU allocated."

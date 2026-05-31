@@ -1,0 +1,63 @@
+# s3-orchestrator-health alert group
+# All previous rules referenced metric prefix `s3proxy_`; the daemon
+# actually emits `s3o_`. Every expression below uses the real names.
+
+- name: s3-orchestrator-health
+  interval: 30s
+  rules:
+    - alert: S3OrchestratorDown
+      expr: up{job="s3-orchestrator"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "S3 Orchestrator is down"
+        description: "S3 Orchestrator is not responding to metrics scrapes."
+
+    - alert: S3OrchestratorHighErrorRate
+      # s3o uses status="success|error", not HTTP codes; alert on overall error fraction.
+      expr: sum(rate(s3o_manager_requests_total{status="error"}[5m])) / sum(rate(s3o_manager_requests_total[5m])) * 100 > 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "S3 Orchestrator high error rate"
+        description: "{{ $value | printf \"%.1f\" }}% of S3 Orchestrator requests are returning errors."
+
+    - alert: S3OrchestratorBackendFailures
+      # e2 is excluded: IDrive free-tier egress cap intentionally trips the circuit breaker;
+      # quota alerts below cover that legitimately.
+      expr: rate(s3o_backend_requests_total{status="error",backend!="e2"}[5m]) > 0.5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "S3 Orchestrator backend failures"
+        description: "Backend {{ $labels.backend }} is seeing {{ $value | printf \"%.1f\" }} failed {{ $labels.operation }} operations/sec."
+
+    - alert: S3OrchestratorQuotaHigh
+      expr: s3o_quota_bytes_used / s3o_quota_bytes_limit * 100 > 90
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "S3 Orchestrator quota nearly full"
+        description: "Backend {{ $labels.backend }} is at {{ $value | printf \"%.1f\" }}% quota usage."
+
+    - alert: S3OrchestratorQuotaCritical
+      expr: s3o_quota_bytes_used / s3o_quota_bytes_limit * 100 > 98
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "S3 Orchestrator quota critical"
+        description: "Backend {{ $labels.backend }} is at {{ $value | printf \"%.1f\" }}% quota usage. Uploads will fail when full."
+
+    - alert: S3OrchestratorHighLatency
+      expr: histogram_quantile(0.95, sum by (le) (rate(s3o_request_duration_seconds_bucket[5m]))) > 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "S3 Orchestrator high request latency"
+        description: "95th percentile request latency is {{ $value | printf \"%.1f\" }} seconds."

@@ -1,7 +1,7 @@
 {
   "service": {
     "name": "oracle-watchdog",
-    "tags": ["monitor", "prometheus"],
+    "tags": ["monitor", "prometheus", "metrics"],
     "port": <%= @metrics_port %>,
     "check": {
       "http": "http://127.0.0.1:<%= @metrics_port %>/metrics",

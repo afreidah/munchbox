@@ -75,6 +75,7 @@ job "flight-fetcher" {
       }
 
       tags = [
+        "metrics",
         "traefik.enable=true",
         "traefik.http.routers.flight-fetcher.rule=Host(`flights.munchbox.cc`)",
         "traefik.http.routers.flight-fetcher.entrypoints=websecure",

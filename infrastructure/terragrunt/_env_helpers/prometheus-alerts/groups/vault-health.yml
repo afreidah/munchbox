@@ -1,0 +1,52 @@
+# vault-health alert group
+# Vault control plane: seal state, ready state, request latency, lease pressure.
+
+- name: vault-health
+  interval: 30s
+  rules:
+    - alert: VaultSealed
+      expr: vault_core_unsealed == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Vault is sealed"
+        description: "Vault on {{ $labels.instance }} is sealed and cannot serve requests. Manual unseal required."
+
+    - alert: VaultDown
+      expr: up{job="vault"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Vault is unreachable"
+        description: "Cannot scrape Vault metrics on {{ $labels.instance }}. Vault may be down."
+
+    - alert: VaultNotActive
+      expr: vault_core_active == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Vault is not in active-ready state"
+        description: "Vault on {{ $labels.instance }} is sealed or still joining. Check cluster health."
+
+    - alert: VaultHighRequestLatency
+      # vault_core_handle_request is a summary (no _bucket); use rate(_sum)/rate(_count)
+      # for mean latency. Vault telemetry reports the sum in milliseconds.
+      expr: rate(vault_core_handle_request_sum[5m]) / rate(vault_core_handle_request_count[5m]) > 100
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Vault request latency high"
+        description: "Mean request latency on {{ $labels.instance }} is {{ $value | printf \"%.0f\" }} ms (threshold 100 ms)."
+
+    - alert: VaultLeaseExplosion
+      expr: vault_expire_num_leases > 10000
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Vault has many active leases"
+        description: "Vault on {{ $labels.instance }} has {{ $value | printf \"%.0f\" }} active leases. Consider reviewing lease TTLs."

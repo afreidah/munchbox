@@ -1,0 +1,85 @@
+# disk-network-health alert group
+# Host-level disk I/O utilization, disk latency, and network errors /
+# saturation / link state on every node.
+
+- name: disk-network-health
+  interval: 30s
+  rules:
+    - alert: HighDiskIOUtilization
+      expr: rate(node_disk_io_time_seconds_total[5m]) * 100 > 80
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High disk I/O utilization on {{ $labels.instance }}"
+        description: "Disk {{ $labels.device }} is {{ $value | printf \"%.0f\" }}% utilized."
+
+    - alert: DiskIOSaturation
+      expr: rate(node_disk_io_time_seconds_total[5m]) * 100 > 95
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Disk I/O saturated on {{ $labels.instance }}"
+        description: "Disk {{ $labels.device }} is {{ $value | printf \"%.0f\" }}% utilized. Performance degradation likely."
+
+    - alert: HighDiskReadLatency
+      # rate(seconds) / rate(count) -> seconds-per-op; * 1000 -> ms-per-op
+      expr: rate(node_disk_read_time_seconds_total[5m]) / rate(node_disk_reads_completed_total[5m]) * 1000 > 100
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High disk read latency on {{ $labels.instance }}"
+        description: "Disk {{ $labels.device }} average read latency is {{ $value | printf \"%.0f\" }}ms."
+
+    - alert: HighDiskWriteLatency
+      # mmcblk* (SD cards on Pi 5s) are routinely 500ms+ for sustained writes; not actionable.
+      expr: |
+        rate(node_disk_write_time_seconds_total{device!~"mmcblk.*"}[5m])
+        / rate(node_disk_writes_completed_total{device!~"mmcblk.*"}[5m]) * 1000 > 100
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High disk write latency on {{ $labels.instance }}"
+        description: "Disk {{ $labels.device }} average write latency is {{ $value | printf \"%.0f\" }}ms."
+
+    - alert: NetworkReceiveErrors
+      expr: rate(node_network_receive_errs_total[5m]) > 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Network receive errors on {{ $labels.instance }}"
+        description: "Interface {{ $labels.device }} is seeing {{ $value | printf \"%.0f\" }} receive errors/second."
+
+    - alert: NetworkTransmitErrors
+      expr: rate(node_network_transmit_errs_total[5m]) > 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Network transmit errors on {{ $labels.instance }}"
+        description: "Interface {{ $labels.device }} is seeing {{ $value | printf \"%.0f\" }} transmit errors/second."
+
+    - alert: NetworkHighBandwidth
+      expr: |
+        (rate(node_network_receive_bytes_total{device!~"lo|docker.*|veth.*|br-.*"}[5m])
+         + rate(node_network_transmit_bytes_total{device!~"lo|docker.*|veth.*|br-.*"}[5m]))
+        / 1024 / 1024 > 100
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High network bandwidth on {{ $labels.instance }}"
+        description: "Interface {{ $labels.device }} is using {{ $value | printf \"%.0f\" }} MB/s."
+
+    - alert: NetworkInterfaceDown
+      expr: node_network_carrier{device!~"lo|docker.*|veth.*|br-.*|cni.*|nomad|wlan.*|flannel.*"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Network interface down on {{ $labels.instance }}"
+        description: "Interface {{ $labels.device }} has no carrier signal."

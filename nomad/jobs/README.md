@@ -26,7 +26,7 @@ The split is currently ~38 pack, ~38 raw. Both deploy through the same
 nomad/jobs/
 +-- infrastructure/       # 26 jobs -- core cluster + ingress + identity
 +-- monitoring/           # 10 jobs -- prom stack + exporters + alertmanager
-+-- media/                # 12 jobs -- *arr stack + jellyfin + nextcloud
++-- media/                # 12 jobs -- *arr stack + jellyfin
 +-- web/                  # 10 jobs -- user-facing apps + dashboards
 +-- temporal-workflows/   #  7 jobs -- backup / scan / cleanup workers + triggers
 +-- logging/              #  3 jobs -- alloy + loki + tempo

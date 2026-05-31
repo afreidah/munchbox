@@ -285,7 +285,7 @@ locals {
   traefik_fronted_hosts = [
     "alertmanager", "analytics", "apt", "auth", "consul", "dashboard",
     "deluge", "ersatz", "git", "grafana", "jellyfin", "kavita", "lidarr",
-    "nextcloud", "nomad", "photos", "prometheus", "prowlarr", "radarr",
+    "nomad", "photos", "prometheus", "prowlarr", "radarr",
     "readarr", "registry", "registry-ui", "sonarr", "temporal", "themes",
     "traefik", "traefik-logs", "trivy-dashboard", "vault", "vault-ui",
     "vaultwarden", "pihole", "s3", "forgejo",

@@ -63,6 +63,31 @@ RSpec.describe 'consul::configure' do
       expect(chef_run.template('/etc/consul.d/consul.hcl'))
         .to notify('service[consul]').to(:restart).delayed
     end
+
+    # --- gossip_lan defaults (probe_timeout loosened for WG stability; see GH #130) ---
+    it 'passes the gossip_lan defaults through to the template' do
+      template = chef_run.template('/etc/consul.d/consul.hcl')
+      expect(template.variables[:gossip_lan_interval]).to eq('1s')
+      expect(template.variables[:gossip_lan_probe_timeout]).to eq('5s')
+    end
+  end
+
+  context 'with overridden gossip_lan tuning' do
+    cached(:chef_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(consul_configure)) do |node|
+        node.override[:consul][:config][:bind_addr]               = '10.200.0.14'
+        node.override[:consul][:config][:retry_join]              = ['192.168.68.60']
+        node.override[:consul][:config][:gossip_lan_interval]     = '15s'
+        node.override[:consul][:config][:gossip_lan_probe_timeout] = '7s'
+      end.converge('consul::configure')
+    end
+
+    # --- per-attribute override flows through to the template ---
+    it 'passes overridden gossip_lan timings through to the template' do
+      template = chef_run.template('/etc/consul.d/consul.hcl')
+      expect(template.variables[:gossip_lan_interval]).to eq('15s')
+      expect(template.variables[:gossip_lan_probe_timeout]).to eq('7s')
+    end
   end
 
   context 'as a server' do

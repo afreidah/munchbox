@@ -1,0 +1,56 @@
+# traefik-health alert group
+# Traefik v3 ingress: scrape liveness, 5xx rate, p95 latency, TLS expiry,
+# config reload status.
+
+- name: traefik-health
+  interval: 30s
+  rules:
+    - alert: TraefikDown
+      expr: up{job="traefik"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Traefik is down on {{ $labels.instance }}"
+        description: "Traefik ingress controller is not responding to metrics scrapes on {{ $labels.instance }}."
+
+    - alert: TraefikHighErrorRate
+      expr: sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) / sum(rate(traefik_service_requests_total[5m])) * 100 > 5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Traefik high 5xx error rate"
+        description: "{{ $value | printf \"%.1f\" }}% of requests are returning 5xx errors."
+
+    - alert: TraefikHighLatency
+      # jellyfin + deluge serve large bodies and routinely exceed 5s; not real ingress issues.
+      expr: |
+        histogram_quantile(0.95,
+          sum(rate(traefik_service_request_duration_seconds_bucket{service!~"(deluge|jellyfin)@.*"}[5m]))
+          by (le, service)
+        ) > 5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Traefik high request latency"
+        description: "95th percentile latency for service {{ $labels.service }} is above 5 seconds."
+
+    - alert: TraefikTLSCertExpiring
+      expr: (traefik_tls_certs_not_after - time()) < 7*24*60*60
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Traefik TLS certificate expiring soon"
+        description: "TLS certificate for {{ $labels.cn }} expires in less than 7 days."
+
+    - alert: TraefikConfigReloadFailed
+      expr: traefik_config_last_reload_success == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Traefik config reload failed on {{ $labels.instance }}"
+        description: "Traefik failed to reload its configuration."

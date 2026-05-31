@@ -64,6 +64,18 @@ control 'consul-config-no-acl-no-tls' do
   end
 end
 
+# --- gossip_lan block is rendered with the loosened defaults (GH #130) ---
+control 'consul-gossip-lan' do
+  impact 0.7
+  title 'gossip_lan block uses the loosened timings from attributes/default.rb'
+
+  describe file('/etc/consul.d/consul.hcl') do
+    its('content') { should match(/^gossip_lan\s*\{/) }
+    its('content') { should match(/gossip_interval\s*=\s*"1s"/) }
+    its('content') { should match(/probe_timeout\s*=\s*"5s"/) }
+  end
+end
+
 # --- End-to-end: the HTTP API actually serves; status/leader returns a value once raft has elected self ---
 control 'consul-http-api' do
   impact 0.9

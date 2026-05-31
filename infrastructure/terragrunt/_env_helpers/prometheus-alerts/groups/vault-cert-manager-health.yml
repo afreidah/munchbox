@@ -1,0 +1,44 @@
+# vault-cert-manager-health alert group
+# Per-node vault-cert-manager daemon: scrape liveness + per-cert expiry +
+# renewal failures. Requires cinc-client to have converged the cookbook
+# change that adds the `metrics` tag (otherwise consul-auto won't discover
+# the service and `up{job="vault-cert-manager"}` will be absent).
+
+- name: vault-cert-manager-health
+  interval: 30s
+  rules:
+    - alert: VaultCertManagerDown
+      expr: up{job="vault-cert-manager"} == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "vault-cert-manager down on {{ $labels.instance }}"
+        description: "vault-cert-manager on {{ $labels.instance }} is not responding. Certificate renewals on this node will not occur."
+
+    - alert: ManagedCertExpiringSoon
+      expr: (managed_cert_not_after_timestamp_seconds - time()) < 7*24*60*60
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Managed certificate expiring soon: {{ $labels.name }}"
+        description: "Certificate {{ $labels.name }} on {{ $labels.instance }} expires in less than 7 days."
+
+    - alert: ManagedCertExpired
+      expr: managed_cert_not_after_timestamp_seconds < time()
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Managed certificate expired: {{ $labels.name }}"
+        description: "Certificate {{ $labels.name }} on {{ $labels.instance }} has expired. Services using this certificate will fail TLS validation."
+
+    - alert: ManagedCertRenewalsFailing
+      expr: increase(managed_cert_renewals_total{status="failure"}[1h]) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Certificate renewal failures: {{ $labels.name }}"
+        description: "Certificate {{ $labels.name }} on {{ $labels.instance }} had renewal failures in the last hour. Check Vault connectivity and PKI role permissions."

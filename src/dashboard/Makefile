@@ -8,7 +8,7 @@
 # to ensure consistent scheduling behavior across heterogeneous Nomad clients.
 # -------------------------------------------------------------------------------
 
-REGISTRY   ?= registry.munchbox.cc
+REGISTRY   ?= $(or $(DOCKER_REGISTRY),registry.example.com)
 IMAGE      := dash
 VERSION    ?= latest
 

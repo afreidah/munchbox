@@ -156,6 +156,7 @@ job "patroni" {
 
       tags = [
         "traefik.enable=false",
+        "metrics",
         "patroni",
         "api"
       ]
@@ -167,6 +168,10 @@ job "patroni" {
         path     = "/health"
         interval = "10s"
         timeout  = "3s"
+        # --- 3 consecutive misses (~30s) before HAProxy drops the backend ---
+        # --- avoids gossip-induced single-miss flaps (see GH #130) ---
+        success_before_passing   = 1
+        failures_before_critical = 3
       }
     }
 
@@ -430,18 +435,6 @@ PGUSER='{{ .Data.data.username }}'
 # --- Create application databases ---
 psql -h localhost -p {{ env "NOMAD_PORT_postgres" }} -U $PGUSER -d postgres <<SQL
 
--- Nextcloud
-{{ with secret "secret/data/nextcloud" }}
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
-    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
-  END IF;
-END
-\$\$;
-CREATE DATABASE IF NOT EXISTS nextcloud OWNER {{ .Data.data.db_username }};
-{{ end }}
-
 -- Temporal
 {{ with secret "secret/data/temporal" }}
 DO \$\$
@@ -465,18 +458,6 @@ BEGIN
 END
 \$\$;
 CREATE DATABASE IF NOT EXISTS forgejo OWNER {{ .Data.data.db_username }};
-{{ end }}
-
--- Umami
-{{ with secret "secret/data/umami" }}
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
-    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
-  END IF;
-END
-\$\$;
-CREATE DATABASE IF NOT EXISTS umami OWNER {{ .Data.data.db_username }};
 {{ end }}
 
 -- Trivy Dashboard
@@ -513,18 +494,6 @@ BEGIN
 END
 \$\$;
 CREATE DATABASE IF NOT EXISTS vaultwarden OWNER {{ .Data.data.db_username }};
-{{ end }}
-
--- Immich (requires pgvector extension)
-{{ with secret "secret/data/immich" }}
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '{{ .Data.data.db_username }}') THEN
-    CREATE USER {{ .Data.data.db_username }} WITH ENCRYPTED PASSWORD '{{ .Data.data.db_password }}';
-  END IF;
-END
-\$\$;
-CREATE DATABASE IF NOT EXISTS immich OWNER {{ .Data.data.db_username }};
 {{ end }}
 
 -- g3
@@ -630,12 +599,6 @@ CREATE DATABASE IF NOT EXISTS prowlarr_log OWNER {{ .Data.data.db_username }};
 {{ end }}
 
 SQL
-
--- Enable pgvector extension for Immich (must be done after connecting to the database)
-{{ with secret "secret/data/immich" }}
-psql -h localhost -p {{ env "NOMAD_PORT_postgres" }} -U $PGUSER -d immich -c "CREATE EXTENSION IF NOT EXISTS vector;"
-psql -h localhost -p {{ env "NOMAD_PORT_postgres" }} -U $PGUSER -d immich -c "CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;"
-{{ end }}
 
 echo "Database initialization complete"
         EOF

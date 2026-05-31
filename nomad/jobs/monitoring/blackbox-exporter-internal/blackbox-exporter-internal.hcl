@@ -41,7 +41,7 @@ templates = [
 ]
 
 # --- Service tags ---
-tags = ["monitoring", "blackbox-exporter", "probes", "internal"]
+tags = ["monitoring", "blackbox-exporter", "probes", "internal", "metrics"]
 
 # --- Placement: any on-prem nomad client (NOT oracle). ---
 node = "any"

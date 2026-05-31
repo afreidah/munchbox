@@ -41,4 +41,4 @@ templates = [
 ]
 
 # --- Service tags ---
-tags = ["monitoring", "nextcloud-exporter", "metrics", "cloud"]
+tags = ["monitoring", "nextcloud-exporter", "metrics", "cloud", "scrape-interval=60s", "scrape-timeout=30s"]

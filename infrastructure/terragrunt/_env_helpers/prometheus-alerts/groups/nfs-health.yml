@@ -1,0 +1,43 @@
+# nfs-health alert group
+# NFS mounts (rubirosa export) on every node that depends on /mnt/gdrive-*.
+# Catches stale mounts, missing mounts, RPC retransmissions, low free space.
+
+- name: nfs-health
+  interval: 60s
+  rules:
+    - alert: NFSMountStale
+      expr: node_filesystem_device_error{fstype="nfs4"} == 1
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "NFS mount error on {{ $labels.instance }}"
+        description: "NFS mount {{ $labels.mountpoint }} has device errors - mount may be stale."
+
+    - alert: NFSMountMissing
+      # Expected mounters: goren + stabler + nomad-client-01..05 = 7.
+      expr: count(node_filesystem_avail_bytes{fstype="nfs4",mountpoint="/mnt/gdrive-secondary"}) < 7
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "NFS /mnt/gdrive-secondary missing on at least one node"
+        description: "Only {{ $value | printf \"%.0f\" }} of 7 expected nodes report /mnt/gdrive-secondary mounted. Run 'for h in goren stabler nomad-client-0{1..5}; do ssh $h mountpoint /mnt/gdrive-secondary; done' to find which."
+
+    - alert: NFSHighRetransmissions
+      expr: rate(node_nfs_rpc_retransmissions_total[5m]) > 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High NFS retransmissions on {{ $labels.instance }}"
+        description: "NFS client on {{ $labels.instance }} has {{ $value | printf \"%.1f\" }} retransmissions/sec."
+
+    - alert: NFSStorageLow
+      expr: (node_filesystem_avail_bytes{fstype="nfs4"} / node_filesystem_size_bytes{fstype="nfs4"}) * 100 < 10
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "NFS storage low on {{ $labels.mountpoint }}"
+        description: "NFS mount {{ $labels.mountpoint }} has less than 10% free space."

@@ -1,0 +1,70 @@
+# redis-health alert group
+# Two-server Redis cluster (sentinel-fronted): liveness, memory pressure,
+# eviction/rejection rates, client count, fragmentation.
+
+- name: redis-health
+  interval: 30s
+  rules:
+    - alert: RedisDown
+      expr: redis_up == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Redis is down"
+        description: "Redis exporter cannot connect to the server."
+
+    - alert: RedisHighMemoryUsage
+      expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Redis memory usage high"
+        description: "Redis on {{ $labels.instance }} is using {{ $value | printf \"%.1f\" }}% of max memory."
+
+    - alert: RedisMemoryNearLimit
+      expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 95
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Redis memory nearly exhausted"
+        description: "Redis on {{ $labels.instance }} is using {{ $value | printf \"%.1f\" }}% of max memory. Evictions imminent."
+
+    - alert: RedisHighEvictionRate
+      expr: rate(redis_evicted_keys_total[5m]) > 100
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Redis high eviction rate"
+        description: "Redis on {{ $labels.instance }} is evicting {{ $value | printf \"%.0f\" }} keys/second."
+
+    - alert: RedisRejectedConnections
+      expr: increase(redis_rejected_connections_total[5m]) > 0
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Redis rejecting connections"
+        description: "Redis on {{ $labels.instance }} rejected {{ $value | printf \"%.0f\" }} connections in the last 5 minutes."
+
+    - alert: RedisHighClientConnections
+      expr: redis_connected_clients / redis_config_maxclients * 100 > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Redis client connections high"
+        description: "Redis on {{ $labels.instance }} is using {{ $value | printf \"%.1f\" }}% of max client connections."
+
+    - alert: RedisHighFragmentation
+      # only when redis is actually using meaningful memory; <100MB fragmentation ratios are noise
+      expr: redis_mem_fragmentation_ratio > 1.5 and redis_memory_used_bytes > 100000000
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Redis memory fragmentation high"
+        description: "Redis on {{ $labels.instance }} memory fragmentation ratio is {{ $value | printf \"%.2f\" }}."

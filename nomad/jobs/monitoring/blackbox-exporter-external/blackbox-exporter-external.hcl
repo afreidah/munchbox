@@ -41,7 +41,7 @@ templates = [
 ]
 
 # --- Service tags ---
-tags = ["monitoring", "blackbox-exporter", "probes", "external"]
+tags = ["monitoring", "blackbox-exporter", "probes", "external", "metrics"]
 
 # --- Placement: Oracle cloud ---
 # Runs off-LAN so probes exercise true outside->in reachability for our

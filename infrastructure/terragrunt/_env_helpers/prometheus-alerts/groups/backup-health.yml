@@ -1,0 +1,26 @@
+# backup-health alert group
+# Temporal-driven backup pipeline: the long-running `backup-worker`
+# service that executes activities, and the periodic
+# `temporal-backup-trigger` batch job that kicks workflows on schedule.
+
+- name: backup-health
+  interval: 60s
+  rules:
+    - alert: BackupWorkerDown
+      expr: max(nomad_nomad_job_summary_running{exported_job="backup-worker"}) == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Backup worker is down"
+        description: "backup-worker has no running allocations; new workflow tasks will queue indefinitely."
+
+    - alert: BackupJobFailed
+      # _summary_failed is cumulative across alloc history; rate over 1h catches recent failures only
+      expr: increase(nomad_nomad_job_summary_failed{exported_job="temporal-backup-trigger"}[1h]) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "temporal-backup-trigger had recent failures"
+        description: "{{ $value | printf \"%.0f\" }} new failed allocations on temporal-backup-trigger in the last hour."

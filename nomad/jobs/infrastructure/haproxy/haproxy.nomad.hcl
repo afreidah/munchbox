@@ -251,7 +251,13 @@ global
 resolvers consul
     nameserver consul 127.0.0.1:8600
     accepted_payload_size 8192
-    hold valid 30s
+    # --- re-query fast when consul DNS goes empty (e.g. gossip-induced ---
+    # --- check flap); without these the default hold caps recovery at ~30s ---
+    hold valid    30s
+    hold nx       5s
+    hold obsolete 0s
+    hold timeout  5s
+    hold refused  5s
     resolve_retries 3
     timeout resolve 1s
     timeout retry 1s

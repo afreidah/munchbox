@@ -1,0 +1,24 @@
+# temporal-health alert group
+# Temporal workflow control plane: server (handles task queues + history)
+# and UI (web frontend at temporal.munchbox.cc).
+
+- name: temporal-health
+  interval: 30s
+  rules:
+    - alert: TemporalServerDown
+      expr: max(nomad_nomad_job_summary_running{exported_job="temporal-server"}) == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Temporal server is down"
+        description: "temporal-server has no running allocations; all workflow workers are blocked."
+
+    - alert: TemporalUIDown
+      expr: max(nomad_nomad_job_summary_running{exported_job="temporal-ui"}) == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Temporal UI is down"
+        description: "temporal-ui has no running allocations; web console at temporal.munchbox.cc is unreachable."

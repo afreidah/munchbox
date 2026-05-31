@@ -74,6 +74,7 @@ job "trivy-dashboard" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "traefik.enable=true",
         "traefik.http.routers.trivy-dashboard.rule=Host(`trivy-dashboard.munchbox.cc`)",
         "traefik.http.routers.trivy-dashboard.entrypoints=websecure",
