@@ -3,16 +3,11 @@
 # -----------------------------------------------------------------------------
 #
 # Manages local DNS records in Pi-hole for split-horizon DNS. Creates A records
-# and CNAME records on multiple Pi-hole instances to ensure redundancy.
+# (pihole_local_dns) and CNAME records (pihole_cname_record) on both Pi-hole
+# instances (primary = green, secondary = logan) for redundancy.
 #
-# Components Created:
-#   - Pi-hole DNS records (A records) on all instances
-#   - Pi-hole CNAME records on all instances
-#
-# Architecture:
-#   - Records defined via input variables
-#   - Uses Pi-hole API with token authentication
-#   - Manages multiple Pi-hole instances for HA
+# Uses dklesev/pihole (v6 REST API). Inputs keep the caller-facing `.domain`
+# field for back-compat; module remaps it to dklesev's `hostname` arg.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -21,24 +16,24 @@
 # DNS A RECORDS - PRIMARY (green)
 # -----------------------------------------------------------------------------
 
-resource "pihole_dns_record" "primary" {
+resource "pihole_local_dns" "primary" {
   provider = pihole.primary
   for_each = var.dns_records
 
-  domain = each.value.domain
-  ip     = each.value.ip
+  hostname = each.value.domain
+  ip       = each.value.ip
 }
 
 # -----------------------------------------------------------------------------
 # DNS A RECORDS - SECONDARY (logan)
 # -----------------------------------------------------------------------------
 
-resource "pihole_dns_record" "secondary" {
+resource "pihole_local_dns" "secondary" {
   provider = pihole.secondary
   for_each = var.dns_records
 
-  domain = each.value.domain
-  ip     = each.value.ip
+  hostname = each.value.domain
+  ip       = each.value.ip
 }
 
 # -----------------------------------------------------------------------------
