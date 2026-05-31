@@ -29,6 +29,7 @@
   "fiscalYearStartMonth": 0,
   "gnetId": 10347,
   "graphTooltip": 0,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -1232,7 +1233,7 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{ `{{` }}name{{ `}}` }} ({{ `{{` }}type{{ `}}` }})",
+          "legendFormat": "{{name}} ({{type}})",
           "refId": "A"
         }
       ],
@@ -1336,7 +1337,7 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 4,
-          "legendFormat": "{{ `{{` }}name{{ `}}` }} ({{ `{{` }}type{{ `}}` }})",
+          "legendFormat": "{{name}} ({{type}})",
           "refId": "A"
         }
       ],
@@ -1422,7 +1423,7 @@
           "instant": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }}storage{{ `}}` }}",
+          "legendFormat": "{{storage}}",
           "refId": "A"
         }
       ],
@@ -1499,7 +1500,7 @@
           "instant": true,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }}storage{{ `}}` }}",
+          "legendFormat": "{{storage}}",
           "range": false,
           "refId": "storage size"
         }
@@ -1623,7 +1624,7 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }}name{{ `}}` }} ({{ `{{` }}type{{ `}}` }})",
+          "legendFormat": "{{name}} ({{type}})",
           "range": true,
           "refId": "A"
         }
@@ -1742,7 +1743,7 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 3,
-          "legendFormat": "{{ `{{` }}name{{ `}}` }} RECV ({{ `{{` }}type{{ `}}` }})",
+          "legendFormat": "{{name}} RECV ({{type}})",
           "refId": "A"
         },
         {
@@ -1754,7 +1755,7 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 3,
-          "legendFormat": "{{ `{{` }}name{{ `}}` }} SEND ({{ `{{` }}type{{ `}}` }})",
+          "legendFormat": "{{name}} SEND ({{type}})",
           "refId": "B"
         }
       ],
@@ -1859,7 +1860,7 @@
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
-          "legendFormat": "{{ `{{` }}name{{ `}}` }} ({{ `{{` }}type{{ `}}` }})",
+          "legendFormat": "{{name}} ({{type}})",
           "refId": "A"
         }
       ],
@@ -1936,6 +1937,5 @@
   "title": "Proxmox via Prometheus",
   "uid": "Dp7Cd57Zza",
   "version": 1,
-  "weekStart": "",
-  "id": null
+  "weekStart": ""
 }

@@ -26,6 +26,7 @@
   "fiscalYearStartMonth": 0,
   "gnetId": 17346,
   "graphTooltip": 0,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -199,7 +200,7 @@
           },
           "editorMode": "code",
           "expr": "sum(rate(traefik_entrypoint_requests_total{entrypoint=~\"$entrypoint\"}[$interval])) by (entrypoint)",
-          "legendFormat": "{{ `{{` }}entrypoint{{ `}}` }}",
+          "legendFormat": "{{entrypoint}}",
           "range": true,
           "refId": "A"
         }
@@ -297,7 +298,7 @@
           },
           "editorMode": "code",
           "expr": "(sum(rate(traefik_entrypoint_request_duration_seconds_bucket{le=\"0.3\",code=\"200\",entrypoint=~\"$entrypoint\"}[$interval])) by (method) + \n sum(rate(traefik_entrypoint_request_duration_seconds_bucket{le=\"1.2\",code=\"200\",entrypoint=~\"$entrypoint\"}[$interval])) by (method)) / 2 / \n sum(rate(traefik_entrypoint_request_duration_seconds_count{code=\"200\",entrypoint=~\"$entrypoint\"}[$interval])) by (method)\n",
-          "legendFormat": "{{ `{{` }}method{{ `}}` }}",
+          "legendFormat": "{{method}}",
           "range": true,
           "refId": "A"
         }
@@ -365,7 +366,7 @@
           },
           "editorMode": "code",
           "expr": "sum(rate(traefik_service_requests_total{service=~\"$service.*\",protocol=\"http\"}[$interval])) by (method, code)",
-          "legendFormat": "{{ `{{` }}method{{ `}}` }}[{{ `{{` }}code{{ `}}` }}]",
+          "legendFormat": "{{method}}[{{code}}]",
           "range": true,
           "refId": "A"
         }
@@ -464,7 +465,7 @@
           },
           "editorMode": "code",
           "expr": "topk(15,\n    label_replace(\n        traefik_service_request_duration_seconds_sum{service=~\"$service.*\",protocol=\"http\"} / \n          traefik_service_request_duration_seconds_count{service=~\"$service.*\",protocol=\"http\"},\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)\n\n",
-          "legendFormat": "{{ `{{` }}method{{ `}}` }}[{{ `{{` }}code{{ `}}` }}] on {{ `{{` }}service{{ `}}` }}",
+          "legendFormat": "{{method}}[{{code}}] on {{service}}",
           "range": true,
           "refId": "A"
         }
@@ -563,7 +564,7 @@
           },
           "editorMode": "code",
           "expr": "topk(15,\n    label_replace(\n        sum by (service,code) \n          (rate(traefik_service_requests_total{service=~\"$service.*\",protocol=\"http\"}[$interval])) > 0,\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)",
-          "legendFormat": "[{{ `{{` }}code{{ `}}` }}] on {{ `{{` }}service{{ `}}` }}",
+          "legendFormat": "[{{code}}] on {{service}}",
           "range": true,
           "refId": "A"
         }
@@ -667,7 +668,7 @@
               },
               "editorMode": "code",
               "expr": "label_replace(\n  1 - (sum by (service)\n    (rate(traefik_service_request_duration_seconds_bucket{le=\"1.2\",service=~\"$service.*\"}[$interval])) / sum by (service) \n    (rate(traefik_service_request_duration_seconds_count{service=~\"$service.*\"}[$interval]))\n  ) > 0,\n  \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\"\n)",
-              "legendFormat": "{{ `{{` }}service{{ `}}` }}",
+              "legendFormat": "{{service}}",
               "range": true,
               "refId": "A"
             }
@@ -761,7 +762,7 @@
               },
               "editorMode": "code",
               "expr": "label_replace(\n  1 - (sum by (service)\n    (rate(traefik_service_request_duration_seconds_bucket{le=\"0.3\",service=~\"$service.*\"}[$interval])) / sum by (service) \n    (rate(traefik_service_request_duration_seconds_count{service=~\"$service.*\"}[$interval]))\n  ) > 0,\n  \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\"\n)",
-              "legendFormat": "{{ `{{` }}service{{ `}}` }}",
+              "legendFormat": "{{service}}",
               "range": true,
               "refId": "A"
             }
@@ -873,7 +874,7 @@
               },
               "editorMode": "code",
               "expr": "topk(15,\n    label_replace(\n        sum by (service,method,code) \n          (rate(traefik_service_requests_total{service=~\"$service.*\",code=~\"2..\",protocol=\"http\"}[$interval])) > 0,\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)",
-              "legendFormat": "{{ `{{` }}method{{ `}}` }}[{{ `{{` }}code{{ `}}` }}] on {{ `{{` }}service{{ `}}` }}",
+              "legendFormat": "{{method}}[{{code}}] on {{service}}",
               "range": true,
               "refId": "A"
             }
@@ -972,7 +973,7 @@
               },
               "editorMode": "code",
               "expr": "topk(15,\n    label_replace(\n        sum by (service,method,code) \n          (rate(traefik_service_requests_total{service=~\"$service.*\",code=~\"5..\",protocol=\"http\"}[$interval])) > 0,\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)",
-              "legendFormat": "{{ `{{` }}method{{ `}}` }}[{{ `{{` }}code{{ `}}` }}] on {{ `{{` }}service{{ `}}` }}",
+              "legendFormat": "{{method}}[{{code}}] on {{service}}",
               "range": true,
               "refId": "A"
             }
@@ -1071,7 +1072,7 @@
               },
               "editorMode": "code",
               "expr": "topk(15,\n    label_replace(\n        sum by (service,method,code) \n          (rate(traefik_service_requests_total{service=~\"$service.*\",code!~\"2..|5..\",protocol=\"http\"}[$interval])) > 0,\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)",
-              "legendFormat": "{{ `{{` }}method{{ `}}` }}[{{ `{{` }}code{{ `}}` }}] on {{ `{{` }}service{{ `}}` }}",
+              "legendFormat": "{{method}}[{{code}}] on {{service}}",
               "range": true,
               "refId": "A"
             }
@@ -1170,7 +1171,7 @@
               },
               "editorMode": "code",
               "expr": "topk(15,\n    label_replace(\n        sum by (service,method) \n          (rate(traefik_service_requests_bytes_total{service=~\"$service.*\",protocol=\"http\"}[$interval])) > 0,\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)",
-              "legendFormat": "{{ `{{` }}method{{ `}}` }} on {{ `{{` }}service{{ `}}` }}",
+              "legendFormat": "{{method}} on {{service}}",
               "range": true,
               "refId": "A"
             }
@@ -1269,7 +1270,7 @@
               },
               "editorMode": "code",
               "expr": "topk(15,\n    label_replace(\n        sum by (service,method) \n          (rate(traefik_service_responses_bytes_total{service=~\"$service.*\",protocol=\"http\"}[$interval])) > 0,\n        \"service\", \"$1\", \"service\", \"([^-]+-[^-]+).*\")\n)",
-              "legendFormat": "{{ `{{` }}method{{ `}}` }} on {{ `{{` }}service{{ `}}` }}",
+              "legendFormat": "{{method}} on {{service}}",
               "range": true,
               "refId": "A"
             }
@@ -1367,7 +1368,7 @@
               },
               "editorMode": "code",
               "expr": "sum(traefik_open_connections{entrypoint=~\"$entrypoint\"}) by (entrypoint)\n",
-              "legendFormat": "{{ `{{` }}entrypoint{{ `}}` }}",
+              "legendFormat": "{{entrypoint}}",
               "range": true,
               "refId": "A"
             }
@@ -1522,6 +1523,5 @@
   "title": "Traefik Official Standalone Dashboard",
   "uid": "n5bu_kv45",
   "version": 1,
-  "weekStart": "",
-  "id": null
+  "weekStart": ""
 }

@@ -91,7 +91,7 @@
           "expr": "up{job=\"vault\"}",
           "format": "time_series",
           "interval": "",
-          "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ],
@@ -161,7 +161,7 @@
           "expr": "avg without(instance) (vault_secret_kv_count)",
           "format": "table",
           "interval": "",
-          "legendFormat": "{{ `{{` }}mount_point{{ `}}` }}",
+          "legendFormat": "{{mount_point}}",
           "refId": "A"
         }
       ],
@@ -311,7 +311,7 @@
           "expr": "avg without(instance) (vault_identity_entity_alias_count)",
           "format": "time_series",
           "interval": "",
-          "legendFormat": "{{ `{{` }}auth_method{{ `}}` }}",
+          "legendFormat": "{{auth_method}}",
           "refId": "A"
         }
       ],
@@ -393,7 +393,7 @@
           "expr": "max(1 + vault_core_unsealed{})",
           "format": "time_series",
           "interval": "",
-          "legendFormat": "{{ `{{` }}instance{{ `}}` }}",
+          "legendFormat": "{{instance}}",
           "refId": "A"
         }
       ],
@@ -1144,7 +1144,7 @@
         {
           "expr": "avg without(instance) (vault_token_count_by_policy)",
           "interval": "",
-          "legendFormat": "{{ `{{` }}policy{{ `}}` }}",
+          "legendFormat": "{{policy}}",
           "refId": "A"
         }
       ],
@@ -1320,7 +1320,7 @@
           "expr": "avg without(instance) (vault_token_count_by_ttl)",
           "format": "time_series",
           "interval": "",
-          "legendFormat": "{{ `{{` }}creation_ttl{{ `}}` }}",
+          "legendFormat": "{{creation_ttl}}",
           "refId": "A"
         }
       ],
@@ -1421,7 +1421,7 @@
         {
           "expr": "avg without(instance) (vault_token_count_by_auth)",
           "interval": "",
-          "legendFormat": "{{ `{{` }}auth_method{{ `}}` }}",
+          "legendFormat": "{{auth_method}}",
           "refId": "A"
         }
       ],
@@ -1543,7 +1543,7 @@
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }}auth_method{{ `}}` }} - {{ `{{` }}creation_ttl{{ `}}` }}",
+          "legendFormat": "{{auth_method}} - {{creation_ttl}}",
           "refId": "A"
         }
       ],
@@ -2509,5 +2509,5 @@
   "timezone": "",
   "title": "Hashicorp Vault",
   "uid": "vaults",
-  "version": 2
+  "version": 1
 }

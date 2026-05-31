@@ -7,7 +7,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 0,
+  "version": 1,
   "refresh": "30s",
   "time": {
     "from": "now-1h",
@@ -43,7 +43,7 @@
       "targets": [
         {
           "expr": "s3o_build_info",
-          "legendFormat": "{{ `{{` }}version{{ `}}` }}",
+          "legendFormat": "{{version}}",
           "instant": true
         }
       ],
@@ -296,7 +296,7 @@
       "targets": [
         {
           "expr": "(max by (backend) (s3o_quota_bytes_used) + max by (backend) (s3o_quota_orphan_bytes)) / max by (backend) (s3o_quota_bytes_limit) * 100",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }}"
+          "legendFormat": "{{backend}}"
         }
       ],
       "options": {
@@ -530,7 +530,7 @@
       "targets": [
         {
           "expr": "max by (backend) (s3o_quota_bytes_used)",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }}"
+          "legendFormat": "{{backend}}"
         }
       ],
       "options": {
@@ -583,7 +583,7 @@
       "targets": [
         {
           "expr": "sum by (operation, status) (rate(s3o_manager_requests_total[5m]))",
-          "legendFormat": "{{ `{{` }}operation{{ `}}` }} {{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "{{operation}} {{status}}"
         }
       ],
       "options": {
@@ -727,7 +727,7 @@
       "targets": [
         {
           "expr": "sum by (status_code) (rate(s3o_requests_total[30s]))",
-          "legendFormat": "{{ `{{` }}status_code{{ `}}` }}"
+          "legendFormat": "{{status_code}}"
         }
       ],
       "options": {
@@ -786,7 +786,7 @@
       "targets": [
         {
           "expr": "sum by (operation, backend, status) (rate(s3o_backend_requests_total[5m]))",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }} {{ `{{` }}operation{{ `}}` }} ({{ `{{` }}status{{ `}}` }})"
+          "legendFormat": "{{backend}} {{operation}} ({{status}})"
         }
       ],
       "options": {
@@ -830,7 +830,7 @@
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum by (le, operation, backend) (rate(s3o_backend_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }} {{ `{{` }}operation{{ `}}` }}"
+          "legendFormat": "{{backend}} {{operation}}"
         }
       ],
       "options": {
@@ -974,7 +974,7 @@
       "targets": [
         {
           "expr": "sum by (operation, status) (rate(s3o_manager_requests_total[5m]))",
-          "legendFormat": "{{ `{{` }}operation{{ `}}` }} ({{ `{{` }}status{{ `}}` }})"
+          "legendFormat": "{{operation}} ({{status}})"
         }
       ],
       "options": {
@@ -1018,7 +1018,7 @@
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum by (le, operation, backend) (rate(s3o_manager_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }} {{ `{{` }}operation{{ `}}` }}"
+          "legendFormat": "{{backend}} {{operation}}"
         }
       ],
       "options": {
@@ -1167,7 +1167,7 @@
       "targets": [
         {
           "expr": "sum by (name, from, to) (increase(s3o_circuit_breaker_transitions_total[5m]))",
-          "legendFormat": "{{ `{{` }}name{{ `}}` }}: {{ `{{` }}from{{ `}}` }} \u2192 {{ `{{` }}to{{ `}}` }}"
+          "legendFormat": "{{name}}: {{from}} \u2192 {{to}}"
         }
       ],
       "options": {
@@ -1206,7 +1206,7 @@
       "targets": [
         {
           "expr": "sum by (op) (increase(s3o_degraded_reads_total[5m]))",
-          "legendFormat": "reads {{ `{{` }}op{{ `}}` }}"
+          "legendFormat": "reads {{op}}"
         },
         {
           "expr": "increase(s3o_degraded_cache_hits_total[5m])",
@@ -1214,7 +1214,7 @@
         },
         {
           "expr": "sum by (op) (increase(s3o_degraded_write_rejections_total[5m]))",
-          "legendFormat": "write rejections {{ `{{` }}op{{ `}}` }}"
+          "legendFormat": "write rejections {{op}}"
         }
       ],
       "options": {
@@ -1437,7 +1437,7 @@
       "targets": [
         {
           "expr": "sum by (status) (increase(s3o_replication_runs_total[5m]))",
-          "legendFormat": "{{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "{{status}}"
         }
       ],
       "options": {
@@ -1792,7 +1792,7 @@
       "targets": [
         {
           "expr": "sum by (operation, limit_type) (increase(s3o_usage_limit_rejections_total[5m]))",
-          "legendFormat": "{{ `{{` }}operation{{ `}}` }} ({{ `{{` }}limit_type{{ `}}` }})"
+          "legendFormat": "{{operation}} ({{limit_type}})"
         }
       ],
       "options": {
@@ -2095,7 +2095,7 @@
       "targets": [
         {
           "expr": "sum by (strategy, status) (increase(s3o_rebalance_runs_total[5m]))",
-          "legendFormat": "{{ `{{` }}strategy{{ `}}` }} ({{ `{{` }}status{{ `}}` }})"
+          "legendFormat": "{{strategy}} ({{status}})"
         }
       ],
       "options": {
@@ -2200,7 +2200,7 @@
       "targets": [
         {
           "expr": "histogram_quantile(0.95, sum by (le, strategy) (rate(s3o_rebalance_duration_seconds_bucket[5m])))",
-          "legendFormat": "{{ `{{` }}strategy{{ `}}` }}"
+          "legendFormat": "{{strategy}}"
         }
       ],
       "options": {
@@ -2240,7 +2240,7 @@
       "targets": [
         {
           "expr": "sum by (reason) (rate(s3o_rebalance_skipped_total[5m]))",
-          "legendFormat": "{{ `{{` }}reason{{ `}}` }}"
+          "legendFormat": "{{reason}}"
         }
       ],
       "options": {
@@ -2448,7 +2448,7 @@
       "targets": [
         {
           "expr": "sum by (status) (rate(s3o_lifecycle_runs_total[5m]))",
-          "legendFormat": "{{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "{{status}}"
         }
       ],
       "options": {
@@ -2552,15 +2552,15 @@
       "targets": [
         {
           "expr": "sum by (reason) (rate(s3o_cleanup_queue_enqueued_total[5m]))",
-          "legendFormat": "enqueued {{ `{{` }}reason{{ `}}` }}"
+          "legendFormat": "enqueued {{reason}}"
         },
         {
           "expr": "sum by (status) (rate(s3o_cleanup_queue_processed_total[5m]))",
-          "legendFormat": "processed {{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "processed {{status}}"
         },
         {
           "expr": "sum by (backend) (rate(s3o_cleanup_queue_stale_claims_recovered_total[5m]))",
-          "legendFormat": "stale claim recovered {{ `{{` }}backend{{ `}}` }}"
+          "legendFormat": "stale claim recovered {{backend}}"
         }
       ],
       "options": {
@@ -2603,7 +2603,7 @@
       "targets": [
         {
           "expr": "max by (backend) (s3o_quota_orphan_bytes)",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }}"
+          "legendFormat": "{{backend}}"
         }
       ],
       "options": {
@@ -2664,7 +2664,7 @@
       "targets": [
         {
           "expr": "sum by (event) (rate(s3o_audit_events_total[5m]))",
-          "legendFormat": "{{ `{{` }}event{{ `}}` }}"
+          "legendFormat": "{{event}}"
         }
       ],
       "options": {
@@ -2719,7 +2719,7 @@
       "targets": [
         {
           "expr": "sum by (op) (rate(s3o_encryption_operations_total[5m]))",
-          "legendFormat": "{{ `{{` }}op{{ `}}` }}"
+          "legendFormat": "{{op}}"
         }
       ],
       "options": {
@@ -2762,7 +2762,7 @@
       "targets": [
         {
           "expr": "sum by (op, error_type) (rate(s3o_encryption_errors_total[5m]))",
-          "legendFormat": "{{ `{{` }}op{{ `}}` }} ({{ `{{` }}error_type{{ `}}` }})"
+          "legendFormat": "{{op}} ({{error_type}})"
         }
       ],
       "options": {
@@ -2805,11 +2805,11 @@
       "targets": [
         {
           "expr": "sum by (status) (rate(s3o_encrypt_existing_objects_total[5m]))",
-          "legendFormat": "encrypt-existing {{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "encrypt-existing {{status}}"
         },
         {
           "expr": "sum by (status) (rate(s3o_key_rotation_objects_total[5m]))",
-          "legendFormat": "key-rotation {{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "key-rotation {{status}}"
         }
       ],
       "options": {
@@ -3125,7 +3125,7 @@
       "targets": [
         {
           "expr": "sum by (operation) (rate(s3o_integrity_checks_total[5m]))",
-          "legendFormat": "{{ `{{` }}operation{{ `}}` }}"
+          "legendFormat": "{{operation}}"
         }
       ],
       "options": {
@@ -3168,7 +3168,7 @@
       "targets": [
         {
           "expr": "sum by (operation) (rate(s3o_integrity_errors_total[5m]))",
-          "legendFormat": "{{ `{{` }}operation{{ `}}` }}"
+          "legendFormat": "{{operation}}"
         }
       ],
       "options": {
@@ -3301,7 +3301,7 @@
       "targets": [
         {
           "expr": "sum by (operation, status) (rate(s3o_redis_operations_total[5m]))",
-          "legendFormat": "{{ `{{` }}operation{{ `}}` }} {{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "{{operation}} {{status}}"
         }
       ],
       "options": {
@@ -3633,7 +3633,7 @@
         },
         {
           "expr": "sum by (status) (rate(s3o_pending_intents_resolved_total[5m]))",
-          "legendFormat": "{{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "{{status}}"
         }
       ],
       "options": {
@@ -3739,7 +3739,7 @@
       "targets": [
         {
           "expr": "sum by (variant) (rate(s3o_auth_streaming_requests_total[5m]))",
-          "legendFormat": "{{ `{{` }}variant{{ `}}` }}"
+          "legendFormat": "{{variant}}"
         }
       ],
       "options": {
@@ -3783,7 +3783,7 @@
       "targets": [
         {
           "expr": "sum by (reason) (rate(s3o_auth_streaming_rejections_total[5m]))",
-          "legendFormat": "{{ `{{` }}reason{{ `}}` }}"
+          "legendFormat": "{{reason}}"
         }
       ],
       "options": {
@@ -3838,7 +3838,7 @@
       "targets": [
         {
           "expr": "sum by (service, result) (rate(s3o_worker_ticks_total[5m]))",
-          "legendFormat": "{{ `{{` }}service{{ `}}` }} {{ `{{` }}result{{ `}}` }}"
+          "legendFormat": "{{service}} {{result}}"
         }
       ]
     },
@@ -3859,7 +3859,7 @@
       "targets": [
         {
           "expr": "s3o_worker_consecutive_failures",
-          "legendFormat": "{{ `{{` }}service{{ `}}` }}"
+          "legendFormat": "{{service}}"
         }
       ]
     },
@@ -3880,7 +3880,7 @@
       "targets": [
         {
           "expr": "time() - s3o_worker_last_success_timestamp_seconds",
-          "legendFormat": "{{ `{{` }}service{{ `}}` }}"
+          "legendFormat": "{{service}}"
         }
       ]
     },
@@ -3901,7 +3901,7 @@
       "targets": [
         {
           "expr": "sum by (worker) (rate(s3o_worker_admission_rejections_total[5m]))",
-          "legendFormat": "{{ `{{` }}worker{{ `}}` }}"
+          "legendFormat": "{{worker}}"
         }
       ]
     },
@@ -4057,7 +4057,7 @@
       "targets": [
         {
           "expr": "sum by (backend) (rate(s3o_cleanup_dlq_enqueued_total[15m]))",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }}"
+          "legendFormat": "{{backend}}"
         }
       ]
     },
@@ -4078,7 +4078,7 @@
       "targets": [
         {
           "expr": "sum by (backend, stage) (rate(s3o_cleanup_enqueue_failures_total[5m]))",
-          "legendFormat": "{{ `{{` }}backend{{ `}}` }} {{ `{{` }}stage{{ `}}` }}"
+          "legendFormat": "{{backend}} {{stage}}"
         }
       ]
     },
@@ -4153,7 +4153,7 @@
       "targets": [
         {
           "expr": "sum by (name) (rate(s3o_circuit_breaker_internal_errors_total[5m]))",
-          "legendFormat": "{{ `{{` }}name{{ `}}` }}"
+          "legendFormat": "{{name}}"
         }
       ]
     },
@@ -4195,7 +4195,7 @@
       "targets": [
         {
           "expr": "sum by (status) (rate(s3o_decrypt_existing_objects_total[5m]))",
-          "legendFormat": "{{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "{{status}}"
         }
       ]
     },
@@ -4241,7 +4241,7 @@
       "targets": [
         {
           "expr": "sum by (status) (rate(s3o_over_replication_runs_total[5m]))",
-          "legendFormat": "{{ `{{` }}status{{ `}}` }}"
+          "legendFormat": "{{status}}"
         }
       ]
     },
@@ -4358,15 +4358,15 @@
       "targets": [
         {
           "expr": "histogram_quantile(0.50, sum by (le, outcome) (rate(s3o_degraded_broadcast_duration_seconds_bucket[5m])))",
-          "legendFormat": "p50 {{ `{{` }}outcome{{ `}}` }}"
+          "legendFormat": "p50 {{outcome}}"
         },
         {
           "expr": "histogram_quantile(0.95, sum by (le, outcome) (rate(s3o_degraded_broadcast_duration_seconds_bucket[5m])))",
-          "legendFormat": "p95 {{ `{{` }}outcome{{ `}}` }}"
+          "legendFormat": "p95 {{outcome}}"
         },
         {
           "expr": "histogram_quantile(0.99, sum by (le, outcome) (rate(s3o_degraded_broadcast_duration_seconds_bucket[5m])))",
-          "legendFormat": "p99 {{ `{{` }}outcome{{ `}}` }}"
+          "legendFormat": "p99 {{outcome}}"
         }
       ],
       "fieldConfig": {
@@ -4398,7 +4398,7 @@
       "targets": [
         {
           "expr": "sum by (operation) (rate(s3o_degraded_broadcast_mixed_outcomes_total[5m]))",
-          "legendFormat": "{{ `{{` }}operation{{ `}}` }}"
+          "legendFormat": "{{operation}}"
         }
       ],
       "fieldConfig": {
@@ -4411,5 +4411,6 @@
         }
       }
     }
-  ]
+  ],
+  "id": null
 }

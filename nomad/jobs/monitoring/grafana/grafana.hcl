@@ -47,25 +47,12 @@ env = {
 storage = "ephemeral"
 
 # --- Configuration templates ---
+# Dashboards are owned by terragrunt now (see infrastructure/terragrunt/global/
+# grafana-dashboards/); they go in via the grafana provider's API. Only env +
+# datasources stay templated here.
 templates = [
   { src = "grafana.env.tpl", dest = "/secrets/grafana.env", env = true, vault = true },
   { src = "datasources.yml", dest = "/etc/grafana/provisioning/datasources/datasources.yml", vault = false },
-  { src = "dashboards.yml", dest = "/etc/grafana/provisioning/dashboards/dashboards.yml", vault = false },
-  # Custom dashboards
-  { src = "dashboards/infrastructure-services.json", dest = "/etc/grafana/provisioning/dashboards/json/infrastructure-services.json", vault = false },
-  { src = "dashboards/nomad-cluster-overview.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-cluster-overview.json", vault = false },
-  { src = "dashboards/nomad-workloads.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-workloads.json", vault = false },
-  { src = "dashboards/certificate-management.json", dest = "/etc/grafana/provisioning/dashboards/json/certificate-management.json", vault = false },
-  { src = "dashboards/s3-orchestrator.json", dest = "/etc/grafana/provisioning/dashboards/json/s3-orchestrator.json", vault = false },
-  # Community dashboards
-  { src = "dashboards/hashicorp-nomad.json", dest = "/etc/grafana/provisioning/dashboards/json/hashicorp-nomad.json", vault = false },
-  { src = "dashboards/hashicorp-vault.json", dest = "/etc/grafana/provisioning/dashboards/json/hashicorp-vault.json", vault = false },
-  { src = "dashboards/node-exporter-full.json", dest = "/etc/grafana/provisioning/dashboards/json/node-exporter-full.json", vault = false },
-  { src = "dashboards/nomad-clients.json", dest = "/etc/grafana/provisioning/dashboards/json/nomad-clients.json", vault = false },
-  { src = "dashboards/prometheus-blackbox-exporter.json", dest = "/etc/grafana/provisioning/dashboards/json/prometheus-blackbox-exporter.json", vault = false },
-  { src = "dashboards/proxmox-via-prometheus.json", dest = "/etc/grafana/provisioning/dashboards/json/proxmox-via-prometheus.json", vault = false },
-  { src = "dashboards/traefik-official-standalone-dashboard.json", dest = "/etc/grafana/provisioning/dashboards/json/traefik-official-standalone-dashboard.json", vault = false },
-  { src = "dashboards/pihole-exporter.json", dest = "/etc/grafana/provisioning/dashboards/json/pihole-exporter.json", vault = false },
 ]
 
 # --- Service tags ---

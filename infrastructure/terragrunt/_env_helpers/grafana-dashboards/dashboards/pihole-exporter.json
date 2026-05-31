@@ -2,33 +2,33 @@
   "__inputs": [],
   "__requires": [
     {
-      "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
+      "type": "grafana",
       "version": "6.1.4"
     },
     {
-      "type": "panel",
       "id": "grafana-piechart-panel",
       "name": "Pie Chart",
+      "type": "panel",
       "version": "1.3.6"
     },
     {
-      "type": "panel",
       "id": "graph",
       "name": "Graph",
+      "type": "panel",
       "version": ""
     },
     {
-      "type": "panel",
       "id": "singlestat",
       "name": "Singlestat",
+      "type": "panel",
       "version": ""
     },
     {
-      "type": "panel",
       "id": "table",
       "name": "Table",
+      "type": "panel",
       "version": ""
     }
   ],
@@ -45,9 +45,11 @@
       }
     ]
   },
+  "description": "A dashboard for PI-Hole Exporter from https://github.com/eko/pihole-exporter",
   "editable": true,
   "gnetId": 10176,
   "graphTooltip": 0,
+  "id": null,
   "links": [],
   "panels": [
     {
@@ -128,7 +130,7 @@
           "expr": "pihole_status{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} hostname {{ `}}` }}",
+          "legendFormat": "{{ hostname }}",
           "refId": "A"
         }
       ],
@@ -353,7 +355,7 @@
           "expr": "pihole_top_queries{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} domain {{ `}}` }}",
+          "legendFormat": "{{ domain }}",
           "refId": "A"
         }
       ],
@@ -398,7 +400,7 @@
           "expr": "pihole_reply{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} type {{ `}}` }}",
+          "legendFormat": "{{ type }}",
           "refId": "A"
         }
       ],
@@ -442,7 +444,7 @@
           "expr": "pihole_top_ads{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} domain {{ `}}` }}",
+          "legendFormat": "{{ domain }}",
           "refId": "A"
         }
       ],
@@ -494,7 +496,7 @@
           "expr": "pihole_dns_queries_all_types{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} hostname {{ `}}` }}",
+          "legendFormat": "{{ hostname }}",
           "refId": "A"
         }
       ],
@@ -582,7 +584,7 @@
           "expr": "pihole_ads_blocked_today{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} hostname {{ `}}` }}",
+          "legendFormat": "{{ hostname }}",
           "refId": "A"
         }
       ],
@@ -672,7 +674,7 @@
           "instant": false,
           "interval": "",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} domain {{ `}}` }}",
+          "legendFormat": "{{ domain }}",
           "refId": "A"
         }
       ],
@@ -728,7 +730,7 @@
           "expr": "pihole_top_ads{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} domain {{ `}}` }}",
+          "legendFormat": "{{ domain }}",
           "refId": "A"
         }
       ],
@@ -780,7 +782,7 @@
           "expr": "pihole_ads_percentage_today{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} hostname {{ `}}` }}",
+          "legendFormat": "{{ hostname }}",
           "refId": "A"
         }
       ],
@@ -957,7 +959,7 @@
           "expr": "pihole_querytypes{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} type {{ `}}` }}",
+          "legendFormat": "{{ type }}",
           "refId": "A"
         }
       ],
@@ -1042,7 +1044,7 @@
           "expr": "pihole_forward_destinations{hostname=\"$hostname\"}",
           "format": "time_series",
           "intervalFactor": 1,
-          "legendFormat": "{{ `{{` }} destination {{ `}}` }}",
+          "legendFormat": "{{ destination }}",
           "refId": "A"
         }
       ],
@@ -1236,6 +1238,5 @@
   "timezone": "",
   "title": "Pi-hole Exporter",
   "uid": "pihole-exporter",
-  "version": 122,
-  "description": "A dashboard for PI-Hole Exporter from https://github.com/eko/pihole-exporter"
+  "version": 4
 }
