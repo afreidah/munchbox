@@ -82,6 +82,10 @@ default[cookbook]['config'] = {
 
   telemetry_prometheus_retention_time: '30s',
   telemetry_disable_hostname: false,
+
+  # --- gossip_lan tuning (loosened probe_timeout per GH #130 for WG-to-oracle stability). Strings: consul wants duration literals. ---
+  gossip_lan_interval: '1s',
+  gossip_lan_probe_timeout: '5s',
 }
 
 # -------------------------------------------------------------------------------

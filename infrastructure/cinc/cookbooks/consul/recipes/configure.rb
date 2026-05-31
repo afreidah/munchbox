@@ -45,6 +45,8 @@ consul_configure 'consul' do
   tls_verify_server_hostname          node[cookbook]['config']['tls_verify_server_hostname']
   telemetry_prometheus_retention_time node[cookbook]['config']['telemetry_prometheus_retention_time']
   telemetry_disable_hostname          node[cookbook]['config']['telemetry_disable_hostname']
+  gossip_lan_interval                 node[cookbook]['config']['gossip_lan_interval']
+  gossip_lan_probe_timeout            node[cookbook]['config']['gossip_lan_probe_timeout']
   bin_path                            node[cookbook]['install']['bin_path']
   config_dir                          node[cookbook]['install']['config_dir']
   data_dir                            node[cookbook]['install']['data_dir']

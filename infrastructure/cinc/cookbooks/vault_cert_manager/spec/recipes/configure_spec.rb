@@ -63,6 +63,12 @@ RSpec.describe 'vault_cert_manager::configure' do
     expect(template.variables[:certificates].first['ip_sans']).to include('10.200.0.99')
   end
 
+  # --- Pre-create /etc/consul.d so the service def template lands on greenfield nodes ---
+  it 'ensures /etc/consul.d exists owned by consul:consul 0750' do
+    expect(chef_run).to create_directory('/etc/consul.d')
+      .with(owner: 'consul', group: 'consul', mode: '0750')
+  end
+
   # --- Systemd Restart=always drop-in ---
   it 'creates the systemd drop-in dir' do
     expect(chef_run).to create_directory('/etc/systemd/system/vault-cert-manager.service.d')

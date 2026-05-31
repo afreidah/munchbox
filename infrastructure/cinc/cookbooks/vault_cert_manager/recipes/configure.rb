@@ -79,7 +79,13 @@ execute 'systemctl daemon-reload vault-cert-manager' do
   action :nothing
 end
 
-# --- Consul service registration for the prometheus scrape ---
+# --- Consul service registration for the prometheus scrape. Ensure parent dir on greenfield nodes where consul::install hasn't run yet; consul cookbook also creates this dir with matching perms so the second create is idempotent. ---
+directory '/etc/consul.d' do
+  owner 'consul'
+  group 'consul'
+  mode  '0750'
+end
+
 template service_file do
   source 'consul-service.json.erb'
   owner  'consul'

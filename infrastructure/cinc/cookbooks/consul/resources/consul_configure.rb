@@ -74,6 +74,8 @@ property :tls_verify_outgoing,        [true, false], default: true
 property :tls_verify_server_hostname, [true, false], default: true
 property :telemetry_prometheus_retention_time, String, default: '30s'
 property :telemetry_disable_hostname, [true, false], default: false
+property :gossip_lan_interval,        String, default: '1s'
+property :gossip_lan_probe_timeout,   String, default: '5s'
 property :bin_path,                   String, default: '/usr/local/bin/consul'
 property :config_dir,                 String, default: '/etc/consul.d'
 property :data_dir,                   String, default: '/opt/consul/data'
@@ -128,7 +130,9 @@ action :configure do
       tls_verify_outgoing: new_resource.tls_verify_outgoing,
       tls_verify_server_hostname: new_resource.tls_verify_server_hostname,
       telemetry_prometheus_retention_time: new_resource.telemetry_prometheus_retention_time,
-      telemetry_disable_hostname: new_resource.telemetry_disable_hostname
+      telemetry_disable_hostname: new_resource.telemetry_disable_hostname,
+      gossip_lan_interval: new_resource.gossip_lan_interval,
+      gossip_lan_probe_timeout: new_resource.gossip_lan_probe_timeout
     )
     notifies :restart, 'service[consul]', :delayed
   end
