@@ -11,8 +11,8 @@ terraform {
 
   required_providers {
     pihole = {
-      source                = "ryanwholey/pihole"
-      version               = "~> 0.2"
+      source                = "dklesev/pihole"
+      version               = "~> 1.0"
       configuration_aliases = [pihole.primary, pihole.secondary]
     }
   }

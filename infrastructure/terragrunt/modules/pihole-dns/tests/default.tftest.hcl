@@ -40,13 +40,13 @@ run "dns_records_dual_render" {
 
   # --- primary instance gets one record per input ---
   assert {
-    condition     = length(pihole_dns_record.primary) == 2
+    condition     = length(pihole_local_dns.primary) == 2
     error_message = "two dns_records -> two primary A records"
   }
 
   # --- secondary instance gets one record per input ---
   assert {
-    condition     = length(pihole_dns_record.secondary) == 2
+    condition     = length(pihole_local_dns.secondary) == 2
     error_message = "two dns_records -> two secondary A records"
   }
 }
@@ -80,14 +80,14 @@ run "for_each_keys_mirror_input" {
 
   # --- 'alpha' key exists in the primary map ---
   assert {
-    condition     = contains(keys(pihole_dns_record.primary), "alpha")
+    condition     = contains(keys(pihole_local_dns.primary), "alpha")
     error_message = "primary DNS map must have key 'alpha'"
   }
 
-  # --- domain value propagates from input map ---
+  # --- hostname value propagates from input map (input still keyed .domain) ---
   assert {
-    condition     = pihole_dns_record.primary["alpha"].domain == "alpha.test.cc"
-    error_message = "primary alpha record domain must propagate"
+    condition     = pihole_local_dns.primary["alpha"].hostname == "alpha.test.cc"
+    error_message = "primary alpha record hostname must propagate from input .domain"
   }
 }
 
@@ -105,7 +105,7 @@ run "empty_record_maps" {
 
   # --- both Pi-holes have zero A records ---
   assert {
-    condition     = length(pihole_dns_record.primary) == 0 && length(pihole_dns_record.secondary) == 0
+    condition     = length(pihole_local_dns.primary) == 0 && length(pihole_local_dns.secondary) == 0
     error_message = "empty dns_records -> zero A records on both pi-holes"
   }
 
