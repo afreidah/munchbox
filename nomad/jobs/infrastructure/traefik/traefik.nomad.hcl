@@ -724,7 +724,7 @@ EOH
 
       resources {
         cpu    = 100
-        memory = 64
+        memory = 128
       }
     }
 
@@ -780,7 +780,7 @@ EOH
       }
 
       config {
-        image        = "hhftechnology/traefik-log-dashboard-agent:latest"
+        image        = "hhftechnology/traefik-log-dashboard-agent:3.1.1"
         network_mode = "host"
         ports        = ["log-agent"]
       }
@@ -826,7 +826,7 @@ EOH
       }
 
       config {
-        image        = "hhftechnology/traefik-log-dashboard:latest"
+        image        = "hhftechnology/traefik-log-dashboard:3.1.1"
         network_mode = "host"
         ports        = ["log-dashboard"]
       }
