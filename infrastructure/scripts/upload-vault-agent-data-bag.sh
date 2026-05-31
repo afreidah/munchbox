@@ -12,7 +12,7 @@
 #
 # Usage:
 #   source munchbox-env.sh
-#   infrastructure/cinc/scripts/upload-vault-agent-data-bag.sh <node-name>
+#   infrastructure/scripts/upload-vault-agent-data-bag.sh <node-name>
 #
 # Vault paths consumed:
 #   secret/cinc/encrypted_data_bag_secret    -- field 'value'

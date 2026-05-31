@@ -242,21 +242,21 @@ To populate the validator key (one-time):
 ```bash
 # If the validator pem was saved on cinc-server at org-create time:
 ssh root@cinc-server.munchbox.cc 'cat /etc/cinc-bootstrap/munchbox-validator.pem' \
-  | infrastructure/cinc/scripts/store-validator-key-in-vault.sh
+  | infrastructure/scripts/store-validator-key-in-vault.sh
 
 # OR (DESTRUCTIVE; invalidates any cached copies of the key):
 knife client reregister munchbox-validator \
-  | infrastructure/cinc/scripts/store-validator-key-in-vault.sh
+  | infrastructure/scripts/store-validator-key-in-vault.sh
 ```
 
 ### 1. Per-node prereqs (run on workstation BEFORE `terragrunt apply`)
 
-Create the per-node chef role file at
-`infrastructure/cinc/roles/nodes/<node>.rb`, then:
+Create the per-node chef node file at
+`infrastructure/cinc/nodes/<node>.rb`, then:
 
 ```bash
 source munchbox-env.sh
-infrastructure/cinc/scripts/prepare-chef-bootstrap.sh <chef-node-name>
+infrastructure/scripts/prepare-chef-bootstrap.sh <chef-node-name>
 ```
 
 This script does three things:
@@ -266,7 +266,8 @@ This script does three things:
    `secret/chef-approle/secret-ids/<node>`.
 2. Builds + uploads the encrypted `vault_agent/<node>` data-bag item
    to cinc-server (wraps `upload-vault-agent-data-bag.sh`).
-3. Uploads the per-node role file (`knife role from file`).
+3. Uploads the per-node node object (`knife node from file`); the node
+   object carries the run_list, tags, and per-node attribute overrides.
 
 ### 2. Provision the VM
 

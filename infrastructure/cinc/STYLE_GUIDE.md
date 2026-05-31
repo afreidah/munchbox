@@ -320,6 +320,9 @@ Rules:
 
 ## 7. Roles (`roles/*.rb`)
 
+Roles are shared **fleet** stacks (one per node-category, e.g. `proxmox_vm`,
+`bare_metal_pi5`, `oracle_node`). Per-node knobs live in `nodes/`, not here.
+
 ```ruby
 # frozen_string_literal: true
 
@@ -337,15 +340,13 @@ run_list(
   'role[base]',
   'role[cinc_client]',
   'role[vault_agent]',
-  # --- SSH CA wiring; AFTER vault_agent so /run/vault-agent/token exists ---
   'recipe[munchbox_base::sshd_ca]',
-  # --- Vault PKI intermediate CA -> /opt/nomad/tls + system trust ---
   'recipe[munchbox_base::vault_pki_trust]',
   'role[vault_cert_manager]',
   ...
 )
 
-# --- Shared per-fleet defaults. Per-node roles must set consul.config.bind_addr ---
+# --- Shared per-fleet defaults. Per-node files set consul.config.bind_addr ---
 default_attributes(
   consul: {
     config: {
@@ -358,13 +359,80 @@ default_attributes(
 
 Rules:
 - One role file per role; file name == role name.
-- **Each non-trivial entry in the run list gets a single-line `# --- ... ---`
-  comment** explaining WHY ordering matters, what env vars / files are
-  expected, or what assumption it relies on.
-- Per-node roles live in `roles/nodes/<hostname>.rb` and ALWAYS include the
-  shared fleet role first, then layer specific overrides.
+- **No comments in the `run_list(...)` block.** The role / recipe name is
+  self-explanatory; ordering hints belong in the cookbook recipe header.
 - Use `default_attributes` for normal overrides. Switch to
   `override_attributes` when the cookbook attribute is a Hash literal (see #5).
+
+---
+
+## 7b. Node objects (`nodes/*.rb`)
+
+Per-node config lives in `nodes/<chef-node-name>.rb` and is uploaded via
+`knife node from file`. Each file sets the chef node identity, environment,
+run_list, and `normal_attrs` (with `tags` array) for one node.
+
+```ruby
+# frozen_string_literal: true
+
+# -------------------------------------------------------------------------------
+# Node:: nomad-client-04
+#
+# Proxmox VM (192.168.68.73) running as a nomad+consul client. GPU
+# passthrough for the media stack; the only node that mounts rubirosa's
+# /tank ZFS export.
+# -------------------------------------------------------------------------------
+
+name 'nomad-client-04'
+chef_environment '_default'
+
+run_list(
+  'role[proxmox_vm]',
+  'recipe[nvidia::install]',
+)
+
+self.normal_attrs = {
+  tags: %w(
+    nomad-client consul-client amd64 proxmox-vm
+    local-cloud nfs-mounter gdrive-mounter gpu zfs-pool-mounter
+  ),
+  global: { dns_endpoint_ip: '192.168.68.73' },
+  nomad: {
+    config: {
+      node_name: 'nomad-client-04',
+      advertise_ip: '192.168.68.73',
+      client_meta: { gpu: 'true' },
+    },
+  },
+  ...
+}
+
+self.override_attrs = {
+  # only used when a cookbook attr is a Hash literal that can't deep-merge
+}
+```
+
+Rules:
+- File name MUST equal the chef-server node identity (e.g. `nomad-client-04.rb`,
+  `oraclearm1.rb`). The script + `knife node from file` lookups are basename-based.
+- `chef_environment '_default'` on every node unless we ever introduce envs.
+- Run list lives directly on the node object; usually one fleet `role[...]`
+  plus a small tail of per-node `recipe[...]` entries. **No comments in the
+  `run_list(...)` block.**
+- Use `self.normal_attrs = { ... }` for per-node attributes (translates from
+  the role DSL's `default_attributes`). `normal` is a higher precedence than
+  cookbook `default`, so it wins.
+- Use `self.override_attrs = { ... }` only when overriding a cookbook
+  attribute set as a Hash literal (see #5).
+- The `tags` key inside `normal_attrs` is the canonical
+  `node['tags']` array; cookbooks/recipes can `if node['tags'].include?('gpu')`
+  to gate per-tag behaviour.
+- After editing, **always** re-upload:
+  ```
+  knife node from file nodes/<name>.rb
+  ```
+  Without the upload, the next cinc-client run on that node still pulls the
+  previous version.
 
 ---
 

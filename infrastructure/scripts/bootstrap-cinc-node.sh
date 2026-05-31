@@ -9,27 +9,28 @@
 #      (delegates to upload-vault-agent-data-bag.sh)
 #   3. install cinc-client via the omnibus installer
 #   4. drop /etc/cinc/{validation.pem, trusted_certs/cinc-server.crt,
-#      client.rb, first-boot.json}
-#   5. run `cinc-client -j first-boot.json` -- registers the node, applies
-#      the run_list, takes over management
+#      client.rb}
+#   5. run `cinc-client` -- registers the client, fetches the pre-uploaded
+#      node object, applies its run_list, takes over management
+#
+# The node object (run_list + tags + normal attrs) must already exist on
+# cinc-server before step 5 runs. `prepare-chef-bootstrap.sh` uploads it
+# via `knife node from file infrastructure/cinc/nodes/<node>.rb`.
 #
 # After this script, the cinc_client cookbook (via role[base] -> role[cinc_client])
-# manages /etc/cinc/client.rb on every subsequent converge. The two helper
-# scripts remain useful for standalone rotation later:
-#   - install-data-bag-secret.sh   (re-deliver the data-bag secret on rotation)
-#   - upload-vault-agent-data-bag.sh (re-upload AppRole creds on rotation)
+# manages /etc/cinc/client.rb on every subsequent converge.
 #
 # Usage:
 #   source munchbox-env.sh
-#   infrastructure/cinc/scripts/bootstrap-cinc-node.sh <ssh-target> <node-name> <role>
+#   infrastructure/scripts/bootstrap-cinc-node.sh <ssh-target> <node-name>
 #
 # Example:
-#   ./bootstrap-cinc-node.sh ubuntu@oracle-arm-1 oraclearm1 oracle_arm_1
+#   ./bootstrap-cinc-node.sh ubuntu@oracle-arm-1 oraclearm1
 #
 # Pre-reqs (you do these once before running this script):
 #   - secret_id for <node-name> exists at secret/chef-approle/secret-ids/<node-name> in Vault
-#   - <role>.rb is uploaded to cinc-server (knife role from file)
-#   - any cookbooks the role depends on are uploaded
+#   - <node-name>.rb is uploaded as a node object on cinc-server (knife node from file)
+#   - any cookbooks the node's run_list depends on are uploaded
 #
 # Vault paths consumed:
 #   secret/cinc/validator                       -- field 'pem'
@@ -42,10 +43,9 @@ set -euo pipefail
 
 TARGET="${1:-}"
 NODE="${2:-}"
-ROLE="${3:-}"
-if [[ -z "$TARGET" || -z "$NODE" || -z "$ROLE" ]]; then
-  echo "usage: $0 <ssh-target> <node-name> <role>" >&2
-  echo "  e.g.: $0 ubuntu@oracle-arm-1 oraclearm1 oracle_arm_1" >&2
+if [[ -z "$TARGET" || -z "$NODE" ]]; then
+  echo "usage: $0 <ssh-target> <node-name>" >&2
+  echo "  e.g.: $0 ubuntu@oracle-arm-1 oraclearm1" >&2
   exit 1
 fi
 
@@ -99,40 +99,30 @@ echo "==> [3/5] installing cinc-client $CINC_VERSION on $TARGET"
 ssh "$TARGET" "$SUDO bash -c 'if command -v cinc-client >/dev/null; then echo \"cinc already installed: \$(cinc-client --version)\"; else curl -L https://omnitruck.cinc.sh/install.sh | bash -s -- -P cinc -v $CINC_VERSION; fi'"
 
 # -------------------------------------------------------------------------------
-# Step 4 -- pull validator + cinc-server cert from Vault, stage on node, write client.rb + first-boot.json
+# Step 4 -- pull validator + cinc-server cert from Vault, stage on node, write client.rb
 # -------------------------------------------------------------------------------
 echo
-echo "==> [4/5] staging validator + trusted cert + client.rb + first-boot.json"
+echo "==> [4/5] staging validator + trusted cert + client.rb"
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 VALIDATOR_FILE="$WORKDIR/validation.pem"
 CINC_CRT_FILE="$WORKDIR/cinc-server.crt"
-FIRSTBOOT_FILE="$WORKDIR/first-boot.json"
 install -m 0600 /dev/null "$VALIDATOR_FILE"
 install -m 0600 /dev/null "$CINC_CRT_FILE"
-install -m 0644 /dev/null "$FIRSTBOOT_FILE"
 
 vault kv get -field=pem secret/cinc/validator   > "$VALIDATOR_FILE"
 vault kv get -field=pem secret/cinc/server-cert > "$CINC_CRT_FILE"
 
-# --- first-boot.json carries the run_list so the very first cinc-client run applies the role; no race between node creation and `knife node run_list set`. ---
-cat > "$FIRSTBOOT_FILE" <<JSON
-{
-  "run_list": ["role[$ROLE]"]
-}
-JSON
-
-scp -q "$VALIDATOR_FILE" "$CINC_CRT_FILE" "$FIRSTBOOT_FILE" "$TARGET:/tmp/"
+scp -q "$VALIDATOR_FILE" "$CINC_CRT_FILE" "$TARGET:/tmp/"
 
 ssh "$TARGET" "$SUDO bash -c '
   set -e
   install -d -m 0755 -o root -g root /etc/cinc /etc/cinc/trusted_certs /var/log/cinc
   install -m 0600 -o root -g root /tmp/validation.pem  /etc/cinc/validation.pem
   install -m 0644 -o root -g root /tmp/cinc-server.crt /etc/cinc/trusted_certs/cinc-server.crt
-  install -m 0644 -o root -g root /tmp/first-boot.json /etc/cinc/first-boot.json
-  rm -f /tmp/validation.pem /tmp/cinc-server.crt /tmp/first-boot.json
+  rm -f /tmp/validation.pem /tmp/cinc-server.crt
 
   cat > /etc/cinc/client.rb <<EOF
 # Bootstrap client.rb -- cinc_client::configure recipe will manage this file
@@ -149,16 +139,11 @@ EOF
 '"
 
 # -------------------------------------------------------------------------------
-# Step 5 -- first converge under role[$ROLE], then persist the run_list on cinc-server
+# Step 5 -- first converge; cinc-client fetches the pre-uploaded node object
 # -------------------------------------------------------------------------------
 echo
-echo "==> [5/5] first cinc-client run on $TARGET (registers + applies role[$ROLE])"
-ssh "$TARGET" "$SUDO cinc-client -j /etc/cinc/first-boot.json" || true
-
-# --- `-j first-boot.json` only sets the run_list for that single run; persist it on cinc-server so subsequent runs (timer-driven or manual `cinc-client` without -j) keep applying the role ---
-echo
-echo "==> persisting run_list on cinc-server (knife node run_list set $NODE 'role[$ROLE]')"
-knife node run_list set "$NODE" "role[$ROLE]" >/dev/null
+echo "==> [5/5] first cinc-client run on $TARGET (registers + applies pre-uploaded node run_list)"
+ssh "$TARGET" "$SUDO cinc-client" || true
 
 echo
-echo "bootstrap complete: $NODE registered, role[$ROLE] applied + persisted"
+echo "bootstrap complete: $NODE registered, run_list from node object applied"

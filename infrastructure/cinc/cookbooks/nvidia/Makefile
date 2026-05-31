@@ -18,7 +18,7 @@ help:
 	@echo "see README.md for the rationale."
 
 tools:
-	../../scripts/kitchen/debian.sh
+	../../../scripts/kitchen-debian.sh
 
 lint:
 	$(COOKSTYLE) .

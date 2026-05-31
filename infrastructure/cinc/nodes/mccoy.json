@@ -1,0 +1,73 @@
+{
+  "name": "mccoy",
+  "chef_environment": "_default",
+  "run_list": [
+  "role[proxmox_host]",
+  "recipe[nfs::server]"
+]
+,
+  "normal": {
+    "tags": [
+      "proxmox-host",
+      "amd64",
+      "local-cloud",
+      "gdrive-host"
+    ],
+    "consul": {
+      "config": {
+        "node_name": "mccoy",
+        "bind_addr": "192.168.68.63"
+      }
+    },
+    "proxmox_host": {
+      "zfs_arc": {
+        "max_bytes": 1665138688
+      }
+    },
+    "nfs": {
+      "server": {
+        "exports": [
+          {
+            "path": "/mnt/gdrive",
+            "clients": "192.168.68.0/22",
+            "options": "rw,sync,no_subtree_check,no_root_squash"
+          },
+          {
+            "path": "/mnt/gdrive-secondary",
+            "clients": "192.168.68.0/22",
+            "options": "rw,sync,no_subtree_check,no_root_squash"
+          }
+        ]
+      }
+    },
+    "vault_cert_manager": {
+      "certificates": [
+        {
+          "name": "consul-client",
+          "role": "consul-client",
+          "common_name": "client.munchbox.consul",
+          "certificate": "/etc/consul.d/tls/consul.crt",
+          "key": "/etc/consul.d/tls/consul.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "mccoy",
+            "mccoy.munchbox.cc",
+            "client.munchbox.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.63",
+            "127.0.0.1"
+          ],
+          "owner": "consul",
+          "group": "consul",
+          "on_change": "systemctl reload consul",
+          "health_check": {
+            "tcp": "127.0.0.1:8501",
+            "timeout": "5s"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "name": "fontana",
+  "chef_environment": "_default",
+  "run_list": [
+  "role[proxmox_host]",
+  "recipe[proxmox_host::gvt_g]"
+]
+,
+  "normal": {
+    "tags": [
+      "proxmox-host",
+      "amd64",
+      "local-cloud"
+    ],
+    "consul": {
+      "config": {
+        "node_name": "fontana",
+        "bind_addr": "192.168.68.65"
+      }
+    },
+    "proxmox_host": {
+      "zfs_arc": {
+        "max_bytes": 1666187264
+      },
+      "gvt_g": {
+        "enabled": true
+      }
+    },
+    "vault_cert_manager": {
+      "certificates": [
+        {
+          "name": "consul-client",
+          "role": "consul-client",
+          "common_name": "client.munchbox.consul",
+          "certificate": "/etc/consul.d/tls/consul.crt",
+          "key": "/etc/consul.d/tls/consul.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "fontana",
+            "fontana.munchbox.cc",
+            "client.munchbox.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.65",
+            "127.0.0.1"
+          ],
+          "owner": "consul",
+          "group": "consul",
+          "on_change": "systemctl reload consul",
+          "health_check": {
+            "tcp": "127.0.0.1:8501",
+            "timeout": "5s"
+          }
+        }
+      ]
+    }
+  }
+}

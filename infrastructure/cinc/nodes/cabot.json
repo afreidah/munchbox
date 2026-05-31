@@ -1,0 +1,57 @@
+{
+  "name": "cabot",
+  "chef_environment": "_default",
+  "run_list": [
+  "role[proxmox_host]"
+]
+,
+  "normal": {
+    "tags": [
+      "proxmox-host",
+      "amd64",
+      "local-cloud",
+      "nfs-mounter",
+      "gdrive-mounter"
+    ],
+    "consul": {
+      "config": {
+        "node_name": "cabot",
+        "bind_addr": "192.168.68.59"
+      }
+    },
+    "proxmox_host": {
+      "zfs_arc": {
+        "max_bytes": 823132160
+      }
+    },
+    "vault_cert_manager": {
+      "certificates": [
+        {
+          "name": "consul-client",
+          "role": "consul-client",
+          "common_name": "client.munchbox.consul",
+          "certificate": "/etc/consul.d/tls/consul.crt",
+          "key": "/etc/consul.d/tls/consul.key",
+          "ttl": "720h",
+          "alt_names": [
+            "localhost",
+            "cabot",
+            "cabot.munchbox.cc",
+            "client.munchbox.consul"
+          ],
+          "ip_sans": [
+            "192.168.68.59",
+            "127.0.0.1"
+          ],
+          "owner": "consul",
+          "group": "consul",
+          "on_change": "systemctl reload consul",
+          "health_check": {
+            "tcp": "127.0.0.1:8501",
+            "timeout": "5s"
+          }
+        }
+      ]
+    }
+  }
+}

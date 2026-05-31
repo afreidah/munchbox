@@ -24,7 +24,7 @@ help:
 	@echo "  make kitchen   - create + converge + verify + destroy in one go"
 
 tools:
-	../../scripts/kitchen/debian.sh
+	../../../scripts/kitchen-debian.sh
 
 lint:
 	$(COOKSTYLE) .

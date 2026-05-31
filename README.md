@@ -467,10 +467,10 @@ leaf has isolated state.
 2. `cd infrastructure/terragrunt/proxmox/<group> && terragrunt apply` -- VM
    provisions
 3. Create per-node Chef role at `infrastructure/cinc/roles/nodes/<host>.rb`
-4. Run `infrastructure/cinc/scripts/prepare-chef-bootstrap.sh <host>` from
+4. Run `infrastructure/scripts/prepare-chef-bootstrap.sh <host>` from
    the workstation -- mints AppRole secret, uploads vault_agent data bag,
    uploads per-node role
-5. Run `infrastructure/cinc/scripts/bootstrap-cinc-node.sh <host>` to
+5. Run `infrastructure/scripts/bootstrap-cinc-node.sh <host>` to
    install cinc-client + trigger first converge
 
 The node joins Consul + Nomad automatically once converged.
