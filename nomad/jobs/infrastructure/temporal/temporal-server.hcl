@@ -57,7 +57,3 @@ tags = [
 # --- Resources override ---
 cpu = 500
 memory = 512
-
-# --- DNS configuration ---
-# Uses goren's dnsmasq which can resolve Consul service names
-dns = ["192.168.68.60"]

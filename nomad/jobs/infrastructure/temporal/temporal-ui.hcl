@@ -52,9 +52,6 @@ tags = [
   "traefik.http.routers.temporal-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file"
 ]
 
-# --- DNS configuration ---
-dns = ["192.168.68.64", "192.168.68.62"]
-
 # --- Exclude Oracle nodes (unreliable WAN link) ---
 constraints = [
   { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode1" },
