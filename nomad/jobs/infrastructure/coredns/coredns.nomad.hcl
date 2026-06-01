@@ -156,12 +156,6 @@ job "coredns" {
     # Prometheus metrics on :9153
     prometheus 0.0.0.0:9153
 
-    # Tracing to Tempo (via Zipkin endpoint)
-    trace tempo.service.consul:9411 {
-        every 100
-        client_server
-    }
-
     # Cache responses (5 min success, 1 min negative)
     cache 300 {
         success 9984 300
