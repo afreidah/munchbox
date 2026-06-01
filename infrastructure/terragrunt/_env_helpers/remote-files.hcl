@@ -6,8 +6,12 @@
 # Branches inside based on the leaf's directory layout:
 #
 #   provider_type == "pihole-consul" → per-host JSON registration leaf
-#     (basename(leaf) = "green"/"logan"); render shared templates from
-#     pihole-consul/_templates/ with that host's IP, ship to one target.
+#     (basename(leaf) = "green"/"logan"); render the shared
+#     pihole-consul/_templates/ with that host's IP, ship the JSONs to
+#     /etc/consul-register/, ship the probe-and-POST consul-register.sh
+#     to /usr/local/bin/, then restart consul-register.service so it
+#     re-runs against the freshest defs (was #30: script now probes
+#     locally each cycle and overrides .Check.Status with real result).
 #
 #   otherwise → static-file leaf (e.g. pihole-shared)
 #     look up bundles in root.hcl's remote_files_configs[node_name], load
@@ -28,15 +32,17 @@ locals {
   provider_type = local.root.locals.provider_type
   leaf_dir      = get_terragrunt_dir()
 
-  # --- pihole-consul: per-host JSONs via templatefile() ---
+  # --- pihole-consul: per-host JSONs + the probe-and-POST script ---
   is_pihole_consul = local.provider_type == "pihole-consul"
   pc_node          = local.is_pihole_consul ? one([for n in local.root.locals.pihole_nodes : n if n.name == local.node_name]) : null
   pc_tmpl_dir      = "${get_repo_root()}/infrastructure/terragrunt/global/pihole-consul/_templates"
   pc_tmpl_vars     = local.is_pihole_consul ? { host = local.pc_node.name, ip = local.pc_node.host } : {}
   pc_files = local.is_pihole_consul ? {
-    "node-exporter.json" = { destination = "/etc/consul-register/node-exporter.json", content = templatefile("${local.pc_tmpl_dir}/node-exporter.json.tmpl", local.pc_tmpl_vars) }
-    "pihole-lb.json"     = { destination = "/etc/consul-register/pihole-lb.json", content = templatefile("${local.pc_tmpl_dir}/pihole-lb.json.tmpl", local.pc_tmpl_vars) }
-    "pihole-webui.json"  = { destination = "/etc/consul-register/pihole-webui.json", content = templatefile("${local.pc_tmpl_dir}/pihole-webui.json.tmpl", local.pc_tmpl_vars) }
+    "node-exporter.json"  = { destination = "/etc/consul-register/node-exporter.json", mode = "0644", content = templatefile("${local.pc_tmpl_dir}/node-exporter.json.tmpl", local.pc_tmpl_vars) }
+    "pihole-lb.json"      = { destination = "/etc/consul-register/pihole-lb.json",     mode = "0644", content = templatefile("${local.pc_tmpl_dir}/pihole-lb.json.tmpl",     local.pc_tmpl_vars) }
+    "pihole-webui.json"   = { destination = "/etc/consul-register/pihole-webui.json",  mode = "0644", content = templatefile("${local.pc_tmpl_dir}/pihole-webui.json.tmpl",  local.pc_tmpl_vars) }
+    # --- The probe-and-POST script; lives next to the JSONs (was bug #30) ---
+    "consul-register.sh"  = { destination = "/usr/local/bin/consul-register.sh",        mode = "0755", content = file("${local.pc_tmpl_dir}/consul-register.sh") }
   } : {}
 
   pihole_consul_inputs = local.is_pihole_consul ? {
@@ -45,10 +51,10 @@ locals {
       consul_register = {
         files = {
           for fk, f in local.pc_files :
-          fk => { content = f.content, destination = f.destination, mode = "0644" }
+          fk => { content = f.content, destination = f.destination, mode = f.mode }
         }
         check_command   = ""
-        restart_command = "systemctl start consul-register.service"
+        restart_command = "systemctl restart consul-register.service"
       }
     }
   } : null

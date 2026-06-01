@@ -16,5 +16,16 @@
       "role": "dns-server",
       "host": "${host}"
     }
+  },
+  "Check": {
+    "Node": "${host}",
+    "CheckID": "node-exporter-${host}-metrics",
+    "Name": "node-exporter /metrics reachable",
+    "ServiceID": "node-exporter-${host}",
+    "Definition": {
+      "HTTP": "http://${ip}:9100/metrics",
+      "Interval": "30s",
+      "Timeout": "5s"
+    }
   }
 }
