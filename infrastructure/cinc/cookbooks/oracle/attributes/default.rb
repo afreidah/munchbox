@@ -15,6 +15,9 @@
 #
 # vault_path holds the dedicated `consul/oracle-watchdog-token` (NOT the
 # shared agent-token); needs to be added to the chef-managed-node policy.
+#
+# tracing renders into config.yaml; endpoint is Tempo's OTLP/HTTP port (4318,
+# bare host:port -- 4317 is gRPC and the agent uses the OTLP/HTTP exporter).
 # -------------------------------------------------------------------------------
 
 default[cookbook]['watchdog'] = {
@@ -25,6 +28,8 @@ default[cookbook]['watchdog'] = {
   vault_path: 'secret/data/consul/oracle-watchdog-token',
   vault_field: 'token',
   consul_service_file: '/etc/consul.d/oracle-watchdog.json',
+  tracing_enabled: true,
+  tracing_endpoint: 'tempo.service.consul:4318',
 }
 
 # -------------------------------------------------------------------------------

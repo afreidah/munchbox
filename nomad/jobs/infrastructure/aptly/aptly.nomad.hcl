@@ -275,7 +275,7 @@ echo "Web UI installed at $WEBUI_DIR"
 set -e
 
 API="http://localhost:8080/api"
-AUTH="admin:{{ with secret "secret/data/aptly" }}{{ .Data.data.password }}{{ end }}"
+AUTH="admin:{{ with secret "secret/data/aptly-admin" }}{{ .Data.data.password }}{{ end }}"
 
 echo "Waiting for aptly API..."
 for i in $(seq 1 30); do
@@ -414,7 +414,7 @@ proxy_send_timeout 600s;
         destination = "secrets/api.htpasswd"
         perms       = "0644"
         data        = <<-EOF
-{{ with secret "secret/data/aptly" }}{{ .Data.data.htpasswd }}{{ end }}
+{{ with secret "secret/data/aptly-admin" }}{{ .Data.data.htpasswd }}{{ end }}
         EOF
       }
 

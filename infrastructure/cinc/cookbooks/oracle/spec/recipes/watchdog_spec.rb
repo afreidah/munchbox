@@ -37,10 +37,24 @@ RSpec.describe 'oracle::watchdog' do
       .with(owner: 'root', group: 'root', mode: '0755')
   end
 
-  # --- Empty-but-present config.yaml ---
+  # --- config.yaml carries the tracing block ---
   it 'renders /etc/oracle-watchdog/config.yaml with 0644 root:root' do
     expect(chef_run).to create_template('/etc/oracle-watchdog/config.yaml')
       .with(owner: 'root', group: 'root', mode: '0644')
+  end
+
+  # --- tracing enabled by default for oracle monitors, pointed at Tempo OTLP/HTTP ---
+  it 'renders the tracing block enabled with the 4318 OTLP/HTTP endpoint' do
+    expect(chef_run).to render_file('/etc/oracle-watchdog/config.yaml')
+      .with_content(/tracing:/)
+      .with_content(/enabled: true/)
+      .with_content(/endpoint: "tempo\.service\.consul:4318"/)
+  end
+
+  # --- config.yaml restart notify wires the new tracing config into the daemon ---
+  it 'restarts oracle-watchdog (delayed) when config.yaml changes' do
+    expect(chef_run.template('/etc/oracle-watchdog/config.yaml'))
+      .to notify('service[oracle-watchdog]').to(:restart).delayed
   end
 
   # --- Systemd drop-in dir ---

@@ -119,7 +119,7 @@ job "oracle-watchdog" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/oracle-watchdog:v1.4.1"
+        image              = "registry.munchbox.cc/oracle-watchdog:v1.4.4"
         image_pull_timeout = "5m"
         ports              = ["metrics"]
 
@@ -216,36 +216,35 @@ wan_dns:
   hostname: "wg.munchbox.cc"
   cloudflare:
     api_token_env: "CLOUDFLARE_API_TOKEN"
-    zone_id: "{{ with secret "secret/data/cloudflare" }}{{ .Data.data.zone_id }}{{ end }}"
+    zone_id: "{{ with secret "secret/data/cloudflare-wandns" }}{{ .Data.data.zone_id }}{{ end }}"
   detection_providers:
     - "https://api.ipify.org"
     - "https://1.1.1.1/cdn-cgi/trace"
   poll_interval: 5m
   cooldown: 15m
+
+# OpenTelemetry tracing. Exports agent spans to Tempo over OTLP/HTTP; the
+# endpoint is a bare host:port (4318 is HTTP; 4317 is gRPC).
+tracing:
+  enabled: true
+  endpoint: "tempo.service.consul:4318"
         EOF
       }
 
       # --- Cloudflare API Token from Vault ---
       # Mounted as an env var (not a file) so the wandns package picks it
-      # up via the api_token_env name in config without disk I/O. Reuses
-      # the existing secret/cloudflare path that the cloudflared tunnel
-      # and other jobs already source from.
+      # up via the api_token_env name in config without disk I/O. Dedicated
+      # secret/cloudflare-wandns path holds a least-privilege DNS:Edit token
+      # minted by terragrunt modules/cloudflare-api-token.
       template {
         destination = "secrets/cloudflare.env"
         perms       = "0600"
         env         = true
         data        = <<-EOF
-{{ with secret "secret/data/cloudflare" -}}
+{{ with secret "secret/data/cloudflare-wandns" -}}
 CLOUDFLARE_API_TOKEN={{ .Data.data.api_token }}
 {{- end }}
         EOF
-      }
-
-      # --- Environment ---
-      env {
-        # OpenTelemetry tracing (optional)
-        OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
-        OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
       }
 
       # --- Resources ---

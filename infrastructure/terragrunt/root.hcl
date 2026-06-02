@@ -232,6 +232,32 @@ locals {
   cloudflare_tunnel_id           = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7"
   cloudflare_tunnel_cname        = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
 
+  # --- scoped API tokens minted by modules/cloudflare-api-token (Vault-free) ---
+  cloudflare_token_requests = {
+    wandns = {
+      name = "munchbox-wandns-dns-edit"
+      policies = [{
+        permission_groups = ["DNS Write"]
+        resources         = { "com.cloudflare.api.account.zone.${local.cloudflare_munchbox_zone_id}" = "*" }
+      }]
+    }
+  }
+
+  # --- generated secrets written to Vault by global/vault-secrets ---
+  # source = generator leaf; key = index into a multi-entry generator vault_data;
+  # static = non-secret values merged in (keyed to match the Vault data keys).
+  vault_secrets = {
+    "aptly-admin" = {
+      source = "aptly_secrets"
+      key    = "admin"
+    }
+    "cloudflare-wandns" = {
+      source = "cloudflare_tokens"
+      key    = "wandns"
+      static = { zone_id = local.cloudflare_munchbox_zone_id }
+    }
+  }
+
   # --- alexfreidah-zone CNAMEs to the tunnel; map key = TF state key ---
   alexfreidah_tunnel_cnames = {
     "alexfreidah-apex"       = "@"

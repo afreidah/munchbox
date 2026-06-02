@@ -490,6 +490,132 @@ ad-hoc.
 
 ---
 
+## 8b. Terratest (real-apply integration tests)
+
+Plan-only `.tftest.hcl` covers schema + resource shape. **terratest**
+covers what plan can't: the apply actually succeeded, the remote system
+(consul, grafana, prom) actually observed the change, and the full
+interconnectivity chain (apply -> KV -> consul-template -> file ->
+SIGHUP -> reload) completed end to end.
+
+Layout:
+
+```
+infrastructure/terragrunt/terratest/
+  go.mod                          # one module across every package
+  Makefile                        # tidy / test / <package> / clean
+  README.md
+  prometheus_alerts/              # one subdir per module under test
+    prometheus_alerts_test.go
+  grafana_dashboards/
+    grafana_dashboards_test.go
+```
+
+One go.mod for the whole tree -- not per-module. Subdir name matches
+the terragrunt module name with `-` -> `_`.
+
+### Go style (mirrors s3-orchestrator)
+
+See `src/s3-orchestrator/docs/style-guide.md` for the canonical Go
+rules; the terratest packages follow the same conventions. Highlights:
+
+- **File header**. 79-dash `// -----` divider, title, blank `//`,
+  `// Author: Alex Freidah`, blank `//`, 2-4 sentence description,
+  closing 79-dash divider, blank line, `package <name>`. No separate
+  `// Package foo ...` godoc line; the header is the file description.
+
+- **Major section boxes**. 73-dash `// -----` divider, blank line,
+  `// SECTION NAME` (ALL CAPS), blank line, closing divider, blank
+  line, then code. Use for `CONSTANTS`, `TESTS`, `HELPERS`.
+
+- **Single-line comments**. Plain `// description` directly above the
+  code it documents. **Never** `// --- description ---` -- that's the
+  HCL/Ruby form, not Go. Multi-line `//` blocks are fine **only** as
+  godoc doc-comments above a declaration (func / type / const).
+
+- **ASCII only**. Dashes (`-`), not em-dashes. No smart quotes, no
+  arrows, no fancy bullets.
+
+- **Blank line after** the closing divider of any box (file header or
+  major section). Inline single-line `//` comments take **no** blank
+  line before.
+
+### Naming + structure
+
+- Test functions: `TestSubject_Scenario`, e.g.
+  `TestPrometheusAlerts_RoundTrip`,
+  `TestGrafanaDashboards_RoundTrip`.
+- `t.Parallel()` first line of every test.
+- Use `teststructure.CopyTerraformFolderToTemp` so the developer's
+  local `.terraform/` is never touched.
+- Sandbox naming: `zz-terratest-<random.UniqueId()>-...`. The `zz-`
+  prefix sorts orphans to the bottom of any UI listing.
+- `defer terraform.Destroy(t, tfOpts)` immediately before
+  `terraform.InitAndApply(t, tfOpts)` -- never skip cleanup.
+
+### Skip-on-missing-env pattern
+
+Tests must Skip (not fail) when invoked without a sourced env:
+
+```go
+if os.Getenv("CONSUL_HTTP_ADDR") == "" || os.Getenv("CONSUL_HTTP_TOKEN") == "" {
+    t.Skip("CONSUL_HTTP_ADDR and CONSUL_HTTP_TOKEN must be set (source munchbox-env.sh)")
+}
+```
+
+Lets a future CI runner `go test ./...` the whole tree without
+caring which env vars happen to be available -- missing creds skip,
+present creds run.
+
+### Passing complex values
+
+Terraform's `-var` inline parser breaks on multi-line strings, maps
+of strings, etc. Pass complex inputs via `EnvVars: {"TF_VAR_<name>":
+<json string>}` instead -- terraform auto-parses `TF_VAR_*` as JSON
+when the value starts with `{` or `[`.
+
+### Test depth -- aim past creation
+
+A test that just confirms "the resource exists in the provider after
+apply" is barely better than plan. **Every terratest should assert
+the downstream interconnectivity** the module is supposed to wire up:
+
+| Module | Surface 1 (direct) | Surface 2 (downstream) |
+|---|---|---|
+| prometheus-alerts | KV byte-equal | `/api/v1/rules` reflects group |
+| grafana-dashboards | `/api/dashboards/uid/<uid>` returns 200 | `/api/search?folderUIDs=` lists it |
+
+Use `terratest/modules/retry.DoWithRetryE` for any poll on a system
+that has propagation delay (consul-template quiescence, search-index
+lag, etc.). Cap with a `MaxWait` constant at the top of the file,
+not magic numbers in the call site.
+
+### Assertion style
+
+testify (`require` + `assert`) IS allowed for terratest -- terratest's
+own helper signatures take `*testing.T` and the community pattern is
+testify. This is a deliberate deviation from s3-orchestrator's
+"standard `testing.T` methods only" rule. Use `require` for setup
+preconditions ("config parsed", "client built") and `assert` for the
+actual round-trip claims.
+
+### Running
+
+```bash
+source munchbox-env.sh                     # ALWAYS first
+cd infrastructure/terragrunt/terratest
+make tidy                                  # one-time / after dep bump
+make test                                  # every package
+make prometheus-alerts                     # single package
+make clean                                 # rm test cache
+```
+
+Without `munchbox-env.sh`, tests Skip cleanly. With it, they apply
+against the live cluster -- treat them like a manual `terragrunt
+apply` for risk profile.
+
+---
+
 ## 9. Common ops
 
 ### From a leaf dir
@@ -565,5 +691,10 @@ When adding a new `.tf` / `.hcl` file, verify before commit:
 - [ ] If `tests/default.tftest.hcl`: `command = plan`, mock_provider for
       every alias, box headers per `run`, single-line comments per
       `assert`.
+- [ ] If `terratest/<module>/*_test.go`: s3-orchestrator-style Go file
+      header (79-dash divider, Author, description), 73-dash section
+      boxes, plain `//` comments (not `// --- ... ---`), `t.Parallel()`,
+      Skip on missing env, sandbox prefix `zz-terratest-<rand>`, both
+      direct and downstream surface assertions.
 - [ ] `make verify` clean from the module dir.
 - [ ] `terragrunt plan` clean from the leaf dir.
