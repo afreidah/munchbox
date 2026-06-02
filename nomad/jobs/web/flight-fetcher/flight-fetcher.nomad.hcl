@@ -153,7 +153,7 @@ flightaware {
   api_key = "{{ .Data.data.flightaware_api_key }}"
 }
 
-poll_interval      = "30s"   # fallback default; both sources set their own
+poll_interval      = "1200s"   # fallback default; both sources set their own
 enrichment_refresh = "5h"
 
 redis {

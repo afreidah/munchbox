@@ -151,6 +151,8 @@ inputs = {
     "mullvad",
     "cloudflared",
     "cloudflare",
+    "cloudflare-wandns",
+    "aptly-admin",
     "vaultwarden",
     "temporal",
     "trivy-dashboard",

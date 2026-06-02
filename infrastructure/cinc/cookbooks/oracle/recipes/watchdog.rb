@@ -18,4 +18,6 @@ oracle_watchdog 'baseline' do
   vault_path           w['vault_path']
   vault_field          w['vault_field']
   consul_service_file  w['consul_service_file']
+  tracing_enabled      w['tracing_enabled']
+  tracing_endpoint     w['tracing_endpoint']
 end

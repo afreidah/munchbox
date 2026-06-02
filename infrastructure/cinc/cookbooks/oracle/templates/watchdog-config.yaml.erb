@@ -1,8 +1,11 @@
 # -------------------------------------------------------------------------------
 # Oracle Watchdog Monitor Configuration
 #
-# Managed by chef (oracle::watchdog) -- do not edit by hand. The body is
-# intentionally empty; oracle-watchdog runs with its defaults + the env
-# vars supplied via the systemd drop-in override. Add keys here only
-# when overriding a default value.
+# Managed by chef (oracle::watchdog) -- do not edit by hand. Carries the
+# tracing block; all other settings come from oracle-watchdog defaults plus
+# the env vars supplied via the systemd drop-in override.
 # -------------------------------------------------------------------------------
+
+tracing:
+  enabled: <%= @tracing_enabled %>
+  endpoint: "<%= @tracing_endpoint %>"

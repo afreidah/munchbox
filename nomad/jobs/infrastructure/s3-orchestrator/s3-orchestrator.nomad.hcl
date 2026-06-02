@@ -390,7 +390,7 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 200
+        cpu    = 500
         memory = 256
       }
 

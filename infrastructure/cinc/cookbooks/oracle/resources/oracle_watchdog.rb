@@ -28,6 +28,8 @@ property :consul_service_file,  String,        default: '/etc/consul.d/oracle-wa
 property :service_name,         String,        default: 'oracle-watchdog'
 property :consul_user,          String,        default: 'consul'
 property :consul_group,         String,        default: 'consul'
+property :tracing_enabled,      [true, false], default: false
+property :tracing_endpoint,     String,        default: 'tempo.service.consul:4318'
 
 default_action :configure
 
@@ -54,6 +56,10 @@ action :configure do
     owner  'root'
     group  'root'
     mode   '0644'
+    variables(
+      tracing_enabled: new_resource.tracing_enabled,
+      tracing_endpoint: new_resource.tracing_endpoint
+    )
     notifies :restart, "service[#{svc}]", :delayed
   end
 

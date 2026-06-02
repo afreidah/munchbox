@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "oracle-watchdog-webpage"
 type  = "service"
-image = "registry.munchbox.cc/oracle-watchdog-web:v1.3.0"
+image = "registry.munchbox.cc/oracle-watchdog-web:v1.4.4"
 port  = 80
 node  = "any"
 host_network = false

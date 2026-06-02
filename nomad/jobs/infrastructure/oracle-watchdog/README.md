@@ -25,7 +25,7 @@ residential IP changes.
 
 - Consul at `consul.service.consul:8500` for session monitoring
 - Vault `secret/data/oracle-watchdog` (OCI private key) and
-  `secret/data/cloudflare` (zone_id + api_token) via `nomad-workloads` role
+  `secret/data/cloudflare-wandns` (zone_id + api_token) via `nomad-workloads` role
 - Tempo OTLP `tempo.service.consul:4317` (tracing)
 
 ## Notable configuration
