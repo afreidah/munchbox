@@ -354,7 +354,22 @@ echo "Setup complete"
           "/mnt/gdrive/aptly:/opt/aptly:rw",
           "secrets/api.htpasswd:/opt/aptly/api.htpasswd:ro",
           "local/aptly.conf:/etc/aptly.conf:ro",
+          "local/nginx-timeout.conf:/etc/nginx/conf.d/zz-timeout.conf:ro",
         ]
+      }
+
+      # --- nginx proxy timeout drop-in ---
+      # The bundled nginx fronts the aptly API; its 60s default proxy_read_timeout
+      # severs slow publish-switch calls (GPG sign + S3 upload) and aptly never
+      # commits. conf.d is included inside http{}, so these http-context
+      # directives raise the ceiling for every proxied request.
+      template {
+        destination = "local/nginx-timeout.conf"
+        perms       = "0644"
+        data        = <<-EOF
+proxy_read_timeout 600s;
+proxy_send_timeout 600s;
+        EOF
       }
 
       # --- Aptly config with metrics enabled ---
