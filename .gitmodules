@@ -7,12 +7,6 @@
 [submodule "src/resume"]
 	path = src/resume
 	url = https://github.com/afreidah/resume.git
-[submodule "src/cloudflare-log-collector"]
-	path = src/cloudflare-log-collector
-	url = https://github.com/afreidah/cloudflare-log-collector.git
-[submodule "src/oracle-watchdog"]
-	path = src/oracle-watchdog
-	url = https://github.com/afreidah/oracle-watchdog.git
 [submodule "nomad/src/nomad-temporal-jobs"]
 	path = nomad/src/nomad-temporal-jobs
 	url = https://github.com/afreidah/nomad-temporal-jobs
