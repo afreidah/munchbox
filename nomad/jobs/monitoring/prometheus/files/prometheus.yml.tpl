@@ -14,8 +14,14 @@ storage:
     out_of_order_time_window: 30m
 
 # Alert rules file
+# Read through /local/ (Nomad's built-in alloc-local dir mount) rather than
+# the pack's single-file bind at /etc/prometheus/config/alert_rules.yml.
+# Single-file binds latch to an inode at container start; consul-template's
+# rename-on-write swaps the inode every render, leaving the file mount
+# pointing at the orphaned original. Directory mounts re-resolve per open,
+# so /local/alert_rules.yml always reflects the latest render.
 rule_files:
-  - /etc/prometheus/config/alert_rules.yml
+  - /local/alert_rules.yml
 
 # Alerting configuration - send alerts to Alertmanager via Consul service discovery
 alerting:
@@ -312,7 +318,7 @@ scrape_configs:
     metrics_path: "/api/metrics"
     basic_auth:
       username: "admin"
-      password: "{{ with secret "secret/data/aptly" }}{{ .Data.data.password }}{{ end }}"
+      password: "{{ with secret "secret/data/aptly-admin" }}{{ .Data.data.password }}{{ end }}"
     consul_sd_configs:
       - server: "127.0.0.1:8500"
         scheme: "http"
