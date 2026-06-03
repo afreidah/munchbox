@@ -119,7 +119,7 @@ job "oracle-watchdog" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/oracle-watchdog:v1.4.4"
+        image              = "registry.munchbox.cc/oracle-watchdog:v1.4.5"
         image_pull_timeout = "5m"
         ports              = ["metrics"]
 

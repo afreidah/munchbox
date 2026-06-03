@@ -47,12 +47,15 @@ const moduleRelativeDir = "../../modules/prometheus-alerts"
 const defaultPrometheusURL = "http://prometheus.service.consul:9090"
 
 // promReloadMaxWait bounds how long we wait for consul-template + SIGHUP to
-// re-render alert_rules.yml and prom to pick up the new group. The template
-// quiescence is ~5s, plus prom config reload, plus slack.
+// re-render alert_rules.yml and prom to pick up the new group. Steady-state
+// latency on this cluster is ~10s (Wait.Min=5s + render + SIGHUP + load);
+// 60s leaves margin for the worst case where consul-template is debouncing
+// other unrelated KV churn under the prometheus/alerts/ prefix.
 const promReloadMaxWait = 60 * time.Second
 
-// promReloadPollInterval is how often we poll /api/v1/rules between checks.
-const promReloadPollInterval = 3 * time.Second
+// promReloadPollInterval matches the client's template_config.Wait.Min
+// (5s) - polling faster than the floor wastes round-trips.
+const promReloadPollInterval = 5 * time.Second
 
 // -------------------------------------------------------------------------
 // TESTS
@@ -90,9 +93,12 @@ func TestPrometheusAlerts_RoundTrip(t *testing.T) {
 
 	// each KV value is a list entry under `groups:` (the consul-template
 	// wraps with `groups:` once); a value of `groups:\n - name: ...` would
-	// render double-`groups:` and break the file
-	val1 := fmt.Sprintf("- name: %s\n  rules: []\n", groupName1)
-	val2 := fmt.Sprintf("- name: %s\n  rules: []\n", groupName2)
+	// render double-`groups:` and break the file. each group needs at least
+	// one rule body - prom silently drops groups with `rules: []`, so a
+	// no-op recording rule is needed to make the group observable via the
+	// /api/v1/rules API.
+	val1 := fmt.Sprintf("- name: %s\n  rules:\n    - record: %s:up\n      expr: vector(1)\n", groupName1, groupName1)
+	val2 := fmt.Sprintf("- name: %s\n  rules:\n    - record: %s:up\n      expr: vector(1)\n", groupName2, groupName2)
 
 	// complex map values don't survive terraform's -var inline parser; pass
 	// via TF_VAR_<name> env var which is auto-parsed as JSON

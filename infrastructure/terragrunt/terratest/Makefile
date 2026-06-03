@@ -6,11 +6,7 @@
 # folders/keys; they need a real consul/vault/grafana token, sourced from
 # munchbox-env.sh.
 #
-# Targets:
-#   tidy            go mod tidy (sync deps)
-#   test            run every terratest package (parallel-safe)
-#   prometheus-alerts  run just the prometheus-alerts package
-#   clean           strip cache / test binaries
+# Run `make help` for the current target list.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -21,20 +17,31 @@ TEST_FLAGS := -v -timeout 10m -count=1
 .DEFAULT_GOAL := help
 .PHONY: help tidy test prometheus-alerts grafana-dashboards clean
 
-help:  ## list targets
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort -u
+help: ## Display available Make targets
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n"} \
+		/^[a-zA-Z0-9_-]+:.*?## / { \
+			gsub(/[A-Z_][A-Z0-9_]*=[a-zA-Z0-9_|-]+/, "\033[33m&\033[0m", $$2); \
+			printf "  \033[36m%-24s\033[0m %s\n", $$1, $$2 \
+		} \
+		/^##@/ {printf "\n\033[1m%s\033[0m\n", substr($$0, 5)}' $(MAKEFILE_LIST)
 
-tidy:  ## go mod tidy (sync deps + go.sum)
+##@ Setup
+
+tidy: ## go mod tidy (sync deps + go.sum)
 	$(GO) mod tidy
 
-test:  ## run every terratest package
+##@ Test
+
+test: ## Run every terratest package
 	$(GO) test $(TEST_FLAGS) ./...
 
-prometheus-alerts:  ## run just the prometheus-alerts package
+prometheus-alerts: ## Run just the prometheus-alerts package
 	$(GO) test $(TEST_FLAGS) ./prometheus_alerts/...
 
-grafana-dashboards:  ## run just the grafana-dashboards package
+grafana-dashboards: ## Run just the grafana-dashboards package
 	$(GO) test $(TEST_FLAGS) ./grafana_dashboards/...
 
-clean:  ## strip test binaries + go build cache
+##@ Maintenance
+
+clean: ## Strip test binaries + go build cache
 	$(GO) clean -testcache
