@@ -119,7 +119,7 @@ job "backup-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/backup-worker:v0.2.0"
+        image              = "registry.munchbox.cc/backup-worker:v0.2.1"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]

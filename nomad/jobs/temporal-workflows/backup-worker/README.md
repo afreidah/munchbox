@@ -8,7 +8,7 @@ Schedule (managed in `infrastructure/terragrunt`).
 
 ## Image
 
-`registry.munchbox.cc/backup-worker:v0.2.0`
+`registry.munchbox.cc/backup-worker:v0.2.1`
 
 ## Hostname / exposure
 
