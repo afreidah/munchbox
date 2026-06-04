@@ -7,7 +7,7 @@ traces and remote-writes them to Prometheus.
 
 ## Image
 
-`grafana/tempo:2.10.2` (plus `busybox:latest` for init-storage)
+`grafana/tempo:3.0.0` (plus `busybox:1.38.0` for init-storage)
 
 ## Hostname / exposure
 
