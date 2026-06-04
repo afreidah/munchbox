@@ -5,7 +5,7 @@ sonarr, radarr, lidarr, and readarr.
 
 ## Image
 
-`linuxserver/prowlarr:2.3.0`
+`linuxserver/prowlarr:2.3.5`
 
 ## Hostname / exposure
 

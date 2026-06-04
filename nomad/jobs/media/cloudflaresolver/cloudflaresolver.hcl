@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "cloudflaresolverr"
 type         = "service"
-image        = "ghcr.io/flaresolverr/flaresolverr:v3.4.6"
+image        = "ghcr.io/flaresolverr/flaresolverr:v3.5.0"
 constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]

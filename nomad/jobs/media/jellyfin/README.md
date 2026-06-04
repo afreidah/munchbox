@@ -5,7 +5,7 @@ Runs alongside Emby (Emby still owns ErsatzTV/Live TV duty).
 
 ## Image
 
-`jellyfin/jellyfin:10.11.6`
+`jellyfin/jellyfin:10.11.10`
 
 ## Hostname / exposure
 

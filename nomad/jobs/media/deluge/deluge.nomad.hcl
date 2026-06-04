@@ -124,7 +124,7 @@ job "deluge" {
       driver = "docker"
 
       config {
-        image      = "alpine:3.21"
+        image      = "alpine:3.21.7"
         privileged = true
         network_mode = "host"
         command    = "/bin/sh"
@@ -164,7 +164,7 @@ job "deluge" {
       }
 
       config {
-        image      = "qmcgaw/gluetun:v3.41.0"
+        image      = "qmcgaw/gluetun:v3.41.1"
         privileged = true
 
         cap_add = ["NET_ADMIN"]

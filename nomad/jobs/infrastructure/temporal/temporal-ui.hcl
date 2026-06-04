@@ -11,7 +11,7 @@
 # --- General Settings ---
 name  = "temporal-ui"
 type  = "service"
-image = "temporalio/ui:2.44.1"
+image = "temporalio/ui:2.50.0"
 port  = 8080
 host_network = true
 size = "small"

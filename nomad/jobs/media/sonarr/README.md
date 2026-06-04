@@ -5,7 +5,7 @@ grabs off to Deluge.
 
 ## Image
 
-`linuxserver/sonarr:4.0.16`
+`linuxserver/sonarr:4.0.17`
 
 ## Hostname / exposure
 

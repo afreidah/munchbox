@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name  = "prometheus"
-image = "prom/prometheus:v3.10.0"
+image = "prom/prometheus:v3.12.0"
 port  = 9090
 static_port = 9090
 host_network = true

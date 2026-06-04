@@ -228,7 +228,7 @@ job "redis-sentinel" {
       driver = "docker"
 
       config {
-        image   = "busybox:1.37.0"
+        image   = "busybox:1.38.0"
         command = "sh"
         args    = ["-c", "mkdir -p /data/redis /data/sentinel && rm -f /data/sentinel/sentinel.conf && chown -R 999:999 /data && chmod 700 /data/redis /data/sentinel"]
         volumes = ["/opt/nomad/data/redis-${NOMAD_ALLOC_INDEX}:/data"]
@@ -429,7 +429,7 @@ sentinel announce-port {{ env "NOMAD_PORT_sentinel" }}
       }
 
       config {
-        image        = "oliver006/redis_exporter:v1.80.1"
+        image        = "oliver006/redis_exporter:v1.84.0"
         network_mode = "host"
       }
 

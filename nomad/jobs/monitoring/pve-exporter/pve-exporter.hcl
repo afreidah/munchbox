@@ -9,7 +9,7 @@
 
 # --- Core job configuration ---
 name        = "pve-exporter"
-image       = "prompve/prometheus-pve-exporter:3.5.0"
+image       = "prompve/prometheus-pve-exporter:3.9.0"
 port        = 9221
 static_port = 9221
 size        = "tiny"

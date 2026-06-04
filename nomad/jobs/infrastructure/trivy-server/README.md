@@ -6,7 +6,7 @@ vuln-database downloads and enabling concurrent scans.
 
 ## Image
 
-`aquasec/trivy:0.68.2`
+`aquasec/trivy:0.71.0`
 
 ## Hostname / exposure
 

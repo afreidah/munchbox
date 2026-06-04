@@ -5,7 +5,7 @@ on behalf of Prowlarr / *arr indexers.
 
 ## image
 
-`ghcr.io/flaresolverr/flaresolverr:v3.4.6`
+`ghcr.io/flaresolverr/flaresolverr:v3.5.0`
 
 ## hostname / exposure
 

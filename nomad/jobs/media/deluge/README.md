@@ -7,9 +7,9 @@ tunnel goes down.
 
 ## Image
 
-- gluetun: `qmcgaw/gluetun:v3.41.0`
+- gluetun: `qmcgaw/gluetun:v3.41.1`
 - deluge: `linuxserver/deluge:2.2.0`
-- cleanup-vpn: `alpine:3.21`
+- cleanup-vpn: `alpine:3.21.7`
 
 ## Hostname / exposure
 
