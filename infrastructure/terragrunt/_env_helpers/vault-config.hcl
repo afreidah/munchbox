@@ -152,6 +152,7 @@ inputs = {
     "cloudflared",
     "cloudflare",
     "cloudflare-wandns",
+    "cloudflare-logcollector",
     "aptly-admin",
     "vaultwarden",
     "temporal",

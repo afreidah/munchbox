@@ -109,7 +109,7 @@ job "trivy-scan-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/trivy-scan-worker:v0.2.0"
+        image              = "registry.munchbox.cc/trivy-scan-worker:v0.2.1"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]

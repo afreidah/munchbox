@@ -6,7 +6,7 @@ schedule by a Temporal Schedule.
 
 ## Image
 
-`registry.munchbox.cc/cleanup-worker:v0.2.4`
+`registry.munchbox.cc/cleanup-worker:v0.2.7`
 
 ## Hostname / exposure
 

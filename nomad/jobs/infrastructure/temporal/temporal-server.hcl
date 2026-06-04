@@ -14,7 +14,7 @@ job_dir = "/home/afreidah/tools/munchbox/nomad/jobs/infrastructure/temporal"
 # --- General Settings ---
 name  = "temporal-server"
 type  = "service"
-image = "temporalio/server:1.29.1"
+image = "temporalio/server:1.31.0"
 port  = 7233
 static_port = 7233
 host_network = true
@@ -38,7 +38,9 @@ vault = true
 # --- Templates (inject secrets from Vault as env vars) ---
 templates = [
   { src = "temporal-env.tpl", dest = "/secrets/temporal.env", env = true, vault = true },
-  { src = "ca.crt.tpl", dest = "/secrets/ca.crt", vault = true }
+  { src = "ca.crt.tpl", dest = "/secrets/ca.crt", vault = true },
+  # --- 1.30+ requires the dynamic-config file to exist (1.29 shipped an empty one in-image) ---
+  { src = "dynamicconfig.yaml", dest = "/etc/temporal/config/dynamicconfig/docker.yaml" }
 ]
 
 # --- Traefik integration ---

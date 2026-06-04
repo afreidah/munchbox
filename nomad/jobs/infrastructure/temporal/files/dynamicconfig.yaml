@@ -1,0 +1,4 @@
+# Temporal dynamic config - intentionally empty (use built-in defaults).
+# Temporal 1.30+ removed the empty docker.yaml that 1.29 shipped in-image but
+# still requires the file to exist, so the pack mounts this at
+# /etc/temporal/config/dynamicconfig/docker.yaml.
