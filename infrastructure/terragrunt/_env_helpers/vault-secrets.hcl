@@ -19,7 +19,10 @@ dependency "cloudflare_tokens" {
   config_path = "${get_repo_root()}/infrastructure/terragrunt/global/cloudflare-tokens"
 
   mock_outputs = {
-    vault_data = { wandns = { api_token = "mock-wandns-token" } }
+    vault_data = {
+      wandns       = { api_token = "mock-wandns-token" }
+      logcollector = { api_token = "mock-logcollector-token" }
+    }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }

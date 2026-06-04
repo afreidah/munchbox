@@ -4,9 +4,10 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Polls the Cloudflare GraphQL Analytics API for firewall events and HTTP
-# traffic statistics. Ships firewall events to Loki as structured JSON logs
-# and exposes HTTP traffic metrics via Prometheus. Traces poll cycles with
-# OpenTelemetry for Tempo correlation.
+# traffic statistics and the REST Audit Logs API for account audit events. Ships
+# firewall and audit events to Loki as structured JSON logs and exposes HTTP
+# traffic metrics via Prometheus. Traces poll cycles with OpenTelemetry for Tempo
+# correlation.
 # -------------------------------------------------------------------------------
 
 job "cloudflare-log-collector" {
@@ -114,7 +115,7 @@ job "cloudflare-log-collector" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector:v0.1.12"
+        image              = "registry.munchbox.cc/cloudflare-log-collector:v0.1.16-5-g2b402ee"
         image_pull_timeout = "5m"
         network_mode       = "host"
         args               = ["-config", "/secrets/config.yaml"]
@@ -129,12 +130,17 @@ job "cloudflare-log-collector" {
         change_mode = "restart"
         data        = <<-EOF
 cloudflare:
-  api_token: "{{ with secret "secret/data/cloudflare" }}{{ .Data.data.api_token }}{{ end }}"
+  api_token: "{{ with secret "secret/data/cloudflare-logcollector" }}{{ .Data.data.api_token }}{{ end }}"
   zones:
     - id: "bd3f7236466255155ab59b9d21cd88fd"
       name: "munchbox.cc"
     - id: "79e647e591f69cc27254bf4771464619"
       name: "alexfreidah.com"
+  audit_logs:
+    enabled: true
+    accounts:
+      - id: "02e53aa2113dc76e57f9598af2f74939"
+        name: "munchbox"
   poll_interval: 1m
   backfill_window: 1h
 

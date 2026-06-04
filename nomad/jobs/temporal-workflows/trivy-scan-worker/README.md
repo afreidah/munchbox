@@ -7,7 +7,7 @@ that the trivy-dashboard reads from. Listens on the
 
 ## Image
 
-`registry.munchbox.cc/trivy-scan-worker:v0.2.0`
+`registry.munchbox.cc/trivy-scan-worker:v0.2.1`
 
 ## Hostname / exposure
 

@@ -241,6 +241,23 @@ locals {
         resources         = { "com.cloudflare.api.account.zone.${local.cloudflare_munchbox_zone_id}" = "*" }
       }]
     }
+    # --- cloudflare-log-collector: audit logs + per-zone analytics, read-only ---
+    # Single policy on purpose: the cloudflare v5 provider can't round-trip a token with
+    # multiple policies ("inconsistent result after apply"). One policy is fine even with
+    # mixed scopes - each permission group only applies to its matching resource type:
+    # Account Settings Read -> the account resource (audit logs); Analytics Read -> the
+    # zone resources (per-zone GraphQL firewall/http analytics).
+    logcollector = {
+      name = "munchbox-logcollector-audit-analytics"
+      policies = [{
+        permission_groups = ["Analytics Read", "Account Settings Read"]
+        resources = {
+          "com.cloudflare.api.account.${local.cloudflare_account_id}"               = "*"
+          "com.cloudflare.api.account.zone.${local.cloudflare_munchbox_zone_id}"    = "*"
+          "com.cloudflare.api.account.zone.${local.cloudflare_alexfreidah_zone_id}" = "*"
+        }
+      }]
+    }
   }
 
   # --- generated secrets written to Vault by global/vault-secrets ---
@@ -255,6 +272,10 @@ locals {
       source = "cloudflare_tokens"
       key    = "wandns"
       static = { zone_id = local.cloudflare_munchbox_zone_id }
+    }
+    "cloudflare-logcollector" = {
+      source = "cloudflare_tokens"
+      key    = "logcollector"
     }
   }
 
@@ -374,6 +395,26 @@ locals {
       task_queue    = "cleanup-task-queue"
       workflow_id   = "registry-gc-scheduled"
       input         = { job_name = "registry", registry_data_dir = "/mnt/gdrive/munchbox-data/registry", registry_image = "registry:3", dry_run = false, delete_untagged = true }
+    }
+    "aptly-cleanup-weekly" = {
+      schedule_id   = "aptly-cleanup-weekly"
+      year          = "*"
+      hour          = "4"
+      day_of_week   = "0"
+      workflow_type = "AptlyCleanup"
+      task_queue    = "cleanup-task-queue"
+      workflow_id   = "aptly-cleanup-scheduled"
+      input         = { job_name = "aptly", image = "urpylka/aptly:1.6.2" }
+    }
+    "postgres-maintenance-weekly" = {
+      schedule_id   = "postgres-maintenance-weekly"
+      year          = "*"
+      hour          = "6"
+      day_of_week   = "0"
+      workflow_type = "PostgresMaintenance"
+      task_queue    = "cleanup-task-queue"
+      workflow_id   = "postgres-maintenance-scheduled"
+      input         = { concurrency = 2 }
     }
   }
 
