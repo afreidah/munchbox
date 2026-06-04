@@ -580,7 +580,7 @@ remote_state {
   config = {
     address = "consul.service.consul:8500"
     scheme  = "http"
-    path    = "terraform/munchbox/${local.provider_type}/${local.node_name}"
+    path    = "terraform/munchbox/${path_relative_to_include()}"
     lock    = true
   }
 

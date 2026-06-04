@@ -30,7 +30,7 @@ oci_config:
   availability_domain: "OGLq:PHX-AD-1"
   shape: "VM.Standard.A1.Flex"
 
-# Network - managed by oci/networking
+# Network - managed by networking/oci
 create_network: false
 
 # Additional tags

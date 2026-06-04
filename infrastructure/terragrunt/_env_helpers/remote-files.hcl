@@ -32,10 +32,10 @@ locals {
   provider_type = local.root.locals.provider_type
   leaf_dir      = get_terragrunt_dir()
 
-  # --- pihole-consul: per-host JSONs + the probe-and-POST script ---
-  is_pihole_consul = local.provider_type == "pihole-consul"
+  # --- pihole-consul: per-host JSONs + the probe-and-POST script (leaves under dns/pihole/consul/<host>) ---
+  is_pihole_consul = strcontains(local.leaf_dir, "/dns/pihole/consul/")
   pc_node          = local.is_pihole_consul ? one([for n in local.root.locals.pihole_nodes : n if n.name == local.node_name]) : null
-  pc_tmpl_dir      = "${get_repo_root()}/infrastructure/terragrunt/global/pihole-consul/_templates"
+  pc_tmpl_dir      = "${get_repo_root()}/infrastructure/terragrunt/dns/pihole/consul/_templates"
   pc_tmpl_vars     = local.is_pihole_consul ? { host = local.pc_node.name, ip = local.pc_node.host } : {}
   pc_files = local.is_pihole_consul ? {
     "node-exporter.json"  = { destination = "/etc/consul-register/node-exporter.json", mode = "0644", content = templatefile("${local.pc_tmpl_dir}/node-exporter.json.tmpl", local.pc_tmpl_vars) }
