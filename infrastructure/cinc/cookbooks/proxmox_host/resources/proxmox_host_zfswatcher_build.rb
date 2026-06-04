@@ -30,7 +30,7 @@ property :ref,         String, default: 'master'
 property :install_dir, String, default: '/opt/zfswatcher'
 property :src_dir,     String, default: '/opt/zfswatcher/src'
 property :bin_path,    String, default: '/opt/zfswatcher/zfswatcher'
-property :build_cmd,   String, default: 'go build -o zfswatcher .'
+property :build_cmd,   String, default: 'GO111MODULE=off GOPATH="$(pwd)/golibs:$(go env GOPATH)" go build -o zfswatcher .'
 property :packages,    Array,  default: %w(git golang-go build-essential)
 
 default_action :install

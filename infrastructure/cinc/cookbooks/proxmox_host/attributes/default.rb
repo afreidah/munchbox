@@ -77,6 +77,9 @@ default[cookbook]['zfswatcher'] = {
 # toolchain and clones; subsequent converges skip the build when the
 # recorded commit matches the resolved ref. Bumping `ref` triggers a
 # rebuild on the next converge.
+#
+# --- pre-modules GOPATH code: deps vendored under golibs/src, no go.mod ---
+# --- so build with GO111MODULE=off + GOPATH=golibs, matching upstream Makefile ---
 # -------------------------------------------------------------------------------
 
 default[cookbook]['zfswatcher_build'] = {
@@ -84,7 +87,7 @@ default[cookbook]['zfswatcher_build'] = {
   ref: 'master',
   install_dir: '/opt/zfswatcher',
   src_dir: '/opt/zfswatcher/src',
-  build_cmd: 'go build -o zfswatcher .',
+  build_cmd: 'GO111MODULE=off GOPATH="$(pwd)/golibs:$(go env GOPATH)" go build -o zfswatcher .',
 }
 
 default[cookbook]['vault_paths'] = {

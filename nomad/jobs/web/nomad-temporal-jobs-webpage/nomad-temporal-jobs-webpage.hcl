@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "nomad-temporal-jobs-webpage"
 type  = "service"
-image = "registry.munchbox.cc/temporal-workers-web:v0.2.2"
+image = "registry.munchbox.cc/temporal-workers-web:v0.2.6"
 port  = 80
 node  = "any"
 host_network = false

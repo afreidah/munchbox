@@ -1,8 +1,8 @@
 # cleanup-worker
 
 Temporal worker that removes orphaned Nomad job data directories on
-client nodes over SSH. Listens on the `cleanup-task-queue`, driven by
-the `temporal-cleanup-trigger` periodic job.
+client nodes over SSH. Listens on the `cleanup-task-queue`; started on
+schedule by a Temporal Schedule.
 
 ## Image
 
@@ -37,4 +37,4 @@ the `temporal-cleanup-trigger` periodic job.
   re-signing always produces different output, so without this the
   task would restart on every Vault lease renewal
 - 100 MHz / 32 MiB resources -- this worker barely does anything until
-  the trigger fires
+  its schedule fires

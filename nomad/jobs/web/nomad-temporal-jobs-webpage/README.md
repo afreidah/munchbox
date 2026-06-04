@@ -6,7 +6,7 @@ trivy-scan-worker).
 
 ## Image
 
-`registry.munchbox.cc/temporal-workers-web:v0.2.2`
+`registry.munchbox.cc/temporal-workers-web:v0.2.6`
 
 ## Hostname / exposure
 

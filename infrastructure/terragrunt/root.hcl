@@ -325,6 +325,59 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
+  # TEMPORAL  (composition lives in _env_helpers/temporal.hcl)
+  # ---------------------------------------------------------------------------
+  # --- in-cluster frontend; plaintext gRPC (no mTLS), so insecure = true ---
+
+  temporal_host     = "temporal-server.service.consul"
+  temporal_port     = "7233"
+  temporal_insecure = true
+
+  # --- map key = TF state key; input is the workflow argument object
+  #     (env_helper json-encodes it, null = no argument). schedules use the
+  #     calendar form (not a cron string): it is what the provider stores and
+  #     reads back, so re-plans converge. ---
+  temporal_schedules = {
+    "backup-daily" = {
+      schedule_id   = "backup-daily"
+      year          = "*"
+      hour          = "1"
+      workflow_type = "Backup"
+      task_queue    = "backup-task-queue"
+      workflow_id   = "backup-scheduled"
+      input         = { local_days = 7, s3_days = 30, dump_concurrency = 4 }
+    }
+    "trivy-daily" = {
+      schedule_id   = "trivy-daily"
+      year          = "*"
+      hour          = "3"
+      workflow_type = "Scan"
+      task_queue    = "trivy-task-queue"
+      workflow_id   = "trivy-scheduled"
+      input         = { concurrency = 10 }
+    }
+    "cleanup-daily" = {
+      schedule_id   = "cleanup-daily"
+      year          = "*"
+      hour          = "5"
+      workflow_type = "Cleanup"
+      task_queue    = "cleanup-task-queue"
+      workflow_id   = "cleanup-scheduled"
+      input         = { data_dir = "/opt/nomad/data", grace_days = 7, dry_run = false, docker_prune = true }
+    }
+    "registry-gc-weekly" = {
+      schedule_id   = "registry-gc-weekly"
+      year          = "*"
+      hour          = "2"
+      day_of_week   = "0"
+      workflow_type = "RegistryGC"
+      task_queue    = "cleanup-task-queue"
+      workflow_id   = "registry-gc-scheduled"
+      input         = { job_name = "registry", registry_data_dir = "/mnt/gdrive/munchbox-data/registry", registry_image = "registry:3", dry_run = false, delete_untagged = true }
+    }
+  }
+
+  # ---------------------------------------------------------------------------
   # REMOTE-FILES  (composition lives in _env_helpers/remote-files.hcl)
   # ---------------------------------------------------------------------------
   # --- keyed by leaf dir name (node_name). Each entry feeds the remote-files

@@ -86,6 +86,7 @@ action :configure do
       owner 'root'
       group 'root'
       mode  '0755'
+      recursive true
       not_if { ::Dir.exist?(parent) }
     end
 

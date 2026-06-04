@@ -3,11 +3,11 @@
 Temporal worker that scans every running container image with Trivy
 (server mode) and writes CVE results to a PostgreSQL `trivy` database
 that the trivy-dashboard reads from. Listens on the
-`trivy-task-queue`, driven by `temporal-trivy-trigger`.
+`trivy-task-queue`; started on schedule by a Temporal Schedule.
 
 ## Image
 
-`registry.munchbox.cc/trivy-scan-worker:v0.1.1`
+`registry.munchbox.cc/trivy-scan-worker:v0.2.0`
 
 ## Hostname / exposure
 
