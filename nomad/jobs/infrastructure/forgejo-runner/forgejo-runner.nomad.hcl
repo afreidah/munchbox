@@ -95,7 +95,7 @@ job "forgejo-runner" {
       }
 
       config {
-        image        = "gitea/act_runner:0.2.11"
+        image        = "gitea/act_runner:0.6.1"
         network_mode = "host"
         privileged   = true
 

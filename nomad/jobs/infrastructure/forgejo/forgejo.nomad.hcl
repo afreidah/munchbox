@@ -191,7 +191,7 @@ job "forgejo" {
       }
 
       config {
-        image   = "busybox:1.37.0"
+        image   = "busybox:1.38.0"
         command = "sh"
         args    = ["-c", "mkdir -p /data/gitea/conf && cp /local/app.ini /data/gitea/conf/app.ini && chown -R 1000:1000 /data/gitea"]
         volumes = [
@@ -338,7 +338,7 @@ EOH
 
       # --- Container Configuration ---
       config {
-        image              = "codeberg.org/forgejo/forgejo:14.0.3"
+        image              = "codeberg.org/forgejo/forgejo:15.0.2"
         image_pull_timeout = "10m"
         ports              = ["http", "ssh"]
         volumes            = [

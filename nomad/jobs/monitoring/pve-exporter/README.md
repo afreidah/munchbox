@@ -7,7 +7,7 @@ API. Targets are wired up in Prometheus, this job just exposes
 
 ## Image
 
-`prompve/prometheus-pve-exporter:3.5.0`
+`prompve/prometheus-pve-exporter:3.9.0`
 
 ## Hostname / exposure
 

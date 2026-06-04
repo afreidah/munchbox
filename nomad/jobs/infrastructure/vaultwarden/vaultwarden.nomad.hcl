@@ -94,7 +94,7 @@ job "vaultwarden" {
 
       # --- Container Configuration ---
       config {
-        image              = "vaultwarden/server:1.35.2"
+        image              = "vaultwarden/server:1.36.0"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

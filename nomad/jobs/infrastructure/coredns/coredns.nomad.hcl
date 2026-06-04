@@ -131,7 +131,7 @@ job "coredns" {
 
       # --- Docker Configuration ---
       config {
-        image        = "coredns/coredns:1.13.2"
+        image        = "coredns/coredns:1.14.3"
         network_mode = "host"
         args         = ["-conf", "/etc/coredns/Corefile"]
         volumes      = [

@@ -10,7 +10,7 @@ System job on ingress-role nodes, active/passive with goren as MASTER.
 
 ## Image
 
-`alpine:3.21` (keepalived, curl, wireguard-tools installed at task start)
+`alpine:3.21.7` (keepalived, curl, wireguard-tools installed at task start)
 
 ## Hostname / exposure
 

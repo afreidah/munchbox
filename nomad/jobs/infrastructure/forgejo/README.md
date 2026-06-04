@@ -5,7 +5,7 @@ runner. All munchbox infra/app code lives here.
 
 ## Image
 
-`codeberg.org/forgejo/forgejo:14.0.3` (plus `busybox:1.37.0` for the prestart
+`codeberg.org/forgejo/forgejo:15.0.2` (plus `busybox:1.38.0` for the prestart
 init-config task)
 
 ## Hostname / exposure

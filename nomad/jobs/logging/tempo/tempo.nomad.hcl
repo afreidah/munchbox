@@ -127,7 +127,7 @@ job "tempo" {
       driver = "docker"
 
       config {
-        image   = "busybox:latest"
+        image   = "busybox:1.38.0"
         command = "sh"
         args    = ["-c", "mkdir -p /init-data && chown -R 10001:10001 /init-data && chmod 755 /init-data"]
         volumes = [
@@ -148,7 +148,7 @@ job "tempo" {
     task "tempo" {
       driver = "docker"
       config {
-        image              = "grafana/tempo:2.10.2"
+        image              = "grafana/tempo:3.0.0"
         image_pull_timeout = "10m"
         ports              = ["http", "otlp-grpc", "otlp-http", "zipkin", "jaeger-http", "jaeger-grpc"]
         network_mode       = "host"
@@ -160,7 +160,7 @@ job "tempo" {
       }
       template {
         data        = <<EOH
-# Tempo Configuration
+# Tempo Configuration (3.0 architecture: live-store + block-builder + backend-scheduler)
 stream_over_http_enabled: true
 
 server:
@@ -186,16 +186,7 @@ distributor:
         grpc:
           endpoint: 0.0.0.0:14250
 
-# Ingester writes traces to storage
-ingester:
-  max_block_duration: 5m
-
-# Compactor manages trace data lifecycle
-compactor:
-  compaction:
-    block_retention: 72h  # 3 day retention
-
-# Storage configuration (local filesystem)
+# Storage configuration (local filesystem). 3.0 reads existing 2.x blocks automatically.
 storage:
   trace:
     backend: local
@@ -204,19 +195,15 @@ storage:
     local:
       path: /var/tempo/blocks
 
-# Metrics generator for RED metrics from traces
+# Metrics generator for RED metrics from traces.
+# 3.0: the traces_storage block + local_blocks processor are gone; the live-store
+# now serves recent traces internally, so they are no longer configured here.
 metrics_generator:
-  traces_storage:
-    path: /var/tempo/generator/traces
   registry:
     external_labels:
       source: tempo
     collection_interval: 15s
   processor:
-    local_blocks:
-      max_live_traces: 10000
-      flush_check_period: 30s
-      complete_block_timeout: 120s
     service_graphs:
       dimensions: [http.method, http.status_code]
       enable_client_server_prefix: true
@@ -234,11 +221,18 @@ metrics_generator:
 querier:
   max_concurrent_queries: 10
 
-# Overrides for multi-tenant limits
+# Overrides. 3.0: the top-level ingester/compactor blocks were removed; retention and
+# compaction now live here under defaults.compaction.
+# compaction_disabled is a migration shim - the 3.0 compactor cannot compact old 2.x
+# (RF3) blocks, so leave it true until the 2.x blocks age out past block_retention
+# (~3 days), then remove it to re-enable compaction.
 overrides:
   defaults:
+    compaction:
+      block_retention: 72h  # 3 day retention
+      compaction_disabled: true
     metrics_generator:
-      processors: [service-graphs, span-metrics, local-blocks]
+      processors: [service-graphs, span-metrics]
 
 EOH
         destination = "local/config.yaml"

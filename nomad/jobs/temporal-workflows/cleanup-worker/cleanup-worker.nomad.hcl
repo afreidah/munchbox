@@ -162,6 +162,9 @@ job "cleanup-worker" {
         {{ with secret "secret/data/backup-worker" }}
         NOMAD_TOKEN={{ .Data.data.nomad_token }}
         {{ end }}
+        {{ with secret "secret/data/postgres-shared/root" }}
+        PGPASSWORD={{ .Data.data.password }}
+        {{ end }}
         EOF
         destination = "secrets/secrets.env"
         env         = true
@@ -175,6 +178,9 @@ job "cleanup-worker" {
         SSH_KEY_PATH                = "/root/.ssh/id_ed25519"
         SSH_CERT_PATH               = "/root/.ssh/id_ed25519-cert.pub"
         SSH_HOST_CA_PATH            = "/root/.ssh/ssh-host-ca.pub"
+        PG_HOST                     = "postgres-primary.service.consul"
+        PG_USER                     = "postgres"
+        PG_SSLMODE                  = "prefer"
         METRICS_LISTEN              = ":9090"
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
       }

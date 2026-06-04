@@ -123,7 +123,7 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.6.11"
+        image        = "traefik:v3.7.1"
         network_mode = "host"
         ports        = ["http", "https", "dashboard", "gitssh"]
         volumes      = [
@@ -742,7 +742,7 @@ EOH
       }
 
       config {
-        image        = "busybox:1.37"
+        image        = "busybox:1.38.0"
         network_mode = "host"
         # Filter out long-poll/websocket connections that skew response time metrics:
         # - Nomad blocking queries (index=)
@@ -908,7 +908,7 @@ EOH
       }
 
       config {
-        image              = "cloudflare/cloudflared:2026.1.2"
+        image              = "cloudflare/cloudflared:2026.5.2"
         image_pull_timeout = "10m"
         ports              = ["cloudflared-metrics"]
         network_mode       = "host"

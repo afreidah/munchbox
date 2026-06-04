@@ -8,12 +8,12 @@ service in the cluster routes through here.
 
 ## Image
 
-- traefik: `traefik:v3.6.11`
+- traefik: `traefik:v3.7.1`
 - geoip-updater: `maxmindinc/geoipupdate:v7`
-- traefik-log-filter: `busybox:1.37`
-- traefik-log-agent: `hhftechnology/traefik-log-dashboard-agent:latest`
-- traefik-log-dashboard: `hhftechnology/traefik-log-dashboard:latest`
-- cloudflared-tunnel: `cloudflare/cloudflared:2026.1.2`
+- traefik-log-filter: `busybox:1.38.0`
+- traefik-log-agent: `hhftechnology/traefik-log-dashboard-agent:3.1.1`
+- traefik-log-dashboard: `hhftechnology/traefik-log-dashboard:3.1.1`
+- cloudflared-tunnel: `cloudflare/cloudflared:2026.5.2`
 
 ## Hostname / exposure
 

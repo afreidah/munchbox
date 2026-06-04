@@ -5,7 +5,7 @@ grabs off to Deluge.
 
 ## Image
 
-`linuxserver/radarr:6.0.4`
+`linuxserver/radarr:6.1.1`
 
 ## Hostname / exposure
 

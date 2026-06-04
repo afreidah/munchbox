@@ -211,7 +211,7 @@ job "patroni" {
       driver = "docker"
 
       config {
-        image   = "busybox:1.37.0"
+        image   = "busybox:1.38.0"
         command = "sh"
         args    = ["-c", "mkdir -p /data/pgdata && chown -R 999:999 /data && chmod 700 /data/pgdata"]
         volumes = ["/opt/nomad/data/patroni-${NOMAD_ALLOC_INDEX}:/data"]
@@ -644,7 +644,7 @@ echo "Database initialization complete"
       }
 
       config {
-        image        = "quay.io/prometheuscommunity/postgres-exporter:v0.18.1"
+        image        = "quay.io/prometheuscommunity/postgres-exporter:v0.19.1"
         network_mode = "host"
       }
 

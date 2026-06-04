@@ -7,7 +7,7 @@ HAProxy uses to find the current primary.
 ## image
 
 `registry.munchbox.cc/patroni:pg18`
-(sidecar exporter: `quay.io/prometheuscommunity/postgres-exporter:v0.18.1`)
+(sidecar exporter: `quay.io/prometheuscommunity/postgres-exporter:v0.19.1`)
 
 ## hostname / exposure
 

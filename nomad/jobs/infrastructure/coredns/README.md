@@ -6,7 +6,7 @@ forwarder on port 5354, which each node's dnsmasq uses for non-Consul lookups.
 
 ## Image
 
-`coredns/coredns:1.13.2`
+`coredns/coredns:1.14.3`
 
 ## Hostname / exposure
 
