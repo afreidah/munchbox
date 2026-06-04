@@ -7,7 +7,7 @@ authenticate directly against Vaultwarden.
 
 ## image
 
-`vaultwarden/server:1.35.2`
+`vaultwarden/server:1.36.0`
 
 ## hostname / exposure
 

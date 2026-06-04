@@ -186,7 +186,7 @@ job "minio" {
 
       # --- Docker Configuration ---
       config {
-        image              = "minio/minio:latest"
+        image              = "minio/minio:RELEASE.2025-09-07T16-13-09Z"
         image_pull_timeout = "10m"
         ports              = ["api", "console"]
         network_mode       = "host"

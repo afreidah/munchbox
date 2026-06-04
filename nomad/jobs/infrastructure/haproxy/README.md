@@ -7,7 +7,7 @@ connections on failover so apps reconnect to the new primary.
 
 ## image
 
-`haproxy:3.1-alpine`
+`haproxy:3.2-alpine`
 
 ## hostname / exposure
 

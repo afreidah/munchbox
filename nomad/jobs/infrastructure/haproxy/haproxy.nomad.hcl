@@ -224,7 +224,7 @@ job "haproxy" {
 
       # --- Docker Configuration ---
       config {
-        image              = "haproxy:3.1-alpine"
+        image              = "haproxy:3.2-alpine"
         image_pull_timeout = "5m"
         network_mode       = "host"
         volumes = [

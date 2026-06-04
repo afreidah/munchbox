@@ -120,7 +120,7 @@ job "aptly" {
       }
 
       config {
-        image   = "alpine:3.23"
+        image   = "alpine:3.23.4"
         command = "/bin/sh"
         args    = ["/local/setup-gpg.sh"]
 
@@ -191,7 +191,7 @@ echo "GPG key imported successfully (Fingerprint: $FPR)"
       }
 
       config {
-        image   = "alpine:3.23"
+        image   = "alpine:3.23.4"
         command = "/bin/sh"
         args    = ["/local/setup-webui.sh"]
 
@@ -261,7 +261,7 @@ echo "Web UI installed at $WEBUI_DIR"
       }
 
       config {
-        image   = "curlimages/curl:8.18.0"
+        image   = "curlimages/curl:8.20.0"
         command = "/bin/sh"
         args    = ["/local/setup.sh"]
       }
