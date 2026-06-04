@@ -5,7 +5,7 @@
 #
 # Temporal worker that scans all running container images for vulnerabilities
 # using Trivy server mode. Stores CVE results in PostgreSQL. Listens on the
-# trivy-task-queue, triggered by the temporal-trivy-trigger periodic job.
+# trivy-task-queue; workflows are started on schedule by a Temporal Schedule.
 # -------------------------------------------------------------------------------
 
 job "trivy-scan-worker" {
@@ -109,7 +109,7 @@ job "trivy-scan-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/trivy-scan-worker:v0.1.1"
+        image              = "registry.munchbox.cc/trivy-scan-worker:v0.2.0"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]

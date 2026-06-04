@@ -1,58 +1,57 @@
 # Temporal Workflows
 
 Temporal-based automated backup, vulnerability scanning, and cleanup
-system. Each domain has its own dedicated worker and task queue, with
-periodic trigger jobs that submit workflows on schedule.
+system. Each domain has its own dedicated worker and task queue; workflows
+fire on cron from Temporal Schedules.
 
 ## Architecture
 
 Each workflow domain (backup, trivy scan, cleanup) runs as an independent
 Temporal worker with its own container image, task queue, and Nomad
-service job. Triggers are lightweight batch jobs that start a workflow via
-the Temporal API and exit. The trigger binary is shared across all
-domains and bundled into the backup-worker image.
+service job. Workflows are started on schedule by Temporal Schedules
+managed as code in the `infrastructure/terragrunt` repo
+(`global/temporal-config`) -- the server fires them, so there are no
+trigger jobs or trigger binary.
 
 ## Jobs
 
-| Job                      | Type    | Image           | Task Queue          | Schedule    | Purpose                                |
-|--------------------------|---------|-----------------|---------------------|-------------|----------------------------------------|
-| backup-worker            | service | backup-worker   | backup-task-queue   | Always-on   | Nomad, Consul, PostgreSQL, registry snapshots + S3 upload |
-| trivy-scan-worker        | service | trivy-scan-worker | trivy-task-queue  | Always-on   | Container image vulnerability scanning |
-| cleanup-worker           | service | cleanup-worker  | cleanup-task-queue  | Always-on   | Orphaned data directory removal via SSH |
-| temporal-backup-trigger  | batch   | backup-worker   | --                  | Daily 2 AM  | Triggers backup workflow               |
-| temporal-trivy-trigger   | batch   | backup-worker   | --                  | Daily 3 AM  | Triggers trivy scan workflow           |
-| temporal-cleanup-trigger | batch   | backup-worker   | --                  | Daily 5 AM  | Triggers cleanup workflow              |
-| temporal-registry-gc-trigger | batch | backup-worker | --                  | Weekly Sun 2 AM | Triggers Docker Registry GC workflow (scales registry to 0, runs `registry garbage-collect`, scales back to 1) |
+| Job               | Type    | Image             | Task Queue         | Purpose                                |
+|-------------------|---------|-------------------|--------------------|----------------------------------------|
+| backup-worker     | service | backup-worker     | backup-task-queue  | Nomad, Consul, PostgreSQL snapshots + S3 upload |
+| trivy-scan-worker | service | trivy-scan-worker | trivy-task-queue   | Container image vulnerability scanning |
+| cleanup-worker    | service | cleanup-worker    | cleanup-task-queue | Orphaned data removal + Docker registry GC |
+
+Schedules (cron, in `temporal-config`): backup daily 1 AM, trivy daily
+3 AM, cleanup daily 5 AM, registry GC weekly Sun 2 AM.
 
 ## Data Flow
 
-**Backup** -- Snapshots Nomad and Consul Raft state, dumps all PostgreSQL
-databases (pg_dumpall), tarballs the container registry. Each backup is
-stored locally on the gdrive NFS mount and uploaded to S3 for off-site
-redundancy. Old backups are cleaned up based on retention policy (7 days
-local, 30 days S3).
+**Backup** -- Snapshots Nomad and Consul Raft state and PostgreSQL (the
+three legs run concurrently). PostgreSQL dumps cluster globals once, then
+dumps each database to its own file with bounded concurrency. Each artifact
+is stored locally on the gdrive NFS mount and uploaded to S3. Old backups
+are cleaned up by retention (7 days local, 30 days S3).
 
 **Trivy Scan** -- Discovers running Docker images from the Nomad API,
-scans each through the Trivy server in parallel batches, and stores CVE
-results in PostgreSQL for the trivy-dashboard.
+scans them through the Trivy server with bounded concurrency, and stores
+CVE results in PostgreSQL for the trivy-dashboard.
 
 **Cleanup** -- SSHes to each Nomad client node, identifies job data
 directories that no longer correspond to running allocations, and removes
 those older than the grace period. Optionally prunes unused Docker images.
+The same worker also hosts the registry GC workflow.
 
 ## Observability
 
-All workers and triggers emit OpenTelemetry traces to Tempo with proper
-service graph edges (nomad, consul, postgres, s3-orchestrator,
-trivy-server). Workers expose Prometheus metrics on port 9090 for SDK
-metrics (workflow/activity latency, retry counts, task queue depth).
-Structured JSON logging via slog to stdout for Alloy/Loki collection.
+All workers emit OpenTelemetry traces to Tempo with proper service graph
+edges (nomad, consul, postgres, s3-orchestrator, trivy-server). Workers
+expose Prometheus metrics on port 9090 for SDK metrics (workflow/activity
+latency, retry counts, task queue depth). Structured JSON logging via slog
+to stdout for Alloy/Loki collection.
 
 ## Notable Configuration
 
-- Triggers pinned to bare metal nodes (Oracle has unreliable WAN for
-  Temporal gRPC)
-- Cleanup trigger runs in live mode (`DRY_RUN=false`) with a 7-day grace
+- Cleanup schedule runs in live mode (`dry_run=false`) with a 7-day grace
   period
 - Backup worker pinned to nomad-client-03 for gdrive mount access
 - Cleanup worker needs SSH keys and host CA cert from Vault
@@ -60,10 +59,10 @@ Structured JSON logging via slog to stdout for Alloy/Loki collection.
 
 ## Dependencies
 
-- **Temporal** -- workflow orchestration engine
+- **Temporal** -- workflow orchestration engine + schedules
 - **Patroni** -- databases being backed up and trivy scan results stored
 - **Trivy Server** -- vulnerability scanning API
-- **Docker Registry** -- registry data backup source
+- **Docker Registry** -- garbage-collected by the registry-gc workflow
 - **S3 Orchestrator** -- off-site backup storage
 - **Vault** -- Nomad/Consul tokens, database credentials, SSH keys
 - **Tempo** -- distributed tracing

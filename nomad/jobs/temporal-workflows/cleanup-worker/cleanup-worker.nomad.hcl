@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Temporal worker that cleans up orphaned Nomad job data directories on client
-# nodes via SSH. Listens on the cleanup-task-queue, triggered by the
-# temporal-cleanup-trigger periodic job.
+# nodes via SSH. Listens on the cleanup-task-queue; workflows are started on
+# schedule by a Temporal Schedule (managed in infrastructure/terragrunt).
 # -------------------------------------------------------------------------------
 
 job "cleanup-worker" {

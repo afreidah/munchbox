@@ -3,10 +3,10 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Temporal worker that executes backup workflows for Nomad, Consul, PostgreSQL,
-# and the container registry. Snapshots are stored on /mnt/gdrive and uploaded
-# to S3 for off-site redundancy. Listens on the backup-task-queue, triggered
-# by the temporal-backup-trigger periodic job.
+# Temporal worker that executes backup workflows for Nomad, Consul, and
+# PostgreSQL. Snapshots are stored on /mnt/gdrive and uploaded to S3 for
+# off-site redundancy. Listens on the backup-task-queue; workflows are started
+# on schedule by a Temporal Schedule (managed in infrastructure/terragrunt).
 # -------------------------------------------------------------------------------
 
 job "backup-worker" {
@@ -119,7 +119,7 @@ job "backup-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/backup-worker:v0.1.4"
+        image              = "registry.munchbox.cc/backup-worker:v0.2.0"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]
