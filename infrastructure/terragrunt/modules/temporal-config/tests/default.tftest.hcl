@@ -3,7 +3,7 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Asserts the schedules for_each fan-out, the cron-to-cron_items wrapping, the
+# Asserts the schedules for_each fan-out, the calendar-item mapping, the
 # optional-field defaults (namespace=default, overlap_policy=Skip), explicit
 # overrides, and the empty-map edge case.
 # -----------------------------------------------------------------------------
@@ -16,7 +16,7 @@ variables {
   schedules = {
     "backup-daily" = {
       schedule_id   = "backup-daily"
-      cron          = "0 1 * * *"
+      hour          = "1"
       workflow_type = "Backup"
       task_queue    = "backup-task-queue"
       workflow_id   = "backup-scheduled"
@@ -24,7 +24,8 @@ variables {
     }
     "registry-gc-weekly" = {
       schedule_id    = "registry-gc-weekly"
-      cron           = "0 2 * * 0"
+      hour           = "2"
+      day_of_week    = "0"
       workflow_type  = "RegistryGC"
       task_queue     = "cleanup-task-queue"
       workflow_id    = "registry-gc-scheduled"
@@ -54,16 +55,28 @@ run "schedules_for_each" {
 }
 
 # -------------------------------------------------------------------------
-# cron wraps into spec.cron_items
+# calendar: hour maps into spec.calendar_items, day_of_month defaults to 1-31
 # -------------------------------------------------------------------------
 
-run "cron_wrapping" {
+run "calendar_mapping" {
   command = plan
 
-  # --- single cron string becomes a one-element cron_items list ---
+  # --- hour propagates into the single calendar item ---
   assert {
-    condition     = temporal_schedule.this["backup-daily"].spec.cron_items == tolist(["0 1 * * *"])
-    error_message = "cron should wrap into a single-element spec.cron_items list"
+    condition     = temporal_schedule.this["backup-daily"].spec.calendar_items[0].hour == "1"
+    error_message = "hour should map into spec.calendar_items[0].hour"
+  }
+
+  # --- unset day_of_month defaults to the server wildcard 1-31 ---
+  assert {
+    condition     = temporal_schedule.this["backup-daily"].spec.calendar_items[0].day_of_month == "1-31"
+    error_message = "day_of_month should default to 1-31 when omitted"
+  }
+
+  # --- explicit day_of_week respected (weekly registry GC on Sunday) ---
+  assert {
+    condition     = temporal_schedule.this["registry-gc-weekly"].spec.calendar_items[0].day_of_week == "0"
+    error_message = "explicit day_of_week should be respected"
   }
 }
 

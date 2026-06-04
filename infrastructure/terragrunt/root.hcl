@@ -333,13 +333,15 @@ locals {
   temporal_port     = "7233"
   temporal_insecure = true
 
-  # --- schedules replace the Nomad periodic trigger jobs. map key = TF state
-  #     key; input is the workflow argument object (env_helper json-encodes it,
-  #     null = no argument). cron/config mirror the retired trigger jobs. ---
+  # --- map key = TF state key; input is the workflow argument object
+  #     (env_helper json-encodes it, null = no argument). schedules use the
+  #     calendar form (not a cron string): it is what the provider stores and
+  #     reads back, so re-plans converge. ---
   temporal_schedules = {
     "backup-daily" = {
       schedule_id   = "backup-daily"
-      cron          = "0 1 * * *"
+      year          = "*"
+      hour          = "1"
       workflow_type = "Backup"
       task_queue    = "backup-task-queue"
       workflow_id   = "backup-scheduled"
@@ -347,7 +349,8 @@ locals {
     }
     "trivy-daily" = {
       schedule_id   = "trivy-daily"
-      cron          = "0 3 * * *"
+      year          = "*"
+      hour          = "3"
       workflow_type = "Scan"
       task_queue    = "trivy-task-queue"
       workflow_id   = "trivy-scheduled"
@@ -355,7 +358,8 @@ locals {
     }
     "cleanup-daily" = {
       schedule_id   = "cleanup-daily"
-      cron          = "0 5 * * *"
+      year          = "*"
+      hour          = "5"
       workflow_type = "Cleanup"
       task_queue    = "cleanup-task-queue"
       workflow_id   = "cleanup-scheduled"
@@ -363,7 +367,9 @@ locals {
     }
     "registry-gc-weekly" = {
       schedule_id   = "registry-gc-weekly"
-      cron          = "0 2 * * 0"
+      year          = "*"
+      hour          = "2"
+      day_of_week   = "0"
       workflow_type = "RegistryGC"
       task_queue    = "cleanup-task-queue"
       workflow_id   = "registry-gc-scheduled"

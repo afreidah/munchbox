@@ -3,10 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Manages Temporal Schedules on the self-hosted frontend. Each schedule fires a
-# workflow on a cron against its task queue, replacing the Nomad periodic
-# trigger jobs. Schedule definitions (cron, workflow, JSON input) come from the
-# env_helper; the input string is the workflow's argument payload.
+# Manages Temporal Schedules on the self-hosted frontend. Each schedule starts a
+# workflow on its task queue with a JSON input that deserializes into the
+# workflow's config struct. Schedule definitions come from the env_helper.
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
@@ -20,9 +19,17 @@ resource "temporal_schedule" "this" {
   schedule_id = each.value.schedule_id
 
   spec = {
-    cron_items = [each.value.cron]
-    time_zone  = each.value.time_zone
-    jitter     = each.value.jitter
+    calendar_items = [{
+      year         = each.value.year
+      minute       = each.value.minute
+      hour         = each.value.hour
+      day_of_month = each.value.day_of_month
+      month        = each.value.month
+      day_of_week  = each.value.day_of_week
+      second       = each.value.second
+    }]
+    time_zone = each.value.time_zone
+    jitter    = each.value.jitter
   }
 
   action = {
@@ -45,5 +52,13 @@ resource "temporal_schedule" "this" {
 
   state = {
     paused = each.value.paused
+  }
+
+  # The provider plans calendar year="*", but the API stores "match all years"
+  # as an empty range and returns null, so spec never converges on re-plan.
+  # Ignore server-side spec drift; change a schedule's timing with
+  # `apply -replace` on the affected instance.
+  lifecycle {
+    ignore_changes = [spec]
   }
 }

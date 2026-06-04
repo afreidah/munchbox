@@ -30,9 +30,18 @@ variable "temporal_insecure" {
 variable "schedules" {
   description = "Map of Temporal schedules to manage; map key is the Terraform state key."
   type = map(object({
-    schedule_id       = string
-    namespace         = optional(string, "default")
-    cron              = string
+    schedule_id = string
+    namespace   = optional(string, "default")
+    # Calendar fields (not cron): the provider stores schedules as a structured
+    # calendar and reads them back that way, so a cron string never converges.
+    # Defaults are the server's canonical wildcards for an unset field.
+    year              = optional(string, "*")
+    minute            = optional(string, "0")
+    hour              = string
+    day_of_month      = optional(string, "1-31")
+    month             = optional(string, "1-12")
+    day_of_week       = optional(string, "0-6")
+    second            = optional(string, "0")
     time_zone         = optional(string, "America/Los_Angeles")
     jitter            = optional(string)
     workflow_type     = string
