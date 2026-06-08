@@ -17,6 +17,26 @@ terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules//bootstrap"
 }
 
+generate "checkov_config" {
+  path      = ".checkov.yaml"
+  if_exists = "overwrite"
+  contents  = <<-EOF
+    skip-check:
+      # --- cloud nodes need public IPs ---
+      - CKV_AWS_130
+      # --- bootstrap SSH + ICMP, gated by vars when unused ---
+      - CKV_AWS_24
+      - CKV_AWS_277
+      # --- homelab: VPC flow logs not paying for ---
+      - CKV2_AWS_11
+      # --- module SG attached by caller; default SG is provider-managed ---
+      - CKV2_AWS_5
+      - CKV2_AWS_12
+      # --- checkov false positive on the OCI instance check ---
+      - CKV_OCI_4
+  EOF
+}
+
 # --- bootstrap calls module.network / module.compute with count, which
 #     forbids those children from carrying their own provider {} blocks.
 #     Providers must live at the leaf-cache root and inherit down through
@@ -51,9 +71,9 @@ generate "providers" {
 }
 
 # --- network source: sibling node (when node.yaml.share_network_from is set)
-#     or sibling networking/ folder otherwise. Both export subnet_id + security_group_id. ---
+#     or the shared networking/oci leaf otherwise. Both export subnet_id + security_group_id. ---
 dependency "network_source" {
-  config_path = local.share_network_from != "" ? "${dirname(get_original_terragrunt_dir())}/${local.share_network_from}" : "${dirname(get_original_terragrunt_dir())}/networking"
+  config_path = local.share_network_from != "" ? "${dirname(get_original_terragrunt_dir())}/${local.share_network_from}" : "${get_repo_root()}/infrastructure/terragrunt/networking/oci"
 
   mock_outputs = {
     subnet_id         = "mock-subnet-id"

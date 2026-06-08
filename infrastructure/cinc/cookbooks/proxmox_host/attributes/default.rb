@@ -50,6 +50,20 @@ default[cookbook]['pci_passthrough'] = {
 }
 
 # -------------------------------------------------------------------------------
+# Kernel cmdline (GRUB_CMDLINE_LINUX_DEFAULT)
+#
+# Single owner of the boot cmdline. IOMMU params are added automatically
+# when gvt_g/pci_passthrough are enabled; mitigations_off disables CPU
+# vuln mitigations (perf vs security tradeoff -- old i5s only). Reboot to
+# take effect is operator-gated.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['kernel_cmdline'] = {
+  base: ['quiet'],
+  mitigations_off: false,
+}
+
+# -------------------------------------------------------------------------------
 # zfswatcher (rubirosa only today)
 #
 # Web UI on port 8800, routed through traefik at zfs.munchbox.cc. Proxy
@@ -95,4 +109,39 @@ default[cookbook]['vault_paths'] = {
     path: 'secret/data/proxmox/zfswatcher-proxy',
     field: 'password_hash',
   },
+}
+
+# -------------------------------------------------------------------------------
+# Kernel sysctl tuning
+#
+# Map of sysctl name => value, applied persistently + live (no reboot).
+# vm.swappiness drops from the distro default of 60 -- a hypervisor should
+# shrink page cache long before paging out guest RAM.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['sysctl'] = {
+  'vm.swappiness' => 10,
+}
+
+# -------------------------------------------------------------------------------
+# KSM (kernel samepage merging)
+#
+# Ensures ksmtuned runs so identical guest pages dedupe under memory
+# pressure. Safe fleet-wide; ksmtuned self-activates only when needed.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['ksm'] = {
+  enabled: true,
+}
+
+# -------------------------------------------------------------------------------
+# PVE no-subscription apt repo
+#
+# Owns /etc/apt/sources.list.d/pve-no-subscription.list with the codename
+# tracking the host OS (read from /etc/os-release), correcting hosts left
+# on a stale release after an OS upgrade.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['apt_repo'] = {
+  manage: true,
 }

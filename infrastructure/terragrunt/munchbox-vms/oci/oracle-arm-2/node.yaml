@@ -1,0 +1,39 @@
+# -----------------------------------------------------------------------------
+# OCI NODE CONFIGURATION
+# -----------------------------------------------------------------------------
+# Node: oracle-arm-2
+# Provider: Oracle Cloud Infrastructure (free tier ARM Ampere A1)
+# Purpose: Workloads
+# -----------------------------------------------------------------------------
+
+name: oracle-arm-2
+
+# Compute resources (Oracle free tier ARM: up to 4 OCPU, 24GB RAM total)
+cpu: 2
+memory_gb: 12
+disk_gb: 50
+
+# WireGuard
+wireguard_address: "10.200.0.14"
+
+# Node classification
+node_class: cloud
+node_pool: ""
+node_meta:
+  provider: oci
+  shape: arm
+  purpose: workloads
+
+# OCI-specific config
+oci_config:
+  compartment_id: "ocid1.tenancy.oc1..aaaaaaaaeyhaous2t76u676i73cr4wi2turtytmu2j2muyiyvrboqpsp5z7a"
+  availability_domain: "OGLq:PHX-AD-1"
+  shape: "VM.Standard.A1.Flex"
+
+# Network - managed by networking/oci
+create_network: false
+
+# Additional tags
+tags:
+  Environment: production
+  Purpose: workloads

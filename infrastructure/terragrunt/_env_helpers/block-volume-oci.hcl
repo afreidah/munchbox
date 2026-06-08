@@ -13,6 +13,17 @@ terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules//block-volume-oci"
 }
 
+generate "checkov_config" {
+  path      = ".checkov.yaml"
+  if_exists = "overwrite"
+  contents  = <<-EOF
+    skip-check:
+      # --- homelab: volume backup policy + CMK encryption not worth paying for ---
+      - CKV_OCI_2
+      - CKV_OCI_3
+  EOF
+}
+
 locals {
   root     = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   dir_name = basename(get_terragrunt_dir())

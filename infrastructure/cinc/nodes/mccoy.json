@@ -22,6 +22,9 @@
     "proxmox_host": {
       "zfs_arc": {
         "max_bytes": 1665138688
+      },
+      "kernel_cmdline": {
+        "mitigations_off": true
       }
     },
     "nfs": {
@@ -48,7 +51,6 @@
           "common_name": "client.munchbox.consul",
           "certificate": "/etc/consul.d/tls/consul.crt",
           "key": "/etc/consul.d/tls/consul.key",
-          "ttl": "720h",
           "alt_names": [
             "localhost",
             "mccoy",

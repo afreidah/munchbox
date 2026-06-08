@@ -12,6 +12,29 @@ terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules/vault-config"
 }
 
+locals {
+  # --- shared base for the consul/nomad mTLS cert roles: allow_any_name, no domain restriction, ttl unset so the cert-manager's requested ttl governs ---
+  cert_role_base = {
+    allowed_domains             = []
+    allow_any_name              = true
+    allow_subdomains            = false
+    allow_bare_domains          = false
+    allow_glob_domains          = false
+    allow_localhost             = true
+    allow_ip_sans               = true
+    allow_wildcard_certificates = true
+    enforce_hostnames           = true
+    client_flag                 = true
+    server_flag                 = true
+    require_cn                  = true
+    key_type                    = "rsa"
+    key_bits                    = 2048
+    ttl                         = "0s"
+    max_ttl                     = "8760h"
+    issued_by                   = ["cert-manager"]
+  }
+}
+
 inputs = {
   # --- Feature flags ---
   kv_enabled               = true
@@ -37,6 +60,7 @@ inputs = {
       allow_glob_domains = true
       max_ttl            = "8760h"
       ttl                = "720h"
+      issued_by          = ["nomad"]
     }
 
     "postgres" = {
@@ -47,9 +71,37 @@ inputs = {
         "postgres.service.consul",
         "node.consul"
       ]
-      max_ttl  = "720h"
-      ttl      = "72h"
-      key_bits = 2048
+      max_ttl   = "720h"
+      ttl       = "72h"
+      key_bits  = 2048
+      issued_by = ["nomad"]
+    }
+
+    # --- consul/nomad mTLS roles (adopted from the live unmanaged Vault roles) ---
+    "consul-server" = local.cert_role_base
+    "consul-client" = local.cert_role_base
+    "nomad-server"  = local.cert_role_base
+    "nomad-client"  = local.cert_role_base
+
+    # --- vault-server: explicit allowed_domains, subdomains/bare/glob on, hostnames off, 1yr default ttl ---
+    "vault-server" = {
+      allowed_domains             = ["munchbox.cc", "munchbox", "vault.service.consul", "stabler", "goren", "debian", "nomad-server-03", "localhost"]
+      allow_any_name              = true
+      allow_subdomains            = true
+      allow_bare_domains          = true
+      allow_glob_domains          = true
+      allow_localhost             = true
+      allow_ip_sans               = true
+      allow_wildcard_certificates = true
+      enforce_hostnames           = false
+      client_flag                 = true
+      server_flag                 = true
+      require_cn                  = true
+      key_type                    = "rsa"
+      key_bits                    = 2048
+      ttl                         = "8760h"
+      max_ttl                     = "8760h"
+      issued_by                   = ["cert-manager"]
     }
   }
 
@@ -81,35 +133,6 @@ inputs = {
         }
         path "pki_int/issue/nomad-client" {
           capabilities = ["create", "update"]
-        }
-      EOT
-    }
-
-    "vault-cert-manager" = {
-      policy = <<-EOT
-        path "pki_int/issue/consul-server" {
-          capabilities = ["create", "update"]
-        }
-        path "pki_int/issue/consul-client" {
-          capabilities = ["create", "update"]
-        }
-        path "pki_int/issue/nomad-server" {
-          capabilities = ["create", "update"]
-        }
-        path "pki_int/issue/nomad-client" {
-          capabilities = ["create", "update"]
-        }
-        path "pki_int/cert/ca" {
-          capabilities = ["read"]
-        }
-        path "ssh-host-signer/sign/host-signer" {
-          capabilities = ["create", "update"]
-        }
-        path "ssh-host-signer/config/ca" {
-          capabilities = ["read"]
-        }
-        path "ssh-client-signer/config/ca" {
-          capabilities = ["read"]
         }
       EOT
     }
@@ -184,7 +207,9 @@ inputs = {
     "prowlarr",
     "g3",
     "wireguard",
-    "pihole/green"
+    "pihole/green",
+    "s3-bucket/unified",
+    "s3-bucket/aptly"
   ]
 
   # --- AppRole auth for chef-managed nodes ---

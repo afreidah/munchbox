@@ -20,7 +20,9 @@ resource "proxmox_vm_qemu" "vm" {
   full_clone = try(each.value.existing, false) ? false : true
 
   # Compute resources
-  memory = each.value.memory
+  memory  = each.value.memory
+  balloon = each.value.balloon
+  machine = each.value.machine
   cpu {
     cores   = each.value.cores
     sockets = 1
@@ -28,12 +30,15 @@ resource "proxmox_vm_qemu" "vm" {
   }
 
   # Storage
-  scsihw = "virtio-scsi-pci"
+  scsihw = each.value.scsihw
   disk {
-    slot    = "scsi0"
-    type    = "disk"
-    storage = var.disk_storage
-    size    = each.value.disk_size
+    slot       = "scsi0"
+    type       = "disk"
+    storage    = var.disk_storage
+    size       = each.value.disk_size
+    iothread   = each.value.disk_iothread
+    discard    = each.value.disk_discard
+    emulatessd = each.value.disk_ssd
   }
 
   # Cloud-init CD-ROM drive. Only attached when `cloud_init.storage` is
@@ -58,8 +63,12 @@ resource "proxmox_vm_qemu" "vm" {
   }
 
   # Boot and agent
-  onboot = try(each.value.onboot, true)
-  agent  = try(each.value.qemu_agent, true) ? 1 : 0
+  onboot    = try(each.value.onboot, true)
+  agent     = try(each.value.qemu_agent, true) ? 1 : 0
+  skip_ipv6 = true
+
+  # --- telmate errors on reboot-needed changes when false; true lets apply reboot the VM itself. ---
+  automatic_reboot = true
 
   # Cloud-init (optional). The actual CD-ROM drive is attached via the
   # dynamic disk block above (gated on `cloud_init.storage`). Without that
@@ -84,20 +93,12 @@ resource "proxmox_vm_qemu" "vm" {
   lifecycle {
     prevent_destroy = false
 
-    # --- Stopgap: telmate's state disagrees with proxmox's actual layout on
-    #     `disk` (slot/type ordering for the cloudinit drive) and silently
-    #     drops `serial` / `startup_shutdown` blocks every refresh; `sshkeys`
-    #     is a seed-only field (chef's sshd_ca recipe owns runtime keys).
-    #     Cleaner long-term fix is to align state with reality via
-    #     `terragrunt state` / targeted re-imports per resource. ---
+    # --- ignore telmate-managed drift: disk (cinc-server cloudinit/scsi0 swap), serial, startup_shutdown, sshkeys (seed-only), pci. ---
     ignore_changes = [
       disk,
       serial,
       startup_shutdown,
       sshkeys,
-      # --- pci: nomad-client-04 GPU passthrough is real on the VM but absent
-      #     from state (predates the gpu_passthrough declaration). Adding it
-      #     would cause a telmate-driven VM reboot to re-attach. ---
       pci,
     ]
   }

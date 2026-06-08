@@ -24,7 +24,13 @@ run_list(
   'role[vault_cert_manager]',
   'role[consul_client]',
   # --- Every hypervisor has its own ARC cap (per-node attribute); recipe is a no-op when max_bytes is nil. ---
-  'recipe[proxmox_host::zfs_arc]'
+  'recipe[proxmox_host::zfs_arc]',
+  # --- No-reboot host tuning: swap pressure, memory dedup, PVE repo codename. ---
+  'recipe[proxmox_host::sysctl]',
+  'recipe[proxmox_host::ksm]',
+  'recipe[proxmox_host::apt_repo]',
+  # --- Single owner of GRUB_CMDLINE_LINUX_DEFAULT (IOMMU params + mitigations). ---
+  'recipe[proxmox_host::kernel_cmdline]'
 )
 
 default_attributes(

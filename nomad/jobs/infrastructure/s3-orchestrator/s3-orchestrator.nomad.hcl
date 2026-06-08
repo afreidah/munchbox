@@ -109,7 +109,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.60.22"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.61.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -136,12 +136,12 @@ routing_strategy: "spread"
 buckets:
   - name: "unified"
     credentials:
-      - access_key_id: "{{ .Data.data.access_key }}"
-        secret_access_key: "{{ .Data.data.secret_key }}"
+      - access_key_id: "{{ with secret "secret/data/s3-bucket/unified" }}{{ .Data.data.access_key }}{{ end }}"
+        secret_access_key: "{{ with secret "secret/data/s3-bucket/unified" }}{{ .Data.data.secret_key }}{{ end }}"
   - name: "aptly"
     credentials:
-      - access_key_id: "{{ .Data.data.aptly_access_key }}"
-        secret_access_key: "{{ .Data.data.aptly_secret_key }}"
+      - access_key_id: "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.access_key }}{{ end }}"
+        secret_access_key: "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.secret_key }}{{ end }}"
 
 database:
   host: "haproxy-postgres.service.consul"

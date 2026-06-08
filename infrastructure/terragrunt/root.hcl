@@ -94,7 +94,8 @@ locals {
   # `proxmox_vm_groups.cinc-server`, etc.
 
   proxmox_vm_groups = {
-    cluster = {
+    # --- Per-node cluster VM groups (one leaf each, plan/apply independently) ---
+    "nomad-server-03" = {
       "nomad-server-03" = {
         target_node = "fontana"
         vmid        = 172
@@ -103,38 +104,50 @@ locals {
         disk_size   = "40G"
         existing    = true
       }
+    }
 
+    "nomad-client-01" = {
       "nomad-client-01" = {
         target_node = "fontana"
         vmid        = 180
         memory      = 13312
+        balloon     = 10240
         cores       = 4
         disk_size   = "60G"
         existing    = true
       }
+    }
 
+    "nomad-client-02" = {
       "nomad-client-02" = {
         target_node = "mccoy"
         vmid        = 181
         memory      = 15360
+        balloon     = 12288
         cores       = 4
         disk_size   = "40G"
         existing    = true
       }
+    }
 
+    "nomad-client-03" = {
       "nomad-client-03" = {
         target_node = "cabot"
         vmid        = 182
         memory      = 7168
+        balloon     = 5120
         cores       = 4
         disk_size   = "40G"
         existing    = true
       }
+    }
 
+    "nomad-client-04" = {
       "nomad-client-04" = {
         target_node     = "rubirosa"
         vmid            = 183
         memory          = 28672
+        balloon         = 24576
         cores           = 10
         disk_size       = "140G"
         gpu_passthrough = { pci_address = "0000:02:00.0" }
@@ -144,11 +157,14 @@ locals {
           nameserver = "192.168.68.62"
         }
       }
+    }
 
+    "nomad-client-05" = {
       "nomad-client-05" = {
         target_node = "rubirosa"
         vmid        = 184
         memory      = 28672
+        balloon     = 18432
         cores       = 10
         disk_size   = "40G"
         cloud_init = {
@@ -260,6 +276,15 @@ locals {
     }
   }
 
+  # --- generated access-key/secret-key pairs minted by modules/access-keys ---
+  # key = Vault secret name a consumer reads; value = generation options
+  # (lengths default to S3-style). s3-bucket/* authenticate the s3-orchestrator
+  # virtual buckets of the matching name.
+  access_key_requests = {
+    "s3-bucket/unified" = {}
+    "s3-bucket/aptly"   = { id_length = 32, secret_length = 64 }
+  }
+
   # --- generated secrets written to Vault by global/vault-secrets ---
   # source = generator leaf; key = index into a multi-entry generator vault_data;
   # static = non-secret values merged in (keyed to match the Vault data keys).
@@ -276,6 +301,14 @@ locals {
     "cloudflare-logcollector" = {
       source = "cloudflare_tokens"
       key    = "logcollector"
+    }
+    "s3-bucket/unified" = {
+      source = "access_keys"
+      key    = "s3-bucket/unified"
+    }
+    "s3-bucket/aptly" = {
+      source = "access_keys"
+      key    = "s3-bucket/aptly"
     }
   }
 
@@ -306,20 +339,88 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
-  # CLOUDFLARE R2 MODULE INPUTS
+  # S3-ORCHESTRATOR BUCKETS  (keyed by s3-orchestrator/<leaf> == provider)
   # ---------------------------------------------------------------------------
 
-  cloudflare_r2_inputs = {
-    account_id  = local.cloudflare_account_id
-    bucket_name = "munchbox-backups"
+  s3_orchestrator_buckets = {
+    oci = {
+      compartment_id     = get_env("OCI_COMPARTMENT_ID")
+      user_ocid          = get_env("OCI_USER_OCID")
+      region             = get_env("OCI_REGION", "us-ashburn-1")
+      bucket_name        = "munchbox-s3-orchestrator"
+      storage_tier       = "Standard"
+      versioning_enabled = false
+      metadata = {
+        project    = "munchbox"
+        managed_by = "terragrunt"
+        purpose    = "s3-orchestrator-backend"
+      }
+    }
+    ibm = {
+      ibmcloud_api_key = get_env("IC_API_KEY", "")
+      resource_group   = get_env("IBM_RESOURCE_GROUP", "Default")
+      instance_name    = "Cloud Object Storage-wx"
+      region           = get_env("IBM_REGION", "us-east")
+      bucket_name      = "munchbox-backup-storage"
+      storage_class    = "smart"
+      plan             = "standard"
+      tags = {
+        project    = "munchbox"
+        managed_by = "terragrunt"
+        purpose    = "backup-storage"
+      }
+    }
+    r2 = {
+      account_id  = local.cloudflare_account_id
+      bucket_name = "munchbox-backups"
+    }
+    b2     = { bucket_name = "munchbox-backup-data" }
+    gcp    = { bucket_name = "munchbox-backup-data", location = "US" }
+    tigris = { bucket_name = "munchbox-backups" }
+    # --- S3-compatible-only (aws s3compat) ---
+    e2 = { bucket_name = "munchbox-backups" }
+    c2 = { bucket_name = "munchbox-backups" }
+    # --- minio provider: self-hosted MinIO + path-less S3-compat (g3) ---
+    minio        = { bucket_name = "munchbox-backups" }
+    "minio-arm2" = { bucket_name = "munchbox-backups" }
+    g3           = { bucket_name = "munchbox-backups" }
+    # --- supabase management-API provider (shellscape/supabase) ---
+    supabase = {
+      project_ref = "uyeggdssdvreqtxjkfhi"
+      bucket_name = "munchbox-backups"
+      public      = false
+    }
+  }
+
+  # ---------------------------------------------------------------------------
+  # POSTGRES DATABASES  (replaces patroni post-init.sh; keyed by leaf dir name)
+  # ---------------------------------------------------------------------------
+  # Each entry = one app's login role (creds in Vault secret/<vault_kv_path>)
+  # owning its databases. _env_helpers/postgres-database.hcl looks up by
+  # basename(leaf). manage_secret defaults false = adopt existing Vault creds.
+
+  postgres_databases = {
+    temporal          = { vault_kv_path = "temporal", databases = ["temporal", "temporal_visibility"], extensions = { temporal_visibility = ["btree_gin"] } }
+    forgejo           = { vault_kv_path = "forgejo", databases = ["forgejo"] }
+    trivy             = { vault_kv_path = "trivy-dashboard", databases = ["trivy"] }
+    grafana           = { vault_kv_path = "grafana", databases = ["grafana"] }
+    vaultwarden       = { vault_kv_path = "vaultwarden", databases = ["vaultwarden"] }
+    g3                = { vault_kv_path = "g3", username_field = "db_user", databases = ["g3"] }
+    "s3-orchestrator" = { vault_kv_path = "s3-orchestrator", databases = ["s3_orchestrator"] }
+    "flight-fetcher"  = { vault_kv_path = "flight-fetcher", databases = ["flight_fetcher"] }
+    sonarr            = { vault_kv_path = "sonarr", databases = ["sonarr_main", "sonarr_log"] }
+    radarr            = { vault_kv_path = "radarr", databases = ["radarr_main", "radarr_log"] }
+    lidarr            = { vault_kv_path = "lidarr", databases = ["lidarr_main", "lidarr_log"] }
+    readarr           = { vault_kv_path = "readarr", databases = ["readarr_main", "readarr_log", "readarr-cache"] }
+    prowlarr          = { vault_kv_path = "prowlarr", databases = ["prowlarr_main", "prowlarr_log"] }
   }
 
   # ---------------------------------------------------------------------------
   # PI-HOLE DNS  (composition lives in _env_helpers/pihole-dns.hcl)
   # ---------------------------------------------------------------------------
 
-  pihole_primary_url   = "http://192.168.68.62"  # green
-  pihole_secondary_url = "http://192.168.68.64"  # logan
+  pihole_primary_url   = "http://192.168.68.62" # green
+  pihole_secondary_url = "http://192.168.68.64" # logan
   traefik_vip          = "192.168.68.50"
 
   # --- SSH-reachable Pi-hole nodes for pihole/unbound ---
@@ -427,7 +528,7 @@ locals {
   #     and the env_helper loads bytes by file_key. ---
 
   remote_files_configs = {
-    pihole-shared = {
+    shared = {
       targets = local.pihole_nodes
       bundles = {
         unbound = {
@@ -525,50 +626,6 @@ terraform {
   }
 }
 
-# -----------------------------------------------------------------------------
-# SCAN-TOOL CONFIG FILES (generated into every leaf so trivy/checkov see them)
-# -----------------------------------------------------------------------------
-
-generate "checkov_config" {
-  path      = ".checkov.yaml"
-  if_exists = "overwrite"
-  contents  = <<-EOF
-    # --- per-leaf checkov config (regenerated by terragrunt; edit in root.hcl) ---
-    skip-check:
-      # --- checkov 3.2.471 bugs: looks in wrong HCL location for these OCI checks ---
-      - CKV_OCI_19
-      - CKV_OCI_20
-      - CKV_OCI_4
-      # --- intentional: cloud nodes need public IPs ---
-      - CKV_AWS_130
-      # --- intentional: bootstrap SSH access, gated by var.allow_ssh when unused ---
-      - CKV_AWS_24
-      # --- intentional: ICMP for ping, gated by var.allow_icmp when unused ---
-      - CKV_AWS_277
-      # --- homelab: VPC flow logs not paying for ---
-      - CKV2_AWS_11
-      # --- false positive: module SG is attached by caller via output reference ---
-      - CKV2_AWS_5
-      # --- default SG is AWS-managed; cannot restrict from module here ---
-      - CKV2_AWS_12
-      # --- homelab: no OCI KMS keys for block-volume + object-storage CMK encryption ---
-      - CKV_OCI_3
-      - CKV_OCI_9
-      # --- homelab: paying for OCI backup policies not worth it ---
-      - CKV_OCI_2
-      # --- homelab: object event streams + versioning not needed for backup bucket ---
-      - CKV_OCI_7
-      - CKV_OCI_8
-  EOF
-}
-
-generate "trivy_ignore" {
-  path      = ".trivyignore"
-  if_exists = "overwrite"
-  contents  = <<-EOF
-    # --- per-leaf trivyignore (regenerated by terragrunt; edit in root.hcl) ---
-  EOF
-}
 
 # -----------------------------------------------------------------------------
 # REMOTE STATE
@@ -580,7 +637,7 @@ remote_state {
   config = {
     address = "consul.service.consul:8500"
     scheme  = "http"
-    path    = "terraform/munchbox/${local.provider_type}/${local.node_name}"
+    path    = "terraform/munchbox/${path_relative_to_include()}"
     lock    = true
   }
 

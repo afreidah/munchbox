@@ -16,7 +16,7 @@ terraform {
 }
 
 dependency "cloudflare_tokens" {
-  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/cloudflare-tokens"
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/cloudflare-tokens"
 
   mock_outputs = {
     vault_data = {
@@ -28,10 +28,22 @@ dependency "cloudflare_tokens" {
 }
 
 dependency "aptly_secrets" {
-  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/aptly-secrets"
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/aptly"
 
   mock_outputs = {
     vault_data = { admin = { password = "mock-aptly-password", htpasswd = "admin:mock-bcrypt-hash" } }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+}
+
+dependency "access_keys" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/access-keys"
+
+  mock_outputs = {
+    vault_data = {
+      "s3-bucket/unified" = { access_key = "MOCKUNIFIEDACCESSKEY", secret_key = "mock-unified-secret-key" }
+      "s3-bucket/aptly"   = { access_key = "MOCKAPTLYACCESSKEY", secret_key = "mock-aptly-secret-key" }
+    }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
@@ -52,6 +64,7 @@ inputs = {
         {
           aptly_secrets     = dependency.aptly_secrets.outputs.vault_data
           cloudflare_tokens = dependency.cloudflare_tokens.outputs.vault_data
+          access_keys       = dependency.access_keys.outputs.vault_data
         }[s.source][s.key],
       )
     }
