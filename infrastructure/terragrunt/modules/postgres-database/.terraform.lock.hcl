@@ -1,0 +1,65 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/cyrilgdn/postgresql" {
+  version     = "1.26.0"
+  constraints = "~> 1.26"
+  hashes = [
+    "h1:EQH2pCkaR0vf3OyzyEr/SdYTg6JCrgSV1WYxkRYCUtc=",
+    "zh:0f2ec2bb24f8bb9eb232f1650d6459a2bac732bf91bbc08b27ae5519bee89486",
+    "zh:11dafcec9c7e6e2c8b6303d90c6061973db26f6f84adc2be02fe66e9b1b11561",
+    "zh:13a67dc639ee053cbecc6ab28fd5bfca4780e680bd12491f1bdf0f8243fd364a",
+    "zh:56337a42348bb9ab31837caa89d89f7a3ee0528b5a6d04a6a93a8ea155eb7f4d",
+    "zh:590e80218e70e8081a11cf1f5df16014426d6ba8c2552713cc61f56041c7457b",
+    "zh:5e4b12dd1874bab454720a50c600d1df359dc71f91f4a0194cf8eb335e27dfe7",
+    "zh:6af55f892e7f463c75a62215dc74790ae9a71d7d23c74c6ddb40af258528fa46",
+    "zh:78f6739ca865622981c28fa6628128be4651bd4629450a9ba5b1945d64b66da7",
+    "zh:8ed469b0d9074eba59216e57794a03fe27b45586b03d24946d130949ae92093f",
+    "zh:a261aaee5675986711cf9f963d5d9ca5ec1d62aa8c31866da54c6670d803b8a3",
+    "zh:a64b52597738ff1bac41127141c48800f1575eaa66a67cecdc9b0b16728dae0e",
+    "zh:ae5e821f5d5510bc2cba2aefcf6c0e62af9e28b7a25e0e8dcd039e04172594d0",
+    "zh:cfae79ed700febe8fb29fd1c5d0a6ace0a0103bef8ec37bb653dc23afc960b33",
+    "zh:d9a69d5475982a00d4e9e07f56987c821782595bac29e9084237285d36fa88e8",
+  ]
+}
+
+provider "registry.terraform.io/hashicorp/random" {
+  version     = "3.9.0"
+  constraints = ">= 3.6.0"
+  hashes = [
+    "h1:UlBuNVuCGJ39tTv2c5gz2NRZnQbXfbIWbTzWcth5o74=",
+    "zh:161ad0bd9a75768c82f53fb6e7172a9d8be2d4889b012645a34795031aaf1bf1",
+    "zh:19dc9a5b17729725ccfc4f45b0500af0ee5bc6b6b160c7adb8f2bf617d2c80ea",
+    "zh:269eda8fe42daa7974d5a34d166c3ba9defe80cde86c01e4dadcfdf2e1f05e5f",
+    "zh:373f7c65566f8f2cc7f45d698654feb9d988996957e1266a69ca00c52d6d16d0",
+    "zh:5599d16804c41c83009ec621b6d6b6f74e102f5827678a4750f8809055546b61",
+    "zh:583be0440469a22bff70dcfa56593b01566860b29607437264adb51060cf46fc",
+    "zh:5f211d8ec3f2e1f414870d9584bfe26e6995560ef81c748f8447a48164767398",
+    "zh:78d5eefdd9e494defcb3c68d282b8f96630502cac21d1ea161f53cfe9bb483b3",
+    "zh:7b547fd16216761ef86efc3ed516ac5ac0c5c42b7c7eb24a08cef2d93f69ed5e",
+    "zh:7e7c0679daf2a382151d05068c8c3f0dae6b7b7dccf818827b73dd08638df2ef",
+    "zh:8089dec888a8038b9b4fb23b3df7e1057293dbc5b60b42cc47ff690d69d4b61b",
+    "zh:c51f15a031edfd6f23ce8ced3446ca7f8d8d647e2499890d7d5d10d5016d7257",
+    "zh:c94784f005708890dc6895afd53636ec00ec1e430b15d41e5aebfb1d4b39bd04",
+  ]
+}
+
+provider "registry.terraform.io/hashicorp/vault" {
+  version     = "5.9.0"
+  constraints = ">= 4.0.0"
+  hashes = [
+    "h1:8wcXxEMo7XvCnrtZHSpAuWmRfYiZkWn2tssshB1BDzo=",
+    "zh:16e23a37c0965938544af282a7bc13dabca445f462ab27829f98e936ace4d263",
+    "zh:249fcf9da1a690fe9aa44a7421fad89a425afb0c2ce7eaf306d75daddd691af5",
+    "zh:3d92af386049a229a428f21b938a22df61703447c8ceed65c73f111a64e627d2",
+    "zh:4033fedf9d4f54f0aacf7c4a79e20978bcd67c0a8ab9411acd447db1469108a4",
+    "zh:51c78d0dc378037bbaf3cd26ff29fae7c40d7b134b40d059b982257987c15f9f",
+    "zh:78d5eefdd9e494defcb3c68d282b8f96630502cac21d1ea161f53cfe9bb483b3",
+    "zh:86e414b7327343de676ec506d30c557a514dbd992b27a2670466adaf9ed69718",
+    "zh:879c3a61ed8d183a68ddb590e63a7e0d6aab8d8044fd4a13658e7b1661395a9d",
+    "zh:8d548617543ee2ce0340972a5df93e7ac37b7895d4bf506bd587f8daac58e6d6",
+    "zh:8d75b3bbfd9a536c8c1d84504cb3d1c8e1a3fd30e377a51a6311476632363103",
+    "zh:922f625a36642c49daa432e07c12e72ff75025e0b9afda8d7240f38c6789fe46",
+    "zh:fbceae685b395acaff6c820ed7d7eaa6250ef4769e04481145dc50e09b89db2f",
+  ]
+}

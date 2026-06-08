@@ -398,8 +398,8 @@ proxy_send_timeout 600s;
       "region": "us-east-1",
       "bucket": "aptly",
       "endpoint": "http://s3-orchestrator.service.consul:9000",
-      "awsAccessKeyID": "{{ with secret "secret/data/aptly" }}{{ .Data.data.s3_access_key }}{{ end }}",
-      "awsSecretAccessKey": "{{ with secret "secret/data/aptly" }}{{ .Data.data.s3_secret_key }}{{ end }}",
+      "awsAccessKeyID": "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.access_key }}{{ end }}",
+      "awsSecretAccessKey": "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.secret_key }}{{ end }}",
       "s3ForcePathStyle": true,
       "disableMultiDel": false
     }

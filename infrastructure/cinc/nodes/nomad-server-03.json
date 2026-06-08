@@ -80,7 +80,6 @@
           "common_name": "server.munchbox.consul",
           "certificate": "/etc/consul.d/tls/consul.crt",
           "key": "/etc/consul.d/tls/consul.key",
-          "ttl": "720h",
           "alt_names": [
             "localhost",
             "debian",
@@ -106,7 +105,6 @@
           "common_name": "server.global.nomad",
           "certificate": "/etc/nomad.d/tls/nomad.crt",
           "key": "/etc/nomad.d/tls/nomad.key",
-          "ttl": "720h",
           "alt_names": [
             "localhost",
             "debian",
@@ -133,7 +131,6 @@
           "common_name": "nomad-server-03.munchbox.cc",
           "certificate": "/etc/vault.d/tls/vault.crt",
           "key": "/etc/vault.d/tls/vault.key",
-          "ttl": "720h",
           "alt_names": [
             "localhost",
             "debian",

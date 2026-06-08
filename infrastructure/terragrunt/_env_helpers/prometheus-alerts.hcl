@@ -14,7 +14,7 @@ terraform {
 }
 
 locals {
-  groups_dir = "${get_repo_root()}/infrastructure/terragrunt/_env_helpers/prometheus-alerts/groups"
+  groups_dir  = "${get_repo_root()}/infrastructure/terragrunt/_env_helpers/prometheus-alerts/groups"
   group_files = fileset(local.groups_dir, "*.yml")
 }
 

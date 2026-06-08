@@ -147,17 +147,24 @@ variable "pki_backend_path" {
 variable "pki_roles" {
   description = "Map of PKI roles to create"
   type = map(object({
-    allowed_domains    = list(string)
-    allow_subdomains   = optional(bool, true)
-    allow_bare_domains = optional(bool, true)
-    allow_localhost    = optional(bool, true)
-    allow_ip_sans      = optional(bool, true)
-    allow_glob_domains = optional(bool, false)
-    max_ttl            = optional(string, "8760h")
-    ttl                = optional(string, "720h")
-    key_type           = optional(string, "rsa")
-    key_bits           = optional(number, 4096)
-    require_cn         = optional(bool, false)
+    allowed_domains             = list(string)
+    allow_any_name              = optional(bool, false)
+    allow_subdomains            = optional(bool, true)
+    allow_bare_domains          = optional(bool, true)
+    allow_localhost             = optional(bool, true)
+    allow_ip_sans               = optional(bool, true)
+    allow_glob_domains          = optional(bool, false)
+    allow_wildcard_certificates = optional(bool, true)
+    enforce_hostnames           = optional(bool, true)
+    client_flag                 = optional(bool, true)
+    server_flag                 = optional(bool, true)
+    max_ttl                     = optional(string, "8760h")
+    ttl                         = optional(string, "720h")
+    key_type                    = optional(string, "rsa")
+    key_bits                    = optional(number, 4096)
+    require_cn                  = optional(bool, false)
+    # --- which identities may issue this role; drives policy generation (not a Vault field) ---
+    issued_by = optional(list(string), [])
   }))
   default = {}
 }

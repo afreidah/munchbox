@@ -3,8 +3,8 @@
 require 'spec_helper'
 
 # -------------------------------------------------------------------------------
-# gvt_g recipe spec -- step_into proxmox_host_gvt_g to cover the GRUB
-# rewrite + update-grub + /etc/modules appends.
+# gvt_g recipe spec -- step_into proxmox_host_gvt_g to cover the
+# /etc/modules appends. The grub cmdline is owned by kernel_cmdline now.
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'proxmox_host::gvt_g' do
@@ -24,8 +24,6 @@ RSpec.describe 'proxmox_host::gvt_g' do
 
   context 'with gvt_g enabled' do
     cached(:chef_run) do
-      grub_line = 'GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on i915.enable_gvt=1"'
-      stub_command("grep -qxF '#{grub_line}' /etc/default/grub").and_return(false)
       %w(kvmgt vfio-iommu-type1 vfio-mdev).each do |m|
         stub_command("grep -qxE '^#{Regexp.escape(m)}$' /etc/modules").and_return(false)
       end
@@ -34,23 +32,14 @@ RSpec.describe 'proxmox_host::gvt_g' do
       end.converge(described_recipe)
     end
 
-    it 'declares the grub-cmdline rewrite execute' do
-      expect(chef_run).to run_execute('update GRUB_CMDLINE_LINUX_DEFAULT (gvt_g)')
-    end
-
-    it 'notifies update-grub (immediate) when the grub line changes' do
-      expect(chef_run.execute('update GRUB_CMDLINE_LINUX_DEFAULT (gvt_g)'))
-        .to notify('execute[update-grub (gvt_g)]').to(:run).immediately
-    end
-
-    it 'declares the update-grub execute :nothing' do
-      expect(chef_run.execute('update-grub (gvt_g)')).to do_nothing
-    end
-
     it 'appends each kernel module to /etc/modules' do
       %w(kvmgt vfio-iommu-type1 vfio-mdev).each do |m|
         expect(chef_run).to run_execute("ensure module #{m} in /etc/modules")
       end
+    end
+
+    it 'no longer manages grub (only the module appends remain)' do
+      expect(chef_run.find_resources(:execute).map(&:name)).to all(match(/^ensure module/))
     end
   end
 end

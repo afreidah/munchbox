@@ -22,6 +22,9 @@
     "proxmox_host": {
       "zfs_arc": {
         "max_bytes": 823132160
+      },
+      "kernel_cmdline": {
+        "mitigations_off": true
       }
     },
     "vault_cert_manager": {
@@ -32,7 +35,6 @@
           "common_name": "client.munchbox.consul",
           "certificate": "/etc/consul.d/tls/consul.crt",
           "key": "/etc/consul.d/tls/consul.key",
-          "ttl": "720h",
           "alt_names": [
             "localhost",
             "cabot",

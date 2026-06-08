@@ -93,6 +93,7 @@ job "alloy" {
           "run",
           "--server.http.listen-addr=0.0.0.0:12345",
           "--storage.path=/var/lib/alloy/data",
+          "--disable-reporting",
           "/etc/alloy/config.alloy",
         ]
         volumes = [

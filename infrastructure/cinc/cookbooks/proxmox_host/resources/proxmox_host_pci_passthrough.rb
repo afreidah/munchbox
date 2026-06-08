@@ -5,41 +5,27 @@
 # Resource:: proxmox_host_pci_passthrough
 #
 # Full PCI device passthrough enablement for proxmox hypervisors that
-# hand a discrete GPU (or other PCI device) directly to a guest VM.
-# Owns the full GRUB_CMDLINE_LINUX_DEFAULT value, the vfio kernel
-# modules in /etc/modules, and /etc/modprobe.d/vfio.conf with the
-# device IDs to bind at boot. Reboot is operator-gated.
+# hand a discrete GPU (or other PCI device) directly to a guest VM. Owns
+# the vfio kernel modules in /etc/modules and /etc/modprobe.d/vfio.conf
+# with the device IDs to bind at boot. The matching IOMMU kernel cmdline
+# params are owned by proxmox_host_kernel_cmdline (gated on this
+# pci_passthrough.enabled flag).
 # -------------------------------------------------------------------------------
 
 unified_mode true
 
 provides :proxmox_host_pci_passthrough
 
-property :enabled,         [true, false], default: false
-property :cmdline_default, String, default: 'quiet intel_iommu=on iommu=pt'
-property :modules,         Array, default: %w(vfio vfio_iommu_type1 vfio_pci)
-property :device_ids,      Array, default: []
-property :grub_path,       String, default: '/etc/default/grub'
-property :modules_path,    String, default: '/etc/modules'
-property :modprobe_path,   String, default: '/etc/modprobe.d/vfio.conf'
+property :enabled,       [true, false], default: false
+property :modules,       Array, default: %w(vfio vfio_iommu_type1 vfio_pci)
+property :device_ids,    Array, default: []
+property :modules_path,  String, default: '/etc/modules'
+property :modprobe_path, String, default: '/etc/modprobe.d/vfio.conf'
 
 default_action :configure
 
 action :configure do
   return unless new_resource.enabled
-
-  desired_line = %(GRUB_CMDLINE_LINUX_DEFAULT="#{new_resource.cmdline_default}")
-
-  execute 'update GRUB_CMDLINE_LINUX_DEFAULT (pci_passthrough)' do
-    command "sed -i.bak -E 's|^GRUB_CMDLINE_LINUX_DEFAULT=.*|#{desired_line}|' #{new_resource.grub_path}"
-    not_if  "grep -qxF '#{desired_line}' #{new_resource.grub_path}"
-    notifies :run, 'execute[update-grub (pci_passthrough)]', :immediately
-  end
-
-  execute 'update-grub (pci_passthrough)' do
-    command 'update-grub'
-    action  :nothing
-  end
 
   new_resource.modules.each do |m|
     execute "ensure module #{m} in /etc/modules" do

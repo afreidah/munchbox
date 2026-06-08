@@ -14,6 +14,7 @@ image        = "grafana/grafana:13.0.1"
 port         = 3030
 host_network = true
 size         = "medium"
+memory       = 1024
 vault        = true
 
 # --- Placement ---

@@ -37,7 +37,6 @@
           "common_name": "client.munchbox.consul",
           "certificate": "/etc/consul.d/tls/consul.crt",
           "key": "/etc/consul.d/tls/consul.key",
-          "ttl": "720h",
           "alt_names": [
             "localhost",
             "nomad-client-01",
@@ -62,7 +61,6 @@
           "common_name": "client.global.nomad",
           "certificate": "/etc/nomad.d/tls/nomad.crt",
           "key": "/etc/nomad.d/tls/nomad.key",
-          "ttl": "720h",
           "alt_names": [
             "localhost",
             "nomad-client-01",

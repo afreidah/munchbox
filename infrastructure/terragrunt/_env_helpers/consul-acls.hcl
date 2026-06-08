@@ -190,7 +190,7 @@ locals {
         vault_path = try(v.vault_path, "consul/${k}-token")
         token_key  = k
       },
-      try(v.token_field_name, null) != null ? { token_field_name    = v.token_field_name } : {},
+      try(v.token_field_name, null) != null ? { token_field_name = v.token_field_name } : {},
       try(v.include_accessor, null) != null ? { include_accessor_id = v.include_accessor } : {},
     )
     if !try(v.no_token, false)

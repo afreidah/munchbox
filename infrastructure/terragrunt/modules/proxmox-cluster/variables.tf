@@ -16,6 +16,12 @@ variable "vms" {
     existing        = optional(bool, false)
     onboot          = optional(bool, true)
     qemu_agent      = optional(bool, true)
+    balloon         = optional(number, 0)
+    machine         = optional(string, "pc")
+    scsihw          = optional(string, "virtio-scsi-single")
+    disk_iothread   = optional(bool, true)
+    disk_discard    = optional(bool, true)
+    disk_ssd        = optional(bool, true)
     gpu_passthrough = optional(object({ pci_address = string }), null)
     cloud_init = optional(object({
       user       = optional(string, "root")

@@ -60,6 +60,22 @@ default[cookbook]['vault_paths'] = {
 default[cookbook]['consul_service_file'] = '/etc/consul.d/vault-cert-manager.json'
 
 # -------------------------------------------------------------------------------
+# Certificate lifetimes by type
+#
+# Canonical TTL per cert type, where type is the role/name prefix
+# (consul-server -> consul). Applied to any cert that doesn't set its own
+# `ttl`; a per-cert `ttl` still wins for exceptions. Must stay <= the matching
+# Vault PKI role max_ttl (terragrunt vault-config) or issued certs get capped
+# shorter and the renewal threshold (NotAfter - ttl/3) drifts.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['ttls_by_type'] = {
+  'consul' => '720h',
+  'nomad' => '720h',
+  'vault' => '720h',
+}
+
+# -------------------------------------------------------------------------------
 # Certificates list
 #
 # Each entry shape (matches the ansible/upstream config format):
@@ -70,6 +86,7 @@ default[cookbook]['consul_service_file'] = '/etc/consul.d/vault-cert-manager.jso
 # Empty by default; populated per-fleet in the wrapping role
 # (e.g. role[oracle_node] populates consul-client + nomad-client cert
 # definitions, with alt_names/ip_sans templated from per-node attrs).
+# ttl is optional per cert -- omit it to inherit ttls_by_type above.
 # -------------------------------------------------------------------------------
 
 default[cookbook]['certificates'] = []

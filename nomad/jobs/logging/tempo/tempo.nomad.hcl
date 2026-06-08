@@ -163,6 +163,10 @@ job "tempo" {
 # Tempo Configuration (3.0 architecture: live-store + block-builder + backend-scheduler)
 stream_over_http_enabled: true
 
+# --- disable usage reporting (stops phone-home to stats.grafana.org) ---
+usage_report:
+  reporting_enabled: false
+
 server:
   http_listen_port: 3200
   grpc_listen_port: 9196  # historical: kept off 9095 (was promtail; now alloy)

@@ -17,7 +17,13 @@ install      = node[cookbook]['install']
 config       = node[cookbook]['config']
 vault_paths  = node[cookbook]['vault_paths']
 # --- Pre-resolve here; `cookbook` is shadowed inside template/file blocks. ---
-certificates = node[cookbook]['certificates'].to_a.map { |c| c.respond_to?(:to_hash) ? c.to_hash : c }
+ttls_by_type = node[cookbook]['ttls_by_type']
+certificates = node[cookbook]['certificates'].to_a.map do |c|
+  cert = c.respond_to?(:to_hash) ? c.to_hash : c
+  # --- effective ttl: per-cert override wins, else the per-type default (consul-server -> consul) ---
+  cert['ttl'] ||= ttls_by_type[(cert['role'] || cert['name']).to_s.split('-').first]
+  cert
+end
 service_file = node[cookbook]['consul_service_file']
 
 # --- secret_id file: sensitive, 0600, owned by the daemon's user; restart on change ---

@@ -43,12 +43,12 @@ path "sys/metrics" {
   capabilities = ["read"]
 }
 
-# --- PKI Certificate Issuance ---
-%{for role in keys(var.pki_roles)~}
+# --- PKI Certificate Issuance (only roles Nomad workloads self-issue) ---
+%{for role, cfg in var.pki_roles~}%{if contains(cfg.issued_by, "nomad")~}
 path "${var.pki_backend_path}/issue/${role}" {
   capabilities = ["create", "update", "read"]
 }
-%{endfor~}
+%{endif~}%{endfor~}
 
 path "${var.pki_backend_path}/cert/ca" {
   capabilities = ["read"]
@@ -100,4 +100,45 @@ path "transit/verify/cosign" {
   capabilities = ["create", "update"]
 }
 EOT
+}
+
+# -------------------------------------------------------------------------
+# VAULT-CERT-MANAGER POLICY (special - generated from pki_roles)
+# -------------------------------------------------------------------------
+# Used by the vault-cert-manager daemon's AppRole. Issue paths are generated
+# from the roles tagged issued_by = ["cert-manager"]; the static tail covers
+# CA reads and the SSH host-cert signing the daemon also performs.
+
+resource "vault_policy" "cert_manager" {
+  count = var.policies_enabled ? 1 : 0
+  name  = "vault-cert-manager"
+
+  policy = <<EOT
+# --- PKI Certificate Issuance (roles the cert-manager daemon issues) ---
+%{for role, cfg in var.pki_roles~}%{if contains(cfg.issued_by, "cert-manager")~}
+path "${var.pki_backend_path}/issue/${role}" {
+  capabilities = ["create", "update"]
+}
+%{endif~}%{endfor~}
+path "${var.pki_backend_path}/cert/ca" {
+  capabilities = ["read"]
+}
+
+# --- SSH host-cert signing + CA reads ---
+path "ssh-host-signer/sign/host-signer" {
+  capabilities = ["create", "update"]
+}
+path "ssh-host-signer/config/ca" {
+  capabilities = ["read"]
+}
+path "ssh-client-signer/config/ca" {
+  capabilities = ["read"]
+}
+EOT
+}
+
+# --- adopt the formerly hardcoded policy's state instead of destroy/create ---
+moved {
+  from = vault_policy.policy["vault-cert-manager"]
+  to   = vault_policy.cert_manager[0]
 }

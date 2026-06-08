@@ -36,6 +36,18 @@ dependency "aptly_secrets" {
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
+dependency "access_keys" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/access-keys"
+
+  mock_outputs = {
+    vault_data = {
+      "s3-bucket/unified" = { access_key = "MOCKUNIFIEDACCESSKEY", secret_key = "mock-unified-secret-key" }
+      "s3-bucket/aptly"   = { access_key = "MOCKAPTLYACCESSKEY", secret_key = "mock-aptly-secret-key" }
+    }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+}
+
 locals {
   root          = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   vault_secrets = local.root.locals.vault_secrets
@@ -52,6 +64,7 @@ inputs = {
         {
           aptly_secrets     = dependency.aptly_secrets.outputs.vault_data
           cloudflare_tokens = dependency.cloudflare_tokens.outputs.vault_data
+          access_keys       = dependency.access_keys.outputs.vault_data
         }[s.source][s.key],
       )
     }
