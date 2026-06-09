@@ -10,7 +10,7 @@
 # --- General Settings ---
 name  = "s3-orchestrator-webpage"
 type  = "service"
-image = "registry.munchbox.cc/s3-orchestrator-web:v0.61.0"
+image = "registry.munchbox.cc/s3-orchestrator-web:v0.61.1"
 port  = 80
 node  = "any"
 host_network = false

@@ -16,7 +16,7 @@ job "forgejo" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
-  node_pool   = "all"
+  node_pool   = "default"
   priority    = 50
 
   # ---------------------------------------------------------------------------
@@ -26,6 +26,17 @@ job "forgejo" {
   meta {
     managed_by = "nomad"
     project    = "munchbox"
+  }
+
+  # ---------------------------------------------------------------------------
+  # Placement: keep off ingress nodes (goren/stabler); data is on shared
+  # NFS (/mnt/gdrive/forgejo) so the job can run on any client.
+  # ---------------------------------------------------------------------------
+
+  constraint {
+    attribute = "${meta.role}"
+    operator  = "!="
+    value     = "ingress"
   }
 
   # ---------------------------------------------------------------------------
@@ -50,12 +61,6 @@ job "forgejo" {
 
   group "forgejo" {
     count = 1
-
-    # --- Constraint: Require gdrive NFS mount ---
-    constraint {
-      attribute = "${node.unique.name}"
-      value     = "stabler"
-    }
 
     # --- Network Configuration ---
     network {

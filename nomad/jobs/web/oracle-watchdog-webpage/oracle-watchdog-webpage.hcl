@@ -20,9 +20,10 @@ memory = 32
 count  = 3
 storage = "ephemeral"
 
-# --- Placement: one instance per node ---
+# --- Placement: one instance per node, keep off ingress nodes ---
 constraints = [
-  { attribute = "", operator = "distinct_hosts", value = "true" }
+  { attribute = "", operator = "distinct_hosts", value = "true" },
+  { attribute = "$${meta.role}", operator = "!=", value = "ingress" }
 ]
 
 # --- Vault integration ---

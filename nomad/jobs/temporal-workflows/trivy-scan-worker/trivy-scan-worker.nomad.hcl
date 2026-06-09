@@ -29,13 +29,20 @@ job "trivy-scan-worker" {
   }
 
   # ---------------------------------------------------------------------------
-  # Placement - bare metal nodes for reliable WAN access to Trivy server
+  # Placement - off the ingress nodes (don't compete with the DB/haproxy there)
+  # and off cloud nodes (needs reliable LAN access to the Trivy server).
   # ---------------------------------------------------------------------------
 
   constraint {
-    attribute = "${node.unique.name}"
-    operator  = "set_contains_any"
-    value     = "goren,stabler"
+    attribute = "${meta.role}"
+    operator  = "!="
+    value     = "ingress"
+  }
+
+  constraint {
+    attribute = "${meta.cloud}"
+    operator  = "!="
+    value     = "oracle"
   }
 
   # ---------------------------------------------------------------------------

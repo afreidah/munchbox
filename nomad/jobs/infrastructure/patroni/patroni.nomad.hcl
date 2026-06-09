@@ -59,11 +59,11 @@ job "patroni" {
       value    = "true"
     }
 
-    # --- Pin to database nodes ---
+    # --- Run on ingress nodes only (meta.role=ingress), paired with haproxy ---
     constraint {
-      attribute = "${node.unique.name}"
-      operator  = "set_contains_any"
-      value     = "stabler,nomad-client-05"
+      attribute = "${meta.role}"
+      operator  = "="
+      value     = "ingress"
     }
 
     # --- Network Configuration ---

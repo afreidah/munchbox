@@ -202,6 +202,7 @@ action :configure do
       Restart=on-failure
       RestartSec=2
       ExecStart=#{new_resource.bin_path} agent -config=#{new_resource.config_dir}
+      ExecReload=/bin/kill -HUP $MAINPID
 
       [Install]
       WantedBy=multi-user.target

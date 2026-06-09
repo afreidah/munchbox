@@ -65,9 +65,10 @@ args = [
 templates = [
   { src = "prometheus.yml.tpl", dest = "/etc/prometheus/config/prometheus.yml", vault = true },
   { src = "alert_rules.yml", dest = "/etc/prometheus/config/alert_rules.yml", vault = false, change_mode = "signal" },
-  { src = "consul_token.tpl", dest = "/etc/prometheus/secrets/consul_token", vault = true },
-  { src = "vault_token.tpl", dest = "/etc/prometheus/secrets/vault_token", vault = true },
-  { src = "nomad_token.tpl", dest = "/etc/prometheus/secrets/nomad_token", vault = true },
+  # --- Token files are read per-scrape via credentials_file; noop stops a Vault-lease re-render from restarting prometheus ---
+  { src = "consul_token.tpl", dest = "/etc/prometheus/secrets/consul_token", vault = true, change_mode = "noop" },
+  { src = "vault_token.tpl", dest = "/etc/prometheus/secrets/vault_token", vault = true, change_mode = "noop" },
+  { src = "nomad_token.tpl", dest = "/etc/prometheus/secrets/nomad_token", vault = true, change_mode = "noop" },
 ]
 
 # --- Termination ---

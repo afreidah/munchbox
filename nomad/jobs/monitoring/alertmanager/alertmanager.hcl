@@ -23,11 +23,9 @@ extra_ports = [
   { name = "cluster", port = 9094 }
 ]
 
-# --- Placement: ingress nodes only ---
-type = "system"
-constraints = [
-  { attribute = "$${meta.role}", operator = "=", value = "ingress" }
-]
+# --- Placement: pinned to nomad-client-05 ---
+type = "service"
+node = "nomad-client-05"
 
 # --- Traefik routing ---
 traefik      = true

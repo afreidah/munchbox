@@ -41,6 +41,13 @@ job "trivy-server" {
     value     = "oracle"
   }
 
+  # Keep off the ingress nodes (don't compete with the DB/haproxy there).
+  constraint {
+    attribute = "${meta.role}"
+    operator  = "!="
+    value     = "ingress"
+  }
+
   # ---------------------------------------------------------------------------
   # Task Group: server
   # ---------------------------------------------------------------------------

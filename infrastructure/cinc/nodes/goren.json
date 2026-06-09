@@ -105,7 +105,7 @@
           ],
           "owner": "nomad",
           "group": "nomad",
-          "on_change": "systemctl restart nomad",
+          "on_change": "systemctl reload nomad",
           "health_check": {
             "tcp": "192.168.68.60:4646",
             "timeout": "5s"

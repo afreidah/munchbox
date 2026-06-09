@@ -43,8 +43,9 @@ templates = [
 # --- Service tags ---
 tags = ["monitoring", "blackbox-exporter", "probes", "internal", "metrics"]
 
-# --- Placement: any on-prem nomad client (NOT oracle). ---
+# --- Placement: any on-prem nomad client (NOT oracle), off ingress nodes. ---
 node = "any"
 constraints = [
-  { attribute = "$${meta.cloud}", operator = "!=", value = "oracle" }
+  { attribute = "$${meta.cloud}", operator = "!=", value = "oracle" },
+  { attribute = "$${meta.role}", operator = "!=", value = "ingress" }
 ]

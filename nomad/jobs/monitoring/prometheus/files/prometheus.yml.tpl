@@ -264,33 +264,31 @@ scrape_configs:
         replacement: "blackbox-exporter-external.service.consul:9115"
 
   # -----------------------------------------------------------------------
-  # Site monitoring (HTTP) — for sites that are public via Cloudflare tunnel
-  # but only listen on plain HTTP internally. Pi-hole resolves *.munchbox.cc
-  # to goren, so probing the HTTPS URL from inside the cluster hits Traefik
-  # on :443 with no matching router and 404s. These targets are probed over
-  # HTTP to match the actual internal entrypoint.
+  # Internal site monitoring — probed from inside the network through the
+  # internal blackbox so *.munchbox.cc resolves to the VIP and hits Traefik
+  # directly (not the Cloudflare tunnel). https_2xx validates the cert too.
   # -----------------------------------------------------------------------
   - job_name: "site_http"
     metrics_path: "/probe"
     params:
-      module: ["http_2xx"]
+      module: ["https_2xx"]
     static_configs:
       - targets:
-          - "http://s3-orchestrator.munchbox.cc/"
-          - "http://oracle-watchdog.munchbox.cc/"
-          - "http://cloudflare-log-collector.munchbox.cc/"
-          - "http://g3.munchbox.cc/"
-          - "http://nomad-temporal-jobs.munchbox.cc/"
+          - "https://s3-orchestrator.munchbox.cc/"
+          - "https://oracle-watchdog.munchbox.cc/"
+          - "https://cloudflare-log-collector.munchbox.cc/"
+          - "https://g3.munchbox.cc/"
+          - "https://nomad-temporal-jobs.munchbox.cc/"
     relabel_configs:
       - source_labels: ["__address__"]
         target_label: "__param_target"
       - source_labels: ["__param_target"]
         target_label: "instance"
       - target_label: "__address__"
-        replacement: "blackbox-exporter-external.service.consul:9115"
+        replacement: "blackbox-exporter-internal.service.consul:9115"
 
   # -----------------------------------------------------------------------
-  # Pi-hole probes — internal-only DNS names + LAN traefik VIP.
+  # Pi-hole probes — green + logan probed directly over HTTP.
   # Routed through the internal blackbox so a WireGuard flap doesn't
   # masquerade as a real pihole outage.
   # -----------------------------------------------------------------------
@@ -300,7 +298,6 @@ scrape_configs:
       module: ["http_2xx"]
     static_configs:
       - targets:
-          - "http://pihole.munchbox.cc/admin/"
           - "http://pihole-green.munchbox.cc/admin/"
           - "http://pihole-logan.munchbox.cc/admin/"
     relabel_configs:

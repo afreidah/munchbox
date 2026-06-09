@@ -63,11 +63,11 @@ job "haproxy" {
       value    = "true"
     }
 
-    # --- Pin to database nodes (same as Patroni) ---
+    # --- Run on ingress nodes only (meta.role=ingress) ---
     constraint {
-      attribute = "${node.unique.name}"
-      operator  = "set_contains_any"
-      value     = "stabler,nomad-client-05"
+      attribute = "${meta.role}"
+      operator  = "="
+      value     = "ingress"
     }
 
     # --- Network Configuration ---

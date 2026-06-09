@@ -81,6 +81,16 @@ job "s3-orchestrator" {
         "traefik.http.routers.s3-orchestrator-http.rule=Host(`s3.munchbox.cc`)",
         "traefik.http.routers.s3-orchestrator-http.entrypoints=web",
         "traefik.http.routers.s3-orchestrator-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file",
+
+        # Admin API (/admin/api): LAN-only via dashboard-allowlan, no oauth2-proxy.
+        # It authenticates with X-Admin-Token; SSO would block the admin CLI.
+        # Not tunnel-reachable (websecure entrypoint + LAN ipAllowList).
+        "traefik.http.routers.s3o-admin.rule=Host(`s3.munchbox.cc`) && PathPrefix(`/admin/api`)",
+        "traefik.http.routers.s3o-admin.entrypoints=websecure",
+        "traefik.http.routers.s3o-admin.tls=true",
+        "traefik.http.routers.s3o-admin.service=s3-orchestrator",
+        "traefik.http.routers.s3o-admin.middlewares=dashboard-allowlan@file",
+        "traefik.http.routers.s3o-admin.priority=100",
       ]
       check {
         name      = "s3-orchestrator-health"
@@ -109,7 +119,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.61.1"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.61.2"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -126,10 +136,14 @@ job "s3-orchestrator" {
 {{ with secret "secret/data/s3-orchestrator" }}
 server:
   listen_addr: "0.0.0.0:9000"
-  backend_timeout: "15m"
+  backend_timeout: "60s"
   write_timeout: "20m"
   read_timeout: "20m"
   shutdown_delay: "5s"
+  # Split admission pools so background workers (replication/reconcile/scrubber)
+  # can't fan out unbounded and saturate the WG-backed oracle MinIO backends (#835).
+  max_concurrent_reads: 64
+  max_concurrent_writes: 8
 
 routing_strategy: "spread"
 
@@ -298,7 +312,7 @@ write_path:
 integrity:
   enabled: true
   verify_on_read: false
-  scrubber_interval: "24h"
+  scrubber_interval: "8760h"
   scrubber_batch_size: 10
 
 encryption:
@@ -330,7 +344,7 @@ cache:
   ttl: "15m"
 
 reconcile:
-  enabled: true
+  enabled: false
   interval: "24h"
 
 cleanup_queue:
