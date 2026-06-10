@@ -69,7 +69,8 @@
           "vault_path": "secret/data/wireguard-v2/goren",
           "vault_field": "private_key",
           "post_up": [
-            "iptables -t nat -A POSTROUTING -s 10.200.0.0/24 -o eth0 -j MASQUERADE"
+            "iptables -t nat -A POSTROUTING -s 10.200.0.0/24 -o eth0 -j MASQUERADE",
+            "tc qdisc replace dev %i root cake || true"
           ],
           "post_down": [
             "iptables -t nat -D POSTROUTING -s 10.200.0.0/24 -o eth0 -j MASQUERADE"
