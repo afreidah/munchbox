@@ -101,6 +101,18 @@ variable "additional_ingress_rules" {
   default = []
 }
 
+variable "oci_ingress_rules" {
+  description = "Additional custom ingress rules for the OCI security list (OCI format)"
+  type = list(object({
+    protocol    = string
+    source      = string
+    description = string
+    port_min    = optional(number)
+    port_max    = optional(number)
+  }))
+  default = []
+}
+
 # -----------------------------------------------------------------------------
 # AWS-SPECIFIC CONFIGURATION
 # -----------------------------------------------------------------------------

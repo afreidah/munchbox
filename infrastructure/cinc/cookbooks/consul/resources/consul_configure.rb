@@ -12,13 +12,23 @@
 # ACL agent token is fetched from Vault at converge time.
 #
 # Properties:
-#   node_name        - consul node name (required).
-#   bind_addr        - IP to bind RPC/serf to (required).
-#   datacenter       - cluster datacenter (default 'munchbox').
-#   client_addr      - DNS/HTTP listen address (default '0.0.0.0').
-#   server           - true for cluster servers, false for clients.
-#   bootstrap_expect - integer; only emitted when server=true.
-#   retry_join       - array of IPs/hostnames to attempt joining (required).
+#   node_name          - consul node name (required).
+#   bind_addr          - IP to bind RPC/serf to (required). Use 0.0.0.0 on a
+#                      multi-homed server that serfs LAN + WAN on different NICs.
+#   advertise_addr     - LAN serf/RPC address advertised to the local DC; set
+#                      explicitly when bind_addr is 0.0.0.0 so auto-detect can't
+#                      pick the wrong NIC (docker/nomad bridge, wg vs VCN).
+#   datacenter         - cluster datacenter (default 'munchbox').
+#   primary_datacenter - DC owning the ACL/CA system of record; set on every
+#                      node in a federation (primary + secondaries). Nil = single-DC.
+#   client_addr        - DNS/HTTP listen address (default '0.0.0.0').
+#   server             - true for cluster servers, false for clients.
+#   bootstrap_expect   - integer; only emitted when server=true.
+#   retry_join         - array of IPs/hostnames to attempt joining (required).
+#   retry_join_wan     - array of secondary/primary server addrs for the WAN
+#                      serf pool; only meaningful on servers (default []).
+#   advertise_addr_wan - address servers advertise to the WAN pool; on oracle
+#                      servers this is the wg addr munchbox reaches them on.
 #   node_meta        - Hash rendered as a node_meta {} block (default {}).
 #   ports            - Hash of named ports (dns, http, https, grpc, ...).
 #   ui_enabled       - default true.
@@ -32,6 +42,10 @@
 #                      including nomad's consul client and consul-template
 #                      template stanzas). Needs broader KV/service read than
 #                      acl_agent_token.
+#   enable_token_replication - secondary-DC servers replicate the primary's
+#                      global tokens/policies locally; set true on oracle servers.
+#   acl_replication_token - sensitive; global token (acl=write) the secondary
+#                      uses to pull replication from the primary DC.
 #   tls_*            - cert/key paths + verify_* flags (consumed verbatim).
 #   acl_*            - default policy + down policy.
 #   telemetry_*      - prometheus retention + disable_hostname flag.
@@ -47,11 +61,15 @@ provides :consul_configure
 
 property :node_name,                  String, required: true
 property :bind_addr,                  String, required: true
+property :advertise_addr,             [String, nil]
 property :datacenter,                 String, default: 'munchbox'
+property :primary_datacenter,         [String, nil]
 property :client_addr,                String, default: '0.0.0.0'
 property :server,                     [true, false], default: false
 property :bootstrap_expect,           [Integer, nil]
 property :retry_join,                 Array,  default: []
+property :retry_join_wan,             Array,  default: []
+property :advertise_addr_wan,         [String, nil]
 property :node_meta,                  Hash,   default: {}
 property :ports,                      Hash,   default: {
   'dns' => 8600, 'http' => 8500, 'https' => 8501, 'grpc' => 8502,
@@ -65,6 +83,8 @@ property :acl_default_policy,         String, default: 'deny'
 property :acl_down_policy,            String, default: 'extend-cache'
 property :acl_agent_token,            [String, nil], sensitive: true
 property :acl_default_token,          [String, nil], sensitive: true
+property :enable_token_replication,   [true, false], default: false
+property :acl_replication_token,      [String, nil], sensitive: true
 property :tls_enabled,                [true, false], default: true
 property :tls_ca_file,                String, default: '/etc/consul.d/tls/ca-chain.crt'
 property :tls_cert_file,              String, default: '/etc/consul.d/tls/consul.crt'
@@ -94,6 +114,8 @@ action :configure do
     raise "consul_configure[#{new_resource.name}]: server=true requires bootstrap_expect"
   end
   raise "consul_configure[#{new_resource.name}]: retry_join must be non-empty" if new_resource.retry_join.empty?
+  # --- token replication needs a global acl=write token to pull from the primary DC ---
+  raise "consul_configure[#{new_resource.name}]: enable_token_replication requires acl_replication_token (check secret/consul/replication-token in Vault)" if new_resource.enable_token_replication && new_resource.acl_replication_token.to_s.empty?
   raise "consul_configure[#{new_resource.name}]: acl_agent_token is empty (check secret/consul/agent-token in Vault)" if new_resource.acl_enabled && new_resource.acl_agent_token.to_s.empty?
   raise "consul_configure[#{new_resource.name}]: acl_default_token is empty (check secret/consul/nomad-client-token in Vault)" if new_resource.acl_enabled && new_resource.acl_default_token.to_s.empty?
 
@@ -106,12 +128,16 @@ action :configure do
     variables(
       node_name: new_resource.node_name,
       bind_addr: new_resource.bind_addr,
+      advertise_addr: new_resource.advertise_addr,
       datacenter: new_resource.datacenter,
+      primary_datacenter: new_resource.primary_datacenter,
       client_addr: new_resource.client_addr,
       data_dir: new_resource.data_dir,
       server: new_resource.server,
       bootstrap_expect: new_resource.bootstrap_expect,
       retry_join: new_resource.retry_join,
+      retry_join_wan: new_resource.retry_join_wan,
+      advertise_addr_wan: new_resource.advertise_addr_wan,
       node_meta: new_resource.node_meta,
       ports: new_resource.ports,
       ui_enabled: new_resource.ui_enabled,
@@ -122,6 +148,8 @@ action :configure do
       acl_down_policy: new_resource.acl_down_policy,
       acl_agent_token: new_resource.acl_agent_token,
       acl_default_token: new_resource.acl_default_token,
+      enable_token_replication: new_resource.enable_token_replication,
+      acl_replication_token: new_resource.acl_replication_token,
       tls_enabled: new_resource.tls_enabled,
       tls_ca_file: new_resource.tls_ca_file,
       tls_cert_file: new_resource.tls_cert_file,

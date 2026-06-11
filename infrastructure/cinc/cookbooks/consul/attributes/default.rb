@@ -45,6 +45,7 @@ default[cookbook]['install'] = {
 
 default[cookbook]['config'] = {
   datacenter: 'munchbox',
+  primary_datacenter: nil, # set on every node once federated; nil = single-DC
   domain: 'consul',
   client_addr: '0.0.0.0',
   ui_enabled: true,
@@ -52,9 +53,12 @@ default[cookbook]['config'] = {
   raft_multiplier: 1,
 
   bind_addr: nil, # required, set per-node
+  advertise_addr: nil, # LAN advertise; set when bind_addr is 0.0.0.0 (multi-homed)
   server: false,
   bootstrap_expect: nil,
   retry_join: [],
+  retry_join_wan: [], # server-only; secondary/primary WAN serf peers
+  advertise_addr_wan: nil, # server-only; addr advertised to the WAN pool
   node_meta: {},
 
   ports: {
@@ -79,6 +83,7 @@ default[cookbook]['config'] = {
   acl_enabled: true,
   acl_default_policy: 'deny',
   acl_down_policy: 'extend-cache',
+  enable_token_replication: false, # secondary-DC servers opt in to pull global tokens
 
   telemetry_prometheus_retention_time: '30s',
   telemetry_disable_hostname: false,

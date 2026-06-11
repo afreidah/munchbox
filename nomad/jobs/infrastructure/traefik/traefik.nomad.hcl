@@ -123,13 +123,12 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.7.1"
+        image        = "traefik:v3.7.5"
         network_mode = "host"
         ports        = ["http", "https", "dashboard", "gitssh"]
         volumes      = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
-          "/opt/traefik/acme:/acme",
           "/etc/nomad.d/tls/ca-chain.crt:/etc/traefik/certs/ca-chain.crt:ro"
         ]
       }
@@ -141,11 +140,30 @@ job "traefik" {
         data        = <<EOH
 {{ with secret "secret/data/traefik" -}}
 CONSUL_HTTP_TOKEN={{ .Data.data.consul_token }}
-CF_DNS_API_TOKEN={{ .Data.data.cloudflare_api_token }}
 {{- end }}
 {{ with secret "secret/data/nomad-ui" -}}
 NOMAD_UI_TOKEN={{ .Data.data.token }}
 {{- end }}
+EOH
+      }
+
+      # --- Wildcard cert from Vault (issued by the cert-acquirer job). Both
+      #     ingress instances render the SAME cert, replacing per-instance ACME.
+      #     change_mode=noop: Traefik's file provider hot-reloads cert files on
+      #     change, so a weekly cert rotation needs no restart. ---
+      template {
+        destination = "secrets/wildcard.crt"
+        change_mode = "noop"
+        data        = <<EOH
+{{ with secret "secret/data/traefik/wildcard" }}{{ .Data.data.cert }}{{ end }}
+EOH
+      }
+
+      template {
+        destination = "secrets/wildcard.key"
+        change_mode = "noop"
+        data        = <<EOH
+{{ with secret "secret/data/traefik/wildcard" }}{{ .Data.data.key }}{{ end }}
 EOH
       }
 
@@ -268,18 +286,6 @@ EOH
       endpoint = "tempo.service.consul:4317"
       insecure = true
 
-# -------------------------------------------------------------------------
-# ACME — Let's Encrypt via Cloudflare DNS Challenge
-# Each instance independently obtains and renews its own wildcard cert.
-# Persisted to /acme/ host volume to survive restarts.
-# -------------------------------------------------------------------------
-
-[certificatesResolvers.letsencrypt.acme]
-  email = "alex@alexfreidah.com"
-  storage = "/acme/acme.json"
-  [certificatesResolvers.letsencrypt.acme.dnsChallenge]
-    provider = "cloudflare"
-    resolvers = ["1.1.1.1:53", "8.8.8.8:53"]
 EOH
       }
 
@@ -292,13 +298,17 @@ EOH
 # Traefik Dynamic Configuration
 # -------------------------------------------------------------------------
 
-# --- Default TLS Store (uses ACME-generated wildcard cert) ---
+# --- Wildcard cert from Vault (rendered by the secrets/wildcard.{crt,key}
+#     templates above; issued centrally by the cert-acquirer job). Registered
+#     as a certificate AND set as the default so unmatched SNI also gets it. ---
+[[tls.certificates]]
+  certFile = "/secrets/wildcard.crt"
+  keyFile  = "/secrets/wildcard.key"
+
 [tls.stores.default]
-  [tls.stores.default.defaultGeneratedCert]
-    resolver = "letsencrypt"
-    [tls.stores.default.defaultGeneratedCert.domain]
-      main = "munchbox.cc"
-      sans = ["*.munchbox.cc"]
+  [tls.stores.default.defaultCertificate]
+    certFile = "/secrets/wildcard.crt"
+    keyFile  = "/secrets/wildcard.key"
 
 # --- TLS Options ---
 [tls.options]

@@ -36,7 +36,6 @@ tags = [
   "education",
   "phlebotomy",
   "traefik.http.routers.phlebotomy-game.tls=true",
-  "traefik.http.routers.phlebotomy-game.tls.certresolver=letsencrypt",
   "traefik.http.routers.phlebotomy-game.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.phlebotomy-game-http.rule=Host(`study.munchbox.cc`)",
