@@ -119,7 +119,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.61.2"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.62.3"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -136,7 +136,7 @@ job "s3-orchestrator" {
 {{ with secret "secret/data/s3-orchestrator" }}
 server:
   listen_addr: "0.0.0.0:9000"
-  backend_timeout: "60s"
+  backend_timeout: "300s"
   write_timeout: "20m"
   read_timeout: "20m"
   shutdown_delay: "5s"
@@ -196,9 +196,10 @@ backends:
     secret_access_key: "{{ .Data.data.e2_s3_secret_key }}"
     force_path_style: true
     disable_checksum: true
-    quota_bytes: 10737418240
-    egress_byte_limit: 10737418240
-    ingress_byte_limit: 10737418240
+    quota_bytes: 1000000000000        # 1 TB storage
+    egress_byte_limit: 1000000000000  # 1 TB/month egress
+    ingress_byte_limit: 0             # unlimited
+    api_request_limit: 0              # unlimited
   - name: "ibm"
     endpoint: "{{ .Data.data.ibm_s3_endpoint }}"
     region: "{{ .Data.data.ibm_s3_region }}"
@@ -300,8 +301,8 @@ circuit_breaker:
 
 backend_circuit_breaker:
   enabled: true
-  failure_threshold: 3
-  open_timeout: 30m
+  failure_threshold: 8
+  open_timeout: 5m
 
 write_path:
   pending_pattern:
@@ -364,6 +365,8 @@ replication:
   factor: 2
   batch_size: 20
   worker_interval: "2m"
+  concurrency: 2
+  unhealthy_threshold: "5m"
 
 ui:
   enabled: true

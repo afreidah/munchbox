@@ -10,16 +10,19 @@
 # -------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------
-# ZFS ARC cap
+# ZFS ARC bounds
 #
-# zfs_arc_max in bytes. Written to /etc/modprobe.d/zfs.conf AND applied
-# live via /sys/module/zfs/parameters/zfs_arc_max so an unplanned reboot
-# isn't required to take effect. nil = no chef-managed cap (preserve
-# whatever modprobe defaults to).
+# zfs_arc_max (cap) + zfs_arc_min (floor) in bytes. Written to
+# /etc/modprobe.d/zfs.conf AND applied live via
+# /sys/module/zfs/parameters/zfs_arc_{max,min} so an unplanned reboot
+# isn't required to take effect. The floor keeps ARC from collapsing
+# under VM memory pressure on hosts that also serve cached storage.
+# nil = no chef-managed bound for that field. min must stay <= max.
 # -------------------------------------------------------------------------------
 
 default[cookbook]['zfs_arc'] = {
   max_bytes: nil,
+  min_bytes: nil,
 }
 
 # -------------------------------------------------------------------------------

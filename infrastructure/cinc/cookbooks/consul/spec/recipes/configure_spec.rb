@@ -108,6 +108,80 @@ RSpec.describe 'consul::configure' do
     end
   end
 
+  context 'as a secondary-datacenter server (WAN federation)' do
+    cached(:chef_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(consul_configure)) do |node|
+        node.override[:consul][:config][:bind_addr]                = '0.0.0.0'
+        node.override[:consul][:config][:advertise_addr]           = '10.100.0.98'
+        node.override[:consul][:config][:retry_join]               = ['10.100.0.98', '10.100.0.160', '10.100.0.130']
+        node.override[:consul][:config][:server]                   = true
+        node.override[:consul][:config][:bootstrap_expect]         = 3
+        node.override[:consul][:config][:datacenter]               = 'oracle'
+        node.override[:consul][:config][:primary_datacenter]       = 'munchbox'
+        node.override[:consul][:config][:retry_join_wan]           = ['192.168.68.60', '192.168.68.61', '192.168.68.58']
+        node.override[:consul][:config][:advertise_addr_wan]       = '10.200.0.13'
+        node.override[:consul][:config][:enable_token_replication] = true
+      end.converge('consul::configure')
+    end
+
+    # --- federation fields propagate to the template ---
+    it 'passes datacenter + primary_datacenter through to the template' do
+      template = chef_run.template('/etc/consul.d/consul.hcl')
+      expect(template.variables[:datacenter]).to eq('oracle')
+      expect(template.variables[:primary_datacenter]).to eq('munchbox')
+    end
+
+    # --- multi-homed bind: 0.0.0.0 with explicit LAN advertise on the VCN ---
+    it 'passes bind 0.0.0.0 + advertise_addr (LAN) through to the template' do
+      template = chef_run.template('/etc/consul.d/consul.hcl')
+      expect(template.variables[:bind_addr]).to eq('0.0.0.0')
+      expect(template.variables[:advertise_addr]).to eq('10.100.0.98')
+    end
+
+    # --- WAN serf join + advertise address flow through ---
+    it 'passes retry_join_wan + advertise_addr_wan through to the template' do
+      template = chef_run.template('/etc/consul.d/consul.hcl')
+      expect(template.variables[:retry_join_wan]).to include('192.168.68.60')
+      expect(template.variables[:advertise_addr_wan]).to eq('10.200.0.13')
+    end
+
+    # --- token replication enabled + replication token (vault-fetched, stubbed) lands in vars ---
+    it 'enables token replication and passes the replication token through' do
+      template = chef_run.template('/etc/consul.d/consul.hcl')
+      expect(template.variables[:enable_token_replication]).to eq(true)
+      expect(template.variables[:acl_replication_token]).to eq('test-acl-agent-token')
+    end
+  end
+
+  context 'with enable_token_replication but an empty replication token' do
+    # --- Fail-fast: replication without a global acl=write token silently breaks secondary ACLs ---
+    it 'raises an actionable error' do
+      runner = ChefSpec::SoloRunner.new(step_into: %w(consul_configure), log_level: :fatal) do |node|
+        node.override[:consul][:config][:bind_addr]                = '10.100.0.98'
+        node.override[:consul][:config][:retry_join]               = ['10.100.0.98']
+        node.override[:consul][:config][:server]                   = true
+        node.override[:consul][:config][:bootstrap_expect]         = 3
+        node.override[:consul][:config][:enable_token_replication] = true
+      end
+      # --- replication-token path returns empty; agent token still resolves ---
+      allow_any_instance_of(Chef::Resource).to receive(:vault_fetch).and_call_original
+      allow_any_instance_of(Chef::Resource).to receive(:vault_fetch)
+        .with('secret/data/consul/replication-token', 'token').and_return('')
+      allow_any_instance_of(Chef::Resource).to receive(:vault_fetch)
+        .with('secret/data/consul/agent-token', 'token').and_return('test-acl-agent-token')
+      allow_any_instance_of(Chef::Resource).to receive(:vault_fetch)
+        .with('secret/data/consul/nomad-client-token', 'token').and_return('test-acl-default-token')
+      orig_stdout = $stdout
+      $stdout = StringIO.new
+      begin
+        expect { runner.converge('consul::configure') }
+          .to raise_error(/enable_token_replication requires acl_replication_token/)
+      ensure
+        $stdout = orig_stdout
+      end
+    end
+  end
+
   context 'with server=true but no bootstrap_expect' do
     # --- Fail-fast: missing bootstrap_expect would otherwise let consul refuse to start mid-converge ---
     it 'raises an actionable error' do

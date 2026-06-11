@@ -67,6 +67,25 @@ inputs = {
   allow_icmp      = "0.0.0.0/0"
   trusted_cidr    = local.root.locals.wireguard_subnet
 
+  # --- Consul RPC + serf between oracle nodes on the VCN (the oracle DC's
+  #     local serf pool); trusted_cidr only covers the wg subnet. ---
+  oci_ingress_rules = [
+    {
+      protocol    = "6"
+      source      = local.root.locals.network_cidrs.oci
+      description = "Consul RPC + serf (TCP)"
+      port_min    = 8300
+      port_max    = 8302
+    },
+    {
+      protocol    = "17"
+      source      = local.root.locals.network_cidrs.oci
+      description = "Consul serf (UDP)"
+      port_min    = 8301
+      port_max    = 8302
+    },
+  ]
+
   # OCI-specific
   oci_config = {
     compartment_id   = local.root.locals.oci_defaults.compartment_id

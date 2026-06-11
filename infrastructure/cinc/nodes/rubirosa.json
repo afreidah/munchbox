@@ -26,7 +26,8 @@
     },
     "proxmox_host": {
       "zfs_arc": {
-        "max_bytes": 34359738368
+        "max_bytes": 34359738368,
+        "min_bytes": 12884901888
       },
       "pci_passthrough": {
         "enabled": true,

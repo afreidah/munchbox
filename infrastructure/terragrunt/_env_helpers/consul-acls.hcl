@@ -169,6 +169,21 @@ locals {
         operator = "read"
       EOT
     }
+
+    # --- global token a secondary DC uses for ACL/CA/config-entry replication from the primary ---
+    "replication" = {
+      description       = "ACL replication - secondary datacenter pulls global tokens/policies"
+      token_description = "Token for secondary-datacenter ACL replication"
+      vault_path        = "consul/replication-token"
+      rules             = <<-EOT
+        acl = "write"
+        operator = "write"
+        service_prefix "" {
+          policy = "read"
+          intentions = "read"
+        }
+      EOT
+    }
   }
 
   # --- fan acl_entries out into the three module-shape maps ---

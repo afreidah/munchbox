@@ -101,6 +101,7 @@ module "oci_security_list" {
   allow_wireguard = var.allow_wireguard
   allow_icmp      = var.allow_icmp
   trusted_cidr    = var.trusted_cidr
+  ingress_rules   = var.oci_ingress_rules
 }
 
 module "oci_networking" {

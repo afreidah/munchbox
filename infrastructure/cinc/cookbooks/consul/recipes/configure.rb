@@ -18,11 +18,15 @@
 consul_configure 'consul' do
   node_name(node[cookbook]['config']['node_name'] || node.name)
   bind_addr                           node[cookbook]['config']['bind_addr']
+  advertise_addr                      node[cookbook]['config']['advertise_addr']
   datacenter                          node[cookbook]['config']['datacenter']
+  primary_datacenter                  node[cookbook]['config']['primary_datacenter']
   client_addr                         node[cookbook]['config']['client_addr']
   server                              node[cookbook]['config']['server']
   bootstrap_expect                    node[cookbook]['config']['bootstrap_expect']
   retry_join                          node[cookbook]['config']['retry_join']
+  retry_join_wan                      node[cookbook]['config']['retry_join_wan']
+  advertise_addr_wan                  node[cookbook]['config']['advertise_addr_wan']
   node_meta                           node[cookbook]['config']['node_meta'].to_hash
   ports                               node[cookbook]['config']['ports'].to_hash
   ui_enabled                          node[cookbook]['config']['ui_enabled']
@@ -31,11 +35,14 @@ consul_configure 'consul' do
   acl_enabled                         node[cookbook]['config']['acl_enabled']
   acl_default_policy                  node[cookbook]['config']['acl_default_policy']
   acl_down_policy                     node[cookbook]['config']['acl_down_policy']
+  enable_token_replication            node[cookbook]['config']['enable_token_replication']
   # --- Lazy: vault_fetch runs at converge time; skipped when ACLs are disabled. ---
   # --- tokens.agent: consul-agent policy (agent's own ops only) ---
   acl_agent_token(lazy { node[cookbook]['config']['acl_enabled'] ? vault_fetch('secret/data/consul/agent-token', 'token') : nil })
   # --- tokens.default: nomad-client policy (broader scope; used by nomad and consul-template lookups via the local agent) ---
   acl_default_token(lazy { node[cookbook]['config']['acl_enabled'] ? vault_fetch('secret/data/consul/nomad-client-token', 'token') : nil })
+  # --- tokens.replication: global acl=write token; only fetched on secondary-DC servers that opt in ---
+  acl_replication_token(lazy { node[cookbook]['config']['enable_token_replication'] ? vault_fetch('secret/data/consul/replication-token', 'token') : nil })
   tls_enabled                         node[cookbook]['config']['tls_enabled']
   tls_ca_file                         node[cookbook]['config']['tls_ca_file']
   tls_cert_file                       node[cookbook]['config']['tls_cert_file']

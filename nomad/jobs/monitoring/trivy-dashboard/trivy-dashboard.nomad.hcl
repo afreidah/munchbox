@@ -78,7 +78,7 @@ job "trivy-dashboard" {
         "traefik.enable=true",
         "traefik.http.routers.trivy-dashboard.rule=Host(`trivy-dashboard.munchbox.cc`)",
         "traefik.http.routers.trivy-dashboard.entrypoints=websecure",
-        "traefik.http.routers.trivy-dashboard.tls.certresolver=letsencrypt",
+        "traefik.http.routers.trivy-dashboard.tls=true",
         "traefik.http.routers.trivy-dashboard.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
         # HTTP router for CF tunnel
         "traefik.http.routers.trivy-dashboard-http.rule=Host(`trivy-dashboard.munchbox.cc`)",

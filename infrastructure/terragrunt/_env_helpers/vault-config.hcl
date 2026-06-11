@@ -155,11 +155,21 @@ inputs = {
         }
       EOT
     }
+
+    # --- cert-acquirer writes the LE wildcard it renews so both Traefiks read one cert ---
+    "cert-acquirer" = {
+      policy = <<-EOT
+        path "secret/data/traefik/wildcard" {
+          capabilities = ["create", "update", "read"]
+        }
+      EOT
+    }
   }
 
   # --- Workload Secrets (for nomad-workloads policy) ---
   workload_secrets = [
     "traefik",
+    "traefik/wildcard",
     "grafana",
     "backup-worker",
     "prometheus",
@@ -286,6 +296,12 @@ inputs = {
       policies = ["nomad-workloads"]
       bound_claims = {
         nomad_job_id = "flight-fetcher"
+      }
+    }
+    "cert-acquirer" = {
+      policies = ["nomad-workloads", "cert-acquirer"]
+      bound_claims = {
+        nomad_job_id = "cert-acquirer"
       }
     }
   }

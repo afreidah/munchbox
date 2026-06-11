@@ -124,7 +124,6 @@ job "forgejo" {
         "traefik.http.routers.forgejo.rule=Host(`git.munchbox.cc`)",
         "traefik.http.routers.forgejo.entrypoints=websecure",
         "traefik.http.routers.forgejo.tls=true",
-        "traefik.http.routers.forgejo.tls.certresolver=letsencrypt",
         "traefik.http.routers.forgejo.middlewares=oauth2-proxy@file",
         # HTTP router for API (no oauth2-proxy, higher priority)
         "traefik.http.routers.forgejo-api-http.rule=Host(`git.munchbox.cc`) && PathPrefix(`/api/`)",

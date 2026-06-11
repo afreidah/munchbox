@@ -81,7 +81,6 @@ job "oauth2-proxy" {
         "traefik.http.routers.oauth2-proxy.rule=Host(`auth.munchbox.cc`)",
         "traefik.http.routers.oauth2-proxy.entrypoints=websecure",
         "traefik.http.routers.oauth2-proxy.tls=true",
-        "traefik.http.routers.oauth2-proxy.tls.certresolver=letsencrypt",
         "traefik.http.routers.oauth2-proxy.middlewares=auth-ratelimit@file",
         # HTTP router (for Cloudflare tunnel)
         "traefik.http.routers.oauth2-proxy-http.rule=Host(`auth.munchbox.cc`) && HeaderRegexp(`CF-Connecting-IP`, `.+`)",

@@ -3,7 +3,9 @@
   "chef_environment": "_default",
   "run_list": [
     "role[bare_metal_pi5]",
-    "role[vault_server]"
+    "role[vault_server]",
+    "recipe[wireguard::install]",
+    "recipe[wireguard::configure]"
   ],
   "normal": {
     "tags": [
@@ -56,6 +58,65 @@
           "role": "ingress",
           "vrrp_interface": "eth0",
           "zone": "rack-a"
+        }
+      }
+    },
+    "wireguard": {
+      "interfaces": {
+        "wg1": {
+          "address": "10.201.0.2/32",
+          "mtu": 1380,
+          "vault_path": "secret/data/wireguard-v2/goren",
+          "vault_field": "private_key",
+          "post_up": [
+            "iptables -t nat -A POSTROUTING -s 10.200.0.0/24 -o eth0 -j MASQUERADE",
+            "tc qdisc replace dev %i root cake || true"
+          ],
+          "post_down": [
+            "iptables -t nat -D POSTROUTING -s 10.200.0.0/24 -o eth0 -j MASQUERADE"
+          ],
+          "peers": [
+            {
+              "name": "oracle-node-1",
+              "vault_path": "secret/data/wireguard-v2/oracle-node-1",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.11/32"
+              ],
+              "endpoint": "132.226.87.58:51820",
+              "persistent_keepalive": 25
+            },
+            {
+              "name": "oracle-node-2",
+              "vault_path": "secret/data/wireguard-v2/oracle-node-2",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.12/32"
+              ],
+              "endpoint": "158.101.33.133:51820",
+              "persistent_keepalive": 25
+            },
+            {
+              "name": "oracle-arm-1",
+              "vault_path": "secret/data/wireguard-v2/oracle-arm-1",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.13/32"
+              ],
+              "endpoint": "132.226.26.135:51820",
+              "persistent_keepalive": 25
+            },
+            {
+              "name": "oracle-arm-2",
+              "vault_path": "secret/data/wireguard-v2/oracle-arm-2",
+              "vault_field": "public_key",
+              "allowed_ips": [
+                "10.200.0.14/32"
+              ],
+              "endpoint": "137.131.39.64:51820",
+              "persistent_keepalive": 25
+            }
+          ]
         }
       }
     },

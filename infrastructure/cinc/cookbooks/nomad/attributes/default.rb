@@ -13,7 +13,7 @@
 
 # --- user/group default to root for parity with ansible (state trees under /var/lib/nomad are root-owned). ---
 default[cookbook]['install'] = {
-  version: '2.0.2',
+  version: '2.0.3',
   bin_path: '/usr/local/bin/nomad',
   user: 'root',
   group: 'root',

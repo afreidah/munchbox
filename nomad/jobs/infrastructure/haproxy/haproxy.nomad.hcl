@@ -160,7 +160,6 @@ job "haproxy" {
         "traefik.http.routers.haproxy-stats.rule=Host(`haproxy.munchbox.cc`)",
         "traefik.http.routers.haproxy-stats.entrypoints=websecure",
         "traefik.http.routers.haproxy-stats.tls=true",
-        "traefik.http.routers.haproxy-stats.tls.certresolver=letsencrypt",
         "traefik.http.routers.haproxy-stats.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
         # HTTP router (Cloudflare tunnel)
         "traefik.http.routers.haproxy-stats-http.rule=Host(`haproxy.munchbox.cc`)",

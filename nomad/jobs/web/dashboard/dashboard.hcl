@@ -39,7 +39,6 @@ tags = [
   "nginx",
   "hugo",
   "traefik.http.routers.dashboard.tls=true",
-  "traefik.http.routers.dashboard.tls.certresolver=letsencrypt",
   "traefik.http.routers.dashboard.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
   # HTTP router for CF tunnel
   "traefik.http.routers.dashboard-http.rule=Host(`dashboard.munchbox.cc`)",

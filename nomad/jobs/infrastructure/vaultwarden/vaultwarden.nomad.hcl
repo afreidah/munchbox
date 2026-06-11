@@ -112,13 +112,11 @@ job "vaultwarden" {
           "traefik.http.routers.vaultwarden-api.rule=Host(`vaultwarden.munchbox.cc`) && (PathPrefix(`/api`) || PathPrefix(`/identity`) || PathPrefix(`/icons`) || PathPrefix(`/notifications`))",
           "traefik.http.routers.vaultwarden-api.entrypoints=websecure",
           "traefik.http.routers.vaultwarden-api.tls=true",
-          "traefik.http.routers.vaultwarden-api.tls.certresolver=letsencrypt",
           "traefik.http.routers.vaultwarden-api.priority=20",
           # --- HTTPS router for Web UI (with Authentik) ---
           "traefik.http.routers.vaultwarden.rule=Host(`vaultwarden.munchbox.cc`)",
           "traefik.http.routers.vaultwarden.entrypoints=websecure",
           "traefik.http.routers.vaultwarden.tls=true",
-          "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt",
           "traefik.http.routers.vaultwarden.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file",
           "traefik.http.routers.vaultwarden.priority=10",
           # --- HTTP router for API (Cloudflare tunnel, no Authentik) ---

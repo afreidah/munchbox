@@ -14,9 +14,15 @@
 # -------------------------------------------------------------------------------
 
 datacenter  = "<%= @datacenter %>"
+<% if @primary_datacenter && !@primary_datacenter.empty? -%>
+primary_datacenter = "<%= @primary_datacenter %>"
+<% end -%>
 node_name   = "<%= @node_name %>"
 data_dir    = "<%= @data_dir %>"
 bind_addr   = "<%= @bind_addr %>"
+<% if @advertise_addr && !@advertise_addr.empty? -%>
+advertise_addr = "<%= @advertise_addr %>"
+<% end -%>
 client_addr = "<%= @client_addr %>"
 
 <% if @server -%>
@@ -26,6 +32,14 @@ client_addr = "<%= @client_addr %>"
 
 server           = true
 bootstrap_expect = <%= @bootstrap_expect %>
+<% unless @retry_join_wan.empty? -%>
+
+# --- WAN serf pool: servers joining other datacenters ---
+retry_join_wan = <%= @retry_join_wan.to_json %>
+<% end -%>
+<% if @advertise_addr_wan && !@advertise_addr_wan.empty? -%>
+advertise_addr_wan = "<%= @advertise_addr_wan %>"
+<% end -%>
 <% else -%>
 # -------------------------------------------------------------------------------
 # Client Configuration
@@ -96,6 +110,9 @@ acl {
   enabled        = true
   default_policy = "<%= @acl_default_policy %>"
   down_policy    = "<%= @acl_down_policy %>"
+<% if @enable_token_replication -%>
+  enable_token_replication = true
+<% end -%>
 <% if @acl_agent_token && !@acl_agent_token.empty? -%>
   tokens {
     agent   = "<%= @acl_agent_token %>"
@@ -103,6 +120,9 @@ acl {
     default = "<%= @acl_default_token %>"
 <% else -%>
     default = "<%= @acl_agent_token %>"
+<% end -%>
+<% if @acl_replication_token && !@acl_replication_token.empty? -%>
+    replication = "<%= @acl_replication_token %>"
 <% end -%>
   }
 <% end -%>
