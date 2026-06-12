@@ -536,6 +536,108 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
+  # JELLYFIN  (composition lives in _env_helpers/jellyfin-config.hcl)
+  # ---------------------------------------------------------------------------
+  # --- endpoint + api_key come from Vault (secret/jellyfin) via TF_VAR_*, not
+  #     here. Singleton configs default to null (unmanaged) and scheduled_tasks
+  #     to {} until the live server's settings are codified: pull the current
+  #     config from the jellyfin API, paste the settings object below, then
+  #     `terragrunt import` the singleton resource before the first apply. ---
+
+  jellyfin_encoding_configuration = {
+    EncodingThreadCount                                       = -1
+    EnableFallbackFont                                        = false
+    EnableAudioVbr                                            = false
+    DownMixAudioBoost                                         = 2
+    DownMixStereoAlgorithm                                    = "None"
+    MaxMuxingQueueSize                                        = 2048
+    EnableThrottling                                          = true
+    ThrottleDelaySeconds                                      = 180
+    EnableSegmentDeletion                                     = true
+    SegmentKeepSeconds                                        = 720
+    HardwareAccelerationType                                  = "nvenc"
+    EncoderAppPathDisplay                                     = "/usr/lib/jellyfin-ffmpeg/ffmpeg"
+    VaapiDevice                                               = "/dev/dri/renderD128"
+    QsvDevice                                                 = ""
+    EnableTonemapping                                         = false
+    EnableVppTonemapping                                      = false
+    EnableVideoToolboxTonemapping                             = false
+    TonemappingAlgorithm                                      = "bt2390"
+    TonemappingMode                                           = "auto"
+    TonemappingRange                                          = "auto"
+    TonemappingDesat                                          = 0
+    TonemappingPeak                                           = 100
+    TonemappingParam                                          = 0
+    VppTonemappingBrightness                                  = 16
+    VppTonemappingContrast                                    = 1
+    H264Crf                                                   = 23
+    H265Crf                                                   = 28
+    DeinterlaceDoubleRate                                     = false
+    DeinterlaceMethod                                         = "yadif"
+    EnableDecodingColorDepth10Hevc                            = true
+    EnableDecodingColorDepth10Vp9                             = true
+    EnableDecodingColorDepth10HevcRext                        = false
+    EnableDecodingColorDepth12HevcRext                        = false
+    EnableEnhancedNvdecDecoder                                = true
+    PreferSystemNativeHwDecoder                               = true
+    EnableIntelLowPowerH264HwEncoder                          = false
+    EnableIntelLowPowerHevcHwEncoder                          = false
+    EnableHardwareEncoding                                    = true
+    AllowHevcEncoding                                         = true
+    AllowAv1Encoding                                          = true
+    EnableSubtitleExtraction                                  = true
+    HardwareDecodingCodecs                                    = ["h264", "vc1", "hevc", "av1"]
+    AllowOnDemandMetadataBasedKeyframeExtractionForExtensions = ["mkv"]
+  }
+  jellyfin_livetv_configuration = {
+    EnableRecordingSubfolders                = false
+    EnableOriginalAudioWithEncodedRecordings = false
+    TunerHosts = [
+      {
+        Id                            = "1bdb95cd37bb4c4f879ff486cf3549d9"
+        Url                           = "http://ersatztv.service.consul:8409/iptv/channels.m3u"
+        Type                          = "m3u"
+        ImportFavoritesOnly           = false
+        AllowHWTranscoding            = false
+        AllowFmp4TranscodingContainer = false
+        AllowStreamSharing            = true
+        FallbackMaxStreamingBitrate   = 30000000
+        EnableStreamLooping           = false
+        TunerCount                    = 0
+        IgnoreDts                     = true
+        ReadAtNativeFramerate         = true
+      },
+    ]
+    ListingProviders = [
+      {
+        Id               = "2dd2e37d7d82444cbb457977c197277f"
+        Type             = "xmltv"
+        Path             = "http://ersatztv.service.consul:8409/iptv/xmltv.xml"
+        EnabledTuners    = []
+        EnableAllTuners  = true
+        NewsCategories   = ["news", "journalism", "documentary", "current affairs"]
+        SportsCategories = ["sports", "basketball", "baseball", "football"]
+        KidsCategories   = ["kids", "family", "children", "childrens", "disney"]
+        MovieCategories  = ["movie"]
+        ChannelMappings  = []
+      },
+    ]
+    PrePaddingSeconds               = 0
+    PostPaddingSeconds              = 0
+    MediaLocationsCreated           = []
+    RecordingPostProcessorArguments = "\"{path}\""
+    SaveRecordingNFO                = true
+    SaveRecordingImages             = true
+  }
+  jellyfin_system_configuration = null
+  jellyfin_scheduled_tasks = {
+    "guide-refresh" = {
+      task_id  = "bea9b218c97bbf98c5dc1303bdb9a0ca"
+      triggers = [{ Type = "IntervalTrigger", IntervalTicks = 72000000000 }]
+    }
+  }
+
+  # ---------------------------------------------------------------------------
   # REMOTE-FILES  (composition lives in _env_helpers/remote-files.hcl)
   # ---------------------------------------------------------------------------
   # --- keyed by leaf dir name (node_name). Each entry feeds the remote-files
