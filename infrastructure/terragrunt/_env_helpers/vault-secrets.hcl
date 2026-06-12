@@ -3,10 +3,10 @@
 # -----------------------------------------------------------------------------
 #
 # Single home for writing generated secrets to Vault. The secret structure is
-# declared in root.hcl's vault_secrets map; each entry names a generator leaf
+# declared in the vault_secrets map below; each entry names a generator leaf
 # (source), a key into that generator's vault_data, and optional static
-# non-secret values to merge. Adding a secret is a root.hcl entry (+ one
-# dependency block here if it introduces a new generator).
+# non-secret values to merge. Adding a secret is a map entry (+ one dependency
+# block here if it introduces a new generator).
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -49,8 +49,33 @@ dependency "access_keys" {
 }
 
 locals {
-  root          = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  vault_secrets = local.root.locals.vault_secrets
+  root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+
+  # --- source = generator leaf; key = index into its vault_data; static =
+  #     non-secret values merged in (keyed to match the Vault data keys). ---
+  vault_secrets = {
+    "aptly-admin" = {
+      source = "aptly_secrets"
+      key    = "admin"
+    }
+    "cloudflare-wandns" = {
+      source = "cloudflare_tokens"
+      key    = "wandns"
+      static = { zone_id = local.root.locals.cloudflare_munchbox_zone_id }
+    }
+    "cloudflare-logcollector" = {
+      source = "cloudflare_tokens"
+      key    = "logcollector"
+    }
+    "s3-bucket/unified" = {
+      source = "access_keys"
+      key    = "s3-bucket/unified"
+    }
+    "s3-bucket/aptly" = {
+      source = "access_keys"
+      key    = "s3-bucket/aptly"
+    }
+  }
 }
 
 # --- dependency outputs can only be referenced from inputs, not locals; map

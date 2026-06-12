@@ -2,9 +2,9 @@
 # ACCESS-KEYS ENV HELPER
 # -----------------------------------------------------------------------------
 #
-# Generates access-key / secret-key credential pairs from root.hcl's
-# access_key_requests map. Vault-free: the pairs are exposed as outputs and
-# written to Vault by the vault-secrets leaf via terragrunt dependency.
+# Generates access-key / secret-key credential pairs from the access_key_requests
+# map below. Vault-free: the pairs are exposed as outputs and written to Vault by
+# the vault-secrets leaf via terragrunt dependency.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -14,9 +14,15 @@ terraform {
 }
 
 locals {
-  root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  # --- key = Vault secret name a consumer reads; value = generation options
+  #     (lengths default to S3-style). s3-bucket/* authenticate the
+  #     s3-orchestrator virtual buckets of the matching name. ---
+  access_key_requests = {
+    "s3-bucket/unified" = {}
+    "s3-bucket/aptly"   = { id_length = 32, secret_length = 64 }
+  }
 }
 
 inputs = {
-  credentials = local.root.locals.access_key_requests
+  credentials = local.access_key_requests
 }

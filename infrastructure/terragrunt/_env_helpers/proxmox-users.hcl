@@ -6,8 +6,8 @@
 # pins bpg as the proxmox source; this env_helper overrides root.hcl's
 # providers.tf with bpg-shaped config (root writes first, this overwrites).
 #
-# Inputs are pulled from root.hcl locals (proxmox_roles / proxmox_users).
-# Env vars: PM_API_URL, PM_API_TOKEN_ID, PM_API_TOKEN_SECRET.
+# Roles/users/ACLs are defined here. Env vars: PM_API_URL, PM_API_TOKEN_ID,
+# PM_API_TOKEN_SECRET.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -17,7 +17,32 @@ terraform {
 }
 
 locals {
-  root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  proxmox_roles = {
+    "prometheus-exporter" = {
+      privileges = [
+        "Sys.Audit",
+        "SDN.Audit",
+        "Datastore.Audit",
+        "Pool.Audit",
+        "VM.Audit",
+      ]
+    }
+  }
+
+  proxmox_users = {
+    "prometheus" = {
+      user_id = "prometheus@pve"
+      comment = "PVE Exporter service account"
+      # Password managed manually (API tokens can't change passwords)
+      # Password stored in Vault at secret/proxmox for pve-exporter
+      acls = [
+        {
+          path    = "/"
+          role_id = "prometheus-exporter"
+        }
+      ]
+    }
+  }
 
   # --- bpg wants endpoint WITHOUT /api2/json suffix + a combined api_token string ---
   pm_api_url          = get_env("PM_API_URL", "")
@@ -45,6 +70,6 @@ generate "providers_proxmox_users" {
 }
 
 inputs = {
-  roles = local.root.locals.proxmox_roles
-  users = local.root.locals.proxmox_users
+  roles = local.proxmox_roles
+  users = local.proxmox_users
 }

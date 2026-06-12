@@ -14,7 +14,7 @@
 #     locally each cycle and overrides .Check.Status with real result).
 #
 #   otherwise → static-file leaf (e.g. dns/pihole/shared)
-#     look up bundles in root.hcl's remote_files_configs[node_name], load
+#     look up bundles in remote_files_configs[node_name] (below), load
 #     file bytes from <leaf>/files/<file_key>.
 #
 # Adding a new shape == add a switch arm here; never spawn a sibling helper.
@@ -32,9 +32,61 @@ locals {
   provider_type = local.root.locals.provider_type
   leaf_dir      = get_terragrunt_dir()
 
+  # --- SSH-reachable Pi-hole nodes (remote-files targets) ---
+  pihole_nodes = [
+    { name = "green", host = "192.168.68.62" },
+    { name = "logan", host = "192.168.68.64" },
+  ]
+
+  # --- keyed by leaf dir name (node_name). Each entry = targets to ship to +
+  #     bundles of files with a check/restart hook. File CONTENT is not here;
+  #     each leaf owns a files/ dir and bytes load by file_key. ---
+  remote_files_configs = {
+    shared = {
+      targets = local.pihole_nodes
+      bundles = {
+        unbound = {
+          files = {
+            "pi-hole.conf" = { destination = "/etc/unbound/unbound.conf.d/pi-hole.conf" }
+          }
+          # --- mkdir+chown: logfile dir missing pre-existing; checkconf fails without it ---
+          check_command   = "mkdir -p /var/log/unbound && chown unbound:unbound /var/log/unbound && unbound-checkconf /etc/unbound/unbound.conf.d/pi-hole.conf"
+          restart_command = "systemctl restart unbound && systemctl is-active --quiet unbound"
+        }
+
+        dnsmasq = {
+          files = {
+            "10-munchbox-vips.conf" = { destination = "/etc/dnsmasq.d/10-munchbox-vips.conf" }
+            "munchbox-no-ipv6.conf" = { destination = "/etc/dnsmasq.d/munchbox-no-ipv6.conf" }
+          }
+          # --- reloaddns reloads dnsmasq.d w/o FTL restart (avoids the 30s outage window) ---
+          check_command   = "pihole-FTL dnsmasq-test"
+          restart_command = "pihole reloaddns"
+        }
+
+        node_exporter = {
+          files = {
+            "node_exporter.service" = { destination = "/etc/systemd/system/node_exporter.service" }
+          }
+          restart_command = "systemctl daemon-reload && systemctl enable --now node_exporter && systemctl is-active --quiet node_exporter"
+        }
+
+        consul_register = {
+          files = {
+            "consul-register.sh"      = { destination = "/usr/local/bin/consul-register.sh", mode = "0755" }
+            "consul-register.service" = { destination = "/etc/systemd/system/consul-register.service" }
+            "consul-register.timer"   = { destination = "/etc/systemd/system/consul-register.timer" }
+          }
+          # --- daemon-reload, enable timer, kick the one-shot once so JSON deltas land immediately ---
+          restart_command = "systemctl daemon-reload && systemctl enable --now consul-register.timer && systemctl start consul-register.service"
+        }
+      }
+    }
+  }
+
   # --- pihole-consul: per-host JSONs + the probe-and-POST script (leaves under dns/pihole/consul/<host>) ---
   is_pihole_consul = strcontains(local.leaf_dir, "/dns/pihole/consul/")
-  pc_node          = local.is_pihole_consul ? one([for n in local.root.locals.pihole_nodes : n if n.name == local.node_name]) : null
+  pc_node          = local.is_pihole_consul ? one([for n in local.pihole_nodes : n if n.name == local.node_name]) : null
   pc_tmpl_dir      = "${get_repo_root()}/infrastructure/terragrunt/dns/pihole/consul/_templates"
   pc_tmpl_vars     = local.is_pihole_consul ? { host = local.pc_node.name, ip = local.pc_node.host } : {}
   pc_files = local.is_pihole_consul ? {
@@ -61,7 +113,7 @@ locals {
 
   # --- static-file leaves: lookup is try()'d so a leaf removed from root.hcl
   #     (mid-destroy) still inits with empty inputs and can clean up state. ---
-  cfg = local.is_pihole_consul ? null : try(local.root.locals.remote_files_configs[local.node_name], null)
+  cfg = local.is_pihole_consul ? null : try(local.remote_files_configs[local.node_name], null)
   static_inputs = (local.is_pihole_consul || local.cfg == null) ? { targets = [], bundles = {} } : {
     targets = local.cfg.targets
     bundles = {

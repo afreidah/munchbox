@@ -2,9 +2,10 @@
 # CLOUDFLARE TOKENS ENV HELPER
 # -----------------------------------------------------------------------------
 #
-# Mints scoped Cloudflare API tokens from root.hcl's cloudflare_token_requests
-# map. The module is Vault-free: token values are exposed as outputs and
-# written to Vault by separate consumer leaves via terragrunt dependency.
+# Mints scoped Cloudflare API tokens from the cloudflare_token_requests map
+# below (zone/account ids come from root.hcl). The module is Vault-free: token
+# values are exposed as outputs and written to Vault by separate consumer leaves
+# via terragrunt dependency.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -15,8 +16,36 @@ terraform {
 
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+
+  # --- scoped API tokens minted by modules/cloudflare-api-token (Vault-free) ---
+  cloudflare_token_requests = {
+    wandns = {
+      name = "munchbox-wandns-dns-edit"
+      policies = [{
+        permission_groups = ["DNS Write"]
+        resources         = { "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}" = "*" }
+      }]
+    }
+    # --- cloudflare-log-collector: audit logs + per-zone analytics, read-only ---
+    # Single policy on purpose: the cloudflare v5 provider can't round-trip a token with
+    # multiple policies ("inconsistent result after apply"). One policy is fine even with
+    # mixed scopes - each permission group only applies to its matching resource type:
+    # Account Settings Read -> the account resource (audit logs); Analytics Read -> the
+    # zone resources (per-zone GraphQL firewall/http analytics).
+    logcollector = {
+      name = "munchbox-logcollector-audit-analytics"
+      policies = [{
+        permission_groups = ["Analytics Read", "Account Settings Read"]
+        resources = {
+          "com.cloudflare.api.account.${local.root.locals.cloudflare_account_id}"               = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_alexfreidah_zone_id}" = "*"
+        }
+      }]
+    }
+  }
 }
 
 inputs = {
-  tokens = local.root.locals.cloudflare_token_requests
+  tokens = local.cloudflare_token_requests
 }

@@ -12,9 +12,26 @@
 # -----------------------------------------------------------------------------
 
 locals {
-  root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
-  app  = basename(get_terragrunt_dir())
-  cfg  = local.root.locals.postgres_databases[local.app]
+  app = basename(get_terragrunt_dir())
+  cfg = local.postgres_databases[local.app]
+
+  # --- one entry per app = its login role (creds in Vault secret/<vault_kv_path>)
+  #     owning its databases. manage_secret defaults false = adopt existing creds. ---
+  postgres_databases = {
+    temporal          = { vault_kv_path = "temporal", databases = ["temporal", "temporal_visibility"], extensions = { temporal_visibility = ["btree_gin"] } }
+    forgejo           = { vault_kv_path = "forgejo", databases = ["forgejo"] }
+    trivy             = { vault_kv_path = "trivy-dashboard", databases = ["trivy"] }
+    grafana           = { vault_kv_path = "grafana", databases = ["grafana"] }
+    vaultwarden       = { vault_kv_path = "vaultwarden", databases = ["vaultwarden"] }
+    g3                = { vault_kv_path = "g3", username_field = "db_user", databases = ["g3"] }
+    "s3-orchestrator" = { vault_kv_path = "s3-orchestrator", databases = ["s3_orchestrator"] }
+    "flight-fetcher"  = { vault_kv_path = "flight-fetcher", databases = ["flight_fetcher"] }
+    sonarr            = { vault_kv_path = "sonarr", databases = ["sonarr_main", "sonarr_log"] }
+    radarr            = { vault_kv_path = "radarr", databases = ["radarr_main", "radarr_log"] }
+    lidarr            = { vault_kv_path = "lidarr", databases = ["lidarr_main", "lidarr_log"] }
+    readarr           = { vault_kv_path = "readarr", databases = ["readarr_main", "readarr_log", "readarr-cache"] }
+    prowlarr          = { vault_kv_path = "prowlarr", databases = ["prowlarr_main", "prowlarr_log"] }
+  }
 }
 
 terraform {
