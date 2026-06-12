@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 #
 # Wires Google OAuth credentials (from shell env, sourced by munchbox-env.sh
-# out of Vault) plus the allowed-emails list from root.hcl into the module.
+# out of Vault) plus the allowed-emails list into the module.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -13,7 +13,12 @@ terraform {
 }
 
 locals {
-  root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
+  # --- SSO-allowed emails ---
+  oauth2_proxy_allowed_emails = [
+    "alex.freidah@gmail.com",
+    "afreidah@gmail.com",
+    "hart.koko@gmail.com",
+  ]
 }
 
 inputs = {
@@ -21,5 +26,5 @@ inputs = {
   client_id      = get_env("OAUTH2_PROXY_CLIENT_ID", "")
   client_secret  = get_env("OAUTH2_PROXY_CLIENT_SECRET", "")
   cookie_secret  = get_env("OAUTH2_PROXY_COOKIE_SECRET", "")
-  allowed_emails = local.root.locals.oauth2_proxy_allowed_emails
+  allowed_emails = local.oauth2_proxy_allowed_emails
 }

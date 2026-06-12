@@ -116,12 +116,15 @@ inputs = {
   ssh_public_key = local.root.locals.ssh_public_key
 
   wireguard_subnet            = local.root.locals.wireguard_subnet
-  wireguard_server_public_key = local.root.locals.wireguard_server_public_key
-  wireguard_endpoint          = local.root.locals.wireguard_endpoint
+  wireguard_server_public_key = get_env("MUNCHBOX_WG_SERVER_PUBKEY", "")
+  wireguard_endpoint          = get_env("MUNCHBOX_WG_ENDPOINT", "home.example.com:51820")
   wireguard_allowed_ips       = "${local.root.locals.network_cidrs.wireguard}, ${local.root.locals.network_cidrs.homelab}"
 
-  consul_servers = local.root.locals.consul_servers
-  nomad_servers  = local.root.locals.nomad_servers
+  # --- cloud-init seed retry_join: the WireGuard server address, NOT a server
+  #     inventory. A fresh VM joins consul/nomad over the tunnel, then pulls its
+  #     real agent config from cinc. ---
+  consul_servers = ["10.200.0.1"]
+  nomad_servers  = ["10.200.0.1:4647"]
 
   # --- Legacy direct-install software versions (chef cookbooks pin their own) ---
   consul_version          = "1.17.0"
@@ -159,8 +162,8 @@ inputs = {
   wireguard_private_key = get_env("WG_PRIVATE_KEY_${upper(replace(local.root.locals.node_name, "-", "_"))}", "")
 
   # --- Optional node-level overrides ---
-  datacenter = try(local.node_config.datacenter, local.root.locals.default_datacenter)
-  node_class = try(local.node_config.node_class, local.root.locals.default_node_class)
+  datacenter = try(local.node_config.datacenter, "dc1")
+  node_class = try(local.node_config.node_class, "cloud")
   node_pool  = try(local.node_config.node_pool, "")
   node_meta  = try(local.node_config.node_meta, {})
 

@@ -27,7 +27,33 @@ generate "checkov_config" {
 locals {
   root     = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   dir_name = basename(get_terragrunt_dir())
-  config   = local.root.locals.block_volume_oci_configs[local.dir_name]
+  config   = local.block_volume_oci_configs[local.dir_name]
+
+  # --- keyed by terragrunt dir name ---
+  block_volume_oci_configs = {
+    "minio-volume-1" = {
+      target_node = "oracle-arm-1"
+      purpose     = "minio-storage"
+      volumes = [
+        {
+          name        = "minio-data"
+          size_gb     = 80
+          vpus_per_gb = 10
+        }
+      ]
+    }
+    "minio-volume-2" = {
+      target_node = "oracle-arm-2"
+      purpose     = "minio-storage"
+      volumes = [
+        {
+          name        = "minio-data"
+          size_gb     = 80
+          vpus_per_gb = 10
+        }
+      ]
+    }
+  }
 }
 
 dependency "instance" {

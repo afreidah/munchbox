@@ -15,6 +15,57 @@
 locals {
   root     = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   provider = basename(get_terragrunt_dir())
+
+  # --- keyed by s3-orchestrator/<leaf> == provider ---
+  s3_orchestrator_buckets = {
+    oci = {
+      compartment_id     = get_env("OCI_COMPARTMENT_ID")
+      user_ocid          = get_env("OCI_USER_OCID")
+      region             = get_env("OCI_REGION", "us-ashburn-1")
+      bucket_name        = "munchbox-s3-orchestrator"
+      storage_tier       = "Standard"
+      versioning_enabled = false
+      metadata = {
+        project    = "munchbox"
+        managed_by = "terragrunt"
+        purpose    = "s3-orchestrator-backend"
+      }
+    }
+    ibm = {
+      ibmcloud_api_key = get_env("IC_API_KEY", "")
+      resource_group   = get_env("IBM_RESOURCE_GROUP", "Default")
+      instance_name    = "Cloud Object Storage-wx"
+      region           = get_env("IBM_REGION", "us-east")
+      bucket_name      = "munchbox-backup-storage"
+      storage_class    = "smart"
+      plan             = "standard"
+      tags = {
+        project    = "munchbox"
+        managed_by = "terragrunt"
+        purpose    = "backup-storage"
+      }
+    }
+    r2 = {
+      account_id  = local.root.locals.cloudflare_account_id
+      bucket_name = "munchbox-backups"
+    }
+    b2     = { bucket_name = "munchbox-backup-data" }
+    gcp    = { bucket_name = "munchbox-backup-data", location = "US" }
+    tigris = { bucket_name = "munchbox-backups" }
+    # --- S3-compatible-only (aws s3compat) ---
+    e2 = { bucket_name = "munchbox-backups" }
+    c2 = { bucket_name = "munchbox-backups" }
+    # --- minio provider: self-hosted MinIO + path-less S3-compat (g3) ---
+    minio        = { bucket_name = "munchbox-backups" }
+    "minio-arm2" = { bucket_name = "munchbox-backups" }
+    g3           = { bucket_name = "munchbox-backups" }
+    # --- supabase management-API provider (shellscape/supabase) ---
+    supabase = {
+      project_ref = "uyeggdssdvreqtxjkfhi"
+      bucket_name = "munchbox-backups"
+      public      = false
+    }
+  }
   # Vault stores fields under an underscore key (minio-arm2 -> minio_arm2_s3_*)
   vault_key = replace(local.provider, "-", "_")
 
@@ -160,4 +211,4 @@ generate "trivy_ignore" {
   contents  = "${join("\n", local.my_trivy)}\n"
 }
 
-inputs = local.root.locals.s3_orchestrator_buckets[local.provider]
+inputs = local.s3_orchestrator_buckets[local.provider]
