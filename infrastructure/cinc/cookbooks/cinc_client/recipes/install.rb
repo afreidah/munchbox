@@ -15,4 +15,5 @@ cinc_client_install 'cinc' do
   package_name  install['package_name']
   download_base install['download_base']
   channel       install['channel']
+  checksums     install['checksums']
 end

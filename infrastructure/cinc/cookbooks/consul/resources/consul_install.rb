@@ -5,10 +5,12 @@
 # Resource:: consul_install
 #
 # Installs the consul binary from HashiCorp's release archive (the
-# munchbox apt repo doesn't carry it). Also lays down the system user,
-# group, and standard directory layout if they don't already exist
+# munchbox apt repo doesn't carry it). Lays down the system user, group,
+# and standard directory layout if they don't already exist
 # (vault-cert-manager may have created the user + tls dir before this
-# resource runs -- idempotent in both cases).
+# resource runs -- idempotent in both cases), then hands the download +
+# SHA256SUMS verification + extraction to munchbox_lib_artifact. consul
+# is bounced on a real version change via the shared service subscribe.
 #
 # Properties:
 #   version    - consul version string (e.g. '1.22.7'); used to build the
@@ -37,29 +39,19 @@ property :log_dir,    String, default: '/var/log/consul'
 
 default_action :install
 
-# --- Download URL + arch detection (arm64 for Pi5/oracle-arm, amd64 elsewhere) ---
+# --- arch detection (arm64 for Pi5/oracle-arm, amd64 elsewhere); URL + SHA256SUMS come from the shared HashiCorp helpers ---
 action_class do
   def arch
-    case node['kernel']['machine']
-    when 'aarch64', 'arm64' then 'arm64'
-    else 'amd64'
-    end
-  end
-
-  def archive_name(version)
-    "consul_#{version}_linux_#{arch}.zip"
-  end
-
-  def download_url(version)
-    "https://releases.hashicorp.com/consul/#{version}/#{archive_name(version)}"
+    MunchboxLibCookbook::Artifact.normalize_arch(node['kernel']['machine'])
   end
 end
 
 # -------------------------------------------------------------------------------
-# Action :install  --  Ensure user/group/dirs, then install the binary only when version differs
+# Action :install
 # -------------------------------------------------------------------------------
 
 action :install do
+  # --- setup users, groups, and directories ---
   group new_resource.group do
     system true
   end
@@ -72,6 +64,7 @@ action :install do
     manage_home false
   end
 
+  # --- setup required consul directories ---
   [new_resource.config_dir, new_resource.data_dir, new_resource.tls_dir, new_resource.log_dir].each do |d|
     directory d do
       owner     new_resource.user
@@ -81,31 +74,27 @@ action :install do
     end
   end
 
-  # --- unzip is the only system-level prereq for extracting the archive ---
-  package 'unzip'
+  version     = new_resource.version
+  drift_guard = "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{version}'"
 
-  archive_path = "/tmp/#{archive_name(new_resource.version)}"
+  # --- install consul with the shared munchbox_lib_artifact resource ---
+  munchbox_lib_artifact "consul #{version}" do
+    source           MunchboxLibCookbook::Artifact.hashicorp_url('consul', version, arch)
+    sums_url         MunchboxLibCookbook::Artifact.hashicorp_sums_url('consul', version)
+    format           :zip
+    bin_dir          ::File.dirname(new_resource.bin_path)
 
-  remote_file archive_path do
-    source   download_url(new_resource.version)
-    mode     '0644'
-    not_if   "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{new_resource.version}'"
+    # --- guards and notifications ---
+    not_if_installed drift_guard
+    notifies :restart, 'service[consul]', :delayed
   end
 
-  # --- Shadow service declaration so the version-bump notify below resolves inside this custom resource's collection (unified_mode true sandboxes notify lookups per-action). ---
+  # --- Shadow service declaration so the notify above resolves inside this resource's collection (unified_mode sandboxes notify lookups per-action). ---
   service 'consul' do
     action :nothing
   end
 
-  # --- Extract the binary BEFORE rendering the systemd unit. The unit's ExecStart points at bin_path; systemd-analyze (run as the verify-step of file/systemd_unit) refuses content whose ExecStart binary is absent. Greenfield ordering: download -> unzip -> unit. ---
-  execute "install consul #{new_resource.version}" do
-    command "unzip -o #{archive_path} -d /usr/local/bin && chmod 0755 #{new_resource.bin_path} && rm -f #{archive_path}"
-    not_if  "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{new_resource.version}'"
-    # --- Bounce consul after a version change so the running process actually uses the new binary. ---
-    notifies :restart, 'service[consul]', :delayed
-  end
-
-  # --- Static deployment plumbing (binary path, user/group, config dir) -- no dynamic Vault state -- so the unit belongs with install. ConditionFileNotEmpty on consul.hcl makes the unit a no-op start until configure renders the config. ---
+  # --- Setup systemd service script ---
   systemd_unit 'consul.service' do
     content <<~UNIT
       [Unit]

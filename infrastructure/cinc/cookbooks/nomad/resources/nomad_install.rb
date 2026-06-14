@@ -35,21 +35,10 @@ property :log_dir,    String, default: '/var/log/nomad'
 
 default_action :install
 
-# --- Download URL + arch detection (arm64 for Pi5/oracle-arm, amd64 elsewhere) ---
+# --- arch detection (arm64 for Pi5/oracle-arm, amd64 elsewhere); URL + SHA256SUMS come from the shared HashiCorp helpers ---
 action_class do
   def arch
-    case node['kernel']['machine']
-    when 'aarch64', 'arm64' then 'arm64'
-    else 'amd64'
-    end
-  end
-
-  def archive_name(version)
-    "nomad_#{version}_linux_#{arch}.zip"
-  end
-
-  def download_url(version)
-    "https://releases.hashicorp.com/nomad/#{version}/#{archive_name(version)}"
+    MunchboxLibCookbook::Artifact.normalize_arch(node['kernel']['machine'])
   end
 end
 
@@ -82,27 +71,23 @@ action :install do
     end
   end
 
-  # --- unzip is the only system-level prereq for extracting the archive ---
-  package 'unzip'
+  version     = new_resource.version
+  drift_guard = "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Nomad v#{version}'"
 
-  archive_path = "/tmp/#{archive_name(new_resource.version)}"
-
-  remote_file archive_path do
-    source download_url(new_resource.version)
-    mode   '0644'
-    not_if "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Nomad v#{new_resource.version}'"
+  # --- Download the release zip, verify against HashiCorp's published SHA256SUMS, and extract to bin_dir -- all skipped when the installed version already matches. ---
+  munchbox_lib_artifact "nomad #{version}" do
+    source           MunchboxLibCookbook::Artifact.hashicorp_url('nomad', version, arch)
+    sums_url         MunchboxLibCookbook::Artifact.hashicorp_sums_url('nomad', version)
+    format           :zip
+    bin_dir          ::File.dirname(new_resource.bin_path)
+    not_if_installed drift_guard
+    # --- Bounce nomad only when the artifact actually re-installed (drift). ---
+    notifies :restart, 'service[nomad]', :delayed
   end
 
-  # --- Shadow declaration so the version-bump notify below resolves inside this custom resource's collection (unified_mode true sandboxes resources per-action; we can't notify the configure recipe's systemd_unit[nomad.service] across that boundary). ---
+  # --- Shadow service declaration so the notify above resolves inside this resource's collection (unified_mode sandboxes notify lookups per-action; we can't notify the configure recipe's systemd_unit[nomad.service] across that boundary). ---
   service 'nomad' do
     action :nothing
-  end
-
-  execute "install nomad #{new_resource.version}" do
-    command "unzip -o #{archive_path} -d /usr/local/bin && chmod 0755 #{new_resource.bin_path} && rm -f #{archive_path}"
-    not_if  "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Nomad v#{new_resource.version}'"
-    # --- Bounce nomad after a version change so the running process actually uses the new binary. ---
-    notifies :restart, 'service[nomad]', :delayed
   end
 end
 

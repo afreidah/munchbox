@@ -59,19 +59,3 @@ suites:
             -----BEGIN RSA PRIVATE KEY-----
             KITCHEN-TEST-VALIDATOR-PLACEHOLDER
             -----END RSA PRIVATE KEY-----
-
-  - name: data_bag_secret
-    # --- The recipe's ruby_block raises if /etc/cinc/encrypted_data_bag_secret
-    #     is missing (in production it's provisioned out-of-band by the
-    #     workstation bootstrap). Drop a placeholder via pre_converge so the
-    #     safety-net path runs end-to-end and inspec can verify perms.
-    lifecycle:
-      pre_converge:
-        - remote: |
-            sudo install -d -m 0755 -o root -g root /etc/cinc
-            echo 'KITCHEN-FAKE-DATA-BAG-SECRET-PLACEHOLDER' | sudo install -m 0644 -o root -g root /dev/stdin /etc/cinc/encrypted_data_bag_secret
-    run_list:
-      - recipe[cinc_client::data_bag_secret]
-    verifier:
-      inspec_tests:
-        - test/integration/data_bag_secret

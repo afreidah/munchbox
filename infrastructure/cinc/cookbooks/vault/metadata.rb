@@ -4,7 +4,7 @@ name 'vault'
 maintainer       'Alex Freidah'
 license          'All Rights Reserved'
 description      'Installs + configures HashiCorp Vault server (consul storage backend, HA)'
-version          '0.1.0'
+version          '0.1.1'
 chef_version     '>= 19.0'
 
 depends 'munchbox_lib'

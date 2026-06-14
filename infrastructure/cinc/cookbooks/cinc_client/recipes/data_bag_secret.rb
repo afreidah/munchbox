@@ -23,14 +23,12 @@ directory '/etc/cinc' do
   mode  '0755'
 end
 
-# --- Fail-loud guard; convergence stops before any encrypted-data-bag-dependent recipe runs ---
+# --- Fail-loud guard; convergence stops before any encrypted-data-bag-dependent recipe runs. not_if keeps it idempotent: it fires (and raises) solely when the key is absent. ---
 ruby_block 'verify encrypted_data_bag_secret is present' do
   block do
-    unless ::File.exist?(SECRET_PATH)
-      raise "#{SECRET_PATH} is missing -- run infrastructure/scripts/install-data-bag-secret.sh <node> on the workstation to provision it from Vault"
-    end
+    raise "#{SECRET_PATH} is missing -- run infrastructure/scripts/install-data-bag-secret.sh <node> on the workstation to provision it from Vault"
   end
-  action :run
+  not_if { ::File.exist?(SECRET_PATH) }
 end
 
 # --- Enforce perms without touching contents (chef's file resource leaves content alone when no `content` is set) ---

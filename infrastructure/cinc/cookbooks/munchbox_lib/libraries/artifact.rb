@@ -25,6 +25,16 @@ module MunchboxLibCookbook
         end
       end
 
+      # --- HashiCorp release archive URL; consul/nomad/vault all share this shape ---
+      def hashicorp_url(product, version, arch)
+        "https://releases.hashicorp.com/#{product}/#{version}/#{product}_#{version}_linux_#{arch}.zip"
+      end
+
+      # --- Matching SHA256SUMS body for that release (one file per arch listed) ---
+      def hashicorp_sums_url(product, version)
+        "https://releases.hashicorp.com/#{product}/#{version}/#{product}_#{version}_SHA256SUMS"
+      end
+
       def file_sha256(path)
         require 'digest'
         Digest::SHA256.file(path).hexdigest

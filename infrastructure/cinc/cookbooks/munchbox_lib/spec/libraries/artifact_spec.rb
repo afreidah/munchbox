@@ -29,6 +29,28 @@ RSpec.describe MunchboxLibCookbook::Artifact do
   end
 
   # -------------------------------------------------------------------------------
+  # hashicorp_url / hashicorp_sums_url
+  # -------------------------------------------------------------------------------
+
+  describe '.hashicorp_url' do
+    # --- consul/nomad/vault all share the releases.hashicorp.com archive shape ---
+    it 'builds the per-product/version/arch release archive url' do
+      expect(described_class.hashicorp_url('consul', '2.0.0', 'arm64'))
+        .to eq('https://releases.hashicorp.com/consul/2.0.0/consul_2.0.0_linux_arm64.zip')
+      expect(described_class.hashicorp_url('nomad', '2.0.3', 'amd64'))
+        .to eq('https://releases.hashicorp.com/nomad/2.0.3/nomad_2.0.3_linux_amd64.zip')
+    end
+  end
+
+  describe '.hashicorp_sums_url' do
+    # --- the SHA256SUMS sibling of the archive; basename of the archive keys the lookup ---
+    it 'builds the SHA256SUMS url for the release' do
+      expect(described_class.hashicorp_sums_url('vault', '2.0.1'))
+        .to eq('https://releases.hashicorp.com/vault/2.0.1/vault_2.0.1_SHA256SUMS')
+    end
+  end
+
+  # -------------------------------------------------------------------------------
   # sha256_for (SHA256SUMS parsing)
   # -------------------------------------------------------------------------------
 

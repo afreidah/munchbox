@@ -5,20 +5,19 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 # install recipe spec
 #
-# Covers user/group/dir creation + the unzip package (the only system
-# prereq). Doesn't exercise the actual `consul version` check (chefspec
-# can't stub the binary's stdout) -- that's verified in kitchen.
+# Covers user/group/dir creation + the hand-off to munchbox_lib_artifact
+# (release-archive URL, SHA256SUMS verification url, zip extraction target)
+# and the drift-only service restart subscribe. The actual download /
+# verify / unzip live in munchbox_lib_artifact (not stepped into here);
+# kitchen verifies the real install + executable binary end-to-end.
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'consul::install' do
-  # --- not_if shell guards used by consul_install (version-skew check); chefspec needs them stubbed since it can't really exec ---
-  before do
-    stub_command(/consul version/).and_return(false)
-  end
-
   cached(:chef_run) do
     ChefSpec::SoloRunner.new(step_into: %w(consul_install)).converge('consul::install')
   end
+
+  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'consul 2.0.0') }
 
   # --- Resource declaration ---
   it 'declares the consul_install resource' do
@@ -44,19 +43,35 @@ RSpec.describe 'consul::install' do
     end
   end
 
-  # --- unzip is the only system-level prereq for extracting the release archive ---
-  it 'installs unzip' do
-    expect(chef_run).to install_package('unzip')
+  # --- Hands off the download/verify/install to the shared artifact resource ---
+  it 'delegates the install to munchbox_lib_artifact' do
+    expect(chef_run).to install_munchbox_lib_artifact('consul 2.0.0')
   end
 
-  it 'fetches the consul release archive' do
-    expect(chef_run).to create_remote_file(%r{/tmp/consul_.+_linux_.+\.zip})
+  # --- HashiCorp release archive URL (amd64 on the default chefspec kernel) ---
+  it 'builds the consul release archive url' do
+    expect(artifact.source).to eq('https://releases.hashicorp.com/consul/2.0.0/consul_2.0.0_linux_amd64.zip')
   end
 
-  it 'installs the consul binary via the install execute resource' do
-    matched = chef_run.find_resources(:execute).find { |r| r.name.start_with?('install consul ') }
-    expect(matched).not_to be_nil
-    ChefSpec::Coverage.cover!(matched)
+  # --- Verifies against HashiCorp's published SHA256SUMS rather than a pinned sha ---
+  it 'verifies against the published SHA256SUMS' do
+    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/consul/2.0.0/consul_2.0.0_SHA256SUMS')
+  end
+
+  # --- Extracts the zip into the binary's directory ---
+  it 'installs the zip into /usr/local/bin' do
+    expect(artifact.format).to eq(:zip)
+    expect(artifact.bin_dir).to eq('/usr/local/bin')
+  end
+
+  # --- consul is restarted ONLY when the artifact actually re-installed (drift), never on a no-op converge ---
+  it 'restarts consul only when the artifact re-installs (drift)' do
+    expect(artifact).to notify('service[consul]').to(:restart).delayed
+  end
+
+  # --- The shadow service is otherwise inert (the configure recipe owns enable/start) ---
+  it 'declares the consul service as do-nothing here' do
+    expect(chef_run.service('consul')).to do_nothing
   end
 
   it 'creates the consul.service systemd unit' do
