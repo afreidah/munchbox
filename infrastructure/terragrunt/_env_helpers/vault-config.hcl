@@ -219,7 +219,8 @@ inputs = {
     "wireguard",
     "pihole/green",
     "s3-bucket/unified",
-    "s3-bucket/aptly"
+    "s3-bucket/aptly",
+    "dnsdist"
   ]
 
   # --- AppRole auth for chef-managed nodes ---

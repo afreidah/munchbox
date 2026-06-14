@@ -22,6 +22,8 @@ RSpec.describe 'munchbox_base::sysctl' do
       .with(owner: 'root', group: 'root', mode: '0644')
     rendered = chef_run.file('/etc/sysctl.d/99-munchbox.conf').content
     expect(rendered).to match(/^vm\.overcommit_memory\s*=\s*1$/)
+    # --- ingress dnsdist binds the floating DNS VIP on the standby node ---
+    expect(rendered).to match(/^net\.ipv4\.ip_nonlocal_bind\s*=\s*1$/)
   end
 
   it 'declares the reload-sysctl execute as :nothing (only fires on notify)' do

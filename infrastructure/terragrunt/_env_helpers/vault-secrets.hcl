@@ -43,6 +43,7 @@ dependency "access_keys" {
     vault_data = {
       "s3-bucket/unified" = { access_key = "MOCKUNIFIEDACCESSKEY", secret_key = "mock-unified-secret-key" }
       "s3-bucket/aptly"   = { access_key = "MOCKAPTLYACCESSKEY", secret_key = "mock-aptly-secret-key" }
+      "dnsdist"           = { access_key = "MOCKDNSDISTACCESSKEY", secret_key = "mock-dnsdist-secret-key" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
@@ -74,6 +75,10 @@ locals {
     "s3-bucket/aptly" = {
       source = "access_keys"
       key    = "s3-bucket/aptly"
+    }
+    "dnsdist" = {
+      source = "access_keys"
+      key    = "dnsdist"
     }
   }
 }
