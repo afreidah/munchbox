@@ -91,6 +91,71 @@ locals {
 
   pihole_primary_url   = "http://192.168.68.62" # green
   pihole_secondary_url = "http://192.168.68.64" # logan
+
+  # ---------------------------------------------------------------------------
+  # WEB SERVICES CATALOG  (single source of truth for service DNS)
+  #
+  # munchbox.cc services get an internal Pi-hole A-record -> Traefik VIP, and a
+  # proxied Cloudflare CNAME -> tunnel when public = true. alexfreidah.com sites
+  # are public-only (zone = "alexfreidah", explicit hosts, CNAME -> tunnel, no
+  # internal record). Deny-by-default: omit public and it's LAN-only.
+  # Consumed by _env_helpers/pihole-dns.hcl (munchbox keys) and
+  # _env_helpers/dns.hcl (public subset, both zones).
+  # ---------------------------------------------------------------------------
+
+  web_services = {
+    # --- public (munchbox.cc) ---
+    "auth"                     = { public = true }
+    "jellyfin"                 = { public = true }
+    "g3"                       = { public = true }
+    "s3-orchestrator"          = { public = true }
+    "cloudflare-log-collector" = { public = true }
+    "nomad-temporal-jobs"      = { public = true }
+    "oracle-watchdog"          = { public = true }
+    "flights"                  = { public = true }
+
+    # --- public (alexfreidah.com zone) ---
+    "personal-site"  = { public = true, zone = "alexfreidah", hosts = ["@", "www"] }
+    "nginx-resume"   = { public = true, zone = "alexfreidah", hosts = ["resume", "www.resume"] }
+    "health-checker" = { public = true, zone = "alexfreidah", hosts = ["k3s-status"] }
+
+    # --- internal only (munchbox.cc, LAN by name) ---
+    "alertmanager"    = {}
+    "apt"             = {}
+    "consul"          = {}
+    "dashboard"       = {}
+    "deluge"          = {}
+    "dns"             = {}
+    "ersatz"          = {}
+    "g3-proxy"        = {}
+    "git"             = {}
+    "gitgogit"        = {}
+    "grafana"         = {}
+    "haproxy"         = {}
+    "lidarr"          = {}
+    "nomad"           = {}
+    "pihole"          = {}
+    "pihole-green"    = {}
+    "pihole-logan"    = {}
+    "prometheus"      = {}
+    "prowlarr"        = {}
+    "proxmox"         = {}
+    "radarr"          = {}
+    "readarr"         = {}
+    "registry"        = {}
+    "registry-ui"     = {}
+    "s3"              = {}
+    "sonarr"          = {}
+    "temporal"        = {}
+    "themes"          = {}
+    "traefik"         = {}
+    "traefik-logs"    = {}
+    "trivy-dashboard" = {}
+    "vault"           = {}
+    "vault-ui"        = {}
+    "vaultwarden"     = {}
+    "zfs"             = {}
+  }
 }
 
 # -----------------------------------------------------------------------------
