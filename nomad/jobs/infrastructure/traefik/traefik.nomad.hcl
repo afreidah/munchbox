@@ -330,6 +330,26 @@ EOH
     service     = "noop@internal"
     priority    = 1
 
+  # --- oauth2-proxy's own endpoints (/oauth2/*) on ANY munchbox host must go
+  #     straight to oauth2-proxy, NOT through the per-host forwardAuth -- else
+  #     the sign-in button (action="/oauth2/start") 401-loops on the protected
+  #     host and never reaches the OAuth flow. High priority so it beats the
+  #     Host() service routers; no oauth2-proxy middleware (these ARE the auth
+  #     endpoints). ---
+  [http.routers.oauth2-paths]
+    rule        = "PathPrefix(`/oauth2/`)"
+    entryPoints = ["websecure"]
+    service     = "oauth2-proxy-signin"
+    priority    = 1000
+    [http.routers.oauth2-paths.tls]
+
+  [http.routers.oauth2-paths-http]
+    rule        = "PathPrefix(`/oauth2/`)"
+    entryPoints = ["web"]
+    service     = "oauth2-proxy-signin"
+    middlewares = ["cf-tunnel-https"]
+    priority    = 1000
+
   # --- Consul UI (HTTPS, LAN-only) ---
   [http.routers.consul]
     rule        = "Host(`consul.munchbox.cc`)"
@@ -453,17 +473,17 @@ EOH
       "X-Auth-Request-Access-Token"
     ]
 
-  # --- OAuth2 Proxy Error Handler (redirects 401 directly to OAuth flow) ---
-  # Skip the /oauth2/sign_in HTML page — its button is fragile when the
-  # request carries an `rd` parameter (CSRF cookie / SameSite / double
-  # URL-encoding issues). /oauth2/start fires the OAuth flow immediately,
-  # so the user goes straight from a protected page to Google and back,
-  # no intermediate oauth2-proxy UI. The HTML sign-in page only matters
-  # for multi-provider setups, which we don't run.
+  # --- OAuth2 Proxy Error Handler (serves the sign-in page on a 401) ---
+  # Traefik's errors middleware keeps the ORIGINAL status (401) and only
+  # swaps the body, so it can't emit a 3xx. /oauth2/start returns a 302,
+  # which gets flattened to "401 + Location" -- browsers don't follow a
+  # Location on a 401, so you get a dead "Found." page. /oauth2/sign_in
+  # returns a 200 HTML page that renders correctly: one click to Google,
+  # then back to the original page (rd round-trips via the state param).
   [http.middlewares.oauth2-proxy-errors.errors]
     status  = ["401"]
     service = "oauth2-proxy-signin"
-    query   = "/oauth2/start?rd={url}"
+    query   = "/oauth2/sign_in?rd={url}"
 
   # --- HTTPS redirect ---
   [http.middlewares.redirect-https.redirectScheme]
@@ -569,6 +589,16 @@ EOH
     [http.middlewares.zfswatcher-auth.headers.customRequestHeaders]
 {{ with secret "secret/data/zfswatcher" -}}
       Authorization = "Basic {{ printf "%s:%s" .Data.data.proxy_user .Data.data.proxy_password | base64Encode }}"
+{{- end }}
+
+  # --- dnsdist console Basic Auth passthrough (real auth handled by OAuth2-proxy).
+  #     dnsdist's web dashboard demands Basic auth where the password is the apiKey
+  #     (access_key); injecting it here stops dnsdist's own 401 from colliding with
+  #     the oauth2-proxy-errors redirect (which would loop the login). ---
+  [http.middlewares.dnsdist-auth.headers]
+    [http.middlewares.dnsdist-auth.headers.customRequestHeaders]
+{{ with secret "secret/data/dnsdist" -}}
+      Authorization = "Basic {{ printf "x:%s" .Data.data.access_key | base64Encode }}"
 {{- end }}
 
   # --- Vault CSS injection (Catppuccin Mocha theme) ---
