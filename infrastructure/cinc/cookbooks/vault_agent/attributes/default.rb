@@ -36,7 +36,10 @@ default[cookbook]['install'] = {
 # cookbooks read it via `::File.read(...)` and pass to `secret('hashi_vault')`.
 # -------------------------------------------------------------------------------
 
-# --- goren.munchbox.cc rather than the vault.munchbox.cc VIP because the current Vault server cert SANs are [goren, goren.munchbox.cc, localhost, vault.service.consul] -- once the cert is reissued with vault.munchbox.cc in the SAN list, flip this back to the VIP so HA failover works ---
+# --- Fleet default is goren.munchbox.cc (a normal DNS name) so greenfield nodes can
+#     reach Vault before consul is up. Established vault servers override this to
+#     https://vault.service.consul:8200 via role[vault_server] for HA -- consul DNS
+#     returns any healthy/unsealed server. The certs already SAN vault.service.consul. ---
 default[cookbook]['config'] = {
   vault_addr: 'https://goren.munchbox.cc:8200',
   auth_mount: 'auth/chef-approle',

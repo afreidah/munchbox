@@ -99,7 +99,7 @@ inputs = {
       require_cn                  = true
       key_type                    = "rsa"
       key_bits                    = 2048
-      ttl                         = "8760h"
+      ttl                         = "0s"
       max_ttl                     = "8760h"
       issued_by                   = ["cert-manager"]
     }
@@ -238,8 +238,8 @@ inputs = {
     "consul/nomad-client-token",
     # consul ACL token for oracle-watchdog (session-heartbeat scope; per-service token, not the broad agent-token)
     "consul/oracle-watchdog-token",
-    # nomad management ACL token for the auto-restart-webhook receiver (stabler-only at runtime, but policy is fleet-wide; narrower per-job-restart token is a hardening item)
-    "nomad/management-token",
+    # nomad restart-only ACL token for the auto-restart-webhook receiver (read + alloc-lifecycle, no management); stabler-only at runtime, policy is fleet-wide
+    "nomad/auto-restart-webhook",
     # consul ACL token vault servers use to write to vault/ KV in consul storage backend (vault-storage policy); only the 3 vault servers actually need this but policy is fleet-wide
     "consul/vault-storage-token",
     # vault-cert-manager AppRole creds (role_id is semi-public; secret_id is sensitive, both required to auth)
