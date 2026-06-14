@@ -169,8 +169,8 @@ default[cookbook]['auto_restart_webhook'] = {
   ],
 
   vault_paths: {
-    # --- Management token; the webhook needs full nomad ACL to restart any job. Narrower policy is a future hardening item. ---
-    nomad_token: { path: 'secret/data/nomad/management-token', field: 'token' },
+    # --- Restart-only token (read + alloc-lifecycle); minted by the nomad-acls terragrunt module, NOT the management token. ---
+    nomad_token: { path: 'secret/data/nomad/auto-restart-webhook', field: 'token' },
   },
 
   # --- nil by default; recipe lazy-fetches from Vault. Override to a literal for kitchen / break-glass. ---

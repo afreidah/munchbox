@@ -23,3 +23,13 @@ run_list(
   'recipe[vault::install]',
   'recipe[vault::configure]'
 )
+
+# --- vault-agent on the server nodes reaches Vault via consul DNS (any healthy,
+#     unsealed server) instead of the single goren default, so a sealed local vault
+#     no longer wedges this node's converge. Override (not default) because the
+#     cookbook sets config as a Hash literal. Steady-state only: these servers
+#     always have consul up; a brand-new vault server still bootstraps on the
+#     cookbook default first. ---
+override_attributes(
+  'vault_agent' => { 'config' => { 'vault_addr' => 'https://vault.service.consul:8200' } }
+)

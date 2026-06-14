@@ -74,6 +74,17 @@ inputs = {
         agent { policy = "read" }
       EOT
     }
+
+    # --- restart-only: `nomad job restart` needs read-job + alloc-lifecycle, nothing else ---
+    "auto-restart-webhook" = {
+      description = "AlertManager webhook receiver - restart jobs only"
+      rules_hcl   = <<-EOT
+        namespace "*" {
+          policy       = "read"
+          capabilities = ["alloc-lifecycle"]
+        }
+      EOT
+    }
   }
 
   # --- ACL Tokens (services only; operator policies are SSO-attached) ---
@@ -88,6 +99,9 @@ inputs = {
     "nomad-ui" = {
       type     = "management"
       policies = []
+    }
+    "auto-restart-webhook" = {
+      policies = ["auto-restart-webhook"]
     }
   }
 
@@ -106,6 +120,11 @@ inputs = {
     "nomad-ui" = {
       vault_path       = "nomad-ui"
       token_key        = "nomad-ui"
+      token_field_name = "token"
+    }
+    "auto-restart-webhook" = {
+      vault_path       = "nomad/auto-restart-webhook"
+      token_key        = "auto-restart-webhook"
       token_field_name = "token"
     }
   }
