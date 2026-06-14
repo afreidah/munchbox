@@ -26,6 +26,7 @@ $LOADED_FEATURES << 'vault' unless $LOADED_FEATURES.include?('vault')
 
 require_relative '../libraries/cookbook_helpers'
 require_relative '../libraries/vault_fetch'
+require_relative '../libraries/artifact'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |c|

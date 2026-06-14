@@ -5,27 +5,26 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 # install recipe spec
 #
-# Covers user/group/dir creation + the unzip package (the only system
-# prereq). The actual `nomad version` check is shelled out and stubbed --
-# kitchen verifies the real binary extraction end-to-end.
+# Covers dir creation (root mode -> no user/group) + the hand-off to
+# munchbox_lib_artifact (release-archive URL, SHA256SUMS verify url, zip
+# extraction target) and the drift-only restart notify. The actual
+# download / verify / unzip live in munchbox_lib_artifact (not stepped
+# into here); kitchen verifies the real install end-to-end.
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'nomad::install' do
-  # --- not_if shell guards used by nomad_install (version-skew check); chefspec needs them stubbed ---
-  before do
-    stub_command(/nomad version/).and_return(false)
-  end
-
   cached(:chef_run) do
     ChefSpec::SoloRunner.new(step_into: %w(nomad_install)).converge('nomad::install')
   end
+
+  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'nomad 2.0.3') }
 
   # --- Resource declaration ---
   it 'declares the nomad_install resource' do
     expect(chef_run).to install_nomad_install('nomad')
   end
 
-  # --- Default mode is User=root; no vestigial nomad user should be created. ---
+  # --- Default mode is User=root; no vestigial nomad user/group ---
   it 'does not create a nomad system group in the default (root) install mode' do
     expect(chef_run).to_not create_group('nomad')
   end
@@ -35,29 +34,41 @@ RSpec.describe 'nomad::install' do
   end
 
   %w(/etc/nomad.d /var/lib/nomad /var/log/nomad).each do |dir|
-    # --- 0750 root:root, mirroring ansible's defaults. ---
+    # --- 0750 root:root, mirroring ansible's defaults ---
     it "creates #{dir} with 0750 root:root" do
       expect(chef_run).to create_directory(dir)
         .with(owner: 'root', group: 'root', mode: '0750')
     end
   end
 
-  # --- unzip is the only system-level prereq for extracting the release archive ---
-  it 'installs unzip' do
-    expect(chef_run).to install_package('unzip')
+  # --- Hands off the download/verify/install to the shared artifact resource ---
+  it 'delegates the install to munchbox_lib_artifact' do
+    expect(chef_run).to install_munchbox_lib_artifact('nomad 2.0.3')
   end
 
-  it 'fetches the nomad release archive' do
-    expect(chef_run).to create_remote_file(%r{/tmp/nomad_.+_linux_.+\.zip})
+  # --- HashiCorp release archive URL (amd64 on the default chefspec kernel) ---
+  it 'builds the nomad release archive url' do
+    expect(artifact.source).to eq('https://releases.hashicorp.com/nomad/2.0.3/nomad_2.0.3_linux_amd64.zip')
   end
 
-  it 'declares the nomad service (action :nothing; notified by install)' do
+  # --- Verifies against HashiCorp's published SHA256SUMS rather than a pinned sha ---
+  it 'verifies against the published SHA256SUMS' do
+    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/nomad/2.0.3/nomad_2.0.3_SHA256SUMS')
+  end
+
+  # --- Extracts the zip into the binary's directory ---
+  it 'installs the zip into /usr/local/bin' do
+    expect(artifact.format).to eq(:zip)
+    expect(artifact.bin_dir).to eq('/usr/local/bin')
+  end
+
+  # --- nomad is restarted ONLY when the artifact actually re-installed (drift) ---
+  it 'restarts nomad only when the artifact re-installs (drift)' do
+    expect(artifact).to notify('service[nomad]').to(:restart).delayed
+  end
+
+  # --- Shadow service is otherwise inert (the configure recipe owns enable/start) ---
+  it 'declares the nomad service as do-nothing here' do
     expect(chef_run.service('nomad')).to do_nothing
-  end
-
-  it 'installs the nomad binary via the install execute resource' do
-    matched = chef_run.find_resources(:execute).find { |r| r.name.start_with?('install nomad ') }
-    expect(matched).not_to be_nil
-    ChefSpec::Coverage.cover!(matched)
   end
 end

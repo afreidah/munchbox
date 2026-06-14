@@ -11,15 +11,15 @@
 
 control 'install' do
   impact 1.0
-  title 'cinc_client::install installs the cinc package + repo'
+  title 'cinc_client::install installs the cinc .deb and drops the stale packagecloud repo'
 
   describe package('cinc') do
     it { should be_installed }
   end
 
+  # --- The ansible-era packagecloud source 404s on every codename; the recipe deletes it ---
   describe file('/etc/apt/sources.list.d/cinc-project.list') do
-    it { should exist }
-    its('content') { should match(%r{packagecloud\.io/cinc-project/stable/debian}) }
+    it { should_not exist }
   end
 
   describe file('/usr/bin/cinc-client') do

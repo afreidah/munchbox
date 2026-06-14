@@ -25,6 +25,22 @@ default[cookbook]['install'] = {
   package_name: 'cinc',
   download_base: 'https://packages.cinc.sh/files',
   channel: 'stable',
+  # --- pinned sha256 per "<platform>/<release>" + arch; cinc publishes no
+  #     SHA256SUMS, so bump these alongside the version above ---
+  checksums: {
+    'debian/12' => {
+      'arm64' => '31cd744e04ef244a4b1c4024203901813ef020599493a990498a48c8a174e137',
+      'amd64' => '0faa6af94a6f4ac9c45a2435f130d8f08f54470bfabf91ef1c3ed266ca5ee70a',
+    },
+    'debian/13' => {
+      'arm64' => '8278d9d55880f29cb41ecc05c5b6938253ff4a0faa91749b25b121cb80aeba50',
+      'amd64' => 'a6094f97527371b113acfda7bcceecc4d7113a00f71031d709bbe8367aeefebd',
+    },
+    'ubuntu/24.04' => {
+      'arm64' => 'afd790a8d80c74b21909914041547a65cea86b28c64c33a3c081960beb2f103d',
+      'amd64' => 'c710cc8bf953fa56b7a4b0b726d9fcb9cb5bad2dc8caec4eaa439c4626f9aebf',
+    },
+  },
 }
 
 # -------------------------------------------------------------------------------

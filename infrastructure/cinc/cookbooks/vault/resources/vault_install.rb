@@ -42,23 +42,13 @@ property :tls_dir,    String, default: '/etc/vault.d/tls'
 default_action :install
 
 # -------------------------------------------------------------------------------
-# Download URL + arch detection (arm64 for Pi5; amd64 elsewhere)
+# arch detection (arm64 for Pi5; amd64 elsewhere); URL + SHA256SUMS come from
+# the shared HashiCorp helpers
 # -------------------------------------------------------------------------------
 
 action_class do
   def arch
-    case node['kernel']['machine']
-    when 'aarch64', 'arm64' then 'arm64'
-    else 'amd64'
-    end
-  end
-
-  def archive_name(version)
-    "vault_#{version}_linux_#{arch}.zip"
-  end
-
-  def download_url(version)
-    "https://releases.hashicorp.com/vault/#{version}/#{archive_name(version)}"
+    MunchboxLibCookbook::Artifact.normalize_arch(node['kernel']['machine'])
   end
 end
 
@@ -103,21 +93,20 @@ action :install do
     end
   end
 
-  # --- unzip is the only system-level prereq for extracting the archive. ---
-  package 'unzip'
+  version     = new_resource.version
+  drift_guard = "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Vault v#{version}'"
 
-  archive_path = "/tmp/#{archive_name(new_resource.version)}"
-
-  remote_file archive_path do
-    source download_url(new_resource.version)
-    mode   '0644'
-    not_if "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Vault v#{new_resource.version}'"
-  end
-
-  execute "install vault #{new_resource.version}" do
-    command "unzip -o #{archive_path} -d /usr/local/bin && chmod 0755 #{new_resource.bin_path} && rm -f #{archive_path}"
-    not_if  "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Vault v#{new_resource.version}'"
-    # --- INTENTIONALLY no notifies on vault.service. Restart = unseal x3. Planned operation only. ---
+  # --- Download + SHA256SUMS-verify + extract. INTENTIONALLY no service notify:
+  #     vault is shamir-sealed, so an unattended restart leaves it sealed and
+  #     locks out tenants until an operator unseals x3. Version bumps are planned
+  #     events -- bump the pin, converge, then `systemctl restart vault` +
+  #     `vault operator unseal` x3 per node by hand. ---
+  munchbox_lib_artifact "vault #{version}" do
+    source           MunchboxLibCookbook::Artifact.hashicorp_url('vault', version, arch)
+    sums_url         MunchboxLibCookbook::Artifact.hashicorp_sums_url('vault', version)
+    format           :zip
+    bin_dir          ::File.dirname(new_resource.bin_path)
+    not_if_installed drift_guard
   end
 end
 

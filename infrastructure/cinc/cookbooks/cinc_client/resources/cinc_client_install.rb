@@ -4,23 +4,22 @@
 # Cookbook:: cinc_client
 # Resource:: cinc_client_install
 #
-# Installs the cinc-client .deb directly from packages.cinc.sh.
-#
-# We deliberately do NOT use the cinc-project packagecloud apt repo --
-# packagecloud's auto-generated config tells you a URL that doesn't
-# exist (every codename across stable/current/unstable returns 404 as
-# of 2026-05). Direct .deb download from the canonical release server
-# mirrors how the consul / nomad cookbooks fetch their binaries.
+# Installs the cinc-client .deb directly from packages.cinc.sh, delegating the
+# download/checksum-verify/install to munchbox_lib_artifact. We deliberately do
+# NOT use the cinc-project packagecloud apt repo -- packagecloud's auto-generated
+# config tells you a URL that doesn't exist (every codename across
+# stable/current/unstable returns 404 as of 2026-05).
 #
 # URL shape:
-#   https://packages.cinc.sh/files/stable/cinc/<version>/<platform>/<release>/cinc_<version>-1_<arch>.deb
+#   <base>/<channel>/cinc/<version>/<platform>/<release>/cinc_<version>-1_<arch>.deb
 #
 # Properties:
-#   version       - Pinned version, e.g. '19.2.12' (required).
-#   package_name  - Apt package name; used for dpkg_package + idempotency
-#                   check. Default 'cinc'.
+#   version       - Pinned version, e.g. '19.3.14' (required).
+#   package_name  - Apt package name; used for dpkg + idempotency. Default 'cinc'.
 #   download_base - Base URL; override only for a private mirror.
 #   channel       - 'stable' / 'current' / 'unstable'. Default 'stable'.
+#   checksums     - { "<platform>/<release>" => { "<arch>" => sha256 } }; cinc
+#                   publishes no SHA256SUMS, so the sha is pinned per version.
 # -------------------------------------------------------------------------------
 
 unified_mode true
@@ -31,16 +30,20 @@ property :version,       String, required: true
 property :package_name,  String, default: 'cinc'
 property :download_base, String, default: 'https://packages.cinc.sh/files'
 property :channel,       String, default: 'stable'
+property :checksums,     Hash, default: {}
 
 default_action :install
 
-# --- Per-platform/arch URL derivation lives in the action_class so both actions can reuse ---
+# --- Per-platform/arch URL + checksum derivation; trivial enough to stay here ---
 action_class do
   def arch
-    case node['kernel']['machine']
-    when 'aarch64', 'arm64' then 'arm64'
-    else 'amd64'
-    end
+    MunchboxLibCookbook::Artifact.normalize_arch(node['kernel']['machine'])
+  end
+
+  # --- cinc serves debian under the MAJOR version only (/debian/12/), but Ohai
+  #     reports the point release (12.12); ubuntu uses the full version ---
+  def url_platform_version
+    platform?('debian') ? node['platform_version'].to_i.to_s : node['platform_version']
   end
 
   def deb_name(version)
@@ -49,43 +52,38 @@ action_class do
 
   def download_url(version)
     [
-      new_resource.download_base,
-      new_resource.channel,
-      'cinc',
-      version,
-      node['platform'],
-      node['platform_version'],
-      deb_name(version),
+      new_resource.download_base, new_resource.channel, 'cinc', version,
+      node['platform'], url_platform_version, deb_name(version)
     ].join('/')
+  end
+
+  # --- pinned sha256 for this platform/release/arch; fail closed ---
+  def pinned_checksum
+    key = "#{node['platform']}/#{url_platform_version}"
+    new_resource.checksums.dig(key, arch) ||
+      raise("cinc_client_install: no pinned sha256 for #{key} #{arch} (add it to node['cinc_client']['install']['checksums'])")
   end
 end
 
 # -------------------------------------------------------------------------------
-# Action :install  --  Fetch the .deb only when local cinc version differs, then dpkg install
+# Action :install  --  Drop the stale apt source, then download-verify-install the .deb
 # -------------------------------------------------------------------------------
 
 action :install do
-  deb_path = "/var/cache/#{deb_name(new_resource.version)}"
+  version = new_resource.version
 
-  # --- Stale cinc-project apt repo from the ansible bootstrap; packagecloud returns 404 on every codename, generates apt warnings on every run. Drop it -- we install from downloads.cinc.sh now. ---
+  # --- Stale cinc-project apt repo from the ansible bootstrap; packagecloud 404s on every codename. Drop it -- we install from packages.cinc.sh now. ---
   file '/etc/apt/sources.list.d/cinc-project.list' do
     action :delete
   end
 
-  # --- The dpkg_package only fires when remote_file actually downloads (i.e. when the local version isn't already the pinned one); otherwise both are no-ops. ---
-  remote_file deb_path do
-    source download_url(new_resource.version)
-    owner  'root'
-    group  'root'
-    mode   '0644'
-    not_if "dpkg-query -W -f='${Version}' #{new_resource.package_name} 2>/dev/null | grep -q '^#{new_resource.version}-1$'"
-    notifies :install, "dpkg_package[#{new_resource.package_name}]", :immediately
-  end
-
-  dpkg_package new_resource.package_name do
-    source  deb_path
-    version "#{new_resource.version}-1"
-    action  :nothing
+  munchbox_lib_artifact "cinc #{version}" do
+    source           download_url(version)
+    format           :deb
+    checksum         pinned_checksum
+    package_name     new_resource.package_name
+    package_version  "#{version}-1"
+    not_if_installed "dpkg-query -W -f='${Version}' #{new_resource.package_name} 2>/dev/null | grep -q '^#{version}-1$'"
   end
 end
 
