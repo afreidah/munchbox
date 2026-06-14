@@ -11,8 +11,8 @@ All Nomad job definitions. Two flavors:
   every node, batch/periodic with custom dispatch, multi-task groups,
   unusual driver config).
 
-The split is currently ~38 pack, ~38 raw. Both deploy through the same
-`make run JOB=<name>` from `nomad/`.
+The split is currently 25 pack, 41 raw (66 specs, excluding `deprecated/`).
+Both deploy through the same `make run JOB=<name>` from `nomad/`.
 
 > **Style guide:** [STYLE_GUIDE.md](./STYLE_GUIDE.md) -- job authoring
 > rules, structural order, comment forms, when to use pack vs raw, vault
@@ -24,11 +24,11 @@ The split is currently ~38 pack, ~38 raw. Both deploy through the same
 
 ```
 nomad/jobs/
-+-- infrastructure/       # 26 jobs -- core cluster + ingress + identity
-+-- monitoring/           # 10 jobs -- prom stack + exporters + alertmanager
-+-- media/                # 12 jobs -- *arr stack + jellyfin
++-- infrastructure/       # 29 jobs -- core cluster + ingress + identity (incl. dnsdist)
++-- monitoring/           #  9 jobs -- prom stack + exporters + alertmanager
++-- media/                # 10 jobs -- *arr stack + jellyfin
 +-- web/                  # 10 jobs -- user-facing apps + dashboards
-+-- temporal-workflows/   #  7 jobs -- backup / scan / cleanup workers + triggers
++-- temporal-workflows/   #  3 jobs -- backup / scan / cleanup workers
 +-- logging/              #  3 jobs -- alloy + loki + tempo
 +-- games/                #  2 jobs -- phlebotomy-game + zomboid
 +-- deprecated/           #  parked jobs (specs kept for revival; not running)

@@ -7,18 +7,17 @@
 ### Production-Grade Self-Hosted Infrastructure on HashiCorp Stack
 
 [![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red.svg)](LICENSE)
-[![Nomad](https://img.shields.io/badge/Nomad-v1.11.1-00CA8E?logo=nomad)](https://www.nomadproject.io/)
-[![Consul](https://img.shields.io/badge/Consul-v1.22.2-F24C53?logo=consul)](https://www.consul.io/)
-[![Vault](https://img.shields.io/badge/Vault-v1.15.4-000000?logo=vault)](https://www.vaultproject.io/)
-[![Traefik](https://img.shields.io/badge/Traefik-v3.6.6-24A1C1?logo=traefikproxy)](https://traefik.io/)
-[![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go)](https://golang.org/)
+[![Nomad](https://img.shields.io/badge/Nomad-v2.0.3-00CA8E?logo=nomad)](https://www.nomadproject.io/)
+[![Consul](https://img.shields.io/badge/Consul-v2.0.0-F24C53?logo=consul)](https://www.consul.io/)
+[![Vault](https://img.shields.io/badge/Vault-v2.0.1-000000?logo=vault)](https://www.vaultproject.io/)
+[![Traefik](https://img.shields.io/badge/Traefik-v3.7.5-24A1C1?logo=traefikproxy)](https://traefik.io/)
 
 </div>
 
 ---
 
-A homelab cluster the size of a small production environment. Roughly **76
-Nomad services**, **16 Cinc (Chef) cookbooks**, and **32 Terragrunt
+A homelab cluster the size of a small production environment. Roughly **66
+Nomad jobs**, **16 Cinc (Chef) cookbooks**, and **43 Terragrunt
 modules**, running on bare-metal Pi 5s, Proxmox VMs, and Oracle Free Tier,
 joined by a WireGuard mesh and fronted by Cloudflare.
 
@@ -82,6 +81,8 @@ and a Temporal-driven backup / scan / cleanup loop.
    |  green   192.168.68.62   Pi-hole + unbound  | <- managed by terragrunt
    |  logan   192.168.68.64   Pi-hole + unbound  |    remote-files module
    +---------------------------------------------+
+       LAN clients hit dnsdist on the ingress VIP (.50:53), which
+       load-balances both Pi-holes; .consul -> local agent.
 
    +-- Oracle Free Tier (WireGuard mesh, 10.200.0.0/24) ---------------+
    |  oracle-node-1   E2.1.Micro x86 AMD       wg 10.200.0.11   1G RAM |
@@ -169,8 +170,8 @@ Three layers, each owning a stable interface to the next:
 +-------------------------------+-------------------------------------+
 |  NOMAD JOBS       workloads                                         |
 |                                                                     |
-|  38 jobs via the munchbox-service pack (one concern per service),   |
-|  38 raw .nomad.hcl (system jobs, multi-task groups, weird drivers). |
+|  25 jobs via the munchbox-service pack (one concern per service),   |
+|  41 raw .nomad.hcl (system jobs, multi-task groups, weird drivers). |
 |                                                                     |
 |  Every pack job gets uniformly: Vault wiring, Traefik tags via the  |
 |  consulcatalog provider, health checks, Consul registration,        |
@@ -186,7 +187,7 @@ next. None reaches across the boundary directly.
 
 ---
 
-## Traffic flow - public service (e.g. `photos.munchbox.cc`)
+## Traffic flow - public service (e.g. `flights.munchbox.cc`)
 
 ```
 browser
@@ -197,15 +198,14 @@ cloudflared task                         (sidecar inside Traefik alloc on VRRP M
    | plain HTTP to 127.0.0.1
 Traefik :80
    |- cf-tunnel-https@file               sets X-Forwarded-Proto=https
-   |- oauth2-proxy-errors@file           401 -> /oauth2/start redirect
+   |- oauth2-proxy-errors@file           401 -> /oauth2/sign_in (renders login page)
    |- oauth2-proxy@file                  forward-auth -> oauth2-proxy.service.consul:4180
    |                                       |- Google OAuth, 3 allowed emails
    |                                       +- injects X-Auth-Request-{User,Email,Token}
-   +- consulcatalog routes to immich-server (on nomad-client-04, the GPU node)
+   +- consulcatalog routes to flight-fetcher (any nomad client)
                                        |
-                                       |- postgres `immich` via haproxy-postgres.service.consul:5433
-                                       |- redis      via haproxy-redis.service.consul:6380
-                                       +- /mnt/gdrive/immich  (NFS from mccoy)
+                                       |- postgres `flight_fetcher` via haproxy-postgres.service.consul:5433 (history)
+                                       +- redis via redis.service.consul:6379 (live state)
 ```
 
 ## Traffic flow - LAN-only service (e.g. `consul.munchbox.cc`)
@@ -218,7 +218,8 @@ local dnsmasq        on each cluster node (consul::dns recipe)
 CoreDNS              system job on every node
    | round-robin, health-checked, 5min cache
 green / logan        Pi-hole + custom dnsmasq.d
-   | wildcard *.munchbox.cc -> 192.168.68.50 (Traefik VIP)
+   | catalogued *.munchbox.cc names -> 192.168.68.50 (Traefik VIP)
+   |   (deny-by-default: only names in the web_services catalog resolve)
 ARP
 keepalived MASTER    (goren or nomad-client-05)
    | :443 HTTPS, wildcard ACME cert from Let's Encrypt via Cloudflare DNS-01
@@ -267,7 +268,7 @@ is mutual-TLS. The PKI tree:
 | Consul / Nomad / Vault servers | 3 (goren + stabler + nomad-server-03) | Raft, `bootstrap_expect=3` |
 | Patroni Postgres | 2 (stabler + nc05) | Patroni leader election, HAProxy reads `/primary` |
 | Redis | 2 + Sentinel (bare metal) | Sentinel CONFIG REWRITE, HAProxy reads role |
-| Pi-hole DNS | 2 (green + logan) | CoreDNS per-node round-robin with health check |
+| Pi-hole DNS | 2 (green + logan) | cluster nodes: CoreDNS per-node round-robin; LAN clients: dnsdist on the ingress VIP (leastOutstanding) |
 | Recursive DNS | 1 per Pi-hole (unbound on each) | independent -- no shared state |
 
 **Acknowledged single points of failure**
@@ -360,18 +361,19 @@ munchbox/
 |  |  +- README.md                    <- cookbook anatomy, ops, layout
 |  |  +- STYLE_GUIDE.md               <- Ruby/Chef style + testing
 |  |  +- cookbooks/                   <- 16 cookbooks
-|  |  +- roles/                       <- 16 fleet roles + per-node roles
-|  |  +- scripts/                     <- bootstrap + ops helpers
+|  |  +- roles/                       <- 17 shared fleet roles
+|  |  +- nodes/                       <- per-node objects (run_list + tags + attr overrides)
 |  |
 |  +- terragrunt/                     <- Terraform + Terragrunt
 |  |  +- README.md                    <- module/leaf anatomy, ops
 |  |  +- STYLE_GUIDE.md               <- HCL style + testing
 |  |  +- root.hcl                     <- centralized config + remote_state
-|  |  +- _env_helpers/                <- one per module
-|  |  +- modules/                     <- 32 modules
-|  |  +- global/                      <- provider-agnostic leaves
-|  |  +- oci/ ibm/ proxmox/           <- per-provider leaves
-|  |  +- providers/                   <- submodule: local-fork pihole provider
+|  |  +- _env_helpers/                <- bridge root.hcl locals -> module inputs
+|  |  +- modules/                     <- 43 modules
+|  |  +- global/                      <- provider-agnostic leaves (secrets, ACLs, app-config)
+|  |  +- oci/ kms/ networking/ munchbox-vms/  <- provisioning leaves
+|  |  +- dns/ postgres/ s3-orchestrator/      <- service leaves
+|  |  +- terratest/                   <- Go integration tests
 |  |
 |  +- scripts/                        <- bootstrap helpers (fix-vault, oracle-arm-retry)
 |
@@ -379,11 +381,11 @@ munchbox/
 |  +- jobs/
 |  |  +- README.md                    <- pack vs raw, deploying, traefik/vault/placement
 |  |  +- STYLE_GUIDE.md               <- Nomad job style + testing
-|  |  +- infrastructure/              <- 26 jobs: traefik, patroni, vault-ui, ...
-|  |  +- monitoring/                  <- 10 jobs: prom, grafana, blackbox, exporters
-|  |  +- media/                       <- 12 jobs: jellyfin, immich, *arr, deluge
+|  |  +- infrastructure/              <- 29 jobs: traefik, patroni, dnsdist, vault-ui, ...
+|  |  +- monitoring/                  <- 9 jobs: prom, grafana, blackbox, exporters
+|  |  +- media/                       <- 10 jobs: jellyfin, *arr stack, deluge
 |  |  +- web/                         <- 10 jobs: dashboards + UI fronts
-|  |  +- temporal-workflows/          <- 7 jobs: workers + periodic triggers
+|  |  +- temporal-workflows/          <- 3 jobs: backup / scan / cleanup workers
 |  |  +- logging/                     <- 3 jobs: loki + alloy + tempo
 |  |  +- games/                       <- 2 jobs
 |  |  +- deprecated/                  <- parked specs (kept for revival, not running)
@@ -466,7 +468,7 @@ leaf has isolated state.
 1. Add VM entry under `root.hcl` -> `proxmox_vm_groups.<group>.<hostname>`
 2. `cd infrastructure/terragrunt/proxmox/<group> && terragrunt apply` -- VM
    provisions
-3. Create per-node Chef role at `infrastructure/cinc/roles/nodes/<host>.rb`
+3. Create the per-node Chef node object at `infrastructure/cinc/nodes/<host>.json`
 4. Run `infrastructure/scripts/prepare-chef-bootstrap.sh <host>` from
    the workstation -- mints AppRole secret, uploads vault_agent data bag,
    uploads per-node role
