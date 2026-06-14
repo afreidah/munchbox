@@ -14,8 +14,8 @@ oracle ones) and pulls compiled cookbooks from `cinc-server.munchbox.cc`.
 
 ```
 infrastructure/cinc/
-+-- cookbooks/         # 17 cookbooks; one concern per cookbook
-|   +-- munchbox_lib/    # Library helpers (cookbook() namespace shim, etc.)
++-- cookbooks/         # 16 cookbooks; one concern per cookbook
+|   +-- munchbox_lib/    # Library helpers (cookbook() shim) + shared artifact_install resource
 |   +-- munchbox_base/   # OS-level baseline; runs on every node
 |   +-- consul/          # Consul agent
 |   +-- nomad/           # Nomad agent
@@ -32,29 +32,29 @@ infrastructure/cinc/
 |   +-- cinc_server/     # The chef-server itself
 |   +-- cinc_client/     # Bootstrap of the client agent on new nodes
 |
-+-- roles/             # 14 shared fleet roles -- each one a stack of recipes
++-- roles/             # 17 shared fleet roles -- each one a stack of recipes
 |   +-- base.rb
 |   +-- cinc_client.rb
-|   +-- consul_server.rb / consul_client.rb
+|   +-- consul_server.rb / consul_client.rb / consul_server_oracle.rb
 |   +-- nomad_server.rb  / nomad_client.rb
-|   +-- vault_server.rb  / vault_agent.rb / vault_cert_manager.rb
+|   +-- vault_server.rb  / vault_agent.rb / vault_agent_coexist.rb / vault_cert_manager.rb
 |   +-- proxmox_vm.rb    / proxmox_host.rb
 |   +-- bare_metal_pi5.rb / oracle_node.rb
-|   +-- cinc_server_host.rb
+|   +-- cinc_server_host.rb / disable_timesyncd.rb
 |
 +-- nodes/             # Per-node chef node objects (`knife node from file`)
-|                      # carry run_list + tags + per-node attribute overrides.
-|                      # File name == chef-server node identity.
-|
-+-- scripts/           # One-shot bootstrap + ops helpers (see "Scripts" below)
+                       # carry run_list + tags + per-node attribute overrides.
+                       # File name == chef-server node identity.
+
+(operator scripts live one level up at infrastructure/scripts/ -- see "Scripts")
 ```
 
 ---
 
 ## Cookbook anatomy
 
-Every cookbook has the same shape (excluding `munchbox_lib`, which is
-library-only):
+Every cookbook has the same shape (excluding `munchbox_lib`, which ships only
+libraries plus the shared `artifact_install` resource):
 
 ```
 cookbooks/<name>/
@@ -81,8 +81,9 @@ cookbooks/<name>/
     +-- integration/default/controls/    # InSpec controls (Test-Kitchen)
 ```
 
-`munchbox_lib` only ships libraries (`libraries/cookbook.rb`) -- no recipes,
-attributes, resources, or kitchen.
+`munchbox_lib` ships libraries (`libraries/`) plus the shared
+`artifact_install` resource (the generic download-verify-install used by
+consul/nomad/vault/cinc_client) -- no recipes, attributes, or kitchen.
 
 ---
 

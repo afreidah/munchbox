@@ -8,7 +8,7 @@ service in the cluster routes through here.
 
 ## Image
 
-- traefik: `traefik:v3.7.1`
+- traefik: `traefik:v3.7.5`
 - geoip-updater: `maxmindinc/geoipupdate:v7`
 - traefik-log-filter: `busybox:1.38.0`
 - traefik-log-agent: `hhftechnology/traefik-log-dashboard-agent:3.1.1`
