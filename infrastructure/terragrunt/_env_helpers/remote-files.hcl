@@ -64,6 +64,16 @@ locals {
           restart_command = "pihole reloaddns"
         }
 
+        ftl = {
+          files = {
+            "pihole-FTL.conf" = { destination = "/etc/pihole/pihole-FTL.conf" }
+          }
+          # --- MAXDBDAYS is read at FTL startup, so a full restart is required
+          #     (one-time prune of the query DB to the new retention). dnsdist +
+          #     the other Pi-hole cover the brief single-host gap. ---
+          restart_command = "systemctl restart pihole-FTL && systemctl is-active --quiet pihole-FTL"
+        }
+
         node_exporter = {
           files = {
             "node_exporter.service" = { destination = "/etc/systemd/system/node_exporter.service" }
