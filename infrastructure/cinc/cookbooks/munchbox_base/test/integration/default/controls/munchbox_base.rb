@@ -136,6 +136,12 @@ control 'sysctl' do
     it { should exist }
     its('mode') { should cmp '0644' }
     its('content') { should match(/^vm\.overcommit_memory\s*=\s*1$/) }
+    its('content') { should match(/^net\.ipv4\.ip_nonlocal_bind\s*=\s*1$/) }
+  end
+
+  # --- knobs are live in the kernel, not just written to the drop-in ---
+  describe kernel_parameter('net.ipv4.ip_nonlocal_bind') do
+    its('value') { should eq 1 }
   end
 end
 

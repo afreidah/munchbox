@@ -2,10 +2,12 @@
 # DNS ENV HELPER
 # -----------------------------------------------------------------------------
 #
-# Composition for the dns module. The record maps live here (zone/tunnel ids
-# come from root.hcl); this helper stamps zone_id onto each record and merges
-# the two zones. rate_limiting_rulesets + tunnel_config are intentionally
-# disabled here (token scope / out-of-band tunnel ownership).
+# Composition for the dns module. Public records are derived from the shared
+# catalog (root.locals.web_services): a proxied CNAME -> tunnel for each public
+# munchbox.cc service, and one per host for each alexfreidah.com service. There
+# is NO wildcard -- deny-by-default; only catalogued public names resolve. The
+# wg A-record is static. rate_limiting_rulesets + tunnel_config stay disabled
+# (token scope / out-of-band tunnel ownership).
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -17,24 +19,14 @@ terraform {
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
-  # --- alexfreidah-zone CNAMEs to the tunnel; map key = TF state key ---
-  alexfreidah_tunnel_cnames = {
-    "alexfreidah-apex"       = "@"
-    "alexfreidah-www"        = "www"
-    "alexfreidah-resume"     = "resume"
-    "alexfreidah-resume-www" = "www.resume"
-    "alexfreidah-k3s-status" = "k3s-status"
-    "alexfreidah-analytics"  = "analytics"
-  }
+  tunnel_cname        = local.root.locals.cloudflare_tunnel_cname
+  munchbox_zone_id    = local.root.locals.cloudflare_munchbox_zone_id
+  alexfreidah_zone_id = local.root.locals.cloudflare_alexfreidah_zone_id
 
-  # --- munchbox-zone records; wg = non-proxied A, kept current by oracle-watchdog ---
-  munchbox_zone_records = {
-    "munchbox-wildcard" = {
-      name    = "*"
-      type    = "CNAME"
-      content = local.root.locals.cloudflare_tunnel_cname
-    }
+  # --- munchbox.cc: static wg A-record (non-proxied, kept current by oracle-watchdog) ---
+  munchbox_static = {
     "munchbox-wg" = {
+      zone_id = local.munchbox_zone_id
       name    = "wg"
       type    = "A"
       content = "23.240.245.39"
@@ -43,24 +35,39 @@ locals {
     }
   }
 
-  alexfreidah_records = {
-    for k, n in local.alexfreidah_tunnel_cnames :
-    k => {
-      zone_id = local.root.locals.cloudflare_alexfreidah_zone_id
-      name    = n
-      content = local.root.locals.cloudflare_tunnel_cname
+  # --- proxied CNAME -> tunnel for each public munchbox.cc service ---
+  munchbox_public_cnames = {
+    for slug, svc in local.root.locals.web_services :
+    "munchbox-${slug}" => {
+      zone_id = local.munchbox_zone_id
+      name    = slug
       type    = "CNAME"
+      content = local.tunnel_cname
     }
+    if try(svc.public, false) && try(svc.zone, "munchbox") == "munchbox"
   }
 
-  munchbox_records = {
-    for k, r in local.munchbox_zone_records :
-    k => merge(r, { zone_id = local.root.locals.cloudflare_munchbox_zone_id })
-  }
+  # --- alexfreidah.com: public-only CNAME per host of each alexfreidah service.
+  #     concat([{}], ...) keeps merge() valid if the list is ever empty. ---
+  alexfreidah_cnames = merge(concat([{}], [
+    for slug, svc in local.root.locals.web_services : {
+      for h in try(svc.hosts, []) :
+      "alexfreidah-${slug}-${h}" => {
+        zone_id = local.alexfreidah_zone_id
+        name    = h
+        type    = "CNAME"
+        content = local.tunnel_cname
+      }
+    } if try(svc.public, false) && try(svc.zone, "") == "alexfreidah"
+  ])...)
 }
 
 inputs = {
-  dns_records = merge(local.alexfreidah_records, local.munchbox_records)
+  dns_records = merge(
+    local.munchbox_static,
+    local.munchbox_public_cnames,
+    local.alexfreidah_cnames,
+  )
 
   # --- disabled: CF token lacks Account:Rulesets:Edit ---
   rate_limiting_rulesets = {}

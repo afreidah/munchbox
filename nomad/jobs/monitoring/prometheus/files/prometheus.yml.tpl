@@ -97,6 +97,25 @@ scrape_configs:
         replacement: "$1"
 
   # -----------------------------------------------------------------------
+  # dnsdist - its /metrics requires the apiKey, so it can't ride the
+  # unauthenticated consul-auto job. Dedicated job; basic_auth password is the
+  # apiKey (access_key) with any username. Discovered by consul service name.
+  # -----------------------------------------------------------------------
+  - job_name: "dnsdist"
+    consul_sd_configs:
+      - server: "127.0.0.1:8500"
+        scheme: "http"
+        datacenter: "munchbox"
+        token: "{{ with secret "secret/data/prometheus" }}{{ .Data.data.consul_token }}{{ end }}"
+        services: ["dnsdist"]
+    basic_auth:
+      username: "x"
+      password: "{{ with secret "secret/data/dnsdist" }}{{ .Data.data.access_key }}{{ end }}"
+    relabel_configs:
+      - source_labels: ["__meta_consul_node"]
+        target_label: "instance"
+
+  # -----------------------------------------------------------------------
   # Consul - Cluster health and RPC metrics
   # -----------------------------------------------------------------------
   - job_name: "consul"

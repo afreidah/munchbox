@@ -20,6 +20,8 @@ locals {
   access_key_requests = {
     "s3-bucket/unified" = {}
     "s3-bucket/aptly"   = { id_length = 32, secret_length = 64 }
+    # --- dnsdist web console pair: access_key -> apiKey, secret_key -> password ---
+    "dnsdist" = {}
   }
 }
 

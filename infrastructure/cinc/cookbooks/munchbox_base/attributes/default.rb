@@ -192,6 +192,8 @@ default[cookbook]['sysctl'] = {
   path: '/etc/sysctl.d/99-munchbox.conf',
   settings: {
     'vm.overcommit_memory' => 1,
+    # --- lets the ingress dnsdist bind the floating keepalived DNS VIP on the standby node; no-op where nothing binds a non-local IP ---
+    'net.ipv4.ip_nonlocal_bind' => 1,
   },
 }
 

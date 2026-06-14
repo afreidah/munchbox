@@ -2,11 +2,10 @@
 # PI-HOLE DNS ENV HELPER
 # -----------------------------------------------------------------------------
 #
-# Composition for the pihole-dns module. The static data lives here
-# (traefik_fronted_hosts list + traefik_vip + pihole_special_dns_records map;
-# pihole_primary/secondary_url come from root.hcl); this helper expands the
-# list into the per-host A-record map the module expects and merges in the
-# special records.
+# Composition for the pihole-dns module. munchbox.cc service records come from
+# the shared catalog (root.locals.web_services) expanded to A-records at the
+# traefik VIP; node records (pihole_special_dns_records) + traefik_vip live
+# here. pihole_primary/secondary_url come from root.hcl.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -19,16 +18,6 @@ locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
   traefik_vip = "192.168.68.50"
-
-  # --- hosts that route to the traefik VIP ---
-  traefik_fronted_hosts = [
-    "alertmanager", "analytics", "apt", "auth", "consul", "dashboard",
-    "deluge", "ersatz", "git", "grafana", "jellyfin", "kavita", "lidarr",
-    "nomad", "photos", "prometheus", "prowlarr", "radarr",
-    "readarr", "registry", "registry-ui", "sonarr", "temporal", "themes",
-    "traefik", "traefik-logs", "trivy-dashboard", "vault", "vault-ui",
-    "vaultwarden", "pihole", "s3", "forgejo",
-  ]
 
   # --- hosts reached directly by ip ---
   pihole_special_dns_records = {
@@ -49,18 +38,18 @@ locals {
     "oracle-arm-1"    = { domain = "oracle-arm-1.munchbox.cc", ip = "10.200.0.13" }
     "oracle-arm-2"    = { domain = "oracle-arm-2.munchbox.cc", ip = "10.200.0.14" }
     "cinc-server"     = { domain = "cinc-server.munchbox.cc", ip = "192.168.68.99" }
-    "pihole-green"    = { domain = "pihole-green.munchbox.cc", ip = "192.168.68.62" }
-    "pihole-logan"    = { domain = "pihole-logan.munchbox.cc", ip = "192.168.68.64" }
   }
 
-  # --- Expand traefik_fronted_hosts into the dns_records shape the module
-  #     wants: { <slug> = { domain = "<slug>.munchbox.cc", ip = traefik_vip } } ---
+  # --- munchbox.cc services from the shared catalog (root.locals.web_services)
+  #     -> internal A-record at the traefik VIP. alexfreidah.com entries are
+  #     public-only and skipped here. ---
   traefik_records = {
-    for host in local.traefik_fronted_hosts :
-    host => {
-      domain = "${host}.munchbox.cc"
+    for slug, svc in local.root.locals.web_services :
+    slug => {
+      domain = "${slug}.munchbox.cc"
       ip     = local.traefik_vip
     }
+    if try(svc.zone, "munchbox") == "munchbox"
   }
 }
 
