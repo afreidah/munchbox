@@ -405,7 +405,6 @@ munchbox/
    +- s3-orchestrator/                <- S3 multiplexer across 13 backends
    +- cloudflare-log-collector/       <- CF GraphQL -> Loki/Tempo (submodule)
    +- oracle-watchdog/                <- OCI instance recovery + DDNS (submodule)
-   +- nomad-temporal-jobs/            <- backup/cleanup/trivy/registry-gc workers (submodule)
    +- trivy-dashboard/                <- vuln dashboard UI
    +- dashboard/                      <- Hugo-based homepage at dashboard.munchbox.cc
    +- personal-site/                  <- alexfreidah.com
