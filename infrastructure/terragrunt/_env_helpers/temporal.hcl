@@ -82,6 +82,16 @@ locals {
       workflow_id   = "postgres-maintenance-scheduled"
       input         = { concurrency = 2 }
     }
+    "cert-acquirer-weekly" = {
+      schedule_id   = "cert-acquirer-weekly"
+      year          = "*"
+      hour          = "4"
+      day_of_week   = "1"
+      workflow_type = "CertAcquirer"
+      task_queue    = "cert-task-queue"
+      workflow_id   = "cert-acquirer-scheduled"
+      input         = { domains = ["*.munchbox.cc", "munchbox.cc"], email = "alex@alexfreidah.com" }
+    }
   }
 }
 
