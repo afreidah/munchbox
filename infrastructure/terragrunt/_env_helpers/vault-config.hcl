@@ -156,10 +156,19 @@ inputs = {
       EOT
     }
 
-    # --- cert-acquirer writes the LE wildcard it renews so both Traefiks read one cert ---
-    "cert-acquirer" = {
+    # --- cert-acquirer-worker: the Temporal worker that issues the wildcard.
+    #     Writes the published cert, the pre-publish staging copy, and the
+    #     persisted ACME account; the Cloudflare token read comes from
+    #     nomad-workloads (cloudflare-wandns is in workload_secrets). ---
+    "cert-acquirer-worker" = {
       policy = <<-EOT
         path "secret/data/traefik/wildcard" {
+          capabilities = ["create", "update", "read"]
+        }
+        path "secret/data/traefik/wildcard-staging" {
+          capabilities = ["create", "update", "read"]
+        }
+        path "secret/data/traefik/acme-account" {
           capabilities = ["create", "update", "read"]
         }
       EOT
@@ -299,10 +308,10 @@ inputs = {
         nomad_job_id = "flight-fetcher"
       }
     }
-    "cert-acquirer" = {
-      policies = ["nomad-workloads", "cert-acquirer"]
+    "cert-acquirer-worker" = {
+      policies = ["nomad-workloads", "cert-acquirer-worker"]
       bound_claims = {
-        nomad_job_id = "cert-acquirer"
+        nomad_job_id = "cert-acquirer-worker"
       }
     }
   }
