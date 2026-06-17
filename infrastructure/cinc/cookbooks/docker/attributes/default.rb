@@ -12,9 +12,9 @@
 # the upstream repo. Per-node arch is detected at converge time via
 # node['kernel']['machine'] (arm64 / amd64).
 #
-# `add_user_to_group` -- adds this system user to the docker group so it
-# can drive docker.sock without root. Default 'nomad' (matches the
-# existing fleet); set to nil to skip.
+# `add_user_to_group` -- system user (or list of users) added to the docker
+# group so they can drive docker.sock without root. Default 'nomad' (matches
+# the existing fleet); roles override it (oracle adds 'ubuntu'). nil/[] to skip.
 #
 # `restart_on_group_add` -- service to restart after the group add, so it
 # picks up the new GID. Default 'nomad'; nil to skip.
@@ -28,7 +28,7 @@ default[cookbook]['install'] = {
   key_url: nil,
   repo_uri: nil,
   repo_component: 'stable',
-  add_user_to_group: 'nomad',
+  add_user_to_group: %w(nomad),
   dependent_service: 'nomad',
 }
 

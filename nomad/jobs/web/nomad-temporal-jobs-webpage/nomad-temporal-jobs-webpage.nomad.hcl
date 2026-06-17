@@ -136,7 +136,7 @@ job "nomad-temporal-jobs-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/temporal-workers-web:v0.2.6"
+        image              = "registry.munchbox.cc/temporal-workers-web:v0.4.0"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

@@ -109,6 +109,25 @@ RSpec.describe 'docker::install with dependent_service=nil' do
 end
 
 # -------------------------------------------------------------------------------
+# add_user_to_group accepts a list (oracle adds ubuntu alongside nomad)
+# -------------------------------------------------------------------------------
+
+RSpec.describe 'docker::install with multiple group users' do
+  cached(:chef_run) do
+    ChefSpec::SoloRunner.new(step_into: %w(docker_install)) do |node|
+      node.automatic[:lsb][:codename]   = 'bookworm'
+      node.automatic[:kernel][:machine] = 'aarch64'
+      node.automatic[:platform]         = 'debian'
+      node.override[:docker][:install][:add_user_to_group] = %w(nomad ubuntu)
+    end.converge('docker::install')
+  end
+
+  it 'adds every listed user to the docker group' do
+    expect(chef_run).to create_group('docker').with(append: true, members: %w(nomad ubuntu))
+  end
+end
+
+# -------------------------------------------------------------------------------
 # amd64 detection path
 # -------------------------------------------------------------------------------
 

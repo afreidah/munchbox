@@ -6,9 +6,9 @@
 #
 # Adds the upstream Docker apt repo, installs docker-ce + cli +
 # containerd + compose plugin, and enables docker.service. Optionally
-# adds a user (default 'nomad') to the docker group so the nomad docker
-# driver can launch containers without root, restarting the dependent
-# service so it picks up the new GID.
+# adds one or more users (default 'nomad') to the docker group so they can
+# drive docker.sock without root, restarting the dependent service so it
+# picks up the new GID.
 #
 # Arch is detected at converge time from node['kernel']['machine']
 # (aarch64 -> arm64, x86_64 -> amd64).
@@ -24,10 +24,10 @@ property :prereq_packages,      Array,                default: %w(apt-transport-
 # --- key_url + repo_uri default to nil; resolved per-platform inside the action so we don't ship one debian/ubuntu URL the user has to remember to override. ---
 property :key_url,              [String, NilClass]
 property :repo_uri,             [String, NilClass]
-property :repo_component,       String,               default: 'stable'
-property :add_user_to_group,    [String, NilClass],   default: 'nomad'
+property :repo_component,       String, default: 'stable'
+property :add_user_to_group,    [String, Array, NilClass], default: %w(nomad)
 # --- Service to restart when the docker group changes membership; needed because already-running processes don't pick up new GIDs. nil to skip. ---
-property :dependent_service,    [String, NilClass],   default: 'nomad'
+property :dependent_service,    [String, NilClass], default: 'nomad'
 
 default_action :install
 
@@ -78,12 +78,13 @@ action :install do
     action %i(enable start)
   end
 
-  # --- Add the runtime user to the docker group; notify the dependent service only on actual membership change so we don't restart nomad on every chef-client run. ---
-  if new_resource.add_user_to_group
+  # --- Add the runtime user(s) to the docker group; notify the dependent service only on actual membership change so we don't restart nomad on every chef-client run. ---
+  docker_users = Array(new_resource.add_user_to_group)
+  unless docker_users.empty?
     group 'docker' do
       action :create
       append true
-      members [new_resource.add_user_to_group]
+      members docker_users
       notifies :restart, "service[#{new_resource.dependent_service}]", :delayed if new_resource.dependent_service
     end
 

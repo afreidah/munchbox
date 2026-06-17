@@ -51,6 +51,12 @@ default_attributes(
       network_interface: 'wg1',
     },
   },
+  docker: {
+    # --- ubuntu (the oracle ssh user) joins nomad in the docker group so the cleanup-worker's docker-over-ssh tunnel can reach the socket without sudo. ---
+    install: {
+      add_user_to_group: %w(nomad ubuntu),
+    },
+  },
   munchbox_base: {
     # --- SSH CA principals override; oracle nodes SSH as `ubuntu` so they need that principal in addition to root. ---
     ssh_ca: {
