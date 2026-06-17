@@ -3,8 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Exports Proxmox VE hypervisor metrics including CPU, memory, storage, and
-# temperature for Prometheus scraping. Queries all Proxmox hosts via API.
+# Exports Proxmox VE hypervisor metrics including CPU, memory, storage, disk
+# I/O, and network for Prometheus scraping. Queries all Proxmox hosts via API.
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
@@ -13,6 +13,8 @@ image       = "prompve/prometheus-pve-exporter:3.9.0"
 port        = 9221
 static_port = 9221
 size        = "tiny"
+# --- cpu override: Python exporter enumerates 4 PVE hosts per scrape; tiny preset is too small ---
+cpu         = 300
 vault       = true
 
 # --- Placement ---

@@ -351,10 +351,12 @@ scrape_configs:
         replacement: "aptly"
 
   # -----------------------------------------------------------------------
-  # Proxmox VE Exporter - Hypervisor metrics (temperature, CPU, memory)
+  # Proxmox VE Exporter - Hypervisor metrics (CPU, memory, disk, network)
   # -----------------------------------------------------------------------
   - job_name: "pve"
     metrics_path: "/pve"
+    # --- 60s: each scrape enumerates the whole cluster via the PVE API; 15s pegs the exporter ---
+    scrape_interval: 60s
     static_configs:
       - targets:
           - "192.168.68.59"  # cabot

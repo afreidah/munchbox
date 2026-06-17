@@ -80,14 +80,16 @@ job "cleanup-worker" {
         "traefik.enable=false",
       ]
 
+      # --- HTTP check on /metrics: the image is distroless now, so there is no
+      #     shell for a pgrep script check, and a live /metrics is a stronger
+      #     liveness signal than process presence anyway (matches cert-acquirer). ---
       check {
-        name      = "worker-alive"
-        type      = "script"
-        command   = "/bin/sh"
-        args      = ["-c", "pgrep -f cleanup-worker"]
+        name      = "metrics"
+        type      = "http"
+        port      = "metrics"
+        path      = "/metrics"
         interval  = "30s"
         timeout   = "5s"
-        task      = "cleanup-worker"
         on_update = "require_healthy"
       }
     }
@@ -110,7 +112,7 @@ job "cleanup-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/cleanup-worker:v0.2.7"
+        image              = "registry.munchbox.cc/cleanup-worker:v0.3.0"
         image_pull_timeout = "5m"
         network_mode       = "host"
         ports              = ["metrics"]
@@ -185,9 +187,12 @@ job "cleanup-worker" {
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
       }
 
+      # Bumped from 100/32: the worker now carries the moby Docker client, an
+      # SFTP client, and gopsutil (host stats for worker heartbeats), and buffers
+      # registry-GC / aptly container logs during those sagas. 32 MiB OOMs.
       resources {
-        cpu    = 100
-        memory = 32
+        cpu    = 500
+        memory = 256
       }
 
       kill_timeout = "30s"

@@ -116,7 +116,7 @@ job "cert-acquirer-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/cert-acquirer-worker:v0.1.1"
+        image              = "registry.munchbox.cc/cert-acquirer-worker:v0.2.0"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]
