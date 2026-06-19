@@ -64,9 +64,28 @@ variable "tunnel_config" {
       hostname = optional(string)
       service  = string
       origin_request = optional(object({
-        http_host_header = optional(string)
+        http_host_header         = optional(string)
+        connect_timeout          = optional(number)
+        tls_timeout              = optional(number)
+        tcp_keep_alive           = optional(number)
+        keep_alive_connections   = optional(number)
+        keep_alive_timeout       = optional(number)
+        http2_origin             = optional(bool)
+        disable_chunked_encoding = optional(bool)
+        no_happy_eyeballs        = optional(bool)
+        no_tls_verify            = optional(bool)
       }))
     }))
   })
   default = null
+}
+
+# -----------------------------------------------------------------------------
+# PROVIDER AUTH
+# -----------------------------------------------------------------------------
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token (DNS + Tunnel scope); sourced from the cloudflare-tokens dependency (token_values[\"dnsedge\"])."
+  type        = string
+  sensitive   = true
 }

@@ -1,5 +1,5 @@
 # -----------------------------------------------------------------------------
-# DNS MODULE - PROVIDER CONFIG
+# CLOUDFLARE-ZONE-SETTINGS MODULE - PROVIDER CONFIG
 # -----------------------------------------------------------------------------
 
 provider "cloudflare" {

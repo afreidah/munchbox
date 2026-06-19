@@ -22,6 +22,7 @@ dependency "cloudflare_tokens" {
     vault_data = {
       wandns       = { api_token = "mock-wandns-token" }
       logcollector = { api_token = "mock-logcollector-token" }
+      dnsedge      = { api_token = "mock-dnsedge-token" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
@@ -67,6 +68,10 @@ locals {
     "cloudflare-logcollector" = {
       source = "cloudflare_tokens"
       key    = "logcollector"
+    }
+    "cloudflare-dnsedge" = {
+      source = "cloudflare_tokens"
+      key    = "dnsedge"
     }
     "s3-bucket/unified" = {
       source = "access_keys"

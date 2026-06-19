@@ -6,8 +6,8 @@
 # catalog (root.locals.web_services): a proxied CNAME -> tunnel for each public
 # munchbox.cc service, and one per host for each alexfreidah.com service. There
 # is NO wildcard -- deny-by-default; only catalogued public names resolve. The
-# wg A-record is static. rate_limiting_rulesets + tunnel_config stay disabled
-# (token scope / out-of-band tunnel ownership).
+# wg A-record is static. tunnel_config manages the cloudflared ingress via the
+# dnsedge token; rate_limiting_rulesets stays disabled (token lacks Rulesets:Edit).
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -16,12 +16,34 @@ terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules/dns"
 }
 
+dependency "cloudflare_tokens" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/cloudflare-tokens"
+
+  mock_outputs = {
+    token_values = { dnsedge = "mock-dnsedge-token" }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+}
+
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
   tunnel_cname        = local.root.locals.cloudflare_tunnel_cname
   munchbox_zone_id    = local.root.locals.cloudflare_munchbox_zone_id
   alexfreidah_zone_id = local.root.locals.cloudflare_alexfreidah_zone_id
+
+  # --- origin defaults the tunnel API echoes back for the alexfreidah hosts ---
+  af_origin = {
+    connect_timeout          = 30
+    tls_timeout              = 10
+    tcp_keep_alive           = 30
+    keep_alive_connections   = 100
+    keep_alive_timeout       = 90
+    http2_origin             = false
+    disable_chunked_encoding = false
+    no_happy_eyeballs        = false
+    no_tls_verify            = false
+  }
 
   # --- munchbox.cc: static wg A-record (non-proxied, kept current by oracle-watchdog) ---
   munchbox_static = {
@@ -72,6 +94,19 @@ inputs = {
   # --- disabled: CF token lacks Account:Rulesets:Edit ---
   rate_limiting_rulesets = {}
 
-  # --- disabled: tunnel owned out-of-band by cloudflared sidecar ---
-  tunnel_config = null
+  tunnel_config = {
+    account_id = local.root.locals.cloudflare_account_id
+    tunnel_id  = local.root.locals.cloudflare_tunnel_id
+    ingress_rules = [
+      { hostname = "alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "alexfreidah.com" }) },
+      { hostname = "www.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "www.alexfreidah.com" }) },
+      { hostname = "resume.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "resume.alexfreidah.com" }) },
+      { hostname = "k3s-status.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "k3s-status.alexfreidah.com" }) },
+      { hostname = "analytics.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "analytics.alexfreidah.com" }) },
+      { hostname = "*.munchbox.cc", service = "http://127.0.0.1:80" },
+      { service = "http_status:404" },
+    ]
+  }
+
+  cloudflare_api_token = dependency.cloudflare_tokens.outputs.token_values["dnsedge"]
 }

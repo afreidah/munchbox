@@ -43,6 +43,29 @@ locals {
         }
       }]
     }
+    # --- cloudflare-zone-settings leaf: provider creds for zone settings + dnssec ---
+    zonecfg = {
+      name = "munchbox-zone-settings-tls-dnssec"
+      policies = [{
+        permission_groups = ["Zone Settings Read", "Zone Settings Write", "DNS Read", "DNS Write"]
+        resources = {
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_alexfreidah_zone_id}" = "*"
+        }
+      }]
+    }
+    # --- dns leaf provider creds: DNS records (zones) + tunnel ingress (account) ---
+    dnsedge = {
+      name = "munchbox-dns-tunnel-edit"
+      policies = [{
+        permission_groups = ["DNS Read", "DNS Write", "Cloudflare Tunnel Read", "Cloudflare Tunnel Write"]
+        resources = {
+          "com.cloudflare.api.account.${local.root.locals.cloudflare_account_id}"               = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_alexfreidah_zone_id}" = "*"
+        }
+      }]
+    }
   }
 }
 
