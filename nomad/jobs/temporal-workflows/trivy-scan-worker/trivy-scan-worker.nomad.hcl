@@ -53,9 +53,10 @@ job "trivy-scan-worker" {
     count = 1
 
     network {
-      port "metrics" {
-        to = 9090
-      }
+      # --- Dynamic host port (host networking): the worker binds it via
+      #     METRICS_LISTEN below, so the check hits the same port the worker
+      #     listens on, and it never collides with the node's :9090. ---
+      port "metrics" {}
     }
 
     restart {
@@ -86,14 +87,17 @@ job "trivy-scan-worker" {
         "traefik.enable=false",
       ]
 
+      # --- HTTP check on /metrics: the unified-build entrypoint is `worker`
+      #     (not the job name) and the runtime image ships no pgrep, so a
+      #     script check can't pass; a live /metrics is a stronger liveness
+      #     signal anyway (matches cleanup-worker / cert-acquirer). ---
       check {
-        name      = "worker-alive"
-        type      = "script"
-        command   = "/bin/sh"
-        args      = ["-c", "pgrep -f trivy-scan-worker"]
+        name      = "metrics"
+        type      = "http"
+        port      = "metrics"
+        path      = "/metrics"
         interval  = "30s"
         timeout   = "5s"
-        task      = "trivy-scan-worker"
         on_update = "require_healthy"
       }
     }
@@ -116,7 +120,8 @@ job "trivy-scan-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/trivy-scan-worker:v0.3.0"
+        image              = "registry.munchbox.cc/trivy-scan-worker:latest"
+        force_pull         = true
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]
@@ -162,7 +167,7 @@ job "trivy-scan-worker" {
         TRIVY_DB_NAME               = "trivy"
         DB_SSLMODE                  = "verify-ca"
         DB_SSLROOTCERT              = "/etc/ssl/postgres/ca.crt"
-        METRICS_LISTEN              = ":9090"
+        METRICS_LISTEN              = ":${NOMAD_PORT_metrics}"
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
       }
 

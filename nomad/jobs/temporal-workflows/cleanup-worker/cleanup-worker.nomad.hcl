@@ -47,9 +47,10 @@ job "cleanup-worker" {
     count = 1
 
     network {
-      port "metrics" {
-        to = 9090
-      }
+      # --- Dynamic host port (host networking): the worker binds it via
+      #     METRICS_LISTEN below, so the check hits the same port the worker
+      #     listens on, and it never collides with the node's :9090. ---
+      port "metrics" {}
     }
 
     restart {
@@ -112,7 +113,8 @@ job "cleanup-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/cleanup-worker:v0.3.0"
+        image              = "registry.munchbox.cc/cleanup-worker:latest"
+        force_pull         = true
         image_pull_timeout = "5m"
         network_mode       = "host"
         ports              = ["metrics"]
@@ -183,7 +185,7 @@ job "cleanup-worker" {
         PG_HOST                     = "postgres-primary.service.consul"
         PG_USER                     = "postgres"
         PG_SSLMODE                  = "prefer"
-        METRICS_LISTEN              = ":9090"
+        METRICS_LISTEN              = ":${NOMAD_PORT_metrics}"
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
       }
 

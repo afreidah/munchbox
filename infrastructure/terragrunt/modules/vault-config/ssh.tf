@@ -88,7 +88,13 @@ resource "vault_ssh_secret_backend_role" "client_service" {
   ttl                     = "24h"
   max_ttl                 = "8760h"
 
+  # permit-port-forwarding is required for the cleanup worker's Docker-over-SSH
+  # tunnel: registry GC, aptly cleanup, and the node-cleanup docker prune all
+  # forward a streamlocal channel to the remote /var/run/docker.sock. Without
+  # it the cert authenticates and runs commands fine, but the socket forward is
+  # denied (surfaces as "ssh: rejected: connect failed").
   default_extensions = {
-    "permit-pty" = ""
+    "permit-pty"             = ""
+    "permit-port-forwarding" = ""
   }
 }

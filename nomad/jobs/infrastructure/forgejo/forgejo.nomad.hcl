@@ -39,6 +39,12 @@ job "forgejo" {
     value     = "ingress"
   }
 
+  constraint {
+    value     = "nomad-client-04"
+    operator  = "!="
+    attribute = "${attr.unique.hostname}"
+  }
+
   # ---------------------------------------------------------------------------
   # Update Strategy
   # ---------------------------------------------------------------------------
