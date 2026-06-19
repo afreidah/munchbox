@@ -38,18 +38,11 @@ job "github-runner-moat" {
   group "runner" {
     count = 2
 
-    # Exclude the arm64 bare metal Pi5s — runners need native amd64 for
-    # moat's Packer/Kitchen/Cinc tooling.
+    # these guys require a lot of resources so limit them to the heaviest nodes
     constraint {
-      attribute = "${node.unique.name}"
-      operator  = "!="
-      value     = "goren"
-    }
-
-    constraint {
-      attribute = "${node.unique.name}"
-      operator  = "!="
-      value     = "stabler"
+      attribute = "nomad-client-04,nomad-client-05"
+      operator  = "set_contains"
+      value     = "${attr.unique.hostname}"
     }
 
     # Spread allocations across distinct hosts.

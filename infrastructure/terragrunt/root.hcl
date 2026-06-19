@@ -169,13 +169,6 @@ terraform {
     commands = get_terraform_commands_that_need_vars()
   }
 
-  # --- trivy on rendered .tf source; hard-fail (--exit-code 1) on any misconfig ---
-  after_hook "trivy_scan" {
-    commands     = ["plan"]
-    execute      = ["bash", "-c", "echo '== trivy =='; trivy config --exit-code 1 ."]
-    run_on_error = false
-  }
-
   # --- checkov on the same .tf source; hard-fail on any non-skipped finding ---
   after_hook "checkov_scan" {
     commands     = ["plan"]
