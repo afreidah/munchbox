@@ -157,7 +157,7 @@ poll_interval      = "1200s"   # fallback default; both sources set their own
 enrichment_refresh = "5h"
 
 redis {
-  addr     = "redis.service.consul:6379"
+  addr     = "haproxy-redis.service.consul:6380"
   password = "{{ .Data.data.redis_password }}"
 }
 
