@@ -75,7 +75,16 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "tunnel" {
         hostname = lookup(rule, "hostname", null)
         service  = rule.service
         origin_request = lookup(rule, "origin_request", null) != null ? {
-          http_host_header = lookup(rule.origin_request, "http_host_header", null)
+          http_host_header         = lookup(rule.origin_request, "http_host_header", null)
+          connect_timeout          = lookup(rule.origin_request, "connect_timeout", null)
+          tls_timeout              = lookup(rule.origin_request, "tls_timeout", null)
+          tcp_keep_alive           = lookup(rule.origin_request, "tcp_keep_alive", null)
+          keep_alive_connections   = lookup(rule.origin_request, "keep_alive_connections", null)
+          keep_alive_timeout       = lookup(rule.origin_request, "keep_alive_timeout", null)
+          http2_origin             = lookup(rule.origin_request, "http2_origin", null)
+          disable_chunked_encoding = lookup(rule.origin_request, "disable_chunked_encoding", null)
+          no_happy_eyeballs        = lookup(rule.origin_request, "no_happy_eyeballs", null)
+          no_tls_verify            = lookup(rule.origin_request, "no_tls_verify", null)
         } : null
       }
     ]

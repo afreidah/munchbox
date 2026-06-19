@@ -12,6 +12,7 @@
 mock_provider "cloudflare" {}
 
 variables {
+  cloudflare_api_token = "mock-dnsedge-token"
   dns_records = {
     "apex" = { zone_id = "0123456789abcdef0123456789abcdef", name = "@", content = "tunnel.example", type = "CNAME" }
     "www"  = { zone_id = "0123456789abcdef0123456789abcdef", name = "www", content = "tunnel.example", type = "CNAME" }
