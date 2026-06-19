@@ -4,9 +4,11 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Redis with Sentinel for automatic failover. Runs 2 Redis instances with 3
-# Sentinels for quorum. All instances start standalone — Sentinel manages
-# replication topology and persists role changes via CONFIG REWRITE.
-# No hard-coded master/replica assignment in Nomad templates.
+# Sentinels for quorum. On cold boot, alloc index 0 becomes master and the
+# other alloc replicates it; on any restart each instance asks Sentinel for
+# the current master and replicates it, so a reschedule never leaves two
+# standalone masters. Sentinel monitors the redis-primary service (healthy
+# only on the real master) and handles failover.
 # -------------------------------------------------------------------------------
 
 job "redis-sentinel" {
@@ -264,20 +266,20 @@ job "redis-sentinel" {
         image_pull_timeout = "10m"
         network_mode       = "host"
         command            = "/bin/sh"
-        args               = ["-c", "cp /etc/redis/redis.conf.tpl /data/redis.conf && redis-server /data/redis.conf"]
+        args               = ["-c", "sh /etc/redis/bootstrap.sh"]
 
         volumes = [
           "/opt/nomad/data/redis-${NOMAD_ALLOC_INDEX}/redis:/data",
-          "local/redis.conf:/etc/redis/redis.conf.tpl:ro"
+          "local/redis.conf:/etc/redis/redis.conf.tpl:ro",
+          "local/bootstrap.sh:/etc/redis/bootstrap.sh:ro"
         ]
       }
 
       # --- Redis Configuration ---
-      # No replicaof directive — Sentinel manages replication topology.
-      # Redis starts standalone; Sentinel assigns it as replica of the
-      # current master via SLAVEOF at runtime. Config is writable at
-      # /data/redis.conf so Sentinel can CONFIG REWRITE to persist
-      # role changes across restarts.
+      # No replicaof in the template itself; bootstrap.sh appends one at
+      # startup after asking Sentinel who the current master is (alloc index
+      # 0 is the master on a cold boot). The conf is copied to a writable
+      # /data/redis.conf so Sentinel can CONFIG REWRITE at runtime.
       template {
         destination = "local/redis.conf"
         change_mode = "restart"
@@ -307,6 +309,69 @@ loglevel warning
         EOF
       }
 
+      # --- Startup / Replication Bootstrap ---
+      # Deterministic role assignment so a reschedule never produces two
+      # standalone masters. Asks any Sentinel who the current master is;
+      # alloc index 0 is the cold-boot master, non-zero allocs are always
+      # replicas and refuse to self-promote.
+      template {
+        destination = "local/bootstrap.sh"
+        change_mode = "restart"
+        data        = <<-EOF
+#!/bin/sh
+set -eu
+
+CONF=/data/redis.conf
+cp /etc/redis/redis.conf.tpl "$CONF"
+
+MY="$${NOMAD_IP_redis}:$${NOMAD_PORT_redis}"
+
+# --- ask any sentinel who the current master is ---
+get_master() {
+  for s in $${SENTINEL_ADDRS:-}; do
+    h=$${s%:*}
+    p=$${s##*:}
+    out=$(redis-cli -h "$h" -p "$p" sentinel get-master-addr-by-name munchbox-redis 2>/dev/null) || continue
+    ip=$(printf '%s\n' "$out" | sed -n 1p)
+    port=$(printf '%s\n' "$out" | sed -n 2p)
+    if [ -n "$ip" ] && [ -n "$port" ]; then
+      printf '%s:%s\n' "$ip" "$port"
+      return 0
+    fi
+  done
+  return 1
+}
+
+MASTER=""
+if [ "$${NOMAD_ALLOC_INDEX}" = "0" ]; then
+  # index 0 is the cold-boot master; only step down if sentinel already
+  # promoted someone else (i.e. we are restarting after a failover).
+  MASTER=$(get_master) || MASTER=""
+else
+  # non-zero allocs are always replicas; wait for sentinel to name the
+  # master rather than ever becoming a second master.
+  tries=0
+  until MASTER=$(get_master); do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 150 ]; then
+      echo "redis-bootstrap: no master from sentinel after 5m; failing for retry" >&2
+      exit 1
+    fi
+    sleep 2
+  done
+fi
+
+if [ -n "$MASTER" ] && [ "$MASTER" != "$MY" ]; then
+  echo "redis-bootstrap: replica of $MASTER (self $MY, alloc $${NOMAD_ALLOC_INDEX})"
+  echo "replicaof $${MASTER%:*} $${MASTER##*:}" >> "$CONF"
+else
+  echo "redis-bootstrap: master (self $MY, alloc $${NOMAD_ALLOC_INDEX})"
+fi
+
+exec redis-server "$CONF"
+        EOF
+      }
+
       # --- Environment ---
       template {
         destination = "secrets/redis.env"
@@ -315,6 +380,7 @@ loglevel warning
 {{ with secret "secret/data/redis-shared" }}
 REDIS_PASSWORD={{ .Data.data.password }}
 {{ end }}
+SENTINEL_ADDRS={{ range $i, $s := service "redis-sentinel" }}{{ if ne $i 0 }} {{ end }}{{ $s.Address }}:{{ $s.Port }}{{ end }}
         EOF
       }
 
@@ -375,8 +441,8 @@ daemonize no
 
 {{ with secret "secret/data/redis-shared" }}
 {{ $password := .Data.data.password }}
-# Bootstrap from any available redis instance
-{{ range $i, $svc := service "redis" }}
+# Monitor the current master (redis-primary is healthy only on the master)
+{{ range $i, $svc := service "redis-primary" }}
 {{ if eq $i 0 }}
 sentinel monitor munchbox-redis {{ $svc.Address }} {{ $svc.Port }} 2
 sentinel auth-pass munchbox-redis {{ $password }}
@@ -530,8 +596,8 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
         data        = <<-EOF
 # Sentinel Quorum Configuration (standalone - no local Redis)
 #
-# Bootstrap Strategy: Connect to any redis instance and let sentinel discover the master.
-# The "redis" service is healthy on ALL instances (master or replica) via TCP check.
+# Monitors the redis-primary service, which is healthy only on the actual
+# master, so the quorum sentinel agrees with the two co-located sentinels.
 #
 port {{ env "NOMAD_PORT_sentinel" }}
 dir /tmp
@@ -539,8 +605,8 @@ daemonize no
 
 {{ with secret "secret/data/redis-shared" }}
 {{ $password := .Data.data.password }}
-# Bootstrap from any available redis instance - sentinel will discover the actual master
-{{ range $i, $svc := service "redis" }}
+# Monitor the current master (redis-primary is healthy only on the master)
+{{ range $i, $svc := service "redis-primary" }}
 {{ if eq $i 0 }}
 sentinel monitor munchbox-redis {{ $svc.Address }} {{ $svc.Port }} 2
 sentinel auth-pass munchbox-redis {{ $password }}
