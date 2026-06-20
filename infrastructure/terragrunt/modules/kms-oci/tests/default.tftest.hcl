@@ -21,8 +21,12 @@ mock_provider "oci" {
 
 }
 
+mock_provider "tls" {}
+
 variables {
   compartment_id     = "ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  tenancy_ocid       = "ocid1.tenancy.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  region             = "us-phoenix-1"
   vault_display_name = "test-vault"
   vault_type         = "DEFAULT"
   key_display_name   = "test-key"
@@ -85,5 +89,37 @@ run "compartment_id_propagates" {
   assert {
     condition     = oci_kms_key.this.compartment_id == var.compartment_id
     error_message = "key compartment_id must match input"
+  }
+}
+
+# -------------------------------------------------------------------------
+# auto-unseal IAM: user/group in tenancy root, policy in key compartment
+# -------------------------------------------------------------------------
+
+run "unseal_iam_placement" {
+  command = plan
+
+  # --- IAM user lives in the tenancy root, not the key compartment ---
+  assert {
+    condition     = oci_identity_user.unseal.compartment_id == var.tenancy_ocid
+    error_message = "unseal user must be created in the tenancy root"
+  }
+
+  # --- group lives in the tenancy root too ---
+  assert {
+    condition     = oci_identity_group.unseal.compartment_id == var.tenancy_ocid
+    error_message = "unseal group must be created in the tenancy root"
+  }
+
+  # --- the scoping policy is attached to the key compartment ---
+  assert {
+    condition     = oci_identity_policy.unseal.compartment_id == var.compartment_id
+    error_message = "unseal policy must be in the key compartment"
+  }
+
+  # --- the API key is generated with an RSA keypair ---
+  assert {
+    condition     = tls_private_key.unseal.algorithm == "RSA"
+    error_message = "unseal API key must use an RSA keypair"
   }
 }
