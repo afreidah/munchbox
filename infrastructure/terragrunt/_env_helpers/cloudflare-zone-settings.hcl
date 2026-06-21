@@ -19,7 +19,7 @@ terraform {
 }
 
 dependency "cloudflare_tokens" {
-  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/cloudflare-tokens"
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/cloudflare-tokens"
 
   mock_outputs = {
     token_values = { zonecfg = "mock-zonecfg-token" }

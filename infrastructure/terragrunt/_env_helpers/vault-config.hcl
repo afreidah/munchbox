@@ -29,8 +29,8 @@ locals {
     require_cn                  = true
     key_type                    = "rsa"
     key_bits                    = 2048
-    ttl                         = "0s"
-    max_ttl                     = "8760h"
+    ttl                         = "0"
+    max_ttl                     = tostring(8760 * 3600)
     issued_by                   = ["cert-manager"]
   }
 }
@@ -58,8 +58,8 @@ inputs = {
     "traefik" = {
       allowed_domains    = ["munchbox.cc"]
       allow_glob_domains = true
-      max_ttl            = "8760h"
-      ttl                = "720h"
+      max_ttl            = tostring(8760 * 3600)
+      ttl                = tostring(720 * 3600)
       issued_by          = ["nomad"]
     }
 
@@ -71,8 +71,8 @@ inputs = {
         "postgres.service.consul",
         "node.consul"
       ]
-      max_ttl   = "720h"
-      ttl       = "72h"
+      max_ttl   = tostring(720 * 3600)
+      ttl       = tostring(72 * 3600)
       key_bits  = 2048
       issued_by = ["nomad"]
     }
@@ -99,8 +99,8 @@ inputs = {
       require_cn                  = true
       key_type                    = "rsa"
       key_bits                    = 2048
-      ttl                         = "0s"
-      max_ttl                     = "8760h"
+      ttl                         = "0"
+      max_ttl                     = tostring(8760 * 3600)
       issued_by                   = ["cert-manager"]
     }
   }
@@ -321,6 +321,7 @@ inputs = {
     "ci-runner" = {
       policies   = ["image-signing"]
       vault_path = "ci-runner"
+      # --- vault_token stores the duration string as-given (unlike pki/ssh roles which store seconds) ---
       ttl        = "8760h"
       extra_data = {
         addr = "https://vault.munchbox.cc:8200"

@@ -36,8 +36,8 @@ resource "vault_ssh_secret_backend_role" "host_signer" {
   allow_bare_domains      = true
   allow_subdomains        = true
   allowed_domains         = "*"
-  ttl                     = "8760h"
-  max_ttl                 = "87600h"
+  ttl                     = tostring(8760 * 3600)
+  max_ttl                 = tostring(87600 * 3600)
   algorithm_signer        = "rsa-sha2-256"
 }
 
@@ -67,8 +67,8 @@ resource "vault_ssh_secret_backend_role" "client_user" {
   allow_user_certificates = true
   allowed_users           = "root,ubuntu"
   default_user            = "root"
-  ttl                     = "8h"
-  max_ttl                 = "24h"
+  ttl                     = tostring(8 * 3600)
+  max_ttl                 = tostring(24 * 3600)
 
   default_extensions = {
     "permit-pty"              = ""
@@ -85,8 +85,8 @@ resource "vault_ssh_secret_backend_role" "client_service" {
   allow_user_certificates = true
   allowed_users           = "root,ubuntu"
   default_user            = "root"
-  ttl                     = "24h"
-  max_ttl                 = "8760h"
+  ttl                     = tostring(24 * 3600)
+  max_ttl                 = tostring(8760 * 3600)
 
   # permit-port-forwarding is required for the cleanup worker's Docker-over-SSH
   # tunnel: registry GC, aptly cleanup, and the node-cleanup docker prune all

@@ -22,7 +22,8 @@ locals {
   # get_original_terragrunt_dir() returns the dir of the file that initiated the include
   terragrunt_dir = get_original_terragrunt_dir()
   node_name      = basename(local.terragrunt_dir)
-  provider_type  = basename(dirname(local.terragrunt_dir))
+  # --- VM leaves live at <provider>/vms/<node>; provider is the grandparent there, else the parent ---
+  provider_type = basename(dirname(local.terragrunt_dir)) == "vms" ? basename(dirname(dirname(local.terragrunt_dir))) : basename(dirname(local.terragrunt_dir))
 
   # ---------------------------------------------------------------------------
   # ENVIRONMENT CONFIG
