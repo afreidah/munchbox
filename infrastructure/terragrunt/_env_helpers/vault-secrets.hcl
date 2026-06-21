@@ -16,7 +16,7 @@ terraform {
 }
 
 dependency "cloudflare_tokens" {
-  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/cloudflare-tokens"
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/cloudflare-tokens"
 
   mock_outputs = {
     vault_data = {
@@ -29,7 +29,7 @@ dependency "cloudflare_tokens" {
 }
 
 dependency "aptly_secrets" {
-  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/aptly"
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/aptly"
 
   mock_outputs = {
     vault_data = { admin = { password = "mock-aptly-password", htpasswd = "admin:mock-bcrypt-hash" } }
@@ -38,7 +38,7 @@ dependency "aptly_secrets" {
 }
 
 dependency "access_keys" {
-  config_path = "${get_repo_root()}/infrastructure/terragrunt/global/secrets/access-keys"
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/access-keys"
 
   mock_outputs = {
     vault_data = {
