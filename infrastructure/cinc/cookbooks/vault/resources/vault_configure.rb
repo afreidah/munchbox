@@ -76,8 +76,8 @@ property :oci_tenancy_ocid,         [String, nil]
 property :oci_user_ocid,            [String, nil]
 property :oci_fingerprint,          [String, nil]
 property :oci_region,               [String, nil]
-property :oci_config_dir,           String,        default: '/etc/vault.d/.oci'
-property :oci_private_key_file,     String,        default: '/etc/vault.d/.oci/oci_api_key.pem'
+property :oci_config_dir,           String,        default: '/opt/vault/data/.oci'
+property :oci_private_key_file,     String,        default: '/opt/vault/data/.oci/oci_api_key.pem'
 property :oci_private_key,          [String, nil], sensitive: true
 
 default_action :configure
@@ -183,7 +183,7 @@ action :configure do
     end
   end
 
-  # --- Systemd unit body matches the existing ansible-deployed unit verbatim (except header). ---
+  # --- HOME = vault home so the OCI SDK finds ~/.oci/config ---
   systemd_unit 'vault.service' do
     content <<~UNIT
       [Unit]
@@ -197,7 +197,7 @@ action :configure do
       Type=notify
       User=#{cfg.user}
       Group=#{cfg.group}
-      Environment=HOME=#{cfg.config_dir}
+      Environment=HOME=#{::File.dirname(cfg.oci_config_dir)}
       ProtectSystem=full
       ProtectHome=read-only
       PrivateTmp=yes

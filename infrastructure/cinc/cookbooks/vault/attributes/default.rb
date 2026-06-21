@@ -130,8 +130,9 @@ default[cookbook]['seal'] = {
   user_ocid: nil,
   fingerprint: nil,
   region: nil,
-  oci_config_dir: '/etc/vault.d/.oci',
-  private_key_file: '/etc/vault.d/.oci/oci_api_key.pem',
+  # --- under vault's passwd home; OCI SDK ignores $HOME ---
+  oci_config_dir: '/opt/vault/data/.oci',
+  private_key_file: '/opt/vault/data/.oci/oci_api_key.pem',
 }
 
 default[cookbook]['unseal_data_bag'] = {
