@@ -173,6 +173,16 @@ inputs = {
         }
       EOT
     }
+
+    # --- github-token-renewer: reads the GitHub App private key to mint
+    #     per-repo installation tokens. ---
+    "github-token-renewer" = {
+      policy = <<-EOT
+        path "secret/data/github/token-renewer-app" {
+          capabilities = ["read"]
+        }
+      EOT
+    }
   }
 
   # --- Workload Secrets (for nomad-workloads policy) ---
@@ -312,6 +322,12 @@ inputs = {
       policies = ["nomad-workloads", "cert-acquirer-worker"]
       bound_claims = {
         nomad_job_id = "cert-acquirer-worker"
+      }
+    }
+    "github-token-renewer" = {
+      policies = ["nomad-workloads", "github-token-renewer"]
+      bound_claims = {
+        nomad_job_id = "github-token-renewer"
       }
     }
   }
