@@ -81,6 +81,44 @@ RSpec.describe 'vault::configure' do
     end
   end
 
+  context 'with OCI KMS auto-unseal enabled' do
+    let(:seal_run) do
+      stub_data_bag_item('vault_unseal', 'oci_api_key').and_return('private_key' => 'PEMDATA')
+      ChefSpec::SoloRunner.new(step_into: %w(vault_configure)) do |node|
+        node.normal['vault']['config']['advertise_ip']        = '192.168.68.60'
+        node.normal['vault']['seal']['enabled']               = true
+        node.normal['vault']['seal']['key_id']                = 'ocid1.key.oc1..mock'
+        node.normal['vault']['seal']['crypto_endpoint']       = 'https://crypto.mock'
+        node.normal['vault']['seal']['management_endpoint']   = 'https://mgmt.mock'
+        node.normal['vault']['seal']['tenancy_ocid']          = 'ocid1.tenancy.oc1..mock'
+        node.normal['vault']['seal']['user_ocid']             = 'ocid1.user.oc1..mock'
+        node.normal['vault']['seal']['fingerprint']           = 'aa:bb:cc'
+        node.normal['vault']['seal']['region']                = 'us-phoenix-1'
+      end.converge(described_recipe)
+    end
+
+    it 'creates the OCI config dir at 0700' do
+      expect(seal_run).to create_directory('/etc/vault.d/.oci')
+        .with(owner: 'vault', group: 'vault', mode: '0700')
+    end
+
+    it 'writes the OCI API private key from the data bag at 0600' do
+      expect(seal_run).to create_file('/etc/vault.d/.oci/oci_api_key.pem')
+        .with(owner: 'vault', group: 'vault', mode: '0600')
+    end
+
+    it 'renders the OCI SDK config at 0600' do
+      expect(seal_run).to create_template('/etc/vault.d/.oci/config')
+        .with(owner: 'vault', group: 'vault', mode: '0600')
+    end
+
+    it 'passes the ocikms seal into vault.hcl' do
+      vars = seal_run.template('/etc/vault.d/vault.hcl').variables
+      expect(vars[:seal_enabled]).to eq(true)
+      expect(vars[:seal_key_id]).to eq('ocid1.key.oc1..mock')
+    end
+  end
+
   context 'when the consul-storage token is empty' do
     before do
       MunchboxLibVaultFetch.module_eval do

@@ -67,6 +67,19 @@ property :restart_on_change, [true, false], default: false
 
 property :stale_paths,       Array, default: []
 
+# --- Seal (OCI KMS auto-unseal); disabled unless the role enables it ---
+property :seal_enabled,             [true, false], default: false
+property :seal_key_id,              [String, nil]
+property :seal_crypto_endpoint,     [String, nil]
+property :seal_management_endpoint, [String, nil]
+property :oci_tenancy_ocid,         [String, nil]
+property :oci_user_ocid,            [String, nil]
+property :oci_fingerprint,          [String, nil]
+property :oci_region,               [String, nil]
+property :oci_config_dir,           String,        default: '/etc/vault.d/.oci'
+property :oci_private_key_file,     String,        default: '/etc/vault.d/.oci/oci_api_key.pem'
+property :oci_private_key,          [String, nil], sensitive: true
+
 default_action :configure
 
 # -------------------------------------------------------------------------------
@@ -84,6 +97,41 @@ action :configure do
   end
 
   cfg = new_resource
+
+  # --- OCI KMS auto-unseal: drop the API key + ~/.oci/config the seal reads (private key from the encrypted data bag) ---
+  if cfg.seal_enabled
+    raise "vault_configure[#{new_resource.name}]: seal_enabled but oci_private_key is empty" if cfg.oci_private_key.to_s.empty?
+
+    directory cfg.oci_config_dir do
+      owner     cfg.user
+      group     cfg.group
+      mode      '0700'
+      recursive true
+    end
+
+    file cfg.oci_private_key_file do
+      content   cfg.oci_private_key
+      owner     cfg.user
+      group     cfg.group
+      mode      '0600'
+      sensitive true
+    end
+
+    template "#{cfg.oci_config_dir}/config" do
+      source   'oci_config.erb'
+      cookbook 'vault'
+      owner    cfg.user
+      group    cfg.group
+      mode     '0600'
+      variables(
+        user_ocid: cfg.oci_user_ocid,
+        fingerprint: cfg.oci_fingerprint,
+        tenancy_ocid: cfg.oci_tenancy_ocid,
+        region: cfg.oci_region,
+        private_key_file: cfg.oci_private_key_file
+      )
+    end
+  end
 
   template "#{cfg.config_dir}/vault.hcl" do
     source 'vault.hcl.erb'
@@ -122,7 +170,12 @@ action :configure do
       telemetry_disable_hostname: cfg.telemetry_disable_hostname,
       telemetry_prometheus_retention_time: cfg.telemetry_prometheus_retention_time,
       telemetry_usage_gauge_period: cfg.telemetry_usage_gauge_period,
-      telemetry_enable_hostname_label: cfg.telemetry_enable_hostname_label
+      telemetry_enable_hostname_label: cfg.telemetry_enable_hostname_label,
+
+      seal_enabled: cfg.seal_enabled,
+      seal_key_id: cfg.seal_key_id,
+      seal_crypto_endpoint: cfg.seal_crypto_endpoint,
+      seal_management_endpoint: cfg.seal_management_endpoint
     )
     # --- Conditionally notify restart (default: NO). Operator opts in during planned maintenance. ---
     if cfg.restart_on_change
@@ -144,6 +197,7 @@ action :configure do
       Type=notify
       User=#{cfg.user}
       Group=#{cfg.group}
+      Environment=HOME=#{cfg.config_dir}
       ProtectSystem=full
       ProtectHome=read-only
       PrivateTmp=yes

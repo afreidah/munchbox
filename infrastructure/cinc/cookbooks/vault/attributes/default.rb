@@ -109,3 +109,33 @@ default[cookbook]['vault_paths'] = {
     field: 'token',
   },
 }
+
+# -------------------------------------------------------------------------------
+# Auto-unseal (OCI KMS)
+#
+# Disabled by default. To enable: flip seal['enabled'] and fill the OCI
+# identifiers in the vault_server role from the kms-oci terragrunt outputs
+# (key_id, crypto/management endpoints, tenancy/user OCIDs, fingerprint,
+# region). These are non-secret. The OCI API PRIVATE KEY is delivered
+# out-of-band via the encrypted data bag below -- it decrypts at converge
+# against /etc/cinc/encrypted_data_bag_secret, same as the vault_agent creds.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['seal'] = {
+  enabled: false,
+  key_id: nil,
+  crypto_endpoint: nil,
+  management_endpoint: nil,
+  tenancy_ocid: nil,
+  user_ocid: nil,
+  fingerprint: nil,
+  region: nil,
+  oci_config_dir: '/etc/vault.d/.oci',
+  private_key_file: '/etc/vault.d/.oci/oci_api_key.pem',
+}
+
+default[cookbook]['unseal_data_bag'] = {
+  bag: 'vault_unseal',
+  item: 'oci_api_key',
+  field: 'private_key',
+}

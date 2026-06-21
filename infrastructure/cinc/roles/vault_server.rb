@@ -11,13 +11,15 @@
 #   - node[:vault][:config][:advertise_ip]                   (REQUIRED)
 #   - the vault-server cert def in node[:vault_cert_manager][:certificates]
 #
-# Vault servers are shamir-sealed; this role NEVER auto-restarts vault
-# on config change. The vault::configure resource defaults
-# restart_on_change=false; only flip it true during planned maintenance.
+# Seal method is configurable via node[:vault][:seal]: shamir by default, or
+# OCI KMS auto-unseal when seal[:enabled]=true with the OCI identifiers set
+# (private key delivered out-of-band via the vault_unseal data bag). This role
+# NEVER auto-restarts vault on config change -- restart_on_change defaults
+# false; flip it true only during planned maintenance.
 # -------------------------------------------------------------------------------
 
 name 'vault_server'
-description 'Installs + configures HashiCorp Vault server (consul storage, shamir-sealed)'
+description 'Installs + configures HashiCorp Vault server (consul storage; shamir or OCI KMS auto-unseal)'
 
 run_list(
   'recipe[vault::install]',
