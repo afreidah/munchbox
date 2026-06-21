@@ -12,6 +12,8 @@
 
 cfg   = node[cookbook]['config']
 paths = node[cookbook]['vault_paths']
+seal  = node[cookbook]['seal']
+bag   = node[cookbook]['unseal_data_bag']
 
 vault_configure 'vault' do
   node_name      cfg['node_name'] || node.name
@@ -50,6 +52,20 @@ vault_configure 'vault' do
   config_dir node[cookbook]['install']['config_dir']
   user       node[cookbook]['install']['user']
   group      node[cookbook]['install']['group']
+
+  # --- Seal: OCI KMS auto-unseal (identifiers from the role; private key from the encrypted data bag) ---
+  seal_enabled             seal['enabled']
+  seal_key_id              seal['key_id']
+  seal_crypto_endpoint     seal['crypto_endpoint']
+  seal_management_endpoint seal['management_endpoint']
+  oci_tenancy_ocid         seal['tenancy_ocid']
+  oci_user_ocid            seal['user_ocid']
+  oci_fingerprint          seal['fingerprint']
+  oci_region               seal['region']
+  oci_config_dir           seal['oci_config_dir']
+  oci_private_key_file     seal['private_key_file']
+  # --- Lazy: read the encrypted data bag at converge, only when auto-unseal is on ---
+  oci_private_key(lazy { seal['enabled'] ? data_bag_item(bag['bag'], bag['item'])[bag['field']] : nil })
 
   restart_on_change cfg['restart_on_change']
   stale_paths       cfg['stale_paths'].to_a

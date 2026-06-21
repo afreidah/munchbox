@@ -1,0 +1,15 @@
+<%#
+  Cookbook:: vault
+  Template:: oci_config.erb
+
+  Renders /etc/vault.d/.oci/config (the vault user's ~/.oci/config, via
+  HOME=/etc/vault.d in the systemd unit). The OCI KMS auto-unseal seal reads
+  this for API-key auth. Identifiers only -- the private key is a separate
+  0600 file from the encrypted data bag.
+%>
+[DEFAULT]
+user=<%= @user_ocid %>
+fingerprint=<%= @fingerprint %>
+tenancy=<%= @tenancy_ocid %>
+region=<%= @region %>
+key_file=<%= @private_key_file %>

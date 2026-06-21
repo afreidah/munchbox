@@ -27,6 +27,19 @@ storage "consul" {
   tls_key_file  = "<%= @storage_tls_key_file %>"
 }
 
+<% if @seal_enabled -%>
+# -------------------------------------------------------------------------------
+# Seal - OCI KMS Auto-Unseal
+# -------------------------------------------------------------------------------
+
+seal "ocikms" {
+  key_id              = "<%= @seal_key_id %>"
+  crypto_endpoint     = "<%= @seal_crypto_endpoint %>"
+  management_endpoint = "<%= @seal_management_endpoint %>"
+  auth_type_api_key   = "true"
+}
+
+<% end -%>
 <% if @service_registration_enabled -%>
 # -------------------------------------------------------------------------------
 # Service Registration - Consul
