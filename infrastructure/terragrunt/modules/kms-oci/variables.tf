@@ -100,3 +100,46 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# -----------------------------------------------------------------------------
+# AUTO-UNSEAL IAM PRINCIPAL
+# -----------------------------------------------------------------------------
+
+variable "tenancy_ocid" {
+  description = "Tenancy OCID; the auto-unseal IAM user and group are created in the tenancy root."
+  type        = string
+
+  validation {
+    condition     = can(regex("^ocid1\\.tenancy\\.", var.tenancy_ocid))
+    error_message = "tenancy_ocid must be a valid OCI tenancy OCID."
+  }
+}
+
+variable "region" {
+  description = "OCI region for the auto-unseal API-key principal; surfaced for the Vault seal OCI config."
+  type        = string
+}
+
+variable "unseal_user_name" {
+  description = "Name of the dedicated OCI user that Vault uses to call OCI KMS for auto-unseal."
+  type        = string
+  default     = "vault-auto-unseal"
+}
+
+variable "unseal_group_name" {
+  description = "Name of the OCI group granted use of the auto-unseal key."
+  type        = string
+  default     = "vault-auto-unseal"
+}
+
+variable "unseal_policy_name" {
+  description = "Name of the OCI policy scoping the group to key-use on the auto-unseal key only."
+  type        = string
+  default     = "vault-auto-unseal-key-use"
+}
+
+variable "unseal_user_email" {
+  description = "Primary email for the auto-unseal OCI user; required by Identity Domains/IDCS tenancies."
+  type        = string
+  default     = "alex.freidah@gmail.com"
+}

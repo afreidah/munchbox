@@ -97,3 +97,33 @@ output "vault_seal_config" {
     management_endpoint = oci_kms_vault.this.management_endpoint
   }
 }
+
+# -----------------------------------------------------------------------------
+# AUTO-UNSEAL PRINCIPAL
+# -----------------------------------------------------------------------------
+
+output "unseal_user_ocid" {
+  description = "OCID of the dedicated auto-unseal OCI user (for the Vault OCI config)."
+  value       = oci_identity_user.unseal.id
+}
+
+output "unseal_fingerprint" {
+  description = "Fingerprint of the auto-unseal API key (for the Vault OCI config)."
+  value       = oci_identity_api_key.unseal.fingerprint
+}
+
+output "unseal_tenancy_ocid" {
+  description = "Tenancy OCID (for the Vault OCI config)."
+  value       = var.tenancy_ocid
+}
+
+output "unseal_region" {
+  description = "OCI region (for the Vault OCI config)."
+  value       = var.region
+}
+
+output "unseal_private_key_pem" {
+  description = "Private key PEM for the auto-unseal API key; load into the cinc vault_unseal data bag."
+  value       = tls_private_key.unseal.private_key_pem
+  sensitive   = true
+}

@@ -77,3 +77,52 @@ resource "oci_kms_key" "this" {
   # Ensure vault is fully provisioned before creating key
   depends_on = [oci_kms_vault.this]
 }
+
+# -----------------------------------------------------------------------------
+# AUTO-UNSEAL IAM PRINCIPAL
+# -----------------------------------------------------------------------------
+
+# --- RSA keypair backing the unseal user's API key; private half feeds the cinc data bag ---
+resource "tls_private_key" "unseal" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+# IAM users and groups live in the tenancy root, not a sub-compartment.
+resource "oci_identity_user" "unseal" {
+  compartment_id = var.tenancy_ocid
+  name           = var.unseal_user_name
+  description    = "HashiCorp Vault auto-unseal; API-key principal scoped to key-use only"
+  email          = var.unseal_user_email
+  freeform_tags  = var.tags
+}
+
+resource "oci_identity_group" "unseal" {
+  compartment_id = var.tenancy_ocid
+  name           = var.unseal_group_name
+  description    = "Grants use of the Vault auto-unseal key"
+  freeform_tags  = var.tags
+}
+
+resource "oci_identity_user_group_membership" "unseal" {
+  user_id  = oci_identity_user.unseal.id
+  group_id = oci_identity_group.unseal.id
+}
+
+resource "oci_identity_api_key" "unseal" {
+  user_id   = oci_identity_user.unseal.id
+  key_value = tls_private_key.unseal.public_key_pem
+}
+
+# --- least privilege: crypto use of the one unseal key, nothing else ---
+resource "oci_identity_policy" "unseal" {
+  compartment_id = var.compartment_id
+  name           = var.unseal_policy_name
+  description    = "Vault auto-unseal: use the KMS unseal key only"
+
+  statements = [
+    "Allow group ${oci_identity_group.unseal.name} to use keys in compartment id ${var.compartment_id} where target.key.id = '${oci_kms_key.this.id}'"
+  ]
+
+  freeform_tags = var.tags
+}
