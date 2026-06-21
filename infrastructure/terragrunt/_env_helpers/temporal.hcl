@@ -92,6 +92,17 @@ locals {
       workflow_id   = "cert-acquirer-scheduled"
       input         = { domains = ["*.munchbox.cc", "munchbox.cc"], email = "alex@alexfreidah.com" }
     }
+    # Every 30 min so the 1-hour GitHub App tokens it writes are always fresh
+    # (the secret is never older than 30 min vs. a 60 min token life).
+    "github-token-renewer-30min" = {
+      schedule_id   = "github-token-renewer-30min"
+      hour          = "*"
+      minute        = "0,30"
+      workflow_type = "RenewTokens"
+      task_queue    = "github-token-renewer-task-queue"
+      workflow_id   = "github-token-renewer-scheduled"
+      input         = { concurrency = 4 }
+    }
   }
 }
 
