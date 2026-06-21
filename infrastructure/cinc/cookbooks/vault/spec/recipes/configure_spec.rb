@@ -98,17 +98,17 @@ RSpec.describe 'vault::configure' do
     end
 
     it 'creates the OCI config dir at 0700' do
-      expect(seal_run).to create_directory('/etc/vault.d/.oci')
+      expect(seal_run).to create_directory('/opt/vault/data/.oci')
         .with(owner: 'vault', group: 'vault', mode: '0700')
     end
 
     it 'writes the OCI API private key from the data bag at 0600' do
-      expect(seal_run).to create_file('/etc/vault.d/.oci/oci_api_key.pem')
+      expect(seal_run).to create_file('/opt/vault/data/.oci/oci_api_key.pem')
         .with(owner: 'vault', group: 'vault', mode: '0600')
     end
 
     it 'renders the OCI SDK config at 0600' do
-      expect(seal_run).to create_template('/etc/vault.d/.oci/config')
+      expect(seal_run).to create_template('/opt/vault/data/.oci/config')
         .with(owner: 'vault', group: 'vault', mode: '0600')
     end
 
