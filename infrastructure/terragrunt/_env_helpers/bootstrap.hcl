@@ -73,7 +73,7 @@ generate "providers" {
 # --- network source: sibling node (when node.yaml.share_network_from is set)
 #     or the shared networking/oci leaf otherwise. Both export subnet_id + security_group_id. ---
 dependency "network_source" {
-  config_path = local.share_network_from != "" ? "${dirname(get_original_terragrunt_dir())}/${local.share_network_from}" : "${get_repo_root()}/infrastructure/terragrunt/networking/oci"
+  config_path = local.share_network_from != "" ? "${dirname(get_original_terragrunt_dir())}/${local.share_network_from}" : "${get_repo_root()}/infrastructure/terragrunt/oci/networking"
 
   mock_outputs = {
     subnet_id         = "mock-subnet-id"
