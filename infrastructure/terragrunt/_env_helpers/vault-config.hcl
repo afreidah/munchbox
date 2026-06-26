@@ -175,10 +175,14 @@ inputs = {
     }
 
     # --- github-token-renewer: reads the GitHub App private key to mint
-    #     per-repo installation tokens. ---
+    #     per-repo installation tokens, and the SonarCloud master token to mint
+    #     a per-repo analysis token. ---
     "github-token-renewer" = {
       policy = <<-EOT
         path "secret/data/github/token-renewer-app" {
+          capabilities = ["read"]
+        }
+        path "secret/data/sonarcloud/token" {
           capabilities = ["read"]
         }
       EOT

@@ -3,20 +3,26 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Temporal worker that keeps every managed repo's CI/release token secret
-# continuously valid: it mints a short-lived GitHub App installation token per
-# repo and writes it to the repo's RELEASE_PAT Actions secret, so the token
-# never expires (replacing hand-rotated PATs). Listens on the
-# github-token-renewer-task-queue; the RenewTokens workflow is started on
-# schedule by a Temporal Schedule (managed in infrastructure/terragrunt).
+# Temporal worker that keeps every managed repo's CI token secrets continuously
+# valid. Two workflows, one task queue (github-token-renewer-task-queue), both
+# started on schedule by Temporal Schedules (managed in infrastructure/terragrunt):
+#   * RenewTokens (30 min): mints a short-lived GitHub App installation token per
+#     repo and writes it to RELEASE_PAT, so the token never expires (replacing
+#     hand-rotated PATs).
+#   * RenewSonarCloudTokens (weekly): mints a SonarCloud token per repo from a
+#     master token and writes it to SONAR_TOKEN. SonarCloud removed project
+#     scoping, so these are full-scope standard tokens; the slow weekly rotation
+#     (90-day TTL) is what bounds exposure.
 #
 # Self-authenticating: the task carries only its Workload Identity. Nomad writes
 # the WI Vault token to /secrets/vault_token (vault{} block below); the worker
-# reads the GitHub App private key through Vault and the repo list from Consul KV
-# (the local agent's default token) -- no secrets are templated into the job.
+# reads the GitHub App private key and the SonarCloud master token through Vault
+# and the repo list from Consul KV (the local agent's default token) -- no
+# secrets are templated into the job.
 #
 # Requires (infrastructure/terragrunt):
-#   * vault-config:  policy "github-token-renewer" (read secret/github/token-renewer-app)
+#   * vault-config:  policy "github-token-renewer" (read secret/github/token-renewer-app
+#                    + read secret/sonarcloud/token)
 #                    + workload_vault_role "github-token-renewer" (bound_claims job_id)
 #   * consul-kv:     "github/token-renewer/repos" = newline-separated owner/repo list
 # -------------------------------------------------------------------------------
@@ -149,6 +155,17 @@ job "github-token-renewer" {
         GITHUB_APP_VAULT_PATH = "github/token-renewer-app"
         REPO_LIST_KEY         = "github/token-renewer/repos"
         SECRET_NAME           = "RELEASE_PAT"
+
+        # SonarCloud tokens, distributed to the same managed repos as SONAR_TOKEN.
+        # The master token is read from Vault and a fresh token is minted per repo
+        # from it. (SonarCloud removed project scoping, so the minted tokens are
+        # full-scope standard tokens; the per-repo split buys independent rotation,
+        # not project isolation.) Renewal stays disabled until the Vault token is
+        # present, so it safely no-ops until the secret + policy land. Values below
+        # match the worker defaults; set for visibility.
+        SONARCLOUD_TOKEN_VAULT_PATH = "sonarcloud/token"
+        SONARCLOUD_TOKEN_TTL_DAYS   = "90"
+        SONAR_SECRET_NAME           = "SONAR_TOKEN"
       }
 
       # --- Light: a handful of HTTP calls per repo (Consul KV, Vault, GitHub

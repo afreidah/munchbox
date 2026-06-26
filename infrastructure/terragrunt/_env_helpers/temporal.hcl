@@ -103,6 +103,19 @@ locals {
       workflow_id   = "github-token-renewer-scheduled"
       input         = { concurrency = 4 }
     }
+    # Weekly: SonarCloud analysis tokens are long-lived (90-day TTL), so they only
+    # need slow rotation for hygiene -- not the 30-min cadence the GitHub tokens
+    # require. Same worker/task queue, different workflow.
+    "sonarcloud-token-renewer-weekly" = {
+      schedule_id   = "sonarcloud-token-renewer-weekly"
+      year          = "*"
+      hour          = "7"
+      day_of_week   = "0"
+      workflow_type = "RenewSonarCloudTokens"
+      task_queue    = "github-token-renewer-task-queue"
+      workflow_id   = "sonarcloud-token-renewer-scheduled"
+      input         = { concurrency = 4 }
+    }
   }
 }
 
