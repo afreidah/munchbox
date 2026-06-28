@@ -64,7 +64,10 @@ jobs:
             p=$(command -v "$b" || true); [ -n "$p" ] && sudo ln -sf "$p" "/usr/local/bin/$b"
           done
           sudo ln -sf "$(command -v cinc)" /usr/local/bin/chef
-          chef --version
+          # munchbox_lib's Makefile calls `bundle` directly; cinc ships it in the
+          # embedded bin which isn't on PATH -> symlink it explicitly
+          sudo ln -sf "$(cinc exec which bundle)" /usr/local/bin/bundle
+          chef --version; bundle --version
 
       - name: Install coverage gems into the workstation ruby
         run: |
