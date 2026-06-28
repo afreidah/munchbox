@@ -754,9 +754,335 @@
     },
     {
       "type": "row",
+      "id": 43,
+      "title": "RUM / Web Analytics (browser-side, from Cloudflare)",
+      "gridPos": { "x": 0, "y": 46, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "id": 44,
+      "title": "Page Views (selected range)",
+      "description": "Real browser page views (not edge requests) over the selected time range",
+      "gridPos": { "x": 0, "y": 47, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(cflog_rum_pageviews_total{site=~\"$site\"}[$__range]))",
+          "legendFormat": "page views"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 45,
+      "title": "Sessions (selected range)",
+      "description": "Sessions (entry page loads) over the selected time range",
+      "gridPos": { "x": 4, "y": 47, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(increase(cflog_rum_sessions_total{site=~\"$site\"}[$__range]))",
+          "legendFormat": "sessions"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "0",
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 46,
+      "title": "LCP p75 (worst device)",
+      "description": "Largest Contentful Paint p75. Google thresholds: good < 2.5s, needs improvement < 4s.",
+      "gridPos": { "x": 8, "y": 47, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max(cflog_rum_web_vital_seconds{vital=\"lcp\", site=~\"$site\"})",
+          "legendFormat": "lcp"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2.5 },
+              { "color": "red", "value": 4 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 47,
+      "title": "INP p75 (worst device)",
+      "description": "Interaction to Next Paint p75. Google thresholds: good < 200ms, needs improvement < 500ms.",
+      "gridPos": { "x": 12, "y": 47, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max(cflog_rum_web_vital_seconds{vital=\"inp\", site=~\"$site\"})",
+          "legendFormat": "inp"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.2 },
+              { "color": "red", "value": 0.5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 48,
+      "title": "CLS p75 (worst device)",
+      "description": "Cumulative Layout Shift p75 (unitless). Google thresholds: good < 0.1, needs improvement < 0.25.",
+      "gridPos": { "x": 16, "y": 47, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max(cflog_rum_cumulative_layout_shift{site=~\"$site\"})",
+          "legendFormat": "cls"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 0.25 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "id": 49,
+      "title": "FCP p75 (worst device)",
+      "description": "First Contentful Paint p75. Google thresholds: good < 1.8s, needs improvement < 3s.",
+      "gridPos": { "x": 20, "y": 47, "w": 4, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max(cflog_rum_web_vital_seconds{vital=\"fcp\", site=~\"$site\"})",
+          "legendFormat": "fcp"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1.8 },
+              { "color": "red", "value": 3 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 50,
+      "title": "Page Views by Device",
+      "description": "Browser page-view rate split by device type",
+      "gridPos": { "x": 0, "y": 51, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (device) (rate(cflog_rum_pageviews_total{site=~\"$site\"}[$__rate_interval]))",
+          "legendFormat": "{{device}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 80,
+            "stacking": { "mode": "normal" }
+          }
+        }
+      }
+    },
+    {
+      "type": "table",
+      "id": 51,
+      "title": "Page Views by Country (Top 10)",
+      "description": "Where real visitors are browsing from over the selected range",
+      "gridPos": { "x": 8, "y": 51, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (country) (increase(cflog_rum_pageviews_total{site=~\"$site\"}[$__range])))",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true },
+            "renameByName": { "country": "Country", "Value": "Page Views" },
+            "indexByName": { "country": 0, "Value": 1 }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": { "fields": {}, "sort": [{ "field": "Page Views", "desc": true }] }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Page Views" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "transparent", "value": null },
+                    { "color": "super-light-blue", "value": 5 },
+                    { "color": "blue", "value": 50 },
+                    { "color": "purple", "value": 500 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 52,
+      "title": "Core Web Vitals p75 (by device)",
+      "description": "Time-based Core Web Vitals (lcp, inp, fid, fcp, ttfb) at p75, in seconds. CLS is unitless and shown in its own stat.",
+      "gridPos": { "x": 16, "y": 51, "w": 8, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "cflog_rum_web_vital_seconds{site=~\"$site\"}",
+          "legendFormat": "{{vital}} ({{device}})"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        }
+      }
+    },
+    {
+      "type": "logs",
+      "id": 53,
+      "title": "Recent Page Loads (raw RUM data in Loki)",
+      "description": "The raw browser page-load rows (path, country, device, referer) the collector shipped to Loki",
+      "gridPos": { "x": 0, "y": 59, "w": 24, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{job=\"cloudflare\", type=\"rum_pageload\", site=~\"$site\"} | json",
+          "legendFormat": ""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": false,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
+    },
+    {
+      "type": "row",
       "id": 40,
       "title": "Collector Logs",
-      "gridPos": { "x": 0, "y": 46, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 67, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
@@ -764,7 +1090,7 @@
       "id": 41,
       "title": "Service Logs (collector process)",
       "description": "Stdout from the collector itself - poll results, errors, startup info. Click trace IDs to jump to Tempo.",
-      "gridPos": { "x": 0, "y": 47, "w": 24, "h": 10 },
+      "gridPos": { "x": 0, "y": 68, "w": 24, "h": 10 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -788,7 +1114,7 @@
       "id": 42,
       "title": "HTTP Traffic Logs (raw Cloudflare data in Loki)",
       "description": "The raw HTTP traffic data points that the collector shipped to Loki from Cloudflare analytics",
-      "gridPos": { "x": 0, "y": 57, "w": 24, "h": 8 },
+      "gridPos": { "x": 0, "y": 78, "w": 24, "h": 8 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -829,6 +1155,19 @@
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "prometheus" },
         "query": "label_values(cflog_audit_events_total, account)",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "site",
+        "label": "RUM Site",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(cflog_rum_pageviews_total, site)",
         "includeAll": true,
         "allValue": ".*",
         "current": { "text": "All", "value": "$__all" },

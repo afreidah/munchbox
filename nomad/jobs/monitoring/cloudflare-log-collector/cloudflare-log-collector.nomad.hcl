@@ -3,11 +3,12 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Polls the Cloudflare GraphQL Analytics API for firewall events and HTTP
-# traffic statistics and the REST Audit Logs API for account audit events. Ships
-# firewall and audit events to Loki as structured JSON logs and exposes HTTP
-# traffic metrics via Prometheus. Traces poll cycles with OpenTelemetry for Tempo
-# correlation.
+# Polls the Cloudflare GraphQL Analytics API for firewall events, HTTP traffic
+# statistics, and browser-side RUM / Web Analytics (page views and Core Web
+# Vitals), plus the REST Audit Logs API for account audit events. Ships firewall,
+# audit, and RUM page-load events to Loki as structured JSON logs and exposes
+# traffic, RUM, and web-vital metrics via Prometheus. Traces poll cycles with
+# OpenTelemetry for Tempo correlation.
 # -------------------------------------------------------------------------------
 
 job "cloudflare-log-collector" {
@@ -117,6 +118,7 @@ job "cloudflare-log-collector" {
       config {
         image              = "registry.munchbox.cc/cloudflare-log-collector:latest"
         image_pull_timeout = "5m"
+        force_pull         = true
         network_mode       = "host"
         args               = ["-config", "/secrets/config.yaml"]
         volumes = [
@@ -141,6 +143,14 @@ cloudflare:
     accounts:
       - id: "02e53aa2113dc76e57f9598af2f74939"
         name: "munchbox"
+  web_analytics:
+    enabled: true
+    account_id: "02e53aa2113dc76e57f9598af2f74939"
+    sites:
+      - site_tag: "ae2539629b174f39bada88b9f12649b0"
+        name: "munchbox.cc"
+      - site_tag: "ca9fdc0e18dd40a2b74f3f6b795033be"
+        name: "alexfreidah.com"
   poll_interval: 1m
   backfill_window: 1h
 
