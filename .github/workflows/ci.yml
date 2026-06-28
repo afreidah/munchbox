@@ -70,8 +70,8 @@ jobs:
         run: |
           # install as the runner (no sudo) so they land in the user gemset that
           # `cinc exec` reads -- sudo installs into root's gemset, invisible here
-          cinc exec gem install simplecov simplecov-cobertura --no-document
-          cinc exec ruby -e "require 'simplecov'; require 'simplecov-cobertura'; puts 'coverage gems OK'"
+          cinc exec gem install simplecov simplecov_json_formatter --no-document
+          cinc exec ruby -e "require 'simplecov'; require 'simplecov_json_formatter'; puts 'coverage gems OK'"
 
       - name: make verify (cookstyle + chefspec, full suite, coverage on)
         working-directory: infrastructure/cinc
@@ -87,7 +87,7 @@ jobs:
             ( cd "$cb"; make verify ) || { echo "::error title=cinc::${name} failed verify"; fail=1; }
             echo "::endgroup::"
           done
-          echo "merged coverage: $(ls -la coverage/coverage.xml 2>/dev/null || echo MISSING)"
+          echo "merged coverage: $(ls -la coverage/coverage.json 2>/dev/null || echo MISSING)"
           [ "$fail" -eq 0 ] || { echo "::error::one or more cookbooks failed make verify (see annotations)"; exit 1; }
 
       - name: SonarQube scan (afreidah_munchbox_cinc)

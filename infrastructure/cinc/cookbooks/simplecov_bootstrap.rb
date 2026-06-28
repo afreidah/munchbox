@@ -17,7 +17,7 @@
 return unless ENV['COVERAGE'] == '1'
 
 require 'simplecov'
-require 'simplecov-cobertura'
+require 'simplecov_json_formatter'
 
 SimpleCov.start do
   # Consistent root across every per-cookbook process. Each process formats the
@@ -26,7 +26,8 @@ SimpleCov.start do
   root File.expand_path('..', __dir__) # cookbooks/ -> infrastructure/cinc
   command_name "cinc-#{File.basename(Dir.pwd)}"
   coverage_dir File.expand_path('../coverage', __dir__) # -> infrastructure/cinc/coverage
-  formatter SimpleCov::Formatter::CoberturaFormatter
+  # SonarCloud's Ruby sensor reads the SimpleCov JSON formatter output (coverage.json).
+  formatter SimpleCov::Formatter::JSONFormatter
   enable_coverage :branch
   merge_timeout 3600
   # ChefSpec instance_eval's recipes/resources/attributes, so Ruby's Coverage
