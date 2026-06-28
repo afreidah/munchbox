@@ -83,5 +83,6 @@ RSpec.describe 'vault::install' do
     expect(resource).not_to be_nil
     expect(resource.members).to eq(['vault'])
     expect(resource.append).to be true
+    ChefSpec::Coverage.cover!(resource) # find_resources doesn't mark it touched
   end
 end

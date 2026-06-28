@@ -16,6 +16,10 @@ RSpec.describe 'nfs::client' do
     expect(chef_run).to install_apt_package('nfs-common')
   end
 
+  it 'refreshes the apt cache (periodic) before installing' do
+    expect(chef_run).to periodic_apt_update('nfs-client')
+  end
+
   it 'declares no nfs_mount resources when mounts is empty (the default)' do
     expect(chef_run.find_resources(:nfs_mount)).to be_empty
   end
