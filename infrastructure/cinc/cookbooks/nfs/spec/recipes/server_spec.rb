@@ -63,5 +63,11 @@ RSpec.describe 'nfs::server' do
       expect(exports_run).to enable_service('nfs-server')
       expect(exports_run).to start_service('nfs-server')
     end
+
+    it 'refreshes the apt cache (periodic) and materializes each export dir' do
+      expect(exports_run).to periodic_apt_update('nfs-server')
+      expect(exports_run).to create_directory('/srv/nfs/test')
+        .with(owner: 'root', group: 'root', mode: '0755', recursive: true)
+    end
   end
 end

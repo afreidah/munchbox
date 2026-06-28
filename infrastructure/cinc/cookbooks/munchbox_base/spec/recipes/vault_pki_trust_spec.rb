@@ -52,7 +52,9 @@ RSpec.describe 'munchbox_base::vault_pki_trust' do
 
   it 'ensures each destination parent dir exists (only_if-gated; resource declared every converge)' do
     %w(/opt/nomad/tls /usr/local/share/ca-certificates /etc/consul.d/tls).each do |d|
-      expect(chef_run.find_resources(:directory).map(&:name)).to include(d)
+      res = chef_run.find_resources(:directory).find { |r| r.name == d }
+      expect(res).not_to be_nil
+      ChefSpec::Coverage.cover!(res) # find_resources alone doesn't mark it touched
     end
   end
 

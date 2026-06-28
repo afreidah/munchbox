@@ -21,6 +21,12 @@ RSpec.describe 'proxmox_host::kernel_cmdline' do
     it 'sets the cmdline to just the base' do
       expect(cmdline(chef_run)).to include('GRUB_CMDLINE_LINUX_DEFAULT="quiet"')
     end
+
+    it 'declares the kernel_cmdline resource and runs the grub sed (not_if stubbed false)' do
+      expect(chef_run).to configure_proxmox_host_kernel_cmdline('grub')
+      expect(chef_run).to run_execute('update GRUB_CMDLINE_LINUX_DEFAULT')
+      expect(chef_run.execute('update-grub')).to do_nothing
+    end
   end
 
   context 'gvt_g enabled' do

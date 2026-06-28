@@ -70,6 +70,14 @@ RSpec.describe 'consul::configure' do
       expect(template.variables[:gossip_lan_interval]).to eq('1s')
       expect(template.variables[:gossip_lan_probe_timeout]).to eq('5s')
     end
+
+    # --- Nomad consul-sync recovery: nomad does nothing on its own but restarts
+    #     (delayed) whenever consul restarts, forcing its re-registration path ---
+    it 'declares a do-nothing nomad service subscribed to a delayed consul restart' do
+      nomad = chef_run.service('nomad')
+      expect(nomad).to do_nothing
+      expect(nomad).to subscribe_to('service[consul]').on(:restart).delayed
+    end
   end
 
   context 'with overridden gossip_lan tuning' do

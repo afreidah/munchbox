@@ -37,7 +37,8 @@ RSpec.describe 'munchbox_base::etc_hosts' do
   it 'declares the cloud-init dropin (only_if-gated on /etc/cloud/cloud.cfg.d existing)' do
     # --- only_if guard is a Ruby block; in chefspec ::Dir.exist? evaluates against the test FS,
     #     which usually doesn't have /etc/cloud/cloud.cfg.d. The resource is declared regardless.
-    expect(chef_run.find_resources(:file).map(&:name))
-      .to include('/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg')
+    res = chef_run.find_resources(:file).find { |r| r.name == '/etc/cloud/cloud.cfg.d/99-disable-manage-hosts.cfg' }
+    expect(res).not_to be_nil
+    ChefSpec::Coverage.cover!(res) # find_resources alone doesn't mark it touched
   end
 end

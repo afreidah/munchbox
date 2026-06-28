@@ -37,6 +37,8 @@ RSpec.describe 'munchbox_base::disable_ipv6_ra' do
 
   it 'declares the RA-route flush execute (only_if-gated to remain idempotent)' do
     # --- stubbed to return false above so the action shouldn't fire, but the resource is declared ---
-    expect(chef_run.find_resources(:execute).map(&:name)).to include('flush ipv6 RA routes')
+    res = chef_run.find_resources(:execute).find { |r| r.name == 'flush ipv6 RA routes' }
+    expect(res).not_to be_nil
+    ChefSpec::Coverage.cover!(res) # find_resources alone doesn't mark it touched
   end
 end
