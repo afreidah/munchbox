@@ -16,6 +16,11 @@ RSpec.describe 'proxmox_host::apt_repo' do
       end.converge(described_recipe)
     end
 
+    it 'declares the proxmox_host_apt_repo resource and its :nothing apt_update' do
+      expect(chef_run).to configure_proxmox_host_apt_repo('pve-no-subscription')
+      expect(chef_run.apt_update('pve-no-subscription-changed')).to do_nothing
+    end
+
     it 'writes the pve-no-subscription source with the host codename' do
       expect(chef_run).to create_file('/etc/apt/sources.list.d/pve-no-subscription.list')
         .with(owner: 'root', group: 'root', mode: '0644',

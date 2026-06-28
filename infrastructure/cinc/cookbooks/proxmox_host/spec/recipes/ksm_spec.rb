@@ -13,6 +13,10 @@ RSpec.describe 'proxmox_host::ksm' do
       ChefSpec::SoloRunner.new(step_into: %w(proxmox_host_ksm)).converge(described_recipe)
     end
 
+    it 'declares the proxmox_host_ksm resource' do
+      expect(chef_run).to configure_proxmox_host_ksm('ksm')
+    end
+
     it 'installs PVE ksm-control-daemon (not the conflicting debian ksmtuned)' do
       expect(chef_run).to install_package('ksm-control-daemon')
     end
