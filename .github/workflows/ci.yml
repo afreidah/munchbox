@@ -78,18 +78,20 @@ jobs:
         env:
           COVERAGE: '1'
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          fail=0
           for cb in cookbooks/*/; do
             [ -f "${cb}Makefile" ] || continue
-            echo "::group::${cb}"
-            ( cd "$cb"
-              [ -f Gemfile ] && bundle install --quiet
-              make lint
-              make test
-            )
+            name=${cb#cookbooks/}; name=${name%/}
+            echo "::group::lint ${name}"
+            ( cd "$cb"; [ -f Gemfile ] && bundle install --quiet; make lint ) || { echo "::error title=cookstyle::${name} failed lint"; fail=1; }
+            echo "::endgroup::"
+            echo "::group::test ${name}"
+            ( cd "$cb"; make test ) || { echo "::error title=chefspec::${name} failed test"; fail=1; }
             echo "::endgroup::"
           done
           echo "merged coverage: $(ls -la coverage/coverage.xml 2>/dev/null || echo MISSING)"
+          [ "$fail" -eq 0 ] || { echo "::error::one or more cookbooks failed lint/test (see annotations)"; exit 1; }
 
       - name: SonarQube scan (afreidah_munchbox_cinc)
         uses: SonarSource/sonarqube-scan-action@v5
