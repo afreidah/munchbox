@@ -1,0 +1,112 @@
+# -------------------------------------------------------------------------------
+# munchbox CI
+#
+# Path-aware, per-component pipeline for the polyglot monorepo. `changes` detects
+# which areas a PR touches; each area job runs only when relevant and scans its
+# own SonarCloud project (monorepo model). Coverage-producing unit tests run the
+# FULL suite for their area so a partial PR never zeroes that project's coverage.
+#
+# Incremental: cinc only for now. terragrunt / nomad jobs land in follow-ups
+# (terragrunt needs self-hosted runners for Vault + the Consul state backend).
+#
+# Author: Alex Freidah / Project: Munchbox
+# -------------------------------------------------------------------------------
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Detect which component areas changed
+  # ---------------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      cinc: ${{ steps.filter.outputs.cinc }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            cinc:
+              - 'infrastructure/cinc/**'
+
+  # ---------------------------------------------------------------------------
+  # Cinc: cookstyle + full chefspec suite + merged coverage -> Sonar
+  # ---------------------------------------------------------------------------
+  cinc:
+    needs: changes
+    if: ${{ needs.changes.outputs.cinc == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Sonar needs full history for new-code/blame
+
+      - name: Install Cinc Workstation
+        run: |
+          curl -fsSL https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -P cinc-workstation
+          # _common.mk hardcodes /usr/local/bin/{chef,cookstyle,kitchen}; cinc ships `cinc`.
+          for b in cinc cookstyle kitchen bundle; do
+            p=$(command -v "$b" || true); [ -n "$p" ] && sudo ln -sf "$p" "/usr/local/bin/$b"
+          done
+          sudo ln -sf "$(command -v cinc)" /usr/local/bin/chef
+          chef --version
+
+      - name: Install coverage gems
+        run: sudo cinc gem install simplecov simplecov-cobertura --no-document
+
+      - name: cookstyle + chefspec (full suite, coverage on)
+        working-directory: infrastructure/cinc
+        env:
+          COVERAGE: '1'
+        run: |
+          set -euo pipefail
+          for cb in cookbooks/*/; do
+            [ -f "${cb}Makefile" ] || continue
+            echo "::group::${cb}"
+            ( cd "$cb"
+              [ -f Gemfile ] && bundle install --quiet
+              make lint
+              make test
+            )
+            echo "::endgroup::"
+          done
+          echo "merged coverage: $(ls -la coverage/coverage.xml 2>/dev/null || echo MISSING)"
+
+      - name: SonarQube scan (afreidah_munchbox_cinc)
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: infrastructure/cinc
+
+  # ---------------------------------------------------------------------------
+  # Single required status check (skipped area jobs don't block merges)
+  # ---------------------------------------------------------------------------
+  ci-ok:
+    needs: [changes, cinc]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate on area-job results (skipped is OK, failed is not)
+        run: |
+          for r in "${{ needs.cinc.result }}"; do
+            case "$r" in
+              failure|cancelled) echo "a required job did not pass: $r"; exit 1 ;;
+            esac
+          done
+          echo "ok"
