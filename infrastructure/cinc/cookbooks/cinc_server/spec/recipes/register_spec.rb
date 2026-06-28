@@ -37,7 +37,9 @@ RSpec.describe 'cinc_server::register' do
     expect(svc['tags']).to include('chef', 'cinc', 'https')
     expect(svc.dig('check', 'http')).to eq('https://cinc-server.munchbox.cc/_status')
     expect(svc.dig('check', 'interval')).to eq('30s')
-    expect(svc.dig('check', 'tls_skip_verify')).to eq(false)
+    # self-signed nginx cert (cinc_server::configure) -> check skips TLS verify
+    # until the cert moves to munchbox PKI; mirrors recipes/register.rb
+    expect(svc.dig('check', 'tls_skip_verify')).to eq(true)
   end
 
   # --- Reload execute exists in the resource collection (subscribed from the file side) ---
