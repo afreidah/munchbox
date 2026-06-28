@@ -64,11 +64,6 @@ jobs:
             p=$(command -v "$b" || true); [ -n "$p" ] && sudo ln -sf "$p" "/usr/local/bin/$b"
           done
           sudo ln -sf "$(command -v cinc)" /usr/local/bin/chef
-          # munchbox_lib's Makefile calls `bundle` directly; cinc ships it in its
-          # embedded bin (not on PATH) -> locate and symlink it
-          BUNDLE=$(find /opt/cinc-workstation -path '*/bin/bundle' -type f 2>/dev/null | head -1)
-          echo "cinc bundle: ${BUNDLE:-NOT FOUND}"
-          [ -n "$BUNDLE" ] && { sudo ln -sf "$BUNDLE" /usr/local/bin/bundle; bundle --version; }
           chef --version
 
       - name: Install coverage gems into the workstation ruby
@@ -89,7 +84,7 @@ jobs:
             [ -f "${cb}Makefile" ] || continue
             name=${cb#cookbooks/}; name=${name%/}
             echo "::group::lint ${name}"
-            ( cd "$cb"; [ -f Gemfile ] && bundle install --quiet; make lint ) || { echo "::error title=cookstyle::${name} failed lint"; fail=1; }
+            ( cd "$cb"; make lint ) || { echo "::error title=cookstyle::${name} failed lint"; fail=1; }
             echo "::endgroup::"
             echo "::group::test ${name}"
             ( cd "$cb"; make test ) || { echo "::error title=chefspec::${name} failed test"; fail=1; }
