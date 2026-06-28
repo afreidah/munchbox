@@ -26,16 +26,17 @@ locals {
         resources         = { "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}" = "*" }
       }]
     }
-    # --- cloudflare-log-collector: audit logs + per-zone analytics, read-only ---
+    # --- cloudflare-log-collector: audit logs + analytics, read-only ---
     # Single policy on purpose: the cloudflare v5 provider can't round-trip a token with
     # multiple policies ("inconsistent result after apply"). One policy is fine even with
     # mixed scopes - each permission group only applies to its matching resource type:
-    # Account Settings Read -> the account resource (audit logs); Analytics Read -> the
-    # zone resources (per-zone GraphQL firewall/http analytics).
+    # Account Settings Read -> the account resource (audit logs); Account Analytics Read ->
+    # the account resource (account-scoped RUM/web-analytics GraphQL); Analytics Read ->
+    # the zone resources (per-zone GraphQL firewall/http analytics).
     logcollector = {
       name = "munchbox-logcollector-audit-analytics"
       policies = [{
-        permission_groups = ["Analytics Read", "Account Settings Read"]
+        permission_groups = ["Analytics Read", "Account Analytics Read", "Account Settings Read"]
         resources = {
           "com.cloudflare.api.account.${local.root.locals.cloudflare_account_id}"               = "*"
           "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
