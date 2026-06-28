@@ -1,0 +1,287 @@
+{
+  "uid": "tempo-s3-worker-backlog",
+  "title": "Tempo to S3 - Worker Backlog",
+  "description": "Focused watch view for the Tempo-on-s3-orchestrator experiment: are the async workers (replicator, cleanup, pending-intent reaper, over-replication) keeping pace with Tempo's block create/delete churn? Panels reuse the s3o_* worker metrics that also appear scattered across the main s3-orchestrator dashboard.",
+  "tags": [
+    "tempo",
+    "s3-orchestrator",
+    "experiment",
+    "worker-backlog"
+  ],
+  "timezone": "",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "id": 1,
+      "title": "Replication Backlog (pending)",
+      "description": "Objects written to one backend still awaiting their 2nd copy. Climbs if the async replicator can't keep pace with Tempo's flush/compaction churn -- the headline signal.",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "s3o_replication_pending",
+          "legendFormat": "under-replicated"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never"
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 2,
+      "title": "Cleanup Queue & DLQ Depth",
+      "description": "Backend-byte deletes waiting to run (Tempo retention + compaction input deletes). DLQ > 0 means deletes are failing.",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "s3o_cleanup_queue_depth",
+          "legendFormat": "queue depth"
+        },
+        {
+          "expr": "s3o_cleanup_dlq_depth",
+          "legendFormat": "DLQ depth"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never"
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 3,
+      "title": "Pending PUT Intents",
+      "description": "In-flight PUT intents not yet promoted to committed object-location rows. A rising floor means the reaper is chasing un-finalized writes.",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "s3o_pending_intents_depth",
+          "legendFormat": "intents"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never"
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 4,
+      "title": "Replication Throughput",
+      "description": "Copies the replicator is creating vs erroring. Compare against the pending backlog to see if it is draining or losing ground.",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(s3o_replication_copies_created_total[$__rate_interval])",
+          "legendFormat": "copies created/s"
+        },
+        {
+          "expr": "rate(s3o_replication_errors_total[$__rate_interval])",
+          "legendFormat": "errors/s"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never"
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 5,
+      "title": "Cleanup Throughput (enqueue vs drain)",
+      "description": "Sustained enqueued > processed means the cleanup worker is falling behind Tempo's delete rate and the queue depth will grow.",
+      "gridPos": {
+        "x": 8,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "rate(s3o_cleanup_queue_enqueued_total[$__rate_interval])",
+          "legendFormat": "enqueued/s"
+        },
+        {
+          "expr": "rate(s3o_cleanup_queue_processed_total[$__rate_interval])",
+          "legendFormat": "processed/s"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never"
+          }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 6,
+      "title": "Over-Replication Pending",
+      "description": "Objects with too many copies awaiting trim. Tempo's rapid create+delete can leave transient over-replication for this worker to reconcile.",
+      "gridPos": {
+        "x": 16,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "expr": "s3o_over_replication_pending",
+          "legendFormat": "over-replicated"
+        }
+      ],
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "gradientMode": "scheme",
+            "showPoints": "never"
+          }
+        }
+      }
+    }
+  ],
+  "id": null
+}

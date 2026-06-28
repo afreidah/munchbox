@@ -58,7 +58,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(cflog_poll_total{zone=~\"$zone\"}[5m]))",
+          "expr": "sum(rate(cflog_poll_total{zone=~\"$zone\"}[$__rate_interval]))",
           "legendFormat": "polls/s"
         }
       ],
@@ -87,8 +87,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(cflog_poll_total{zone=~\"$zone\", status=\"error\"}[5m]))",
-          "legendFormat": "errors/s"
+          "expr": "sum(increase(cflog_poll_total{zone=~\"$zone\", status=\"error\"}[$__range]))",
+          "legendFormat": "errors"
         }
       ],
       "options": {
@@ -99,14 +99,14 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "short",
           "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.01 },
-              { "color": "red", "value": 0.1 }
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
             ]
           }
         }
@@ -121,7 +121,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "time() - max(cflog_last_poll_timestamp{zone=~\"$zone\"})",
+          "expr": "time() - min(cflog_last_poll_timestamp{zone=~\"$zone\"})",
           "legendFormat": "since last poll"
         }
       ],
@@ -154,8 +154,8 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(cflog_loki_push_total{status=\"error\"}[5m]))",
-          "legendFormat": "errors/s"
+          "expr": "sum(increase(cflog_loki_push_total{status=\"error\"}[$__range]))",
+          "legendFormat": "errors"
         }
       ],
       "options": {
@@ -166,14 +166,14 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps",
+          "unit": "short",
           "noValue": "0",
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "green", "value": null },
-              { "color": "yellow", "value": 0.01 },
-              { "color": "red", "value": 0.1 }
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 10 }
             ]
           }
         }
@@ -188,11 +188,11 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le, dataset, zone) (rate(cflog_poll_duration_seconds_bucket{zone=~\"$zone\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le, dataset, zone) (rate(cflog_poll_duration_seconds_bucket{zone=~\"$zone\"}[$__rate_interval])))",
           "legendFormat": "p99 {{dataset}} ({{zone}})"
         },
         {
-          "expr": "histogram_quantile(0.50, sum by (le, dataset, zone) (rate(cflog_poll_duration_seconds_bucket{zone=~\"$zone\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le, dataset, zone) (rate(cflog_poll_duration_seconds_bucket{zone=~\"$zone\"}[$__rate_interval])))",
           "legendFormat": "p50 {{dataset}} ({{zone}})"
         }
       ],
@@ -220,7 +220,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (status) (rate(cflog_loki_push_total[5m]))",
+          "expr": "sum by (status) (rate(cflog_loki_push_total[$__rate_interval]))",
           "legendFormat": "{{status}}"
         }
       ],
@@ -256,11 +256,11 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(cflog_loki_push_duration_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(cflog_loki_push_duration_seconds_bucket[$__rate_interval])))",
           "legendFormat": "p99"
         },
         {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(cflog_loki_push_duration_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(cflog_loki_push_duration_seconds_bucket[$__rate_interval])))",
           "legendFormat": "p50"
         }
       ],
@@ -290,12 +290,12 @@
       "type": "timeseries",
       "id": 11,
       "title": "Requests by Domain",
-      "description": "Total HTTP requests per domain from Cloudflare analytics",
+      "description": "HTTP request rate per domain (req/s) from Cloudflare analytics",
       "gridPos": { "x": 0, "y": 12, "w": 8, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (zone) (cflog_http_requests{zone=~\"$zone\"})",
+          "expr": "sum by (zone) (rate(cflog_http_requests_total{zone=~\"$zone\"}[$__rate_interval]))",
           "legendFormat": "{{zone}}"
         }
       ],
@@ -305,6 +305,7 @@
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "reqps",
           "custom": {
             "drawStyle": "bars",
             "fillOpacity": 80,
@@ -322,7 +323,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (method) (cflog_http_requests{zone=~\"$zone\"})",
+          "expr": "sum by (method) (rate(cflog_http_requests_total{zone=~\"$zone\"}[$__rate_interval]))",
           "legendFormat": "{{method}}"
         }
       ],
@@ -332,6 +333,7 @@
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "reqps",
           "custom": {
             "drawStyle": "bars",
             "fillOpacity": 80,
@@ -349,7 +351,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (status) (cflog_http_requests{zone=~\"$zone\"})",
+          "expr": "sum by (status) (rate(cflog_http_requests_total{zone=~\"$zone\"}[$__rate_interval]))",
           "legendFormat": "{{status}}"
         }
       ],
@@ -359,6 +361,7 @@
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "reqps",
           "custom": {
             "drawStyle": "bars",
             "fillOpacity": 80,
@@ -371,12 +374,12 @@
       "type": "timeseries",
       "id": 14,
       "title": "Bandwidth by Domain",
-      "description": "Edge response bytes served per domain",
+      "description": "Edge bytes served per domain (bytes/s)",
       "gridPos": { "x": 0, "y": 20, "w": 8, "h": 8 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (zone) (cflog_http_bytes{type=\"edge\", zone=~\"$zone\"})",
+          "expr": "sum by (zone) (rate(cflog_http_bytes_total{type=\"edge\", zone=~\"$zone\"}[$__rate_interval]))",
           "legendFormat": "{{zone}}"
         }
       ],
@@ -386,7 +389,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
             "drawStyle": "line",
             "fillOpacity": 20,
@@ -405,7 +408,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "topk(10, sum by (country, zone) (cflog_http_requests{zone=~\"$zone\"}))",
+          "expr": "topk(10, sum by (country, zone) (increase(cflog_http_requests_total{zone=~\"$zone\"}[$__range])))",
           "legendFormat": "",
           "instant": true,
           "format": "table"
@@ -465,7 +468,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (method, status, country) (cflog_http_requests{zone=~\"$zone\"}) > 0",
+          "expr": "sum by (method, status, country) (increase(cflog_http_requests_total{zone=~\"$zone\"}[$__range])) > 0",
           "legendFormat": "",
           "instant": true,
           "format": "table"
@@ -531,7 +534,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (action) (rate(cflog_firewall_events_total{zone=~\"$zone\"}[5m]))",
+          "expr": "sum by (action) (rate(cflog_firewall_events_total{zone=~\"$zone\"}[$__rate_interval]))",
           "legendFormat": "{{action}}"
         }
       ],
@@ -553,13 +556,13 @@
     {
       "type": "stat",
       "id": 22,
-      "title": "Total WAF Events",
+      "title": "WAF Events (selected range)",
       "description": "All-time firewall events since last restart",
       "gridPos": { "x": 12, "y": 29, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (zone) (cflog_firewall_events_total{zone=~\"$zone\"})",
+          "expr": "sum by (zone) (increase(cflog_firewall_events_total{zone=~\"$zone\"}[$__range]))",
           "legendFormat": "{{zone}}"
         }
       ],
@@ -587,7 +590,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (action) (cflog_firewall_events_total{zone=~\"$zone\"})",
+          "expr": "sum by (action) (increase(cflog_firewall_events_total{zone=~\"$zone\"}[$__range]))",
           "legendFormat": "{{action}}"
         }
       ],
@@ -648,7 +651,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (action) (rate(cflog_audit_events_total{account=~\"$account\"}[5m]))",
+          "expr": "sum by (action) (rate(cflog_audit_events_total{account=~\"$account\"}[$__rate_interval]))",
           "legendFormat": "{{action}}"
         }
       ],
@@ -670,13 +673,13 @@
     {
       "type": "stat",
       "id": 32,
-      "title": "Total Audit Events",
+      "title": "Audit Events (selected range)",
       "description": "All-time audit events since last restart",
       "gridPos": { "x": 12, "y": 38, "w": 6, "h": 4 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (account) (cflog_audit_events_total{account=~\"$account\"})",
+          "expr": "sum by (account) (increase(cflog_audit_events_total{account=~\"$account\"}[$__range]))",
           "legendFormat": "{{account}}"
         }
       ],
@@ -704,7 +707,7 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (action) (cflog_audit_events_total{account=~\"$account\"})",
+          "expr": "sum by (action) (increase(cflog_audit_events_total{account=~\"$account\"}[$__range]))",
           "legendFormat": "{{action}}"
         }
       ],
@@ -760,7 +763,7 @@
       "type": "logs",
       "id": 41,
       "title": "Service Logs (collector process)",
-      "description": "Stdout from the collector itself — poll results, errors, startup info. Click trace IDs to jump to Tempo.",
+      "description": "Stdout from the collector itself - poll results, errors, startup info. Click trace IDs to jump to Tempo.",
       "gridPos": { "x": 0, "y": 47, "w": 24, "h": 10 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -812,7 +815,7 @@
         "label": "Domain",
         "type": "query",
         "datasource": { "type": "prometheus", "uid": "prometheus" },
-        "query": "label_values(cflog_poll_total, zone)",
+        "query": "label_values(cflog_poll_total{dataset!=\"audit\"}, zone)",
         "includeAll": true,
         "allValue": ".*",
         "current": { "text": "All", "value": "$__all" },
