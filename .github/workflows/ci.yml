@@ -68,9 +68,9 @@ jobs:
 
       - name: Install coverage gems into the workstation ruby
         run: |
-          # install into the embedded ruby that `cinc exec rspec` actually uses
-          sudo cinc exec gem install simplecov simplecov-cobertura --no-document
-          # fail fast (as the test user) if they're not visible to cinc exec
+          # install as the runner (no sudo) so they land in the user gemset that
+          # `cinc exec` reads -- sudo installs into root's gemset, invisible here
+          cinc exec gem install simplecov simplecov-cobertura --no-document
           cinc exec ruby -e "require 'simplecov'; require 'simplecov-cobertura'; puts 'coverage gems OK'"
 
       - name: cookstyle + chefspec (full suite, coverage on)
