@@ -12,6 +12,8 @@
 # resource that calls them.
 # -------------------------------------------------------------------------------
 
+require 'digest'
+
 module MunchboxLibCookbook
   module Artifact
     class << self
@@ -36,7 +38,6 @@ module MunchboxLibCookbook
       end
 
       def file_sha256(path)
-        require 'digest'
         Digest::SHA256.file(path).hexdigest
       end
 
