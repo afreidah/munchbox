@@ -2,23 +2,24 @@
 # Cookbook:: munchbox_lib
 # Makefile
 #
-# Standard targets every Munchbox cookbook ships with.
-#   make test  - run rspec (chefspec for cookbooks that have recipes/resources)
-#   make lint  - run cookstyle (rubocop with chef cops)
+# Standard targets every Munchbox cookbook ships with. Library-only cookbook
+# (no kitchen), so verify is just lint + test.
+#   make test    - run rspec
+#   make lint    - run cookstyle (rubocop with chef cops)
+#   make verify  - lint + test (the CI check)
 # -------------------------------------------------------------------------------
 
-.PHONY: help test lint deps
+.PHONY: help test lint verify
 
 help:
-	@echo "make test  - run rspec"
-	@echo "make lint  - run cookstyle"
-	@echo "make deps  - bundle install"
-
-deps:
-	bundle install
+	@echo "make test    - run rspec"
+	@echo "make lint    - run cookstyle"
+	@echo "make verify  - lint + test (the CI check)"
 
 test:
-	bundle exec rspec spec/
+	chef exec rspec spec/
 
 lint:
-	bundle exec cookstyle .
+	cookstyle .
+
+verify: lint test
