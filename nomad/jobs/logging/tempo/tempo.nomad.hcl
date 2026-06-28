@@ -147,6 +147,17 @@ job "tempo" {
 
     task "tempo" {
       driver = "docker"
+
+      vault {
+        role = "nomad-workloads"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
       config {
         image              = "grafana/tempo:3.0.0"
         image_pull_timeout = "10m"
@@ -190,14 +201,23 @@ distributor:
         grpc:
           endpoint: 0.0.0.0:14250
 
-# Storage configuration (local filesystem). 3.0 reads existing 2.x blocks automatically.
+# Storage configuration (S3 via the s3-orchestrator virtual bucket, reached over
+# HTTPS through Traefik at s3.munchbox.cc/tempo-traces -- LAN-only, no oauth2).
+# HTTPS is deliberate: minio-go signs UNSIGNED-PAYLOAD over TLS (which the gateway
+# accepts) but signed-streaming over plain HTTP (which it rejects). The WAL stays
+# on local disk; flushed blocks live in object storage.
 storage:
   trace:
-    backend: local
+    backend: s3
+    s3:
+      endpoint: s3.munchbox.cc
+      bucket: tempo-traces
+      access_key: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.access_key }}{{ end }}"
+      secret_key: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.secret_key }}{{ end }}"
+      insecure: false
+      forcepathstyle: true
     wal:
       path: /var/tempo/wal
-    local:
-      path: /var/tempo/blocks
 
 # Metrics generator for RED metrics from traces.
 # 3.0: the traces_storage block + local_blocks processor are gone; the live-store
@@ -225,16 +245,13 @@ metrics_generator:
 querier:
   max_concurrent_queries: 10
 
-# Overrides. 3.0: the top-level ingester/compactor blocks were removed; retention and
-# compaction now live here under defaults.compaction.
-# compaction_disabled is a migration shim - the 3.0 compactor cannot compact old 2.x
-# (RF3) blocks, so leave it true until the 2.x blocks age out past block_retention
-# (~3 days), then remove it to re-enable compaction.
+# Overrides. 3.0: retention and compaction live under defaults.compaction. The
+# compactor enforces block_retention - with it disabled, blocks are never
+# deleted, so leave compaction enabled.
 overrides:
   defaults:
     compaction:
-      block_retention: 72h  # 3 day retention
-      compaction_disabled: true
+      block_retention: 720h  # 30 day retention
     metrics_generator:
       processors: [service-graphs, span-metrics]
 

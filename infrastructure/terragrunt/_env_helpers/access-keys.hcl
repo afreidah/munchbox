@@ -18,8 +18,9 @@ locals {
   #     (lengths default to S3-style). s3-bucket/* authenticate the
   #     s3-orchestrator virtual buckets of the matching name. ---
   access_key_requests = {
-    "s3-bucket/unified" = {}
-    "s3-bucket/aptly"   = { id_length = 32, secret_length = 64 }
+    "s3-bucket/unified"      = {}
+    "s3-bucket/aptly"        = { id_length = 32, secret_length = 64 }
+    "s3-bucket/tempo-traces" = {}
     # --- dnsdist web console pair: access_key -> apiKey, secret_key -> password ---
     "dnsdist" = {}
   }

@@ -115,7 +115,7 @@ job "cloudflare-log-collector" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector:v0.1.16-5-g2b402ee"
+        image              = "registry.munchbox.cc/cloudflare-log-collector:latest"
         image_pull_timeout = "5m"
         network_mode       = "host"
         args               = ["-config", "/secrets/config.yaml"]

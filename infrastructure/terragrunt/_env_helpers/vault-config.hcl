@@ -243,6 +243,7 @@ inputs = {
     "pihole/green",
     "s3-bucket/unified",
     "s3-bucket/aptly",
+    "s3-bucket/tempo-traces",
     "dnsdist"
   ]
 
@@ -342,7 +343,7 @@ inputs = {
       policies   = ["image-signing"]
       vault_path = "ci-runner"
       # --- vault_token stores the duration string as-given (unlike pki/ssh roles which store seconds) ---
-      ttl        = "8760h"
+      ttl = "8760h"
       extra_data = {
         addr = "https://vault.munchbox.cc:8200"
       }
