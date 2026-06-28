@@ -73,7 +73,7 @@ jobs:
           cinc exec gem install simplecov simplecov-cobertura --no-document
           cinc exec ruby -e "require 'simplecov'; require 'simplecov-cobertura'; puts 'coverage gems OK'"
 
-      - name: cookstyle + chefspec (full suite, coverage on)
+      - name: make verify (cookstyle + chefspec, full suite, coverage on)
         working-directory: infrastructure/cinc
         env:
           COVERAGE: '1'
@@ -83,15 +83,12 @@ jobs:
           for cb in cookbooks/*/; do
             [ -f "${cb}Makefile" ] || continue
             name=${cb#cookbooks/}; name=${name%/}
-            echo "::group::lint ${name}"
-            ( cd "$cb"; make lint ) || { echo "::error title=cookstyle::${name} failed lint"; fail=1; }
-            echo "::endgroup::"
-            echo "::group::test ${name}"
-            ( cd "$cb"; make test ) || { echo "::error title=chefspec::${name} failed test"; fail=1; }
+            echo "::group::verify ${name}"
+            ( cd "$cb"; make verify ) || { echo "::error title=cinc::${name} failed verify"; fail=1; }
             echo "::endgroup::"
           done
           echo "merged coverage: $(ls -la coverage/coverage.xml 2>/dev/null || echo MISSING)"
-          [ "$fail" -eq 0 ] || { echo "::error::one or more cookbooks failed lint/test (see annotations)"; exit 1; }
+          [ "$fail" -eq 0 ] || { echo "::error::one or more cookbooks failed make verify (see annotations)"; exit 1; }
 
       - name: SonarQube scan (afreidah_munchbox_cinc)
         uses: SonarSource/sonarqube-scan-action@v5

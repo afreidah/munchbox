@@ -20,11 +20,17 @@ require 'simplecov'
 require 'simplecov-cobertura'
 
 SimpleCov.start do
+  # Consistent root across every per-cookbook process. Each process formats the
+  # merged result against SimpleCov.root, so without a fixed root the last
+  # cookbook's dir wins and the report drops every other cookbook's files.
+  root File.expand_path('..', __dir__) # cookbooks/ -> infrastructure/cinc
   command_name "cinc-#{File.basename(Dir.pwd)}"
-  coverage_dir File.expand_path('../coverage', __dir__) # __dir__ = cookbooks/ -> cinc/coverage
+  coverage_dir File.expand_path('../coverage', __dir__) # -> infrastructure/cinc/coverage
   formatter SimpleCov::Formatter::CoberturaFormatter
   enable_coverage :branch
   merge_timeout 3600
+  # ChefSpec instance_eval's recipes/resources/attributes, so Ruby's Coverage
+  # can't attribute lines to them -- only require'd libraries are measurable.
   add_filter %r{/spec/}
   add_filter %r{/test/}
 end
