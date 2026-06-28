@@ -43,6 +43,19 @@ locals {
         }
       }]
     }
+    # --- cloudflare-web-analytics leaf: enable RUM (account-scoped product). ---
+    # web_analytics_site is created at the account level even though it references
+    # a zone_tag, so the policy is Account Settings read/write on the account
+    # resource. Single policy (the v5 provider can't round-trip multiple).
+    webanalytics = {
+      name = "munchbox-web-analytics-edit"
+      policies = [{
+        permission_groups = ["Account Settings Read", "Account Settings Write"]
+        resources = {
+          "com.cloudflare.api.account.${local.root.locals.cloudflare_account_id}" = "*"
+        }
+      }]
+    }
     # --- cloudflare-zone-settings leaf: provider creds for zone settings + dnssec ---
     zonecfg = {
       name = "munchbox-zone-settings-tls-dnssec"
@@ -59,6 +72,33 @@ locals {
       name = "munchbox-dns-tunnel-edit"
       policies = [{
         permission_groups = ["DNS Read", "DNS Write", "Cloudflare Tunnel Read", "Cloudflare Tunnel Write"]
+        resources = {
+          "com.cloudflare.api.account.${local.root.locals.cloudflare_account_id}"               = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_alexfreidah_zone_id}" = "*"
+        }
+      }]
+    }
+    # --- cloudflare-waf leaf provider creds: managed WAF rules + bot/AI controls ---
+    # Single policy (v5 provider can't round-trip multiple); all three groups are
+    # zone-scoped so they apply to the two zone resources below.
+    wafbot = {
+      name = "munchbox-waf-bot-edit"
+      policies = [{
+        permission_groups = ["Zone WAF Write", "Bot Management Write", "Firewall for AI Write"]
+        resources = {
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
+          "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_alexfreidah_zone_id}" = "*"
+        }
+      }]
+    }
+    # --- cloudflare-security-txt leaf: deploy a Worker (account) + routes (zones).
+    # Single policy, mixed scopes: Scripts Write applies to the account resource,
+    # Routes Write to the two zone resources. ---
+    workers = {
+      name = "munchbox-workers-edit"
+      policies = [{
+        permission_groups = ["Workers Scripts Write", "Workers Routes Write"]
         resources = {
           "com.cloudflare.api.account.${local.root.locals.cloudflare_account_id}"               = "*"
           "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"

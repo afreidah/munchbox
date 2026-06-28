@@ -44,6 +44,18 @@ locals {
     tls_1_3                  = "on"
     opportunistic_encryption = "on"
     brotli                   = "on"
+
+    # --- hygiene toggles (default-on; codified so they can't silently drift) ---
+    browser_check     = "on"
+    email_obfuscation = "on"
+    websockets        = "on"
+    http3             = "on"
+
+    # --- opt-in performance (deliberate enable) ---
+    early_hints = "on"
+
+    # --- serve a cached snapshot when the origin is unreachable ---
+    always_online = "on"
   }
 
   # --- flatten zones x baseline into the module's keyed map ---
