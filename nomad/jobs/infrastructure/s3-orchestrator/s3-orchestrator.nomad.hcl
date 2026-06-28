@@ -91,6 +91,17 @@ job "s3-orchestrator" {
         "traefik.http.routers.s3o-admin.service=s3-orchestrator",
         "traefik.http.routers.s3o-admin.middlewares=dashboard-allowlan@file",
         "traefik.http.routers.s3o-admin.priority=100",
+
+        # tempo-traces bucket (/tempo-traces): LAN-only via dashboard-allowlan, no
+        # oauth2-proxy. Lets Tempo's minio-go client reach the S3 API over HTTPS;
+        # over HTTPS minio-go signs UNSIGNED-PAYLOAD instead of signed-streaming,
+        # which the gateway accepts (signed-streaming over plain HTTP is rejected).
+        "traefik.http.routers.s3o-tempo.rule=Host(`s3.munchbox.cc`) && PathPrefix(`/tempo-traces`)",
+        "traefik.http.routers.s3o-tempo.entrypoints=websecure",
+        "traefik.http.routers.s3o-tempo.tls=true",
+        "traefik.http.routers.s3o-tempo.service=s3-orchestrator",
+        "traefik.http.routers.s3o-tempo.middlewares=dashboard-allowlan@file",
+        "traefik.http.routers.s3o-tempo.priority=100",
       ]
       check {
         name      = "s3-orchestrator-health"
@@ -119,7 +130,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.62.25"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.62.26"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -128,8 +139,8 @@ job "s3-orchestrator" {
       }
       env {
         TZ         = "America/Los_Angeles"
-        GOMAXPROCS = "1"
-        GOMEMLIMIT = "200MiB"
+        GOMAXPROCS = "2"
+        GOMEMLIMIT = "400MiB"
       }
       template {
         data        = <<EOH
@@ -143,7 +154,7 @@ server:
   # Split admission pools so background workers (replication/reconcile/scrubber)
   # can't fan out unbounded and saturate the WG-backed oracle MinIO backends (#835).
   max_concurrent_reads: 64
-  max_concurrent_writes: 8
+  max_concurrent_writes: 16
 
 routing_strategy: "spread"
 
@@ -156,6 +167,10 @@ buckets:
     credentials:
       - access_key_id: "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.access_key }}{{ end }}"
         secret_access_key: "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.secret_key }}{{ end }}"
+  - name: "tempo-traces"
+    credentials:
+      - access_key_id: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.access_key }}{{ end }}"
+        secret_access_key: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.secret_key }}{{ end }}"
 
 database:
   host: "haproxy-postgres.service.consul"
@@ -221,7 +236,7 @@ backends:
     unsigned_payload: true
     strip_sdk_headers: true
     quota_bytes: 5368709120
-    egress_byte_limit: 1073741824
+    egress_byte_limit: 107374182400
     ingress_byte_limit: 5368709120
     api_request_limit: 5000
   - name: "b2"
@@ -363,9 +378,9 @@ rebalance:
 
 replication:
   factor: 2
-  batch_size: 20
-  worker_interval: "2m"
-  concurrency: 2
+  batch_size: 150
+  worker_interval: "1m"
+  concurrency: 4
   unhealthy_threshold: "5m"
 
 ui:
@@ -407,23 +422,13 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 500
-        memory = 256
+        cpu    = 1500
+        memory = 400
       }
 
       # --- Termination ---
       kill_timeout = "30s"
       kill_signal  = "SIGTERM"
     }
-  }
-  meta = {
-    managed_by             = "nomad-pack"
-    "pack.deployment_name" = "munchbox-service"
-    "pack.job"             = "s3-orchestrator"
-    "pack.name"            = "munchbox-service"
-    "pack.path"            = "/home/afreidah/tools/munchbox/nomad/packs/registry/munchbox-service"
-    "pack.registry"        = "<<local folder>>"
-    "pack.version"         = "<<none>>"
-    project                = "munchbox"
   }
 }

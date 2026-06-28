@@ -54,7 +54,8 @@ job "cloudflare-log-collector-webpage" {
     network {
       mode = "bridge"
       port "http" {
-        to = 80
+        # The unprivileged nginx image runs as non-root and listens on 8080.
+        to = 8080
       }
       dns {
         servers = ["${attr.unique.network.ip-address}"]
@@ -126,7 +127,7 @@ job "cloudflare-log-collector-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector-web:v0.1.15"
+        image              = "registry.munchbox.cc/cloudflare-log-collector-web:latest"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
