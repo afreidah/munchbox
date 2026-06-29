@@ -131,7 +131,7 @@ job "oracle-watchdog-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/oracle-watchdog-web:v1.4.4"
+        image              = "registry.munchbox.cc/oracle-watchdog-web:v1.4.6"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
