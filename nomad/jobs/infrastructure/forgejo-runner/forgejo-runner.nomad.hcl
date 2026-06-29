@@ -110,7 +110,7 @@ job "forgejo-runner" {
 
       # --- Runner Configuration ---
       template {
-        data = <<-EOF
+        data        = <<-EOF
 log:
   level: info
 
@@ -146,7 +146,7 @@ EOF
       # --- Registration Token from Vault ---
       # Use internal Forgejo address to bypass oauth2-proxy
       template {
-        data = <<-EOF
+        data        = <<-EOF
 GITEA_INSTANCE_URL=http://{{ range service "forgejo" }}{{ .Address }}:{{ .Port }}{{ end }}
 {{- with secret "secret/data/forgejo-runner" }}
 GITEA_RUNNER_REGISTRATION_TOKEN={{ .Data.data.registration_token }}

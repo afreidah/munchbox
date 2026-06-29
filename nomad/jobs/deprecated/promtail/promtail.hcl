@@ -16,7 +16,7 @@ port         = 9080
 static_port  = 9080
 host_network = true
 size         = "tiny"
-memory       = 192    # Some instances peak at 125MB, give headroom
+memory       = 192 # Some instances peak at 125MB, give headroom
 
 # --- Traefik routing ---
 traefik = false

@@ -18,11 +18,11 @@ size         = "medium"
 constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]
-memory       = 300
-cpu          = 1000
+memory = 300
+cpu    = 1000
 
 # --- Health check (use /ping to avoid auth failures in logs) ---
-health_path  = "/ping"
+health_path = "/ping"
 
 # --- Storage ---
 storage       = "local"
@@ -52,10 +52,10 @@ env = {
   PROWLARR__POSTGRES__MAINDB = "prowlarr_main"
   PROWLARR__POSTGRES__LOGDB  = "prowlarr_log"
   # Custom Catppuccin Mocha theme via theme-server
-  DOCKER_MODS   = "ghcr.io/themepark-dev/theme.park:prowlarr"
+  DOCKER_MODS        = "ghcr.io/themepark-dev/theme.park:prowlarr"
   TP_COMMUNITY_THEME = "true"
-  TP_THEME      = "catppuccin-mocha"
-  TP_CUSTOM_CSS = "http://themes.munchbox.cc/css/prowlarr.css"
+  TP_THEME           = "catppuccin-mocha"
+  TP_CUSTOM_CSS      = "http://themes.munchbox.cc/css/prowlarr.css"
 }
 
 # --- Service tags ---

@@ -157,7 +157,7 @@ job "oauth2-proxy" {
 
       # --- Secrets from Vault (as env file) ---
       template {
-        data = <<EOF
+        data        = <<EOF
 {{ with secret "secret/data/oauth2-proxy" }}
 OAUTH2_PROXY_CLIENT_ID={{ .Data.data.client_id }}
 OAUTH2_PROXY_CLIENT_SECRET={{ .Data.data.client_secret }}
@@ -171,7 +171,7 @@ EOF
 
       # --- Authenticated Emails File ---
       template {
-        data = <<EOF
+        data        = <<EOF
 {{ with secret "secret/data/oauth2-proxy" }}{{ .Data.data.allowed_emails }}{{ end }}
 EOF
         destination = "secrets/authenticated-emails.txt"

@@ -117,11 +117,11 @@ job "flight-fetcher" {
       }
 
       env {
-        TZ                             = "America/Los_Angeles"
-        GOMAXPROCS                     = "1"
-        GOMEMLIMIT                     = "96MiB"
-        OTEL_EXPORTER_OTLP_ENDPOINT    = "http://tempo.service.consul:4317"
-        OTEL_EXPORTER_OTLP_INSECURE    = "true"
+        TZ                          = "America/Los_Angeles"
+        GOMAXPROCS                  = "1"
+        GOMEMLIMIT                  = "96MiB"
+        OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
+        OTEL_EXPORTER_OTLP_INSECURE = "true"
       }
 
       # --- Configuration rendered by Vault ---

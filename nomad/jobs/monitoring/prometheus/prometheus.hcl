@@ -9,13 +9,13 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name  = "prometheus"
-image = "prom/prometheus:v3.12.0"
-port  = 9090
-static_port = 9090
+name         = "prometheus"
+image        = "prom/prometheus:v3.12.0"
+port         = 9090
+static_port  = 9090
 host_network = true
-type  = "system"
-size  = "medium"
+type         = "system"
+size         = "medium"
 
 # --- Placement: both ingress nodes ---
 # Restored to type=system on the ingress role after issue #70 (reverse-WG

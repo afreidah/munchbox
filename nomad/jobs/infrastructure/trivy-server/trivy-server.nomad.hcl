@@ -80,11 +80,11 @@ job "trivy-server" {
       ]
 
       check {
-        name     = "http-health"
-        type     = "http"
-        path     = "/healthz"
-        interval = "15s"
-        timeout  = "5s"
+        name      = "http-health"
+        type      = "http"
+        path      = "/healthz"
+        interval  = "15s"
+        timeout   = "5s"
         on_update = "require_healthy"
       }
     }
@@ -110,14 +110,14 @@ job "trivy-server" {
         image              = "aquasec/trivy:0.71.0"
         image_pull_timeout = "10m"
         ports              = ["http"]
-        args               = [
+        args = [
           "server",
           "--listen", "0.0.0.0:4954",
         ]
       }
 
       template {
-        data = <<-EOF
+        data        = <<-EOF
         {{ with secret "secret/data/redis-shared" }}
         TRIVY_CACHE_BACKEND=redis://:{{ .Data.data.password }}@haproxy-redis.service.consul:6380
         {{ end }}

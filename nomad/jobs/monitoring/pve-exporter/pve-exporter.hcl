@@ -14,8 +14,8 @@ port        = 9221
 static_port = 9221
 size        = "tiny"
 # --- cpu override: Python exporter enumerates 4 PVE hosts per scrape; tiny preset is too small ---
-cpu         = 300
-vault       = true
+cpu   = 300
+vault = true
 
 # --- Placement ---
 node = "any"

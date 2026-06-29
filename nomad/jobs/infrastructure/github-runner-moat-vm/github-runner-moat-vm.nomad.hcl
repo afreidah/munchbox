@@ -133,7 +133,7 @@ job "github-runner-moat-vm" {
       }
 
       template {
-        data = <<-EOF
+        data        = <<-EOF
 {{- with secret "secret/data/github/moat-runner" }}
 ACCESS_TOKEN="{{ .Data.data.token }}"
 REPO_URL="{{ .Data.data.repo_url }}"

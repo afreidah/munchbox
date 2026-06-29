@@ -17,10 +17,10 @@ host_network = true
 constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]
-size         = "medium"
+size = "medium"
 
 # --- Health check (use /ping to avoid auth failures in logs) ---
-health_path  = "/ping"
+health_path = "/ping"
 
 # --- Storage ---
 storage       = "local"
@@ -53,10 +53,10 @@ env = {
   LIDARR__POSTGRES__MAINDB = "lidarr_main"
   LIDARR__POSTGRES__LOGDB  = "lidarr_log"
   # Custom Catppuccin Mocha theme via theme-server
-  DOCKER_MODS   = "ghcr.io/themepark-dev/theme.park:lidarr"
+  DOCKER_MODS        = "ghcr.io/themepark-dev/theme.park:lidarr"
   TP_COMMUNITY_THEME = "true"
-  TP_THEME      = "catppuccin-mocha"
-  TP_CUSTOM_CSS = "http://themes.munchbox.cc/css/lidarr.css"
+  TP_THEME           = "catppuccin-mocha"
+  TP_CUSTOM_CSS      = "http://themes.munchbox.cc/css/lidarr.css"
 }
 
 # --- Service tags ---

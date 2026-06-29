@@ -9,13 +9,13 @@
 # -------------------------------------------------------------------------------
 
 # --- General Settings ---
-name  = "temporal-ui"
-type  = "service"
-image = "temporalio/ui:2.50.0"
-port  = 8080
+name         = "temporal-ui"
+type         = "service"
+image        = "temporalio/ui:2.50.0"
+port         = 8080
 host_network = true
-size = "small"
-storage = "ephemeral"
+size         = "small"
+storage      = "ephemeral"
 
 # --- Placement ---
 node = "any"
@@ -34,7 +34,7 @@ env = {
 }
 
 # --- Traefik integration ---
-traefik = true
+traefik      = true
 traefik_host = "temporal.munchbox.cc"
 
 # --- Health check ---

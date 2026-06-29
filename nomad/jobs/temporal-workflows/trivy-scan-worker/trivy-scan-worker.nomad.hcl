@@ -125,7 +125,7 @@ job "trivy-scan-worker" {
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]
-        volumes            = [
+        volumes = [
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
           "secrets/postgres-ca.crt:/etc/ssl/postgres/ca.crt:ro",
         ]
@@ -144,7 +144,7 @@ job "trivy-scan-worker" {
 
       # --- Secrets from Vault ---
       template {
-        data = <<-EOF
+        data        = <<-EOF
         {{ with secret "secret/data/backup-worker" }}
         NOMAD_TOKEN={{ .Data.data.nomad_token }}
         {{ end }}

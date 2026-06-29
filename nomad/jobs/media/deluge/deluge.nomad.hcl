@@ -124,11 +124,11 @@ job "deluge" {
       driver = "docker"
 
       config {
-        image      = "alpine:3.21.7"
-        privileged = true
+        image        = "alpine:3.21.7"
+        privileged   = true
         network_mode = "host"
-        command    = "/bin/sh"
-        args       = ["-c", "ip link delete tun0 2>/dev/null; ip link delete wg0 2>/dev/null; true"]
+        command      = "/bin/sh"
+        args         = ["-c", "ip link delete tun0 2>/dev/null; ip link delete wg0 2>/dev/null; true"]
 
         volumes = [
           "/var/run/docker.sock:/var/run/docker.sock",
@@ -181,7 +181,7 @@ job "deluge" {
 
       # Mullvad VPN credentials from Vault (WireGuard - OpenVPN certs expired)
       template {
-        data = <<-EOF
+        data        = <<-EOF
 VPN_SERVICE_PROVIDER=mullvad
 VPN_TYPE=wireguard
 {{- with secret "secret/data/mullvad" }}

@@ -17,11 +17,11 @@ host_network = true
 constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]
-size         = "medium"
-cpu          = 1000
+size = "medium"
+cpu  = 1000
 
 # --- Health check (use /ping to avoid auth failures in logs) ---
-health_path  = "/ping"
+health_path = "/ping"
 
 # --- Storage ---
 storage       = "local"
@@ -54,10 +54,10 @@ env = {
   SONARR__POSTGRES__MAINDB = "sonarr_main"
   SONARR__POSTGRES__LOGDB  = "sonarr_log"
   # Custom Catppuccin Mocha theme via theme-server
-  DOCKER_MODS   = "ghcr.io/themepark-dev/theme.park:sonarr"
+  DOCKER_MODS        = "ghcr.io/themepark-dev/theme.park:sonarr"
   TP_COMMUNITY_THEME = "true"
-  TP_THEME      = "catppuccin-mocha"
-  TP_CUSTOM_CSS = "http://themes.munchbox.cc/css/sonarr.css"
+  TP_THEME           = "catppuccin-mocha"
+  TP_CUSTOM_CSS      = "http://themes.munchbox.cc/css/sonarr.css"
 }
 
 # --- Service tags ---

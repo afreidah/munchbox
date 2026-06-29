@@ -232,8 +232,8 @@ TZ=America/Los_Angeles
         MACHINE_LEARNING_CACHE_FOLDER = "/cache"
         TZ                            = "America/Los_Angeles"
         # CUDA settings
-        NVIDIA_VISIBLE_DEVICES        = "all"
-        NVIDIA_DRIVER_CAPABILITIES    = "compute,utility"
+        NVIDIA_VISIBLE_DEVICES     = "all"
+        NVIDIA_DRIVER_CAPABILITIES = "compute,utility"
       }
 
       # ML processing with GPU - can use less CPU but still needs RAM for models

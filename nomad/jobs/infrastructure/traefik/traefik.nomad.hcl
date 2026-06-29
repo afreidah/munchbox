@@ -28,10 +28,10 @@ job "traefik" {
   # -------------------------------------------------------------------------
 
   meta {
-    managed_by  = "nomad"
-    project     = "munchbox"
-    version     = "3.6.9"
-    tier        = "tier-0"
+    managed_by = "nomad"
+    project    = "munchbox"
+    version    = "3.6.9"
+    tier       = "tier-0"
   }
 
   # -------------------------------------------------------------------------
@@ -126,7 +126,7 @@ job "traefik" {
         image        = "traefik:v3.7.5"
         network_mode = "host"
         ports        = ["http", "https", "dashboard", "gitssh"]
-        volumes      = [
+        volumes = [
           "local/traefik.toml:/etc/traefik/traefik.toml:ro",
           "local/traefik_dynamic.toml:/etc/traefik/traefik_dynamic.toml:ro",
           "/etc/nomad.d/tls/ca-chain.crt:/etc/traefik/certs/ca-chain.crt:ro"
@@ -677,11 +677,11 @@ EOH
         tags     = ["traefik.enable=false", "metrics", "scrape-port=8081"]
 
         check {
-          name            = "traefik-https"
-          type            = "http"
-          protocol        = "https"
-          port            = "https"
-          path            = "/ping"
+          name     = "traefik-https"
+          type     = "http"
+          protocol = "https"
+          port     = "https"
+          path     = "/ping"
           header {
             Host = ["traefik.munchbox.cc"]
           }
@@ -712,7 +712,7 @@ EOH
 
       # --- Resources ---
       resources {
-        cpu    = 300
+        cpu        = 300
         memory     = 768
         memory_max = 1024
       }
@@ -787,7 +787,7 @@ EOH
         # Filter out long-poll/websocket connections that skew response time metrics:
         # - Nomad blocking queries (index=)
         # - SignalR real-time connections (signalr)
-        args         = ["sh", "-c", "tail -F /alloc/data/access.log | grep -vE 'index=|signalr' > /alloc/data/access-filtered.log"]
+        args = ["sh", "-c", "tail -F /alloc/data/access.log | grep -vE 'index=|signalr' > /alloc/data/access-filtered.log"]
       }
 
       resources {
@@ -898,7 +898,7 @@ EOH
       name     = "traefik-log-dashboard"
       port     = "log-dashboard"
       provider = "consul"
-      tags     = [
+      tags = [
         "traefik.enable=true",
         # HTTPS router (LAN)
         "traefik.http.routers.traefik-logs.rule=Host(`traefik-logs.munchbox.cc`)",

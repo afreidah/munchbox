@@ -92,11 +92,11 @@ job "coredns" {
       ]
 
       check {
-        name     = "coredns-dns"
-        type     = "tcp"
-        port     = "dns"
-        interval = "10s"
-        timeout  = "2s"
+        name      = "coredns-dns"
+        type      = "tcp"
+        port      = "dns"
+        interval  = "10s"
+        timeout   = "2s"
         on_update = "require_healthy"
       }
     }
@@ -113,11 +113,11 @@ job "coredns" {
       ]
 
       check {
-        name     = "coredns-metrics"
-        type     = "http"
-        path     = "/metrics"
-        interval = "30s"
-        timeout  = "5s"
+        name      = "coredns-metrics"
+        type      = "http"
+        path      = "/metrics"
+        interval  = "30s"
+        timeout   = "5s"
         on_update = "require_healthy"
       }
     }
@@ -134,7 +134,7 @@ job "coredns" {
         image        = "coredns/coredns:1.14.3"
         network_mode = "host"
         args         = ["-conf", "/etc/coredns/Corefile"]
-        volumes      = [
+        volumes = [
           "local/Corefile:/etc/coredns/Corefile:ro"
         ]
       }

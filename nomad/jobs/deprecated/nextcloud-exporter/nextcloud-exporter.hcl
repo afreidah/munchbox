@@ -22,17 +22,17 @@ node = "any"
 traefik = false
 
 # --- Health check ---
-health_path    = "/metrics"
-health_timeout = "35s"
+health_path     = "/metrics"
+health_timeout  = "35s"
 health_interval = "60s"
 
 # --- Environment (static) ---
 # Use Consul DNS to dynamically resolve Nextcloud
 env = {
-  TZ                            = "America/Los_Angeles"
-  NEXTCLOUD_SERVER              = "https://nextcloud.munchbox.cc"
-  NEXTCLOUD_TIMEOUT             = "30s"
-  NEXTCLOUD_TLS_SKIP_VERIFY     = "true"
+  TZ                        = "America/Los_Angeles"
+  NEXTCLOUD_SERVER          = "https://nextcloud.munchbox.cc"
+  NEXTCLOUD_TIMEOUT         = "30s"
+  NEXTCLOUD_TLS_SKIP_VERIFY = "true"
 }
 
 # --- Configuration templates (Vault credentials) ---

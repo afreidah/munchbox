@@ -30,18 +30,18 @@ health_path = "/api/health"
 
 # --- Environment ---
 env = {
-  GF_SERVER_HTTP_PORT                        = "3030"
-  GF_SERVER_SERVE_FROM_SUB_PATH              = "false"
-  GF_SERVER_ROOT_URL                         = "https://grafana.munchbox.cc/"
+  GF_SERVER_HTTP_PORT           = "3030"
+  GF_SERVER_SERVE_FROM_SUB_PATH = "false"
+  GF_SERVER_ROOT_URL            = "https://grafana.munchbox.cc/"
   # Dark theme by default (closest to Catppuccin Mocha without custom CSS)
-  GF_USERS_DEFAULT_THEME                     = "dark"
+  GF_USERS_DEFAULT_THEME = "dark"
   # OpenTelemetry tracing to Tempo
-  GF_TRACING_OPENTELEMETRY_OTLP_ADDRESS      = "tempo.service.consul:4317"
-  GF_TRACING_OPENTELEMETRY_OTLP_PROPAGATION  = "w3c"
+  GF_TRACING_OPENTELEMETRY_OTLP_ADDRESS     = "tempo.service.consul:4317"
+  GF_TRACING_OPENTELEMETRY_OTLP_PROPAGATION = "w3c"
   # Disable phone-home analytics
-  GF_ANALYTICS_REPORTING_ENABLED             = "false"
-  GF_ANALYTICS_CHECK_FOR_UPDATES             = "false"
-  GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES      = "false"
+  GF_ANALYTICS_REPORTING_ENABLED        = "false"
+  GF_ANALYTICS_CHECK_FOR_UPDATES        = "false"
+  GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES = "false"
 }
 
 # --- Storage ---

@@ -9,19 +9,19 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name         = "readarr"
-type         = "service"
-image        = "linuxserver/readarr:0.4.19-nightly"
-port         = 8787
-static_port  = 8787
+name        = "readarr"
+type        = "service"
+image       = "linuxserver/readarr:0.4.19-nightly"
+port        = 8787
+static_port = 8787
 constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]
-size         = "medium"
-memory       = 192
+size   = "medium"
+memory = 192
 
 # --- Health check (use /ping to avoid auth failures in logs) ---
-health_path  = "/ping"
+health_path = "/ping"
 
 # --- Storage ---
 storage       = "local"

@@ -8,15 +8,15 @@
 # -------------------------------------------------------------------------------
 
 # --- General Settings ---
-name  = "health-checker"
-type  = "service"
-image = "registry.munchbox.cc/health-checker:latest"
-port  = 8080
-node  = "any"
+name         = "health-checker"
+type         = "service"
+image        = "registry.munchbox.cc/health-checker:latest"
+port         = 8080
+node         = "any"
 host_network = true
-size   = "small"
-memory = 32
-storage = "ephemeral"
+size         = "small"
+memory       = 32
+storage      = "ephemeral"
 
 # --- Volume mounts ---
 volumes = [
@@ -38,7 +38,7 @@ env = {
 vault = false
 
 # --- Traefik integration ---
-traefik = true
+traefik     = true
 health_path = "/health"
 
 # --- Service tags (custom routing via cloudflared) ---

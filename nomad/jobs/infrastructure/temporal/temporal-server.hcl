@@ -12,20 +12,20 @@
 job_dir = "/home/afreidah/tools/munchbox/nomad/jobs/infrastructure/temporal"
 
 # --- General Settings ---
-name  = "temporal-server"
-type  = "service"
-image = "temporalio/server:1.31.0"
-port  = 7233
-static_port = 7233
+name         = "temporal-server"
+type         = "service"
+image        = "temporalio/server:1.31.0"
+port         = 7233
+static_port  = 7233
 host_network = true
-node = "nomad-client-03"
-size = "large"
-storage = "ephemeral"
+node         = "nomad-client-03"
+size         = "large"
+storage      = "ephemeral"
 
 # --- Environment variables ---
 env = {
-  TZ                          = "UTC"
-  SERVICES                    = "frontend,history,matching,worker"
+  TZ       = "UTC"
+  SERVICES = "frontend,history,matching,worker"
   # OpenTelemetry tracing to Tempo (gRPC)
   OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
   OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
@@ -57,5 +57,5 @@ tags = [
 ]
 
 # --- Resources override ---
-cpu = 500
+cpu    = 500
 memory = 512

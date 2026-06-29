@@ -174,7 +174,7 @@ job "dnsdist" {
         image        = "powerdns/dnsdist-19:1.9.9"
         network_mode = "host"
         args         = ["--supervised", "--disable-syslog", "-C", "/etc/dnsdist/dnsdist.conf"]
-        volumes      = [
+        volumes = [
           "local/dnsdist.conf:/etc/dnsdist/dnsdist.conf:ro"
         ]
       }
