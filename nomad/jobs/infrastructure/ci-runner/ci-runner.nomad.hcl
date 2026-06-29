@@ -42,6 +42,12 @@ job "ci-runner" {
   group "runner" {
     count = 1
 
+    # --- amd64-only image; keep it off arm64 nodes (Pi5s) where it can't run ---
+    constraint {
+      attribute = "${attr.cpu.arch}"
+      value     = "amd64"
+    }
+
     network {
       mode = "host"
     }

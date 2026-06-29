@@ -28,10 +28,10 @@ build-multiarch: ## Build for the current platform into the local daemon
 	docker buildx create --name munchbox-builder --driver-opt network=host --use 2>/dev/null || docker buildx use munchbox-builder
 	docker buildx build -t $(FULL_IMAGE):$(TAG) --load .
 
-push: ## Build and push multi-arch (amd64 + arm64) to the registry
+push: ## Build and push (amd64 only; deep-leg CI runs on amd64 nodes) to the registry
 	docker buildx create --name munchbox-builder --driver-opt network=host --use 2>/dev/null || docker buildx use munchbox-builder
 	docker buildx build \
-		--platform linux/amd64,linux/arm64 \
+		--platform linux/amd64 \
 		-t $(FULL_IMAGE):$(TAG) \
 		--push \
 		.
