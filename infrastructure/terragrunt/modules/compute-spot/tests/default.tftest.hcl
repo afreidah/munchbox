@@ -12,6 +12,25 @@ mock_provider "aws" {
   mock_data "aws_ami" {
     defaults = { id = "ami-mockmockmockmockm" }
   }
+
+  # Pin computed spot-request attrs so outputs are known at plan time.
+  mock_resource "aws_spot_instance_request" {
+    defaults = {
+      id                 = "sir-mock00000"
+      spot_instance_id   = "i-mock00000000000"
+      spot_request_state = "active"
+      public_ip          = "203.0.113.20"
+      private_ip         = "10.0.0.20"
+      public_dns         = "ec2-203-0-113-20.compute.amazonaws.com"
+      private_dns        = "ip-10-0-0-20.ec2.internal"
+    }
+  }
+
+  mock_resource "aws_eip" {
+    defaults = {
+      public_ip = "203.0.113.30"
+    }
+  }
 }
 
 variables {
@@ -166,5 +185,128 @@ run "root_volume_encrypted_default" {
   assert {
     condition     = aws_spot_instance_request.this.root_block_device[0].encrypted == true
     error_message = "root volume must be encrypted by default"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: default path (no EIP, ssh key created) covers most outputs
+# -------------------------------------------------------------------------
+
+run "outputs_default_path" {
+  command = plan
+
+  variables {
+    ami_id         = "ami-explicitpinnedid0"
+    ssh_public_key = "ssh-ed25519 AAAA test"
+  }
+
+  # --- ami_id honors explicit override ---
+  assert {
+    condition     = output.ami_id == "ami-explicitpinnedid0"
+    error_message = "output.ami_id must equal explicit var.ami_id when set"
+  }
+
+  # --- key_name follows <name>-key convention when ssh_public_key set ---
+  assert {
+    condition     = output.key_name == "${var.name}-key"
+    error_message = "output.key_name must follow <name>-key when ssh_public_key set"
+  }
+
+  # --- no EIP by default -> elastic_ip is null (plan-knowable literal) ---
+  assert {
+    condition     = output.elastic_ip == null
+    error_message = "output.elastic_ip must be null when assign_elastic_ip = false"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: computed instance attrs are unknown until apply; mock_provider
+# supplies them so we can assert the wiring (structure only, not value).
+# -------------------------------------------------------------------------
+
+run "outputs_computed_attrs" {
+  command = apply
+
+  variables {
+    ssh_public_key = "ssh-ed25519 AAAA test"
+  }
+
+  # --- ssh_connection_string is the ssh ubuntu@<ip> form ---
+  assert {
+    condition     = startswith(output.ssh_connection_string, "ssh ubuntu@")
+    error_message = "output.ssh_connection_string must start with 'ssh ubuntu@'"
+  }
+
+  # --- computed attrs (mock-provided): structure only ---
+  assert {
+    condition     = output.spot_request_id != null
+    error_message = "output.spot_request_id must be non-null"
+  }
+
+  assert {
+    condition     = output.spot_instance_id != null
+    error_message = "output.spot_instance_id must be non-null"
+  }
+
+  assert {
+    condition     = output.spot_request_state != null
+    error_message = "output.spot_request_state must be non-null"
+  }
+
+  assert {
+    condition     = output.public_ip != null
+    error_message = "output.public_ip must be non-null"
+  }
+
+  assert {
+    condition     = output.private_ip != null
+    error_message = "output.private_ip must be non-null"
+  }
+
+  assert {
+    condition     = output.public_dns != null
+    error_message = "output.public_dns must be non-null"
+  }
+
+  assert {
+    condition     = output.private_dns != null
+    error_message = "output.private_dns must be non-null"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: key_name falls back to var.key_name when no ssh_public_key
+# -------------------------------------------------------------------------
+
+run "output_key_name_fallback" {
+  command = plan
+
+  variables {
+    ssh_public_key = null
+    key_name       = "preexisting-key"
+  }
+
+  # --- key_name passes through var.key_name when no SSH key managed ---
+  assert {
+    condition     = output.key_name == "preexisting-key"
+    error_message = "output.key_name must fall back to var.key_name when ssh_public_key is null"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: EIP path -> elastic_ip non-null
+# -------------------------------------------------------------------------
+
+run "outputs_eip_path" {
+  command = apply
+
+  variables {
+    assign_elastic_ip = true
+  }
+
+  # --- elastic_ip is populated from the managed EIP (computed) ---
+  assert {
+    condition     = output.elastic_ip != null
+    error_message = "output.elastic_ip must be non-null when assign_elastic_ip = true"
   }
 }

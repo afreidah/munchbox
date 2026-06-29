@@ -38,6 +38,23 @@ run "dns_records_for_each" {
     condition     = cloudflare_dns_record.records["apex"].name == "@"
     error_message = "apex record name should be @"
   }
+
+  # --- records output keyed by every dns_records entry ---
+  assert {
+    condition     = toset(keys(output.records)) == toset(["apex", "www", "wg"])
+    error_message = "records output must be keyed by every dns_records entry"
+  }
+
+  # --- records output surfaces hostname/type/proxied per entry ---
+  assert {
+    condition     = output.records["apex"].type == "CNAME"
+    error_message = "records output must surface the record type"
+  }
+
+  assert {
+    condition     = output.records["wg"].proxied == false
+    error_message = "records output must surface proxied as configured"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -92,6 +109,12 @@ run "tunnel_skipped_when_null" {
     condition     = length(cloudflare_zero_trust_tunnel_cloudflared_config.tunnel) == 0
     error_message = "no tunnel resource when var.tunnel_config = null"
   }
+
+  # --- tunnel_config_id output is null when no tunnel is configured ---
+  assert {
+    condition     = output.tunnel_config_id == null
+    error_message = "tunnel_config_id must be null when tunnel_config is null"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -122,6 +145,23 @@ run "tunnel_created_when_set" {
   assert {
     condition     = length(cloudflare_zero_trust_tunnel_cloudflared_config.tunnel[0].config.ingress) == 2
     error_message = "ingress list should mirror input length"
+  }
+
+  # --- pin the computed tunnel id at plan time so the conditional
+  #     tunnel_config_id output is assertable (computed attrs are
+  #     otherwise unknown until apply) ---
+  override_resource {
+    target          = cloudflare_zero_trust_tunnel_cloudflared_config.tunnel[0]
+    override_during = plan
+    values = {
+      id = "tun-cfg-mock"
+    }
+  }
+
+  # --- tunnel_config_id output reflects the created tunnel's id ---
+  assert {
+    condition     = output.tunnel_config_id == "tun-cfg-mock"
+    error_message = "tunnel_config_id must reflect the created tunnel id"
   }
 }
 

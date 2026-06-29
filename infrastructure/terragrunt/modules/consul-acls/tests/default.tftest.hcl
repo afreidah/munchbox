@@ -46,6 +46,18 @@ run "policies_for_each" {
     condition     = consul_acl_policy.policy["agent"].description == "agent"
     error_message = "policy description must propagate from input"
   }
+
+  # --- OUTPUT: policies map has one key per input policy ---
+  assert {
+    condition     = toset(keys(output.policies)) == toset(["agent", "telemetry"])
+    error_message = "output.policies must contain a key per input policy"
+  }
+
+  # --- OUTPUT: policy name (computed) wired into the map ---
+  assert {
+    condition     = output.policies["agent"] != null
+    error_message = "output.policies[agent] must be set"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -117,6 +129,36 @@ run "vault_secrets_for_each" {
   assert {
     condition     = length(vault_kv_secret_v2.token) == 2
     error_message = "two vault_secrets entries -> two KV resources"
+  }
+
+  # --- OUTPUT: vault_paths includes bootstrap (default toggle on) + both secrets ---
+  assert {
+    condition     = toset(keys(output.vault_paths)) == toset(["bootstrap", "agent", "telemetry"])
+    error_message = "output.vault_paths must include bootstrap + one key per vault_secrets entry"
+  }
+
+  # --- OUTPUT: bootstrap path is <mount>/consul/bootstrap-token ---
+  assert {
+    condition     = output.vault_paths["bootstrap"] == "secret/consul/bootstrap-token"
+    error_message = "output.vault_paths[bootstrap] must be <mount>/consul/bootstrap-token"
+  }
+
+  # --- OUTPUT: per-secret path joins mount + vault_path ---
+  assert {
+    condition     = output.vault_paths["agent"] == "secret/consul/agent-token"
+    error_message = "output.vault_paths[agent] must be <mount>/<vault_path>"
+  }
+
+  # --- bootstrap token KV resource fires by default (store_bootstrap_token=true) ---
+  assert {
+    condition     = length(vault_kv_secret_v2.bootstrap) == 1
+    error_message = "bootstrap token KV resource should exist when store_bootstrap_token is on"
+  }
+
+  # --- bootstrap token KV name is fixed to consul/bootstrap-token ---
+  assert {
+    condition     = vault_kv_secret_v2.bootstrap[0].name == "consul/bootstrap-token"
+    error_message = "bootstrap token KV name must be consul/bootstrap-token"
   }
 }
 

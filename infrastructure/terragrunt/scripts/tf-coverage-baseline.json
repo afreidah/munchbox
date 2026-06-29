@@ -5,7 +5,7 @@
       2
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -19,7 +19,7 @@
       3
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -33,7 +33,7 @@
       2
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -47,11 +47,11 @@
       0
     ],
     "output": [
-      0,
+      17,
       17
     ],
     "variable": [
-      27,
+      29,
       55
     ]
   },
@@ -61,7 +61,7 @@
       1
     ],
     "output": [
-      0,
+      3,
       3
     ],
     "variable": [
@@ -75,7 +75,7 @@
       2
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -89,7 +89,7 @@
       1
     ],
     "output": [
-      0,
+      3,
       3
     ],
     "variable": [
@@ -103,7 +103,7 @@
       2
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -117,7 +117,7 @@
       2
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -131,7 +131,7 @@
       0
     ],
     "output": [
-      0,
+      9,
       9
     ],
     "variable": [
@@ -145,7 +145,7 @@
       1
     ],
     "output": [
-      0,
+      9,
       9
     ],
     "variable": [
@@ -159,7 +159,7 @@
       1
     ],
     "output": [
-      0,
+      8,
       8
     ],
     "variable": [
@@ -173,21 +173,21 @@
       4
     ],
     "output": [
-      0,
+      11,
       11
     ],
     "variable": [
-      9,
+      10,
       17
     ]
   },
   "consul-acls": {
     "resource": [
-      4,
+      5,
       5
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -201,7 +201,7 @@
       1
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -215,7 +215,7 @@
       3
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -229,7 +229,7 @@
       1
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -243,21 +243,21 @@
       1
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
-      3,
+      4,
       5
     ]
   },
   "jellyfin-config": {
     "resource": [
-      3,
+      4,
       4
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -267,11 +267,11 @@
   },
   "kms-oci": {
     "resource": [
-      6,
+      8,
       8
     ],
     "output": [
-      0,
+      15,
       15
     ],
     "variable": [
@@ -285,7 +285,7 @@
       0
     ],
     "output": [
-      0,
+      10,
       10
     ],
     "variable": [
@@ -295,11 +295,11 @@
   },
   "networking": {
     "resource": [
-      5,
+      7,
       7
     ],
     "output": [
-      0,
+      7,
       7
     ],
     "variable": [
@@ -313,7 +313,7 @@
       4
     ],
     "output": [
-      0,
+      6,
       6
     ],
     "variable": [
@@ -327,7 +327,7 @@
       3
     ],
     "output": [
-      0,
+      3,
       3
     ],
     "variable": [
@@ -341,7 +341,7 @@
       2
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -355,7 +355,7 @@
       2
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -369,7 +369,7 @@
       1
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -383,7 +383,7 @@
       1
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -397,7 +397,7 @@
       3
     ],
     "output": [
-      0,
+      6,
       6
     ],
     "variable": [
@@ -411,7 +411,7 @@
       1
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -425,7 +425,7 @@
       2
     ],
     "output": [
-      0,
+      6,
       6
     ],
     "variable": [
@@ -453,7 +453,7 @@
       1
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -467,7 +467,7 @@
       1
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -481,7 +481,7 @@
       1
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -495,7 +495,7 @@
       8
     ],
     "output": [
-      0,
+      4,
       4
     ],
     "variable": [
@@ -509,7 +509,7 @@
       4
     ],
     "output": [
-      0,
+      4,
       4
     ],
     "variable": [
@@ -519,11 +519,11 @@
   },
   "postgres-database": {
     "resource": [
-      3,
+      5,
       5
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -537,7 +537,7 @@
       1
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -551,7 +551,7 @@
       1
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -565,7 +565,7 @@
       2
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -579,7 +579,7 @@
       2
     ],
     "output": [
-      0,
+      3,
       3
     ],
     "variable": [
@@ -589,15 +589,15 @@
   },
   "security-group": {
     "resource": [
-      7,
+      8,
       8
     ],
     "output": [
-      0,
+      3,
       3
     ],
     "variable": [
-      7,
+      8,
       10
     ]
   },
@@ -607,7 +607,7 @@
       1
     ],
     "output": [
-      0,
+      2,
       2
     ],
     "variable": [
@@ -621,7 +621,7 @@
       1
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -631,11 +631,11 @@
   },
   "vault-config": {
     "resource": [
-      9,
+      10,
       30
     ],
     "output": [
-      0,
+      9,
       9
     ],
     "variable": [
@@ -649,7 +649,7 @@
       1
     ],
     "output": [
-      0,
+      1,
       1
     ],
     "variable": [
@@ -663,7 +663,7 @@
       3
     ],
     "output": [
-      0,
+      3,
       3
     ],
     "variable": [

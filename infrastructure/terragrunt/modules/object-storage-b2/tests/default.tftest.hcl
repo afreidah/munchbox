@@ -24,6 +24,15 @@ run "inputs_flow_through" {
     bucket_type = "allPublic"
   }
 
+  # surface the computed bucket_id during plan so the output assert can read it
+  override_resource {
+    target          = b2_bucket.this
+    override_during = plan
+    values = {
+      bucket_id = "mock-bucket-id"
+    }
+  }
+
   # --- bucket_name passes through to resource.bucket_name ---
   assert {
     condition     = b2_bucket.this.bucket_name == var.bucket_name
@@ -34,6 +43,18 @@ run "inputs_flow_through" {
   assert {
     condition     = b2_bucket.this.bucket_type == var.bucket_type
     error_message = "bucket type must match var.bucket_type"
+  }
+
+  # --- output: bucket_name mirrors the input ---
+  assert {
+    condition     = output.bucket_name == var.bucket_name
+    error_message = "bucket_name output must match var.bucket_name"
+  }
+
+  # --- output: bucket_id is computed (mocked) -> assert it surfaces ---
+  assert {
+    condition     = output.bucket_id == "mock-bucket-id"
+    error_message = "bucket_id output must surface the resource bucket_id"
   }
 }
 

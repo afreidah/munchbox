@@ -108,3 +108,57 @@ run "secret_key_naming" {
     error_message = "secret key user_id must match var.user_ocid"
   }
 }
+
+# -------------------------------------------------------------------------
+# OUTPUTS: every declared output is asserted at least once
+# -------------------------------------------------------------------------
+
+run "outputs" {
+  command = plan
+
+  # --- make the computed secret key values known during plan ---
+  override_resource {
+    target          = oci_identity_customer_secret_key.s3_credentials
+    override_during = plan
+    values = {
+      id  = "mock-access-key-id"
+      key = "mock-secret-key"
+    }
+  }
+
+  # --- bucket_name mirrors the input ---
+  assert {
+    condition     = output.bucket_name == var.bucket_name
+    error_message = "output.bucket_name must equal var.bucket_name"
+  }
+
+  # --- bucket_namespace comes from the mocked namespace data source ---
+  assert {
+    condition     = output.bucket_namespace == "test-namespace"
+    error_message = "output.bucket_namespace must be the namespace data source value"
+  }
+
+  # --- s3_endpoint is derived from namespace + region ---
+  assert {
+    condition     = output.s3_endpoint == "https://test-namespace.compat.objectstorage.${var.region}.oraclecloud.com"
+    error_message = "output.s3_endpoint must be the namespace/region-derived endpoint URL"
+  }
+
+  # --- s3_bucket_url is endpoint + bucket name ---
+  assert {
+    condition     = output.s3_bucket_url == "https://test-namespace.compat.objectstorage.${var.region}.oraclecloud.com/${var.bucket_name}"
+    error_message = "output.s3_bucket_url must be endpoint + bucket_name"
+  }
+
+  # --- s3_access_key is the customer secret key id (mocked) ---
+  assert {
+    condition     = output.s3_access_key == "mock-access-key-id"
+    error_message = "output.s3_access_key must be the customer secret key id"
+  }
+
+  # --- s3_secret_key is the secret (sensitive, mocked) ---
+  assert {
+    condition     = nonsensitive(output.s3_secret_key) == "mock-secret-key"
+    error_message = "output.s3_secret_key must be the customer secret key value"
+  }
+}

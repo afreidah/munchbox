@@ -85,6 +85,18 @@ run "vault_kv_target" {
     condition     = vault_kv_secret_v2.oauth2_proxy.name == "oauth2-proxy"
     error_message = "vault KV name must be 'oauth2-proxy'"
   }
+
+  # --- secret_name output mirrors the KV resource name ---
+  assert {
+    condition     = output.secret_name == "oauth2-proxy"
+    error_message = "secret_name output must be 'oauth2-proxy'"
+  }
+
+  # --- vault_path output composes <mount>/data/<name> with the default mount ---
+  assert {
+    condition     = output.vault_path == "secret/data/oauth2-proxy"
+    error_message = "vault_path output must be <mount>/data/oauth2-proxy"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -102,5 +114,11 @@ run "custom_vault_mount" {
   assert {
     condition     = vault_kv_secret_v2.oauth2_proxy.mount == "custom-secrets"
     error_message = "custom vault_mount should flow through"
+  }
+
+  # --- vault_path output reflects the overridden mount ---
+  assert {
+    condition     = output.vault_path == "custom-secrets/data/oauth2-proxy"
+    error_message = "vault_path output must reflect the custom mount"
   }
 }

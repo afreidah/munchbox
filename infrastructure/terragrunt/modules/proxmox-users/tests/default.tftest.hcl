@@ -56,6 +56,18 @@ run "roles_for_each" {
     condition     = contains(keys(proxmox_virtual_environment_role.role), "prometheus-exporter")
     error_message = "prometheus-exporter role key must exist"
   }
+
+  # --- roles output keys on every input role ---
+  assert {
+    condition     = toset(keys(output.roles)) == toset(["prometheus-exporter", "backup-reader"])
+    error_message = "roles output must key on every input role"
+  }
+
+  # --- role_id is the map key ---
+  assert {
+    condition     = output.roles["prometheus-exporter"] == "prometheus-exporter"
+    error_message = "roles output value must be the role_id (each.key)"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -75,6 +87,18 @@ run "users_for_each" {
   assert {
     condition     = proxmox_virtual_environment_user.user["prometheus"].user_id == "prometheus@pve"
     error_message = "user_id must propagate from var.users[key]"
+  }
+
+  # --- users output keys on every input user ---
+  assert {
+    condition     = toset(keys(output.users)) == toset(["prometheus", "static-pw-user"])
+    error_message = "users output must key on every input user"
+  }
+
+  # --- users output value is the user_id ---
+  assert {
+    condition     = output.users["prometheus"] == "prometheus@pve"
+    error_message = "users output value must be the user_id"
   }
 }
 

@@ -43,6 +43,24 @@ run "role_from_app_name" {
     condition     = postgresql_role.app.login == true
     error_message = "app role must have login enabled"
   }
+
+  # --- role output (sensitive) is the app role name ---
+  assert {
+    condition     = nonsensitive(output.role) == var.app
+    error_message = "role output must equal var.app when manage_secret=true"
+  }
+
+  # --- manage_secret=true seeds a random_password ---
+  assert {
+    condition     = length(random_password.role) == 1
+    error_message = "manage_secret=true must create one random_password.role"
+  }
+
+  # --- manage_secret=true writes creds to vault at the configured path ---
+  assert {
+    condition     = vault_kv_secret_v2.creds[0].name == var.vault_kv_path
+    error_message = "vault_kv_secret_v2.creds must be written at var.vault_kv_path"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -68,6 +86,12 @@ run "databases_fan_out" {
   assert {
     condition     = postgresql_database.db["db2"].name == "db2"
     error_message = "db2 resource name must be db2"
+  }
+
+  # --- databases output lists every owned database name ---
+  assert {
+    condition     = toset(output.databases) == toset(["db1", "db2"])
+    error_message = "databases output must list every database name"
   }
 }
 

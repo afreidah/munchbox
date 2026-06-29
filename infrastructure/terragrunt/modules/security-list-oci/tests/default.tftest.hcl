@@ -133,3 +133,30 @@ run "ingress_rules_list_fan_out" {
     error_message = "display_name should propagate (plan-safe sentinel)"
   }
 }
+
+# -------------------------------------------------------------------------
+# OUTPUTS: every declared output is asserted at least once
+# -------------------------------------------------------------------------
+
+run "outputs" {
+  command = plan
+
+  # --- make the computed id known during plan so the output resolves ---
+  override_resource {
+    target          = oci_core_security_list.this
+    override_during = plan
+    values          = { id = "ocid1.securitylist.oc1..mock" }
+  }
+
+  # --- security_list_id is the computed security list ocid (overridden) ---
+  assert {
+    condition     = output.security_list_id == "ocid1.securitylist.oc1..mock"
+    error_message = "output.security_list_id must be the security list ocid"
+  }
+
+  # --- security_list_name mirrors the display_name (var.name) ---
+  assert {
+    condition     = output.security_list_name == var.name
+    error_message = "output.security_list_name must equal var.name"
+  }
+}

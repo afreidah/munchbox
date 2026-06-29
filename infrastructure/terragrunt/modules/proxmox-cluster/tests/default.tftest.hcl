@@ -73,6 +73,24 @@ run "vms_for_each" {
     condition     = contains(keys(proxmox_vm_qemu.vm), "fresh-vm")
     error_message = "fresh-vm key must exist"
   }
+
+  # --- output vms map keys on every input VM ---
+  assert {
+    condition     = toset(keys(output.vms)) == toset(["fresh-vm", "existing-vm", "cloud-init-vm", "gpu-vm"])
+    error_message = "vms output must key on every input VM"
+  }
+
+  # --- output vms entries echo their input scalars ---
+  assert {
+    condition     = output.vms["fresh-vm"].memory == 2048 && output.vms["fresh-vm"].cores == 2
+    error_message = "vms output must echo per-VM memory + cores"
+  }
+
+  # --- output vm_names lists every VM name ---
+  assert {
+    condition     = toset(output.vm_names) == toset(["fresh-vm", "existing-vm", "cloud-init-vm", "gpu-vm"])
+    error_message = "vm_names output must list every VM name"
+  }
 }
 
 # -------------------------------------------------------------------------

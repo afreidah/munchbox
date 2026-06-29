@@ -53,6 +53,12 @@ run "fan_out_per_entry" {
     condition     = cloudflare_zone_dnssec.this["munchbox"].status == "active"
     error_message = "dnssec status must be active"
   }
+
+  # --- dnssec_ds_records keyed by every dnssec zone (ds is a computed attribute) ---
+  assert {
+    condition     = toset(keys(output.dnssec_ds_records)) == toset(["munchbox", "alexfreidah"])
+    error_message = "dnssec_ds_records must be keyed by every dnssec zone"
+  }
 }
 
 # -------------------------------------------------------------------------

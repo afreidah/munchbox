@@ -44,6 +44,12 @@ run "scheduler_config_propagates" {
     condition     = nomad_scheduler_config.cluster.memory_oversubscription_enabled == false
     error_message = "memory_oversubscription_enabled must match var"
   }
+
+  # --- OUTPUT: scheduler_algorithm echoes the input var ---
+  assert {
+    condition     = output.scheduler_algorithm == var.scheduler_algorithm
+    error_message = "output.scheduler_algorithm must echo var.scheduler_algorithm"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -89,6 +95,12 @@ run "node_pools_for_each" {
   assert {
     condition     = nomad_node_pool.pool["oracle"].description == "Oracle Cloud nodes"
     error_message = "node pool description must come from var.node_pools[key]"
+  }
+
+  # --- OUTPUT: node_pools map has one entry per input pool ---
+  assert {
+    condition     = toset(keys(output.node_pools)) == toset(["oracle", "edge"])
+    error_message = "output.node_pools must contain a key per input node pool"
   }
 }
 

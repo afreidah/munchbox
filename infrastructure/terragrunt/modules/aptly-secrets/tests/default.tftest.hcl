@@ -32,4 +32,16 @@ run "generates_alphanumeric_password" {
     condition     = random_password.admin.special == false
     error_message = "admin password should be alphanumeric (special disabled)"
   }
+
+  # --- vault_data is keyed by the username input ---
+  assert {
+    condition     = toset(keys(nonsensitive(output.vault_data))) == toset(["admin"])
+    error_message = "vault_data must be keyed by var.username"
+  }
+
+  # --- each username entry carries password + htpasswd data keys ---
+  assert {
+    condition     = toset(keys(nonsensitive(output.vault_data)["admin"])) == toset(["password", "htpasswd"])
+    error_message = "vault_data entry must expose password and htpasswd"
+  }
 }

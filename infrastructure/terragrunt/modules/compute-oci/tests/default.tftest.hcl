@@ -25,6 +25,16 @@ mock_provider "oci" {
       images = [{ id = "ocid1.image.oc1..mock-latest-ubuntu" }]
     }
   }
+
+  # Pin computed instance attrs so outputs are known at plan time.
+  mock_resource "oci_core_instance" {
+    defaults = {
+      id         = "ocid1.instance.oc1..mock"
+      public_ip  = "203.0.113.10"
+      private_ip = "10.0.0.10"
+      state      = "RUNNING"
+    }
+  }
 }
 
 variables {
@@ -170,5 +180,95 @@ run "ad_parser_passthrough" {
   assert {
     condition     = oci_core_instance.this.availability_domain == "literally-the-full-ad-name"
     error_message = "AD parser must pass through full names unchanged"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: assert every declared output is exercised
+# -------------------------------------------------------------------------
+
+run "outputs_all" {
+  command = plan
+
+  variables {
+    image_id = "ocid1.image.oc1..my-pinned-image"
+  }
+
+  # --- display_name echoes var.name ---
+  assert {
+    condition     = output.display_name == var.name
+    error_message = "output.display_name must equal var.name"
+  }
+
+  # --- shape echoes var.shape ---
+  assert {
+    condition     = output.shape == var.shape
+    error_message = "output.shape must equal var.shape"
+  }
+
+  # --- availability_domain resolves "1" -> MockAD-1 ---
+  assert {
+    condition     = output.availability_domain == "MockAD-1"
+    error_message = "output.availability_domain must resolve AD index to name"
+  }
+
+  # --- image_id honors the explicit override ---
+  assert {
+    condition     = output.image_id == "ocid1.image.oc1..my-pinned-image"
+    error_message = "output.image_id must equal explicit var.image_id when set"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: computed instance attrs are unknown until apply; mock_provider
+# supplies them so we can assert the wiring (structure only, not value).
+# -------------------------------------------------------------------------
+
+run "outputs_computed_attrs" {
+  command = apply
+
+  # --- ssh_connection_string is the ssh ubuntu@<ip> form ---
+  assert {
+    condition     = startswith(output.ssh_connection_string, "ssh ubuntu@")
+    error_message = "output.ssh_connection_string must start with 'ssh ubuntu@'"
+  }
+
+  # --- computed attrs (mock-provided): structure only ---
+  assert {
+    condition     = output.instance_id != null
+    error_message = "output.instance_id must be non-null"
+  }
+
+  assert {
+    condition     = output.public_ip != null
+    error_message = "output.public_ip must be non-null"
+  }
+
+  assert {
+    condition     = output.private_ip != null
+    error_message = "output.private_ip must be non-null"
+  }
+
+  assert {
+    condition     = output.state != null
+    error_message = "output.state must be non-null"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: image_id falls back to the data-source lookup when not pinned
+# -------------------------------------------------------------------------
+
+run "output_image_id_data_fallback" {
+  command = plan
+
+  variables {
+    image_id = null
+  }
+
+  # --- without an explicit image_id, output uses the data-source result ---
+  assert {
+    condition     = output.image_id == "ocid1.image.oc1..mock-latest-ubuntu"
+    error_message = "output.image_id must fall back to data.oci_core_images result"
   }
 }

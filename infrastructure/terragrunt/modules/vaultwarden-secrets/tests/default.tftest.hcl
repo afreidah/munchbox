@@ -78,6 +78,12 @@ run "folders_for_each" {
     condition     = bitwarden_folder.folders["admin"].name == "Admin Services"
     error_message = "folder name must propagate from map value"
   }
+
+  # --- folder_ids output is keyed by every folder key ---
+  assert {
+    condition     = toset(keys(output.folder_ids)) == toset(["admin", "shared"])
+    error_message = "folder_ids must be keyed by every folder key"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -98,6 +104,12 @@ run "logins_for_each" {
     condition     = bitwarden_item_login.logins["grafana"].name == "Grafana Admin"
     error_message = "login name must propagate from map"
   }
+
+  # --- login_item_ids output is keyed by every login key ---
+  assert {
+    condition     = toset(keys(output.login_item_ids)) == toset(["grafana", "rootless"])
+    error_message = "login_item_ids must be keyed by every login key"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -111,6 +123,12 @@ run "secure_notes_for_each" {
   assert {
     condition     = length(bitwarden_item_secure_note.secure_notes) == 1
     error_message = "one secure_note input -> one resource"
+  }
+
+  # --- secure_note_item_ids output is keyed by every secure-note key ---
+  assert {
+    condition     = toset(keys(output.secure_note_item_ids)) == toset(["break_glass"])
+    error_message = "secure_note_item_ids must be keyed by every secure-note key"
   }
 }
 

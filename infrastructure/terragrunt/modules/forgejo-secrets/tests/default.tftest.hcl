@@ -72,6 +72,18 @@ run "secret_name_propagates" {
     condition     = forgejo_repository_action_secret.secrets["token-b"].name == "SERVICE_B_TOKEN"
     error_message = "secret name must come from secrets[key].secret_name"
   }
+
+  # --- repository_id output comes from the mocked data source ---
+  assert {
+    condition     = output.repository_id == 42
+    error_message = "repository_id must reflect the data source id"
+  }
+
+  # --- secrets_created lists every Forgejo secret name ---
+  assert {
+    condition     = toset(output.secrets_created) == toset(["SERVICE_A_TOKEN", "SERVICE_B_TOKEN"])
+    error_message = "secrets_created must list all created secret names"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -89,5 +101,11 @@ run "empty_secrets_map" {
   assert {
     condition     = length(forgejo_repository_action_secret.secrets) == 0
     error_message = "empty secrets map should produce zero resources"
+  }
+
+  # --- secrets_created output is empty when no secrets are configured ---
+  assert {
+    condition     = length(output.secrets_created) == 0
+    error_message = "secrets_created must be empty for an empty secrets map"
   }
 }

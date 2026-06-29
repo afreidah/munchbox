@@ -121,3 +121,78 @@ run "upstream_dual_render" {
     error_message = "secondary upstream must propagate"
   }
 }
+
+# -------------------------------------------------------------------------
+# id-map outputs expose primary + secondary per resource type
+# (.id is computed -> assert structure / non-null, not exact values)
+# -------------------------------------------------------------------------
+
+run "outputs_expose_resource_ids" {
+  command = plan
+
+  # ids are computed -> surface them during plan so the *_ids outputs resolve
+  override_resource {
+    target          = pihole_config_database.primary
+    override_during = plan
+    values          = { id = "db-primary" }
+  }
+  override_resource {
+    target          = pihole_config_database.secondary
+    override_during = plan
+    values          = { id = "db-secondary" }
+  }
+  override_resource {
+    target          = pihole_config_misc.primary
+    override_during = plan
+    values          = { id = "misc-primary" }
+  }
+  override_resource {
+    target          = pihole_config_misc.secondary
+    override_during = plan
+    values          = { id = "misc-secondary" }
+  }
+  override_resource {
+    target          = pihole_config_dns.primary
+    override_during = plan
+    values          = { id = "dns-primary" }
+  }
+  override_resource {
+    target          = pihole_config_dns.secondary
+    override_during = plan
+    values          = { id = "dns-secondary" }
+  }
+  override_resource {
+    target          = pihole_dns_upstream.primary
+    override_during = plan
+    values          = { id = "upstream-primary" }
+  }
+  override_resource {
+    target          = pihole_dns_upstream.secondary
+    override_during = plan
+    values          = { id = "upstream-secondary" }
+  }
+
+  # --- database_ids exposes both nodes ---
+  assert {
+    condition     = output.database_ids["primary"] == "db-primary" && output.database_ids["secondary"] == "db-secondary"
+    error_message = "database_ids must expose primary + secondary resource ids"
+  }
+
+  # --- misc_ids exposes both nodes ---
+  assert {
+    condition     = output.misc_ids["primary"] == "misc-primary" && output.misc_ids["secondary"] == "misc-secondary"
+    error_message = "misc_ids must expose primary + secondary resource ids"
+  }
+
+  # --- dns_ids exposes both nodes ---
+  assert {
+    condition     = output.dns_ids["primary"] == "dns-primary" && output.dns_ids["secondary"] == "dns-secondary"
+    error_message = "dns_ids must expose primary + secondary resource ids"
+  }
+
+  # --- upstream_ids exposes both nodes ---
+  assert {
+    condition     = output.upstream_ids["primary"] == "upstream-primary" && output.upstream_ids["secondary"] == "upstream-secondary"
+    error_message = "upstream_ids must expose primary + secondary resource ids"
+  }
+}
