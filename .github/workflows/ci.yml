@@ -122,11 +122,6 @@ jobs:
           terraform_wrapper: false
       - uses: terraform-linters/setup-tflint@v4
 
-      - name: Install trivy + checkov
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
-          pipx install checkov
-
       - name: verify changed modules (fmt/validate/tflint/terraform test)
         working-directory: infrastructure/terragrunt/modules
         env:
@@ -152,12 +147,10 @@ jobs:
           done
           [ "$fail" -eq 0 ] || { echo "::error::one or more modules failed verify (see annotations)"; exit 1; }
 
-      - name: security scans (trivy + checkov, whole modules tree)
-        working-directory: infrastructure/terragrunt/modules
-        run: |
-          trivy config --quiet --exit-code 1 .
-          checkov --quiet --compact --directory . --framework terraform --config-file .checkov.yaml
-
+      # NOTE: trivy/checkov are NOT run here. Generic modules have no real inputs
+      # and none of the leaf-level ignores (root.hcl generates .checkov.yaml into
+      # each terragrunt leaf at plan time), so scanning them in isolation is all
+      # false positives. Security scanning lives in the terragrunt (leaves) CI.
       - name: tf-coverage ratchet (resource/output, no regression)
         run: ruby infrastructure/terragrunt/scripts/tf-coverage.rb --check
 
