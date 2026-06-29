@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cinc: ${{ steps.filter.outputs.cinc }}
+      modules: ${{ steps.filter.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -43,6 +44,8 @@ jobs:
           filters: |
             cinc:
               - 'infrastructure/cinc/**'
+            modules:
+              - 'infrastructure/terragrunt/modules/**'
 
   # ---------------------------------------------------------------------------
   # Cinc: cookstyle + full chefspec suite + merged coverage -> Sonar
@@ -100,14 +103,75 @@ jobs:
   # ---------------------------------------------------------------------------
   # Single required status check (skipped area jobs don't block merges)
   # ---------------------------------------------------------------------------
+  # ---------------------------------------------------------------------------
+  # Terraform modules: full-verify changed modules + coverage ratchet -> Sonar
+  # (backend-free, mock_provider -> no cluster access needed; ubuntu-latest)
+  # ---------------------------------------------------------------------------
+  terraform-modules:
+    needs: changes
+    if: ${{ needs.changes.outputs.modules == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Sonar new-code + module change-detection diff
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.4"
+          terraform_wrapper: false
+      - uses: terraform-linters/setup-tflint@v4
+
+      - name: Install trivy + checkov
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin
+          pipx install checkov
+
+      - name: verify changed modules (fmt/validate/tflint/terraform test)
+        working-directory: infrastructure/terragrunt/modules
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tfplugins
+        run: |
+          set -uo pipefail
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          changed=$(git -C "$GITHUB_WORKSPACE" diff --name-only "$base" HEAD -- 'infrastructure/terragrunt/modules/*' \
+            | sed -nE 's#^infrastructure/terragrunt/modules/([^/]+)/.*#\1#p' | sort -u)
+          # fallback (e.g. _common.mk / scripts changed): verify everything
+          [ -n "$changed" ] || changed=$(ls -d */ | sed 's#/##')
+          fail=0
+          for m in $changed; do
+            [ -f "$m/Makefile" ] || continue
+            echo "::group::verify $m"
+            ( cd "$m" && make verify ) || { echo "::error title=tf-module::$m failed verify"; fail=1; }
+            echo "::endgroup::"
+          done
+          [ "$fail" -eq 0 ] || { echo "::error::one or more modules failed verify (see annotations)"; exit 1; }
+
+      - name: security scans (trivy + checkov, whole modules tree)
+        working-directory: infrastructure/terragrunt/modules
+        run: |
+          trivy config --quiet --exit-code 1 .
+          checkov --quiet --compact --directory . --framework terraform --config-file .checkov.yaml
+
+      - name: tf-coverage ratchet (resource/output, no regression)
+        run: ruby infrastructure/terragrunt/scripts/tf-coverage.rb --check
+
+      - name: SonarQube scan (afreidah_munchbox_modules)
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: infrastructure/terragrunt/modules
+
   ci-ok:
-    needs: [changes, cinc]
+    needs: [changes, cinc, terraform-modules]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Gate on area-job results (skipped is OK, failed is not)
         run: |
-          for r in "${{ needs.cinc.result }}"; do
+          for r in "${{ needs.cinc.result }}" "${{ needs.terraform-modules.result }}"; do
             case "$r" in
               failure|cancelled) echo "a required job did not pass: $r"; exit 1 ;;
             esac
