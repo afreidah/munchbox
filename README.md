@@ -7,10 +7,7 @@
 ### Production-Grade Self-Hosted Infrastructure on HashiCorp Stack
 
 [![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red.svg)](LICENSE)
-[![Nomad](https://img.shields.io/badge/Nomad-v2.0.3-00CA8E?logo=nomad)](https://www.nomadproject.io/)
-[![Consul](https://img.shields.io/badge/Consul-v2.0.0-F24C53?logo=consul)](https://www.consul.io/)
-[![Vault](https://img.shields.io/badge/Vault-v2.0.1-000000?logo=vault)](https://www.vaultproject.io/)
-[![Traefik](https://img.shields.io/badge/Traefik-v3.7.5-24A1C1?logo=traefikproxy)](https://traefik.io/)
+[![CI](https://github.com/afreidah/munchbox/actions/workflows/ci.yml/badge.svg)](https://github.com/afreidah/munchbox/actions/workflows/ci.yml)
 
 </div>
 
