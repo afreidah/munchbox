@@ -37,6 +37,7 @@ jobs:
       cinc: ${{ steps.filter.outputs.cinc }}
       modules: ${{ steps.filter.outputs.modules }}
       nomad: ${{ steps.filter.outputs.nomad }}
+      terragrunt: ${{ steps.filter.outputs.terragrunt }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -49,6 +50,9 @@ jobs:
               - 'infrastructure/terragrunt/modules/**'
             nomad:
               - 'nomad/**'
+            terragrunt:
+              - 'infrastructure/terragrunt/**'
+              - '!infrastructure/terragrunt/modules/**'
 
   # ---------------------------------------------------------------------------
   # Cinc: cookstyle + full chefspec suite + merged coverage -> Sonar
@@ -211,14 +215,46 @@ jobs:
           done < <(find jobs -name '*.hcl' ! -name '*.nomad.hcl' ! -path '*/deprecated/*')
           [ "$fail" -eq 0 ] || { echo "::error::one or more service jobs failed pack render"; exit 1; }
 
+  # ---------------------------------------------------------------------------
+  # Terragrunt leaves: offline HCL formatting gate (ubuntu-latest).
+  # Deep checks (terragrunt hcl validate / plan, trivy/checkov, nomad job
+  # validate) need real env + the Consul state backend + Vault, so they live on
+  # the self-hosted leg -- not added here yet.
+  # ---------------------------------------------------------------------------
+  terragrunt:
+    needs: changes
+    if: ${{ needs.changes.outputs.terragrunt == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.4"
+          terraform_wrapper: false
+      - name: Install terragrunt
+        run: |
+          TG_VER=1.0.6
+          sudo curl -sSLo /usr/local/bin/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VER}/terragrunt_linux_amd64"
+          sudo chmod +x /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: terragrunt hcl format --check
+        working-directory: infrastructure/terragrunt
+        run: |
+          if ! terragrunt hcl format --check --diff; then
+            echo "::error::terragrunt HCL needs formatting -- run 'terragrunt hcl format'"; exit 1
+          fi
+
   ci-ok:
-    needs: [changes, cinc, terraform-modules, nomad]
+    needs: [changes, cinc, terraform-modules, nomad, terragrunt]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Gate on area-job results (skipped is OK, failed is not)
         run: |
-          for r in "${{ needs.cinc.result }}" "${{ needs.terraform-modules.result }}" "${{ needs.nomad.result }}"; do
+          for r in "${{ needs.cinc.result }}" "${{ needs.terraform-modules.result }}" "${{ needs.nomad.result }}" "${{ needs.terragrunt.result }}"; do
             case "$r" in
               failure|cancelled) echo "a required job did not pass: $r"; exit 1 ;;
             esac
