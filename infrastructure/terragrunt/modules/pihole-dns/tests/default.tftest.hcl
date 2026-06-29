@@ -49,6 +49,24 @@ run "dns_records_dual_render" {
     condition     = length(pihole_local_dns.secondary) == 2
     error_message = "two dns_records -> two secondary A records"
   }
+
+  # --- output: dns_records_primary keys mirror input map ---
+  assert {
+    condition     = toset(keys(output.dns_records_primary)) == toset(["alpha", "beta"])
+    error_message = "dns_records_primary output must key alpha + beta"
+  }
+
+  # --- output: dns_records_primary value carries domain + ip ---
+  assert {
+    condition     = output.dns_records_primary["alpha"].domain == "alpha.test.cc" && output.dns_records_primary["alpha"].ip == "10.0.0.10"
+    error_message = "dns_records_primary alpha must carry domain + ip"
+  }
+
+  # --- output: dns_records_secondary keys mirror input map ---
+  assert {
+    condition     = toset(keys(output.dns_records_secondary)) == toset(["alpha", "beta"])
+    error_message = "dns_records_secondary output must key alpha + beta"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -68,6 +86,18 @@ run "cname_records_dual_render" {
   assert {
     condition     = length(pihole_cname_record.secondary) == 1
     error_message = "one cname_record -> one secondary CNAME"
+  }
+
+  # --- output: cname_records_primary carries domain + target ---
+  assert {
+    condition     = output.cname_records_primary["alias-alpha"].domain == "www.alpha.test.cc" && output.cname_records_primary["alias-alpha"].target == "alpha.test.cc"
+    error_message = "cname_records_primary alias-alpha must carry domain + target"
+  }
+
+  # --- output: cname_records_secondary carries domain + target ---
+  assert {
+    condition     = output.cname_records_secondary["alias-alpha"].domain == "www.alpha.test.cc" && output.cname_records_secondary["alias-alpha"].target == "alpha.test.cc"
+    error_message = "cname_records_secondary alias-alpha must carry domain + target"
   }
 }
 

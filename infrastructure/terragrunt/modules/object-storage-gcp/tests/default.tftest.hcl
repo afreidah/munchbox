@@ -21,6 +21,15 @@ variables {
 run "inputs_flow_through" {
   command = plan
 
+  # surface the computed url during plan so the output assert can read it
+  override_resource {
+    target          = google_storage_bucket.this
+    override_during = plan
+    values = {
+      url = "gs://munchbox-test-bucket"
+    }
+  }
+
   # --- bucket_name passes through to resource.name ---
   assert {
     condition     = google_storage_bucket.this.name == var.bucket_name
@@ -31,6 +40,18 @@ run "inputs_flow_through" {
   assert {
     condition     = google_storage_bucket.this.location == var.location
     error_message = "bucket location must match var.location"
+  }
+
+  # --- output: bucket_name mirrors the input ---
+  assert {
+    condition     = output.bucket_name == var.bucket_name
+    error_message = "bucket_name output must match var.bucket_name"
+  }
+
+  # --- output: bucket_url is computed (mocked) -> assert it surfaces ---
+  assert {
+    condition     = output.bucket_url == "gs://munchbox-test-bucket"
+    error_message = "bucket_url output must surface the resource url"
   }
 }
 

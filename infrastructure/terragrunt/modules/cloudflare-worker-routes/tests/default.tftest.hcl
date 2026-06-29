@@ -37,6 +37,18 @@ run "script_and_routes" {
     condition     = length(cloudflare_workers_route.this) == 2
     error_message = "two routes entries -> two routes"
   }
+
+  # --- script_name output mirrors the input script name ---
+  assert {
+    condition     = output.script_name == "test-worker"
+    error_message = "script_name output must mirror the configured script name"
+  }
+
+  # --- route_patterns lists every route pattern ---
+  assert {
+    condition     = toset(output.route_patterns) == toset(["munchbox.cc/.well-known/security.txt", "alexfreidah.com/.well-known/security.txt"])
+    error_message = "route_patterns must list every configured route pattern"
+  }
 }
 
 # -------------------------------------------------------------------------

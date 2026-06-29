@@ -34,6 +34,12 @@ run "fan_out_per_entry" {
     condition     = consul_keys.this["some/other/key"].datacenter == "munchbox"
     error_message = "datacenter should default to munchbox"
   }
+
+  # --- paths output lists every managed key (sorted) ---
+  assert {
+    condition     = toset(output.paths) == toset(["github/token-renewer/repos", "some/other/key"])
+    error_message = "paths output should expose every managed key"
+  }
 }
 
 # -------------------------------------------------------------------------

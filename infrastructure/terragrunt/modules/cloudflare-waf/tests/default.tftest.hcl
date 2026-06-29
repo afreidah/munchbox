@@ -48,6 +48,18 @@ run "fan_out" {
     condition     = length(cloudflare_bot_management.this) == 2
     error_message = "two bot_management entries -> two bot management resources"
   }
+
+  # --- managed_ruleset_ids keyed by every managed_rules_zones entry (id computed) ---
+  assert {
+    condition     = toset(keys(output.managed_ruleset_ids)) == toset(["alexfreidah"])
+    error_message = "managed_ruleset_ids must be keyed by every managed_rules_zones entry"
+  }
+
+  # --- bot_management_zones lists every configured zone ---
+  assert {
+    condition     = toset(output.bot_management_zones) == toset(["munchbox", "alexfreidah"])
+    error_message = "bot_management_zones must list every configured zone"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -65,5 +77,11 @@ run "empty" {
   assert {
     condition     = length(cloudflare_ruleset.managed) == 0 && length(cloudflare_bot_management.this) == 0
     error_message = "empty maps -> no resources"
+  }
+
+  # --- outputs are empty collections when nothing is configured ---
+  assert {
+    condition     = length(output.managed_ruleset_ids) == 0 && length(output.bot_management_zones) == 0
+    error_message = "empty maps -> empty outputs"
   }
 }

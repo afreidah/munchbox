@@ -106,3 +106,69 @@ run "subnet_allows_public_ip" {
     error_message = "subnet cidr_block must match var.subnet_cidr"
   }
 }
+
+# -------------------------------------------------------------------------
+# OUTPUTS: every declared output is asserted at least once
+# -------------------------------------------------------------------------
+
+run "outputs" {
+  command = plan
+
+  # --- make computed ids known during plan so the outputs resolve ---
+  override_resource {
+    target          = oci_core_vcn.this
+    override_during = plan
+    values          = { id = "ocid1.vcn.oc1..mock" }
+  }
+  override_resource {
+    target          = oci_core_internet_gateway.this
+    override_during = plan
+    values          = { id = "ocid1.internetgateway.oc1..mock" }
+  }
+  override_resource {
+    target          = oci_core_route_table.this
+    override_during = plan
+    values          = { id = "ocid1.routetable.oc1..mock" }
+  }
+  override_resource {
+    target          = oci_core_subnet.this
+    override_during = plan
+    values          = { id = "ocid1.subnet.oc1..mock" }
+  }
+
+  # --- vcn_id is the computed VCN ocid (mocked) ---
+  assert {
+    condition     = output.vcn_id == "ocid1.vcn.oc1..mock"
+    error_message = "output.vcn_id must be the VCN ocid"
+  }
+
+  # --- vcn_cidr mirrors the input ---
+  assert {
+    condition     = output.vcn_cidr == var.vcn_cidr
+    error_message = "output.vcn_cidr must equal var.vcn_cidr"
+  }
+
+  # --- internet_gateway_id is the computed IGW ocid (mocked) ---
+  assert {
+    condition     = output.internet_gateway_id == "ocid1.internetgateway.oc1..mock"
+    error_message = "output.internet_gateway_id must be the IGW ocid"
+  }
+
+  # --- route_table_id is the computed route table ocid (mocked) ---
+  assert {
+    condition     = output.route_table_id == "ocid1.routetable.oc1..mock"
+    error_message = "output.route_table_id must be the route table ocid"
+  }
+
+  # --- subnet_id is the computed subnet ocid (mocked) ---
+  assert {
+    condition     = output.subnet_id == "ocid1.subnet.oc1..mock"
+    error_message = "output.subnet_id must be the subnet ocid"
+  }
+
+  # --- subnet_cidr mirrors the input ---
+  assert {
+    condition     = output.subnet_cidr == var.subnet_cidr
+    error_message = "output.subnet_cidr must equal var.subnet_cidr"
+  }
+}

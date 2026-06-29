@@ -11,7 +11,7 @@
 # -----------------------------------------------------------------------------
 
 .DEFAULT_GOAL := help
-.PHONY: help fmt fmt-fix validate lint trivy checkov test verify full-verify clean init init-tflint
+.PHONY: help fmt fmt-fix validate lint trivy checkov test coverage verify full-verify clean init init-tflint
 
 help: ## Display available Make targets
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<target>\033[0m\n"} \
@@ -55,6 +55,9 @@ checkov: ## checkov (policy/compliance scan; skip list in modules/.checkov.yaml)
 
 test: init ## terraform test (plan-only suite from tests/)
 	@terraform test -no-color
+
+coverage: ## resource/output/variable test-coverage report for this module
+	@ruby ../../scripts/tf-coverage.rb --module .
 
 verify: fmt validate lint test ## fmt + validate + lint + test (fast gate)
 

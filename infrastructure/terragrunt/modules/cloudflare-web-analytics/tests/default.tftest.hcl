@@ -49,6 +49,24 @@ run "fan_out_per_site" {
     condition     = cloudflare_web_analytics_site.this["alexfreidah"].zone_tag == "zone-af"
     error_message = "alexfreidah site must reference zone-af"
   }
+
+  # --- site_tags keyed by every site (site_tag is a computed attribute) ---
+  assert {
+    condition     = toset(keys(output.site_tags)) == toset(["munchbox", "alexfreidah"])
+    error_message = "site_tags must be keyed by every site"
+  }
+
+  # --- site_tokens keyed by every site (site_token computed) ---
+  assert {
+    condition     = toset(keys(output.site_tokens)) == toset(["munchbox", "alexfreidah"])
+    error_message = "site_tokens must be keyed by every site"
+  }
+
+  # --- snippets keyed by every site (snippet computed) ---
+  assert {
+    condition     = toset(keys(output.snippets)) == toset(["munchbox", "alexfreidah"])
+    error_message = "snippets must be keyed by every site"
+  }
 }
 
 # -------------------------------------------------------------------------

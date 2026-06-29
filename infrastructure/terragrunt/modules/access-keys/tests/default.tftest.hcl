@@ -45,6 +45,18 @@ run "fan_out" {
     condition     = random_string.access_key["s3-bucket/unified"].length == 20
     error_message = "id_length should default to 20"
   }
+
+  # --- vault_data output is keyed by every credential name ---
+  assert {
+    condition     = toset(keys(nonsensitive(output.vault_data))) == toset(["s3-bucket/unified", "s3-bucket/aptly"])
+    error_message = "vault_data output must be keyed by credential name"
+  }
+
+  # --- each entry exposes access_key + secret_key sub-keys ---
+  assert {
+    condition     = toset(keys(nonsensitive(output.vault_data)["s3-bucket/unified"])) == toset(["access_key", "secret_key"])
+    error_message = "each vault_data entry must expose access_key and secret_key"
+  }
 }
 
 # -------------------------------------------------------------------------

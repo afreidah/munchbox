@@ -112,3 +112,64 @@ run "resource_key_name" {
     error_message = "resource_key name must follow <bucket>-s3-access convention"
   }
 }
+
+# -------------------------------------------------------------------------
+# OUTPUTS: every declared output is asserted at least once
+# -------------------------------------------------------------------------
+
+run "outputs" {
+  command = plan
+
+  # --- make computed ids/credentials known during plan so outputs resolve ---
+  override_resource {
+    target          = ibm_resource_instance.cos
+    override_during = plan
+    values          = { id = "crn:v1:bluemix:public:cloud-object-storage:global:a/00000000000000000000000000000000:00000000-0000-0000-0000-000000000000::" }
+  }
+  override_resource {
+    target          = ibm_resource_key.s3_credentials
+    override_during = plan
+    values = {
+      credentials = {
+        "cos_hmac_keys.access_key_id"     = "mock-access-key-id"
+        "cos_hmac_keys.secret_access_key" = "mock-secret-key"
+      }
+    }
+  }
+
+  # --- bucket_name mirrors the input ---
+  assert {
+    condition     = output.bucket_name == var.bucket_name
+    error_message = "output.bucket_name must equal var.bucket_name"
+  }
+
+  # --- instance_id is the computed COS instance id (mocked) ---
+  assert {
+    condition     = output.instance_id == "crn:v1:bluemix:public:cloud-object-storage:global:a/00000000000000000000000000000000:00000000-0000-0000-0000-000000000000::"
+    error_message = "output.instance_id must be the COS instance id"
+  }
+
+  # --- s3_endpoint is derived from var.region ---
+  assert {
+    condition     = output.s3_endpoint == "https://s3.${var.region}.cloud-object-storage.appdomain.cloud"
+    error_message = "output.s3_endpoint must be the region-derived endpoint URL"
+  }
+
+  # --- s3_bucket_url is endpoint + bucket name ---
+  assert {
+    condition     = output.s3_bucket_url == "https://s3.${var.region}.cloud-object-storage.appdomain.cloud/${var.bucket_name}"
+    error_message = "output.s3_bucket_url must be endpoint + bucket_name"
+  }
+
+  # --- s3_access_key is the HMAC access key id (mocked credentials map) ---
+  assert {
+    condition     = nonsensitive(output.s3_access_key) == "mock-access-key-id"
+    error_message = "output.s3_access_key must be the HMAC access key id"
+  }
+
+  # --- s3_secret_key is the HMAC secret access key (mocked credentials map) ---
+  assert {
+    condition     = nonsensitive(output.s3_secret_key) == "mock-secret-key"
+    error_message = "output.s3_secret_key must be the HMAC secret access key"
+  }
+}

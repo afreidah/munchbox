@@ -46,6 +46,18 @@ run "policies_for_each" {
     condition     = nomad_acl_policy.policy["admin"].description == "admin"
     error_message = "admin policy description must propagate"
   }
+
+  # --- OUTPUT: policies map has one key per input policy ---
+  assert {
+    condition     = toset(keys(output.policies)) == toset(["admin", "prometheus"])
+    error_message = "output.policies must contain a key per input policy"
+  }
+
+  # --- OUTPUT: policy name (computed) is wired into the map ---
+  assert {
+    condition     = output.policies["admin"] != null
+    error_message = "output.policies[admin] must be set"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -72,6 +84,18 @@ run "management_token_empty_policies" {
     condition     = length(nomad_acl_token.token["prometheus"].policies) == 1
     error_message = "non-management token keeps its policies"
   }
+
+  # --- OUTPUT: token_accessors map has one key per input token ---
+  # (values are computed accessor_ids, unknown at plan; assert keys/shape only)
+  assert {
+    condition     = toset(keys(output.token_accessors)) == toset(["admin", "prometheus"])
+    error_message = "output.token_accessors must contain a key per input token"
+  }
+
+  assert {
+    condition     = length(output.token_accessors) == 2
+    error_message = "output.token_accessors must have one entry per input token"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -91,6 +115,18 @@ run "vault_secrets_for_each" {
   assert {
     condition     = vault_kv_secret_v2.token["admin"].name == "admin"
     error_message = "vault KV name should be vault_path from input"
+  }
+
+  # --- OUTPUT: vault_paths join mount + per-secret vault_path ---
+  assert {
+    condition     = output.vault_paths["admin"] == "secret/admin"
+    error_message = "output.vault_paths[admin] must be <mount>/<vault_path>"
+  }
+
+  # --- OUTPUT: vault_paths has one key per vault_secrets entry ---
+  assert {
+    condition     = toset(keys(output.vault_paths)) == toset(["admin", "prometheus"])
+    error_message = "output.vault_paths must contain a key per vault_secrets entry"
   }
 }
 

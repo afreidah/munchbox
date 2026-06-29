@@ -58,4 +58,28 @@ run "multi_token_fan_out" {
     condition     = length(cloudflare_api_token.this) == 2
     error_message = "two token requests -> two cloudflare_api_token resources"
   }
+
+  # --- token_ids maps every request key (id is a computed attribute) ---
+  assert {
+    condition     = toset(keys(output.token_ids)) == toset(["wandns", "logs"])
+    error_message = "token_ids must be keyed by every token request"
+  }
+
+  # --- token_values is sensitive; keyed by every request (value computed) ---
+  assert {
+    condition     = toset(keys(nonsensitive(output.token_values))) == toset(["wandns", "logs"])
+    error_message = "token_values must be keyed by every token request"
+  }
+
+  # --- vault_data wraps each value under api_token, keyed by request ---
+  assert {
+    condition     = toset(keys(nonsensitive(output.vault_data))) == toset(["wandns", "logs"])
+    error_message = "vault_data must be keyed by every token request"
+  }
+
+  # --- vault_data entries expose an api_token field ---
+  assert {
+    condition     = toset(keys(nonsensitive(output.vault_data)["wandns"])) == toset(["api_token"])
+    error_message = "each vault_data entry must expose api_token"
+  }
 }

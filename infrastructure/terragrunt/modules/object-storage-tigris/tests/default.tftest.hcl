@@ -25,4 +25,10 @@ run "input_flows_through" {
     condition     = tigris_bucket.this.bucket == var.bucket_name
     error_message = "bucket must match var.bucket_name"
   }
+
+  # --- output: bucket mirrors the input ---
+  assert {
+    condition     = output.bucket == var.bucket_name
+    error_message = "bucket output must match var.bucket_name"
+  }
 }

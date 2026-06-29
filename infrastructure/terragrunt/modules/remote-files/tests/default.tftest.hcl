@@ -51,6 +51,24 @@ run "file_fanout_cardinality" {
     condition     = contains(keys(null_resource.file), "alpha/web/index")
     error_message = "file resource keys must follow target/bundle/file shape"
   }
+
+  # --- file_instances output lists every resolved file key ---
+  assert {
+    condition     = length(output.file_instances) == 6
+    error_message = "file_instances output must list all 6 resolved file keys"
+  }
+
+  # --- file_instances output contains the alpha/web/index key ---
+  assert {
+    condition     = contains(output.file_instances, "alpha/web/index")
+    error_message = "file_instances output must contain target/bundle/file keys"
+  }
+
+  # --- bundle_shas output keys on every bundle and is non-empty ---
+  assert {
+    condition     = toset(keys(output.bundle_shas)) == toset(["web", "cron"]) && length(output.bundle_shas["web"]) > 0
+    error_message = "bundle_shas output must carry a non-empty sha per bundle"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -70,6 +88,18 @@ run "restart_fanout_cardinality" {
   assert {
     condition     = contains(keys(null_resource.restart), "beta/cron")
     error_message = "restart keys must follow target/bundle shape"
+  }
+
+  # --- restart_instances output lists every resolved target/bundle pair ---
+  assert {
+    condition     = length(output.restart_instances) == 4
+    error_message = "restart_instances output must list all 4 target/bundle pairs"
+  }
+
+  # --- restart_instances output contains the beta/cron pair ---
+  assert {
+    condition     = contains(output.restart_instances, "beta/cron")
+    error_message = "restart_instances output must contain target/bundle keys"
   }
 }
 

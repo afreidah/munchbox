@@ -124,4 +124,66 @@ run "empty_volumes_list" {
     condition     = length(oci_core_volume.this) == 0
     error_message = "empty volumes list should produce zero resources"
   }
+
+  # --- empty input yields an empty volumes output map ---
+  assert {
+    condition     = length(output.volumes) == 0
+    error_message = "output.volumes must be empty for an empty volumes list"
+  }
+
+  # --- empty input yields an empty attachments output map ---
+  assert {
+    condition     = length(output.attachments) == 0
+    error_message = "output.attachments must be empty for an empty volumes list"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: every declared output is asserted at least once
+# -------------------------------------------------------------------------
+
+run "outputs" {
+  command = plan
+
+  # --- make the computed ids known during plan so the map outputs resolve ---
+  override_resource {
+    target          = oci_core_volume.this["minio-data"]
+    override_during = plan
+    values          = { id = "ocid1.volume.oc1..mock" }
+  }
+  override_resource {
+    target          = oci_core_volume_attachment.this["minio-data"]
+    override_during = plan
+    values          = { id = "ocid1.volumeattachment.oc1..mock" }
+  }
+
+  # --- volumes output keyed by volume name ---
+  assert {
+    condition     = toset(keys(output.volumes)) == toset(["minio-data", "logs"])
+    error_message = "output.volumes must be keyed by volume name"
+  }
+
+  # --- per-volume size_gb is preserved in the volumes output ---
+  assert {
+    condition     = tonumber(output.volumes["minio-data"].size_gb) == 80
+    error_message = "output.volumes[minio-data].size_gb must be 80"
+  }
+
+  # --- volumes output carries the computed volume id (mocked) ---
+  assert {
+    condition     = output.volumes["minio-data"].id == "ocid1.volume.oc1..mock"
+    error_message = "output.volumes[minio-data].id must be the volume ocid"
+  }
+
+  # --- attachments output keyed by volume name ---
+  assert {
+    condition     = toset(keys(output.attachments)) == toset(["minio-data", "logs"])
+    error_message = "output.attachments must be keyed by volume name"
+  }
+
+  # --- attachments output carries the computed attachment id (mocked) ---
+  assert {
+    condition     = output.attachments["minio-data"].id == "ocid1.volumeattachment.oc1..mock"
+    error_message = "output.attachments[minio-data].id must be the attachment ocid"
+  }
 }

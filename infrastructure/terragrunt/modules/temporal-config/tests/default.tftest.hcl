@@ -52,6 +52,18 @@ run "schedules_for_each" {
     condition     = temporal_schedule.this["backup-daily"].schedule_id == "backup-daily"
     error_message = "schedule_id should propagate from the map value"
   }
+
+  # --- schedules output keys on every schedule ---
+  assert {
+    condition     = toset(keys(output.schedules)) == toset(["backup-daily", "registry-gc-weekly"])
+    error_message = "schedules output must key on every schedule"
+  }
+
+  # --- schedules output carries schedule_id + defaulted namespace ---
+  assert {
+    condition     = output.schedules["backup-daily"].schedule_id == "backup-daily" && output.schedules["backup-daily"].namespace == "default"
+    error_message = "schedules output must carry schedule_id and defaulted namespace"
+  }
 }
 
 # -------------------------------------------------------------------------

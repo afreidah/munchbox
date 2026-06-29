@@ -29,6 +29,18 @@ run "groups_for_each" {
     condition     = length(consul_keys.groups) == 2
     error_message = "two groups input -> two consul_keys resources"
   }
+
+  # --- group_count output counts the input groups ---
+  assert {
+    condition     = output.group_count == 2
+    error_message = "group_count output must equal the number of input groups"
+  }
+
+  # --- group_paths output is the sorted set of KV paths ---
+  assert {
+    condition     = toset(output.group_paths) == toset(["prometheus/alerts/infrastructure-health", "prometheus/alerts/postgresql-health"])
+    error_message = "group_paths output must list every managed KV path"
+  }
 }
 
 # -------------------------------------------------------------------------

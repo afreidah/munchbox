@@ -6,6 +6,12 @@ terraform {
   required_version = ">= 1.5"
 
   required_providers {
+    # aws is pulled in transitively by the compute/network submodules; declare it
+    # here so consumers and `mock_provider "aws"` in tests resolve it.
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
     oci = {
       source  = "oracle/oci"
       version = "~> 8.0"

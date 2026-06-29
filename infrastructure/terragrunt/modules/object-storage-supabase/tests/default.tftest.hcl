@@ -55,6 +55,12 @@ run "inputs_flow_through" {
     condition     = supabase_storage_bucket.this.allowed_mime_types == var.allowed_mime_types
     error_message = "bucket allowed_mime_types must match var.allowed_mime_types"
   }
+
+  # --- output: bucket mirrors the bucket_name input ---
+  assert {
+    condition     = output.bucket == var.bucket_name
+    error_message = "bucket output must match var.bucket_name"
+  }
 }
 
 # -------------------------------------------------------------------------

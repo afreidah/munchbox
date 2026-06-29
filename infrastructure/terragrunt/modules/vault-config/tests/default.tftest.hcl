@@ -43,6 +43,24 @@ run "baseline_kv_enabled" {
     condition     = vault_mount.kv[0].path == "secret"
     error_message = "KV mount path should default to 'secret'"
   }
+
+  # --- kv_path output mirrors the mount path ---
+  assert {
+    condition     = output.kv_path == "secret"
+    error_message = "kv_path output should be 'secret' when KV is enabled"
+  }
+
+  # --- ssh signer outputs are null when ssh_ca_enabled is off (default) ---
+  assert {
+    condition     = output.ssh_host_signer_path == null && output.ssh_client_signer_path == null
+    error_message = "ssh signer paths should be null when ssh_ca_enabled is false"
+  }
+
+  # --- database_backend_path output is null when database secrets are off ---
+  assert {
+    condition     = output.database_backend_path == null
+    error_message = "database_backend_path should be null by default"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -56,6 +74,12 @@ run "baseline_consul_secrets_enabled" {
   assert {
     condition     = length(vault_consul_secret_backend.consul) == 1
     error_message = "Consul secrets backend should be created when consul_secrets_enabled is true"
+  }
+
+  # --- consul_backend_path output reflects the fixed "consul" path ---
+  assert {
+    condition     = output.consul_backend_path == "consul"
+    error_message = "consul_backend_path output should be 'consul' when enabled"
   }
 }
 
@@ -76,6 +100,12 @@ run "baseline_jwt_auth_enabled" {
   assert {
     condition     = length(vault_jwt_auth_backend_role.nomad_workloads) == 1
     error_message = "JWT auth role 'nomad-workloads' should be created"
+  }
+
+  # --- jwt_auth_path output reflects the fixed "jwt-nomad" path ---
+  assert {
+    condition     = output.jwt_auth_path == "jwt-nomad"
+    error_message = "jwt_auth_path output should be 'jwt-nomad' when enabled"
   }
 }
 
@@ -124,6 +154,18 @@ run "baseline_pki_roles_created" {
     condition     = contains(keys(vault_pki_secret_backend_role.role), "postgres")
     error_message = "PKI role 'postgres' should exist in the map"
   }
+
+  # --- pki_role_names output is keyed by every PKI role ---
+  assert {
+    condition     = toset(keys(output.pki_role_names)) == toset(["traefik", "postgres"])
+    error_message = "pki_role_names output must list every PKI role key"
+  }
+
+  # --- each PKI role name maps to its key ---
+  assert {
+    condition     = output.pki_role_names["traefik"] == "traefik"
+    error_message = "pki_role_names value should match the role key"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -134,10 +176,14 @@ run "baseline_policies_created" {
   command = plan
 
   variables {
+    # NOTE: "vault-cert-manager" is intentionally NOT used as a key here -- it
+    # collides with the moved{} block in policies.tf (vault_policy.policy[...] ->
+    # vault_policy.cert_manager[0]), which errors at plan when the source address
+    # is re-declared via for_each. A neutral third key exercises the same fan-out.
     vault_policies = {
-      "consul-token-read"  = { policy = "path \"x\" { capabilities = [\"read\"] }" }
-      "nomad-server"       = { policy = "path \"y\" { capabilities = [\"read\"] }" }
-      "vault-cert-manager" = { policy = "path \"z\" { capabilities = [\"read\"] }" }
+      "consul-token-read" = { policy = "path \"x\" { capabilities = [\"read\"] }" }
+      "nomad-server"      = { policy = "path \"y\" { capabilities = [\"read\"] }" }
+      "redis-acl"         = { policy = "path \"z\" { capabilities = [\"read\"] }" }
     }
   }
 
@@ -151,6 +197,18 @@ run "baseline_policies_created" {
   assert {
     condition     = contains(keys(vault_policy.policy), "consul-token-read")
     error_message = "Policy 'consul-token-read' should exist"
+  }
+
+  # --- policy_names output lists every policy (no nomad_workloads without workload_secrets) ---
+  assert {
+    condition     = toset(keys(output.policy_names)) == toset(["consul-token-read", "nomad-server", "redis-acl"])
+    error_message = "policy_names must list every created policy"
+  }
+
+  # --- each policy name maps to its key ---
+  assert {
+    condition     = output.policy_names["nomad-server"] == "nomad-server"
+    error_message = "policy_names value should match the policy key"
   }
 }
 
@@ -246,6 +304,24 @@ run "enable_database_secrets" {
     condition     = contains(keys(vault_database_secret_backend_role.role), "temporal")
     error_message = "Database role 'temporal' should exist"
   }
+
+  # --- database_backend_path output reflects the fixed "database" path ---
+  assert {
+    condition     = output.database_backend_path == "database"
+    error_message = "database_backend_path should be 'database' when enabled"
+  }
+
+  # --- database_role_names output is keyed by every database role ---
+  assert {
+    condition     = toset(keys(output.database_role_names)) == toset(["temporal", "kanboard"])
+    error_message = "database_role_names must list every database role key"
+  }
+
+  # --- each database role name maps to its key ---
+  assert {
+    condition     = output.database_role_names["temporal"] == "temporal"
+    error_message = "database_role_names value should match the role key"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -338,6 +414,12 @@ run "custom_workload_secrets" {
   assert {
     condition     = length(vault_policy.nomad_workloads) == 1
     error_message = "Nomad workloads policy should still be created with custom secret list"
+  }
+
+  # --- policy_names output includes the merged nomad_workloads entry ---
+  assert {
+    condition     = output.policy_names["nomad_workloads"] == "nomad-workloads"
+    error_message = "policy_names must include nomad_workloads when workload_secrets is set"
   }
 }
 

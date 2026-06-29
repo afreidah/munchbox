@@ -33,4 +33,16 @@ run "fans_out_per_entry" {
     condition     = vault_kv_secret_v2.this["aptly-admin"].name == "aptly-admin"
     error_message = "each secret should be named by its map key"
   }
+
+  # --- vault_paths output is keyed by every secret name ---
+  assert {
+    condition     = toset(keys(output.vault_paths)) == toset(["cloudflare-wandns", "aptly-admin"])
+    error_message = "vault_paths must be keyed by every secret name"
+  }
+
+  # --- path is composed as <mount>/data/<name>, mount defaulting to 'secret' ---
+  assert {
+    condition     = output.vault_paths["aptly-admin"] == "secret/data/aptly-admin"
+    error_message = "vault_paths value must be <mount>/data/<name>"
+  }
 }

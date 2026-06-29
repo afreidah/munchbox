@@ -77,6 +77,14 @@ run "existing_vm_skips_clone" {
 run "compute_shape_propagates" {
   command = plan
 
+  override_resource {
+    target          = proxmox_vm_qemu.this
+    override_during = plan
+    values = {
+      default_ipv4_address = "192.168.68.50"
+    }
+  }
+
   # --- vmid flows to the resource ---
   assert {
     condition     = proxmox_vm_qemu.this.vmid == var.vmid
@@ -87,6 +95,54 @@ run "compute_shape_propagates" {
   assert {
     condition     = proxmox_vm_qemu.this.memory == var.memory_mb
     error_message = "memory_mb must propagate"
+  }
+
+  # --- OUTPUT: id == vmid ---
+  assert {
+    condition     = output.id == var.vmid
+    error_message = "output.id must equal vmid"
+  }
+
+  # --- OUTPUT: name == var.name ---
+  assert {
+    condition     = output.name == var.name
+    error_message = "output.name must equal var.name"
+  }
+
+  # --- OUTPUT: target_node == var.target_node ---
+  assert {
+    condition     = output.target_node == var.target_node
+    error_message = "output.target_node must equal var.target_node"
+  }
+
+  # --- OUTPUT: cores == var.cores ---
+  assert {
+    condition     = output.cores == var.cores
+    error_message = "output.cores must equal var.cores"
+  }
+
+  # --- OUTPUT: memory_mb == var.memory_mb ---
+  assert {
+    condition     = output.memory_mb == var.memory_mb
+    error_message = "output.memory_mb must equal var.memory_mb"
+  }
+
+  # --- OUTPUT: disk_size == var.disk_size ---
+  assert {
+    condition     = output.disk_size == var.disk_size
+    error_message = "output.disk_size must equal var.disk_size"
+  }
+
+  # --- OUTPUT: default_ipv4_address reflects the overridden value ---
+  assert {
+    condition     = output.default_ipv4_address == "192.168.68.50"
+    error_message = "output.default_ipv4_address must reflect the VM IP"
+  }
+
+  # --- OUTPUT: ssh_connection_string uses the default IP ---
+  assert {
+    condition     = output.ssh_connection_string == "ssh root@192.168.68.50"
+    error_message = "output.ssh_connection_string must use the default IP"
   }
 }
 

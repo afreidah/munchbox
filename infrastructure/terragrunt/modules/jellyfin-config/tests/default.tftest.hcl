@@ -53,6 +53,12 @@ run "singletons_managed_when_set" {
     condition     = jellyfin_encoding_configuration.this[0].configuration_json == var.encoding_configuration_json
     error_message = "configuration_json should pass through the encoding input verbatim"
   }
+
+  # --- managed_singletons reflects which configs are set ---
+  assert {
+    condition     = output.managed_singletons.encoding == true && output.managed_singletons.livetv == true && output.managed_singletons.system == false
+    error_message = "managed_singletons must be true for set configs and false for unset system"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -79,6 +85,18 @@ run "scheduled_tasks_for_each" {
     condition     = jellyfin_scheduled_task.this["guide-refresh"].triggers_json == var.scheduled_tasks["guide-refresh"].triggers_json
     error_message = "triggers_json should pass through the trigger list verbatim"
   }
+
+  # --- scheduled_task_ids keys on every task and carries its task_id ---
+  assert {
+    condition     = toset(keys(output.scheduled_task_ids)) == toset(["guide-refresh", "scan-library"])
+    error_message = "scheduled_task_ids must key on every scheduled task"
+  }
+
+  # --- scheduled_task_ids value is the input task_id ---
+  assert {
+    condition     = output.scheduled_task_ids["guide-refresh"] == "a558367c153e8b2ca2b0f9d4f5f8e6c1"
+    error_message = "scheduled_task_ids value must be the input task_id"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -104,6 +122,30 @@ run "singletons_skipped_when_null" {
   assert {
     condition     = length(jellyfin_livetv_configuration.this) == 0
     error_message = "null livetv_configuration_json -> zero resources"
+  }
+}
+
+# -------------------------------------------------------------------------
+# system_configuration_json set -> system singleton is managed
+# -------------------------------------------------------------------------
+
+run "system_singleton_managed" {
+  command = plan
+
+  variables {
+    system_configuration_json = "{\"ServerName\":\"munchbox\",\"EnableMetrics\":true}"
+  }
+
+  # --- system json set -> one resource ---
+  assert {
+    condition     = length(jellyfin_system_configuration.this) == 1
+    error_message = "system_configuration_json set -> one resource"
+  }
+
+  # --- managed_singletons.system flips true when system json is set ---
+  assert {
+    condition     = output.managed_singletons.system == true
+    error_message = "managed_singletons.system must be true when system json is set"
   }
 }
 

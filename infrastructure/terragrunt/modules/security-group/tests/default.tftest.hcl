@@ -9,7 +9,16 @@
 # trusted_udp blocks.
 # -----------------------------------------------------------------------------
 
-mock_provider "aws" {}
+mock_provider "aws" {
+  # --- pin computed attrs so the SG outputs are known at plan time ---
+  mock_resource "aws_security_group" {
+    defaults = {
+      id   = "sg-0123456789abcdef0"
+      arn  = "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0123456789abcdef0"
+      name = "test-sg-mock"
+    }
+  }
+}
 
 variables {
   name        = "test-sg"
@@ -139,12 +148,27 @@ run "custom_ingress_for_each" {
       { from_port = 8080, to_port = 8080, protocol = "tcp", cidr = "10.0.0.0/8", description = "http" },
       { from_port = 8443, to_port = 8443, protocol = "tcp", cidr = "10.0.0.0/8", description = "https" },
     ]
+    egress_rules = [
+      { from_port = 0, to_port = 0, protocol = "-1", cidr = "0.0.0.0/0", description = "all out" },
+    ]
   }
 
   # --- two ingress_rules entries -> two resources ---
   assert {
     condition     = length(aws_vpc_security_group_ingress_rule.this) == 2
     error_message = "ingress_rules list of two -> two resources"
+  }
+
+  # --- one egress_rules entry -> one egress resource ---
+  assert {
+    condition     = length(aws_vpc_security_group_egress_rule.this) == 1
+    error_message = "egress_rules list of one -> one egress resource"
+  }
+
+  # --- egress cidr_ipv4 propagates from the rule ---
+  assert {
+    condition     = aws_vpc_security_group_egress_rule.this["0"].cidr_ipv4 == "0.0.0.0/0"
+    error_message = "egress cidr_ipv4 must propagate from egress_rules entry"
   }
 }
 
@@ -159,5 +183,33 @@ run "sg_uses_create_before_destroy" {
   assert {
     condition     = aws_security_group.this.name_prefix == "${var.name}-"
     error_message = "SG must use name_prefix to enable create_before_destroy renames"
+  }
+}
+
+# -------------------------------------------------------------------------
+# OUTPUTS: id/arn/name are computed resource attributes unknown until apply;
+# the AWS mock_provider supplies them on apply so we can assert the wiring
+# (mock_resource defaults below make the values deterministic).
+# -------------------------------------------------------------------------
+
+run "computed_outputs" {
+  command = apply
+
+  # --- security_group_id output surfaces aws_security_group.this.id ---
+  assert {
+    condition     = output.security_group_id == "sg-0123456789abcdef0"
+    error_message = "security_group_id output must surface aws_security_group.this.id"
+  }
+
+  # --- security_group_arn output surfaces aws_security_group.this.arn ---
+  assert {
+    condition     = output.security_group_arn == "arn:aws:ec2:us-east-1:123456789012:security-group/sg-0123456789abcdef0"
+    error_message = "security_group_arn output must surface aws_security_group.this.arn"
+  }
+
+  # --- security_group_name output surfaces aws_security_group.this.name ---
+  assert {
+    condition     = output.security_group_name == "test-sg-mock"
+    error_message = "security_group_name output must surface aws_security_group.this.name"
   }
 }
