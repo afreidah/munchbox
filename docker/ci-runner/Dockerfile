@@ -12,8 +12,10 @@
 
 FROM myoung34/github-runner:2.334.0-ubuntu-jammy
 
-# TARGETARCH is set by buildx (amd64|arm64); default keeps plain `docker build` working.
-ARG TARGETARCH=amd64
+# TARGETARCH is auto-populated by BuildKit/buildx per target platform (amd64|arm64).
+# Do NOT give it a default -- a default overrides the per-platform value and every
+# arch ends up with amd64 binaries.
+ARG TARGETARCH
 ARG TERRAFORM_VERSION=1.15.4
 ARG TERRAGRUNT_VERSION=1.0.6
 ARG NOMAD_VERSION=1.9.7
