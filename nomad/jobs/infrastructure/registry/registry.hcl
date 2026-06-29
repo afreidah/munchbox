@@ -8,17 +8,17 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name  = "registry"
-type  = "service"
-image = "registry:3"
-port  = 5000
-static_port = 5000
+name         = "registry"
+type         = "service"
+image        = "registry:3"
+port         = 5000
+static_port  = 5000
 host_network = true
-node = "stabler"
-size = "large"
+node         = "stabler"
+size         = "large"
 
 # --- Storage ---
-storage      = "ephemeral"
+storage = "ephemeral"
 volumes = [
   "/mnt/gdrive/munchbox-data/registry:/var/lib/registry"
 ]

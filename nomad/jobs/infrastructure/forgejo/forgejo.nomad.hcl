@@ -51,9 +51,9 @@ job "forgejo" {
 
   # Note: No canary - static SSH port 2222 prevents running two instances
   update {
-    max_parallel      = 1
-    health_check      = "checks"
-    min_healthy_time  = "30s"
+    max_parallel     = 1
+    health_check     = "checks"
+    min_healthy_time = "30s"
     # forgejo cold start (bleve indexer + DB) routinely takes 1-2 min;
     # 5m deadline left no slack and caused false unhealthy marks.
     healthy_deadline  = "10m"
@@ -351,7 +351,7 @@ EOH
         image              = "codeberg.org/forgejo/forgejo:15.0.2"
         image_pull_timeout = "10m"
         ports              = ["http", "ssh"]
-        volumes            = [
+        volumes = [
           "/mnt/gdrive/forgejo:/data"
         ]
       }

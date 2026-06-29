@@ -27,11 +27,11 @@ health_interval = "30s"
 
 # --- Environment (static; secrets come via template) ---
 env = {
-  TZ                = "America/Los_Angeles"
-  PIHOLE_HOSTNAME   = "192.168.68.62,192.168.68.64"
-  PIHOLE_PROTOCOL   = "http"
-  PIHOLE_PORT       = "80"
-  PORT              = "9617"
+  TZ              = "America/Los_Angeles"
+  PIHOLE_HOSTNAME = "192.168.68.62,192.168.68.64"
+  PIHOLE_PROTOCOL = "http"
+  PIHOLE_PORT     = "80"
+  PORT            = "9617"
 }
 
 # --- Vault template renders the password into env at runtime ---

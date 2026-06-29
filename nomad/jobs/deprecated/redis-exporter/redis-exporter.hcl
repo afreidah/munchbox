@@ -23,8 +23,8 @@ health_path = "/metrics"
 
 # --- Environment (static) ---
 env = {
-  TZ                   = "America/Los_Angeles"
-  REDIS_ADDR           = "redis-primary.service.consul:6379"
+  TZ         = "America/Los_Angeles"
+  REDIS_ADDR = "redis-primary.service.consul:6379"
 }
 
 # --- Configuration templates (Vault credentials) ---

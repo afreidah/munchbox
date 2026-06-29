@@ -126,7 +126,7 @@ job "github-runner-moat" {
 
       # --- Registration credentials from Vault ---
       template {
-        data = <<-EOF
+        data        = <<-EOF
 {{- with secret "secret/data/github/moat-runner" }}
 ACCESS_TOKEN="{{ .Data.data.token }}"
 REPO_URL="{{ .Data.data.repo_url }}"

@@ -23,8 +23,8 @@ job "project-zomboid" {
 
   # --- Rollback policy ---
   migrate {
-    max_parallel = 1
-    health_check = "checks"
+    max_parallel     = 1
+    health_check     = "checks"
     min_healthy_time = "30s"
     healthy_deadline = "10m"
   }
@@ -46,15 +46,15 @@ job "project-zomboid" {
       }
 
       # --- Player ports (UDP); reserve a small range for typical player counts ---
-      port "player_1"  { static = 16262 }
-      port "player_2"  { static = 16263 }
-      port "player_3"  { static = 16264 }
-      port "player_4"  { static = 16265 }
-      port "player_5"  { static = 16266 }
-      port "player_6"  { static = 16267 }
-      port "player_7"  { static = 16268 }
-      port "player_8"  { static = 16269 }
-      port "player_9"  { static = 16270 }
+      port "player_1" { static = 16262 }
+      port "player_2" { static = 16263 }
+      port "player_3" { static = 16264 }
+      port "player_4" { static = 16265 }
+      port "player_5" { static = 16266 }
+      port "player_6" { static = 16267 }
+      port "player_7" { static = 16268 }
+      port "player_8" { static = 16269 }
+      port "player_9" { static = 16270 }
       port "player_10" { static = 16271 }
 
       # --- Steam/server browser/auth (TCP) ---
@@ -89,11 +89,11 @@ job "project-zomboid" {
 
     # --- Reschedule policy avoids bouncing the world around the cluster ---
     reschedule {
-      attempts  = 1
-      interval  = "1h"
-      delay     = "2m"
+      attempts       = 1
+      interval       = "1h"
+      delay          = "2m"
       delay_function = "constant"
-      unlimited = false
+      unlimited      = false
     }
 
     # --- Main server task ---
@@ -155,7 +155,7 @@ job "project-zomboid" {
 
       env {
         # --- SteamCMD install root under persistent volume ---
-        STEAMCMD_DIR = "/data/steamcmd"
+        STEAMCMD_DIR  = "/data/steamcmd"
         PZ_SERVER_DIR = "/data/pz"
 
         # --- Zomboid home under persistent volume ---

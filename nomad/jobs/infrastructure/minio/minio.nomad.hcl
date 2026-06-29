@@ -158,12 +158,12 @@ job "minio" {
       ]
 
       check {
-        name      = "minio-console-${node.unique.name}-health"
-        type      = "http"
-        path      = "/minio/health/live"
-        port      = "api"
-        interval  = "10s"
-        timeout   = "3s"
+        name     = "minio-console-${node.unique.name}-health"
+        type     = "http"
+        path     = "/minio/health/live"
+        port     = "api"
+        interval = "10s"
+        timeout  = "3s"
       }
     }
 

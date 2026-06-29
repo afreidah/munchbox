@@ -12,7 +12,7 @@ name  = "registry-ui"
 type  = "service"
 image = "joxit/docker-registry-ui:2.6.0"
 port  = 80
-size = "small"
+size  = "small"
 
 # --- Storage ---
 storage = "ephemeral"

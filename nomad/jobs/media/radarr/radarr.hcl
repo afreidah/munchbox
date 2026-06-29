@@ -8,19 +8,19 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name         = "radarr"
-type         = "service"
-image        = "linuxserver/radarr:6.1.1"
-port         = 7878
-static_port  = 7878
+name        = "radarr"
+type        = "service"
+image       = "linuxserver/radarr:6.1.1"
+port        = 7878
+static_port = 7878
 constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]
-size         = "medium"
-memory       = 160
+size   = "medium"
+memory = 160
 
 # --- Health check (use /ping to avoid auth failures in logs) ---
-health_path  = "/ping"
+health_path = "/ping"
 
 # --- Storage ---
 storage       = "local"
@@ -53,10 +53,10 @@ env = {
   RADARR__POSTGRES__MAINDB = "radarr_main"
   RADARR__POSTGRES__LOGDB  = "radarr_log"
   # Custom Catppuccin Mocha theme via theme-server
-  DOCKER_MODS   = "ghcr.io/themepark-dev/theme.park:radarr"
+  DOCKER_MODS        = "ghcr.io/themepark-dev/theme.park:radarr"
   TP_COMMUNITY_THEME = "true"
-  TP_THEME      = "catppuccin-mocha"
-  TP_CUSTOM_CSS = "http://themes.munchbox.cc/css/radarr.css"
+  TP_THEME           = "catppuccin-mocha"
+  TP_CUSTOM_CSS      = "http://themes.munchbox.cc/css/radarr.css"
 }
 
 # --- Service tags ---

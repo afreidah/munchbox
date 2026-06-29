@@ -135,15 +135,15 @@ job "trivy-dashboard" {
       }
 
       env {
-        PORT                        = "8080"
-        TRIVY_DB_HOST               = "haproxy-postgres.service.consul"
-        TRIVY_DB_PORT               = "5433"
-        TRIVY_DB_USER               = "${secret.trivy_db.db_username}"
-        TRIVY_DB_PASSWORD           = "${secret.trivy_db.db_password}"
-        TRIVY_DB_NAME               = "trivy"
-        DB_SSLMODE                  = "verify-ca"
-        DB_SSLROOTCERT              = "/etc/ssl/postgres/ca.crt"
-        TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
+        PORT              = "8080"
+        TRIVY_DB_HOST     = "haproxy-postgres.service.consul"
+        TRIVY_DB_PORT     = "5433"
+        TRIVY_DB_USER     = "${secret.trivy_db.db_username}"
+        TRIVY_DB_PASSWORD = "${secret.trivy_db.db_password}"
+        TRIVY_DB_NAME     = "trivy"
+        DB_SSLMODE        = "verify-ca"
+        DB_SSLROOTCERT    = "/etc/ssl/postgres/ca.crt"
+        TEMPORAL_ADDRESS  = "temporal-server.service.consul:7233"
         # OpenTelemetry tracing to Tempo (gRPC)
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
         OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"

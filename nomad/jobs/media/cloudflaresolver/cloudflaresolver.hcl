@@ -8,15 +8,15 @@
 # -------------------------------------------------------------------------------
 
 # --- Core job configuration ---
-name         = "cloudflaresolverr"
-type         = "service"
-image        = "ghcr.io/flaresolverr/flaresolverr:v3.5.0"
+name  = "cloudflaresolverr"
+type  = "service"
+image = "ghcr.io/flaresolverr/flaresolverr:v3.5.0"
 constraints = [
   { attribute = "$${meta.gpu}", operator = "=", value = "true" }
 ]
-port         = 8191
-size         = "medium"
-memory       = 512
+port   = 8191
+size   = "medium"
+memory = 512
 
 # --- Networking ---
 host_network = true
@@ -26,7 +26,7 @@ static_port  = 8191
 storage = "ephemeral"
 
 # --- Traefik routing ---
-traefik      = false
+traefik          = false
 register_service = true
 
 # --- Environment variables ---

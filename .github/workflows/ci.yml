@@ -36,6 +36,7 @@ jobs:
     outputs:
       cinc: ${{ steps.filter.outputs.cinc }}
       modules: ${{ steps.filter.outputs.modules }}
+      nomad: ${{ steps.filter.outputs.nomad }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -46,6 +47,8 @@ jobs:
               - 'infrastructure/cinc/**'
             modules:
               - 'infrastructure/terragrunt/modules/**'
+            nomad:
+              - 'nomad/**'
 
   # ---------------------------------------------------------------------------
   # Cinc: cookstyle + full chefspec suite + merged coverage -> Sonar
@@ -161,14 +164,61 @@ jobs:
         with:
           projectBaseDir: infrastructure/terragrunt/modules
 
+  # ---------------------------------------------------------------------------
+  # Nomad jobs: fmt + pack render (fully offline -> ubuntu-latest, no cluster).
+  # Deep `nomad job validate` (per-job vars + a server) is deferred to the
+  # self-hosted leg alongside the terragrunt leaves.
+  # ---------------------------------------------------------------------------
+  nomad:
+    needs: changes
+    if: ${{ needs.changes.outputs.nomad == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the munchbox-service pack (nomad/packs/registry submodule)
+        run: git submodule update --init nomad/packs/registry
+
+      - name: Install nomad + nomad-pack
+        run: |
+          NOMAD_VER=1.9.7
+          PACK_VER=0.4.1
+          tmp=$(mktemp -d)
+          curl -sSLo "$tmp/nomad.zip" "https://releases.hashicorp.com/nomad/${NOMAD_VER}/nomad_${NOMAD_VER}_linux_amd64.zip"
+          curl -sSLo "$tmp/pack.zip"  "https://releases.hashicorp.com/nomad-pack/${PACK_VER}/nomad-pack_${PACK_VER}_linux_amd64.zip"
+          sudo unzip -oq "$tmp/nomad.zip" -d /usr/local/bin
+          sudo unzip -oq "$tmp/pack.zip"  -d /usr/local/bin
+          nomad version; nomad-pack version
+
+      - name: nomad fmt -check
+        working-directory: nomad
+        run: |
+          if ! nomad fmt -check -recursive .; then
+            echo "::error::nomad files need formatting -- run 'nomad fmt -recursive .'"; exit 1
+          fi
+
+      - name: nomad-pack render (munchbox-service jobs)
+        working-directory: nomad
+        run: |
+          set -uo pipefail
+          fail=0
+          while IFS= read -r vf; do
+            jd=$(dirname "$vf")
+            echo "::group::render $vf"
+            out=$(nomad-pack render --var-file="$vf" --var="job_dir=$(pwd)/$jd" \
+              "./packs/registry/munchbox-service" 2>&1) \
+              || { echo "::error title=nomad-pack::$vf failed render"; echo "$out" | tail -15; fail=1; }
+            echo "::endgroup::"
+          done < <(find jobs -name '*.hcl' ! -name '*.nomad.hcl' ! -path '*/deprecated/*')
+          [ "$fail" -eq 0 ] || { echo "::error::one or more service jobs failed pack render"; exit 1; }
+
   ci-ok:
-    needs: [changes, cinc, terraform-modules]
+    needs: [changes, cinc, terraform-modules, nomad]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Gate on area-job results (skipped is OK, failed is not)
         run: |
-          for r in "${{ needs.cinc.result }}" "${{ needs.terraform-modules.result }}"; do
+          for r in "${{ needs.cinc.result }}" "${{ needs.terraform-modules.result }}" "${{ needs.nomad.result }}"; do
             case "$r" in
               failure|cancelled) echo "a required job did not pass: $r"; exit 1 ;;
             esac

@@ -118,7 +118,7 @@ job "cleanup-worker" {
         image_pull_timeout = "5m"
         network_mode       = "host"
         ports              = ["metrics"]
-        volumes            = [
+        volumes = [
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
           "secrets/ssh-key:/root/.ssh/id_ed25519:ro",
           "secrets/ssh-client-cert.pub:/root/.ssh/id_ed25519-cert.pub:ro",
@@ -150,10 +150,10 @@ job "cleanup-worker" {
 
       # --- SSH CA - signed client certificate ---
       template {
-        destination   = "secrets/ssh-client-cert.pub"
-        perms         = "0644"
-        change_mode   = "noop"
-        data          = <<-EOF
+        destination = "secrets/ssh-client-cert.pub"
+        perms       = "0644"
+        change_mode = "noop"
+        data        = <<-EOF
 {{ with secret "secret/data/ssh/backup-worker" }}{{ $pub := .Data.data.public_key }}{{ with secret "ssh-client-signer/sign/client-service" (printf "public_key=%s" $pub) "valid_principals=root,ubuntu" }}
 {{ .Data.signed_key }}
 {{ end }}{{ end }}
@@ -162,7 +162,7 @@ job "cleanup-worker" {
 
       # --- Secrets from Vault ---
       template {
-        data = <<-EOF
+        data        = <<-EOF
         {{ with secret "secret/data/backup-worker" }}
         NOMAD_TOKEN={{ .Data.data.nomad_token }}
         {{ end }}

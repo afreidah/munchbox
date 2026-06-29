@@ -130,25 +130,25 @@ AWS_SECRET_ACCESS_KEY={{ .Data.data.s3_secret_key }}
 
       # --- Gateway configuration ---
       env {
-        S3_BUCKET_NAME                       = "aptly"
-        S3_SERVER                            = "s3-orchestrator.service.consul"
-        S3_SERVER_PORT                       = "9000"
-        S3_SERVER_PROTO                      = "http"
-        S3_REGION                            = "us-east-1"
-        S3_STYLE                             = "path"
-        AWS_SIGS_VERSION                     = "4"
-        ALLOW_DIRECTORY_LIST                 = "true"
-        PROVIDE_INDEX_PAGE                   = "false"
-        APPEND_SLASH_FOR_POSSIBLE_DIRECTORY  = "true"
-        DIRECTORY_LISTING_PATH_PREFIX        = ""
+        S3_BUCKET_NAME                      = "aptly"
+        S3_SERVER                           = "s3-orchestrator.service.consul"
+        S3_SERVER_PORT                      = "9000"
+        S3_SERVER_PROTO                     = "http"
+        S3_REGION                           = "us-east-1"
+        S3_STYLE                            = "path"
+        AWS_SIGS_VERSION                    = "4"
+        ALLOW_DIRECTORY_LIST                = "true"
+        PROVIDE_INDEX_PAGE                  = "false"
+        APPEND_SLASH_FOR_POSSIBLE_DIRECTORY = "true"
+        DIRECTORY_LISTING_PATH_PREFIX       = ""
         # Required cache directives (no defaults in image)
-        PROXY_CACHE_VALID_OK                 = "1h"
-        PROXY_CACHE_VALID_NOTFOUND           = "1m"
-        PROXY_CACHE_VALID_FORBIDDEN          = "30s"
+        PROXY_CACHE_VALID_OK        = "1h"
+        PROXY_CACHE_VALID_NOTFOUND  = "1m"
+        PROXY_CACHE_VALID_FORBIDDEN = "30s"
         # Required by 00-check-for-required-env.sh
-        HEADER_PREFIXES_TO_STRIP             = ""
-        CORS_ENABLED                         = "false"
-        DEBUG                                = "false"
+        HEADER_PREFIXES_TO_STRIP = ""
+        CORS_ENABLED             = "false"
+        DEBUG                    = "false"
       }
 
       resources {

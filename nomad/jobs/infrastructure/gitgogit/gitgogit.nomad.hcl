@@ -116,13 +116,13 @@ job "gitgogit" {
         image              = "registry.munchbox.cc/gitgogit:v0.2.0"
         image_pull_timeout = "5m"
         ports              = ["http"]
-        volumes            = [
+        volumes = [
           "local/config.yaml:/home/gitgogit/.config/gitgogit/config.yaml:ro",
         ]
       }
 
       template {
-        data = <<-EOF
+        data        = <<-EOF
         {{ with secret "secret/data/forgejo" }}
         FORGEJO_API_TOKEN={{ .Data.data.api_token }}
         {{ end }}

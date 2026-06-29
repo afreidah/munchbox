@@ -50,7 +50,7 @@ job "nextcloud" {
     # -----------------------------------------------------------------------
     # Network Configuration
     # -----------------------------------------------------------------------
-      
+
     network {
       mode = "bridge"
       port "http" {
@@ -156,7 +156,7 @@ job "nextcloud" {
       config {
         image              = "nextcloud:33.0-apache"
         image_pull_timeout = "10m"
-        volumes            = [
+        volumes = [
           "/mnt/gdrive/nextcloud/data:/var/www/html/data",
           "/opt/nomad/data/nextcloud/config:/var/www/html/config",
           "/opt/nomad/data/nextcloud/apps:/var/www/html/custom_apps"
@@ -165,18 +165,18 @@ job "nextcloud" {
 
       # --- Environment Variables (static) ---
       env {
-        POSTGRES_HOST        = "haproxy-postgres.service.consul"
-        POSTGRES_PORT        = "5433"
-        POSTGRES_DB          = "nextcloud"
-        PGSSLMODE            = "require"
-        REDIS_HOST           = "haproxy-redis.service.consul"
-        REDIS_PORT           = "6380"
-        REDIS_HOST_PORT      = "6380"
-        REDIS_HOST_DB        = "0"
-        TRUSTED_PROXIES      = "172.26.64.0/18"
-        OVERWRITEPROTOCOL    = "https"
-        OVERWRITEHOST        = "nextcloud.munchbox.cc"
-        OVERWRITECLIURL      = "https://nextcloud.munchbox.cc"
+        POSTGRES_HOST     = "haproxy-postgres.service.consul"
+        POSTGRES_PORT     = "5433"
+        POSTGRES_DB       = "nextcloud"
+        PGSSLMODE         = "require"
+        REDIS_HOST        = "haproxy-redis.service.consul"
+        REDIS_PORT        = "6380"
+        REDIS_HOST_PORT   = "6380"
+        REDIS_HOST_DB     = "0"
+        TRUSTED_PROXIES   = "172.26.64.0/18"
+        OVERWRITEPROTOCOL = "https"
+        OVERWRITEHOST     = "nextcloud.munchbox.cc"
+        OVERWRITECLIURL   = "https://nextcloud.munchbox.cc"
       }
 
       # --- Dynamic Secrets from Vault ---
@@ -220,7 +220,7 @@ REDIS_HOST_PASSWORD={{ .Data.data.password }}
       config {
         image      = "nextcloud:33.0-apache"
         entrypoint = ["/cron.sh"]
-        volumes    = [
+        volumes = [
           "/mnt/gdrive/nextcloud/data:/var/www/html/data",
           "/opt/nomad/data/nextcloud/config:/var/www/html/config",
           "/opt/nomad/data/nextcloud/apps:/var/www/html/custom_apps"

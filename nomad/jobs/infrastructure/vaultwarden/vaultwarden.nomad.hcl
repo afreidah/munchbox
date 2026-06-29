@@ -158,20 +158,20 @@ job "vaultwarden" {
 
       # --- Environment Variables ---
       env {
-        ADMIN_TOKEN         = "${secret.vaultwarden.admin_token}"
-        SIGNUPS_ALLOWED     = "${secret.vaultwarden.signups_allowed}"
-        DATABASE_URL        = "postgresql://${secret.vaultwarden.db_username}:${secret.vaultwarden.db_password}@haproxy-postgres.service.consul:5433/vaultwarden?sslmode=require"
-        RSA_KEY_FILENAME    = "/secrets/rsa_key"
+        ADMIN_TOKEN                    = "${secret.vaultwarden.admin_token}"
+        SIGNUPS_ALLOWED                = "${secret.vaultwarden.signups_allowed}"
+        DATABASE_URL                   = "postgresql://${secret.vaultwarden.db_username}:${secret.vaultwarden.db_password}@haproxy-postgres.service.consul:5433/vaultwarden?sslmode=require"
+        RSA_KEY_FILENAME               = "/secrets/rsa_key"
         I_REALLY_WANT_VOLATILE_STORAGE = "true"
-        DOMAIN              = "https://vaultwarden.munchbox.cc"
-        INVITATIONS_ALLOWED = "true"
-        WEBSOCKET_ENABLED   = "true"
-        SMTP_HOST           = "${secret.vaultwarden.smtp_host}"
-        SMTP_PORT           = "${secret.vaultwarden.smtp_port}"
-        SMTP_SECURITY       = "${secret.vaultwarden.smtp_security}"
-        SMTP_USERNAME       = "${secret.vaultwarden.smtp_username}"
-        SMTP_PASSWORD       = "${secret.vaultwarden.smtp_password}"
-        SMTP_FROM           = "${secret.vaultwarden.smtp_from}"
+        DOMAIN                         = "https://vaultwarden.munchbox.cc"
+        INVITATIONS_ALLOWED            = "true"
+        WEBSOCKET_ENABLED              = "true"
+        SMTP_HOST                      = "${secret.vaultwarden.smtp_host}"
+        SMTP_PORT                      = "${secret.vaultwarden.smtp_port}"
+        SMTP_SECURITY                  = "${secret.vaultwarden.smtp_security}"
+        SMTP_USERNAME                  = "${secret.vaultwarden.smtp_username}"
+        SMTP_PASSWORD                  = "${secret.vaultwarden.smtp_password}"
+        SMTP_FROM                      = "${secret.vaultwarden.smtp_from}"
       }
 
 
