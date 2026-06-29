@@ -131,6 +131,10 @@ jobs:
         working-directory: infrastructure/terragrunt/modules
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tfplugins
+          # proxmox-cluster ships a provider "proxmox" block; the telmate provider
+          # validates an endpoint even under mock_provider, and reads it from env.
+          # Give it a dummy -- mock_provider intercepts all real API calls.
+          PM_API_URL: https://proxmox.invalid:8006/api2/json
         run: |
           set -uo pipefail
           mkdir -p "$TF_PLUGIN_CACHE_DIR"
