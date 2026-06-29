@@ -175,6 +175,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Fetch the munchbox-service pack (nomad/packs/registry submodule)
+        run: git submodule update --init nomad/packs/registry
 
       - name: Install nomad + nomad-pack
         run: |
@@ -202,9 +204,9 @@ jobs:
           while IFS= read -r vf; do
             jd=$(dirname "$vf")
             echo "::group::render $vf"
-            nomad-pack render --var-file="$vf" --var="job_dir=$(pwd)/$jd" \
-              "./packs/registry/munchbox-service" >/dev/null \
-              || { echo "::error title=nomad-pack::$vf failed render"; fail=1; }
+            out=$(nomad-pack render --var-file="$vf" --var="job_dir=$(pwd)/$jd" \
+              "./packs/registry/munchbox-service" 2>&1) \
+              || { echo "::error title=nomad-pack::$vf failed render"; echo "$out" | tail -15; fail=1; }
             echo "::endgroup::"
           done < <(find jobs -name '*.hcl' ! -name '*.nomad.hcl' ! -path '*/deprecated/*')
           [ "$fail" -eq 0 ] || { echo "::error::one or more service jobs failed pack render"; exit 1; }
