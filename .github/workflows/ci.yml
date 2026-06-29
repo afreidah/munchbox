@@ -94,7 +94,7 @@ jobs:
           [ "$fail" -eq 0 ] || { echo "::error::one or more cookbooks failed make verify (see annotations)"; exit 1; }
 
       - name: SonarQube scan (afreidah_munchbox_cinc)
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
@@ -155,7 +155,7 @@ jobs:
         run: ruby infrastructure/terragrunt/scripts/tf-coverage.rb --check
 
       - name: SonarQube scan (afreidah_munchbox_modules)
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
