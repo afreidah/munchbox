@@ -10,6 +10,9 @@
 #   github-token-renewer -> the newline-separated owner/repo list the
 #   ghtokenrenewer worker reads at github/token-renewer/repos (REPO_LIST_KEY).
 #
+#   ci-runner-scaler -> the newline-separated owner/repo list the runnerscaler
+#   worker watches for queued self-hosted jobs at runners/repos.
+#
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
 
@@ -30,9 +33,20 @@ locals {
     "afreidah/oracle-watchdog",
   ]
 
-  keys = local.leaf == "github-token-renewer" ? {
-    "github/token-renewer/repos" = join("\n", local.github_token_renewer_repos)
-  } : {}
+  # --- ci-runner-scaler: repos watched for queued self-hosted jobs. Trim to
+  #     the repos that actually use `runs-on: [self-hosted]`. ---
+  runner_scaler_repos = [
+    "afreidah/munchbox",
+    "afreidah/nomad-temporal-jobs",
+  ]
+
+  keys = (
+    local.leaf == "github-token-renewer" ? {
+      "github/token-renewer/repos" = join("\n", local.github_token_renewer_repos)
+      } : local.leaf == "ci-runner-scaler" ? {
+      "runners/repos" = join("\n", local.runner_scaler_repos)
+    } : {}
+  )
 }
 
 inputs = {
