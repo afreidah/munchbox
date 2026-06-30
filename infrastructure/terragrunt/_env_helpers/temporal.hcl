@@ -116,6 +116,19 @@ locals {
       workflow_id   = "sonarcloud-token-renewer-scheduled"
       input         = { concurrency = 4 }
     }
+    # Every 30s (second-level calendar, since the provider stores calendars not
+    # intervals): poll GitHub for queued self-hosted jobs and dispatch ephemeral
+    # runners. Overlap Skip (the default) keeps a slow tick from stacking.
+    "ci-runner-scaler-30s" = {
+      schedule_id   = "ci-runner-scaler-30s"
+      hour          = "*"
+      minute        = "*"
+      second        = "0,30"
+      workflow_type = "PollAndDispatch"
+      task_queue    = "ci-runner-scaler-task-queue"
+      workflow_id   = "ci-runner-scaler-scheduled"
+      input         = { concurrency = 4 }
+    }
   }
 }
 

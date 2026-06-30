@@ -58,7 +58,8 @@ job "g3-webpage" {
     network {
       mode = "bridge"
       port "http" {
-        to = 80
+        # nginx-unprivileged (g3-web v0.5.2+) listens on 8080, not 80.
+        to = 8080
       }
       dns {
         servers = ["${attr.unique.network.ip-address}"]
@@ -130,7 +131,7 @@ job "g3-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/g3-web:v0.5.1"
+        image              = "registry.munchbox.cc/g3-web:v0.5.3"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

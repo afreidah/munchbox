@@ -187,6 +187,21 @@ inputs = {
         }
       EOT
     }
+
+    # --- ci-runner-scaler: reuses the token-renewer GitHub App (mints runner
+    #     registration tokens, lists queued jobs) and reads its Nomad token to
+    #     dispatch ephemeral ci-runner jobs. The App's installation must also
+    #     grant Administration + Actions on GitHub (set on github.com, not here). ---
+    "ci-runner-scaler" = {
+      policy = <<-EOT
+        path "secret/data/github/token-renewer-app" {
+          capabilities = ["read"]
+        }
+        path "secret/data/ci-runner-scaler" {
+          capabilities = ["read"]
+        }
+      EOT
+    }
   }
 
   # --- Workload Secrets (for nomad-workloads policy) ---
@@ -333,6 +348,12 @@ inputs = {
       policies = ["nomad-workloads", "github-token-renewer"]
       bound_claims = {
         nomad_job_id = "github-token-renewer"
+      }
+    }
+    "ci-runner-scaler" = {
+      policies = ["nomad-workloads", "ci-runner-scaler"]
+      bound_claims = {
+        nomad_job_id = "ci-runner-scaler"
       }
     }
   }
