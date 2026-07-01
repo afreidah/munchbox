@@ -219,38 +219,43 @@ jobs:
           fail=0
           while IFS= read -r jf; do
             echo "::group::validate $jf"
-            out=$(nomad job validate "$jf" 2>&1) \
-              || { echo "::error title=nomad validate::$jf failed validation"; echo "$out" | tail -20; fail=1; }
-            echo "$out" | tail -3
+            # Validate bare; jobs that declare shared vars need -var-file (like
+            # `make validate`), but passing it to jobs that don't declare them
+            # errors, so only retry with it on an "Unset variable" failure.
+            if out=$(nomad job validate "$jf" 2>&1); then
+              ok=1
+            elif printf '%s' "$out" | grep -q 'Unset variable' \
+                 && out=$(nomad job validate -var-file=shared.vars.hcl "$jf" 2>&1); then
+              ok=1
+            else
+              ok=0
+            fi
+            if [ "$ok" -eq 1 ]; then
+              printf '%s\n' "$out" | tail -3
+            else
+              echo "::error title=nomad validate::$jf failed validation"
+              printf '%s\n' "$out" | tail -20
+              fail=1
+            fi
             echo "::endgroup::"
           done < <(find jobs -name '*.nomad.hcl' ! -path '*/deprecated/*')
           [ "$fail" -eq 0 ] || { echo "::error::one or more jobs failed nomad validate"; exit 1; }
 
   # ---------------------------------------------------------------------------
-  # Terragrunt leaves: offline HCL formatting gate (ubuntu-latest). `nomad job
-  # validate` now runs on the self-hosted nomad job above. terragrunt validate
-  # (config-level, backend disabled -- no cluster secrets) is the next check to
-  # add here; a full plan is intentionally NOT wired (it would need the whole
-  # provider secret set on a PR-code runner).
+  # Terragrunt leaves: HCL formatting gate on the self-hosted runner (terraform +
+  # terragrunt are baked into the ci-runner image, so no install step). Like the
+  # nomad job, the runner carries NOMAD_TOKEN in its env, so this job is
+  # fork-gated. terragrunt validate (config-level, backend disabled -- no cluster
+  # secrets) is the next check to add here; a full plan is intentionally NOT
+  # wired (it would need the whole provider secret set on a PR-code runner).
   # ---------------------------------------------------------------------------
   terragrunt:
     needs: changes
-    if: ${{ needs.changes.outputs.terragrunt == 'true' }}
-    runs-on: ubuntu-latest
+    if: ${{ needs.changes.outputs.terragrunt == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.15.4"
-          terraform_wrapper: false
-      - name: Install terragrunt
-        run: |
-          TG_VER=1.0.6
-          sudo curl -sSLo /usr/local/bin/terragrunt \
-            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VER}/terragrunt_linux_amd64"
-          sudo chmod +x /usr/local/bin/terragrunt
-          terragrunt --version
 
       - name: terragrunt hcl format --check
         working-directory: infrastructure/terragrunt
