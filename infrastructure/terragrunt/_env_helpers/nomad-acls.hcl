@@ -85,6 +85,17 @@ inputs = {
         }
       EOT
     }
+
+    # --- runner autoscaler: dispatch ci-runner + deregister (reap) it ---
+    "ci-runner-scaler" = {
+      description = "Temporal runner autoscaler - dispatch + reap ephemeral CI runners"
+      rules_hcl   = <<-EOT
+        namespace "default" {
+          policy       = "read"
+          capabilities = ["dispatch-job", "submit-job"]
+        }
+      EOT
+    }
   }
 
   # --- ACL Tokens (services only; operator policies are SSO-attached) ---
@@ -102,6 +113,9 @@ inputs = {
     }
     "auto-restart-webhook" = {
       policies = ["auto-restart-webhook"]
+    }
+    "ci-runner-scaler" = {
+      policies = ["ci-runner-scaler"]
     }
   }
 
@@ -126,6 +140,11 @@ inputs = {
       vault_path       = "nomad/auto-restart-webhook"
       token_key        = "auto-restart-webhook"
       token_field_name = "token"
+    }
+    "ci-runner-scaler" = {
+      vault_path       = "ci-runner-scaler"
+      token_key        = "ci-runner-scaler"
+      token_field_name = "nomad_token"
     }
   }
 }

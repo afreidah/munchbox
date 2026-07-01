@@ -125,8 +125,9 @@ job "ci-runner-scaler" {
         role = "ci-runner-scaler"
       }
 
-      # env=true exposes the default WI as NOMAD_TOKEN; the Nomad API accepts it
-      # and resolves the dispatch ACL policy bound to this job.
+      # The default WI (identity.env) has no ACL policy bound to it, so a scoped
+      # Nomad ACL token is templated in as NOMAD_TOKEN below (from Vault) to
+      # authorize job dispatch -- mirrors backup-worker.
       identity {
         env  = true
         file = true
@@ -146,6 +147,19 @@ job "ci-runner-scaler" {
         ]
       }
 
+      # --- Scoped Nomad ACL token from Vault (dispatch + reap ci-runner). Its
+      #     env NOMAD_TOKEN overrides the unprivileged default-WI one above.
+      #     Policy/token minted by terragrunt nomad-acls -> secret/ci-runner-scaler. ---
+      template {
+        data        = <<-EOF
+        {{ with secret "secret/data/ci-runner-scaler" }}
+        NOMAD_TOKEN={{ .Data.data.nomad_token }}
+        {{ end }}
+        EOF
+        destination = "secrets/secrets.env"
+        env         = true
+      }
+
       env {
         TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
         METRICS_LISTEN              = ":${NOMAD_PORT_metrics}"
@@ -156,7 +170,7 @@ job "ci-runner-scaler" {
         VAULT_CACERT     = "/etc/ssl/certs/munchbox-ca.pem"
         VAULT_TOKEN_FILE = "/secrets/vault_token"
 
-        # Nomad (job dispatch): NOMAD_TOKEN is the default WI (identity.env).
+        # Nomad (job dispatch): NOMAD_TOKEN comes from the Vault template above.
         NOMAD_ADDR            = "https://192.168.68.61:4646"
         NOMAD_TLS_SERVER_NAME = "server.global.nomad"
         NOMAD_CACERT          = "/etc/ssl/certs/munchbox-ca.pem"
