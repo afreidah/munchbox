@@ -50,6 +50,9 @@ jobs:
               - 'infrastructure/terragrunt/modules/**'
             nomad:
               - 'nomad/**'
+              # A change to this workflow re-runs the (self-hosted) nomad job, so
+              # CI-config edits like this one exercise the runner autoscaler.
+              - '.github/workflows/ci.yml'
             terragrunt:
               - 'infrastructure/terragrunt/**'
               - '!infrastructure/terragrunt/modules/**'
