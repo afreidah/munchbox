@@ -123,7 +123,7 @@ job "traefik" {
 
       # --- Docker Configuration ---
       config {
-        image        = "traefik:v3.7.5"
+        image        = "traefik:v3.7.6"
         network_mode = "host"
         ports        = ["http", "https", "dashboard", "gitssh"]
         volumes = [
