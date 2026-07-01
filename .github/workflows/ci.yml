@@ -172,15 +172,16 @@ jobs:
           projectBaseDir: infrastructure/terragrunt/modules
 
   # ---------------------------------------------------------------------------
-  # Nomad jobs: fmt + pack render (offline checks). Runs on a self-hosted runner
-  # dispatched on demand by the runnerscaler autoscaler -- nomad + nomad-pack are
-  # baked into the ci-runner image, so there is no install step. Deep
-  # `nomad job validate` (needs a server + token) is still deferred until the
-  # runner's cluster credentials are wired.
+  # Nomad jobs: fmt + pack render (offline) + server-side `nomad job validate`.
+  # Runs on a self-hosted runner dispatched on demand by the runnerscaler
+  # autoscaler -- nomad + nomad-pack are baked into the ci-runner image, so there
+  # is no install step. The runner carries a scoped NOMAD_TOKEN (submit-job) so
+  # validate hits the live server; because that token is in the runner env, this
+  # job is fork-gated (fork PRs skip it rather than get the token).
   # ---------------------------------------------------------------------------
   nomad:
     needs: changes
-    if: ${{ needs.changes.outputs.nomad == 'true' }}
+    if: ${{ needs.changes.outputs.nomad == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: [self-hosted]
     timeout-minutes: 15
     steps:
@@ -210,11 +211,27 @@ jobs:
           done < <(find jobs -name '*.hcl' ! -name '*.nomad.hcl' ! -path '*/deprecated/*')
           [ "$fail" -eq 0 ] || { echo "::error::one or more service jobs failed pack render"; exit 1; }
 
+      - name: nomad job validate (server-side)
+        working-directory: nomad
+        # NOMAD_ADDR / NOMAD_TOKEN / NOMAD_CACERT come from the ci-runner job env.
+        run: |
+          set -uo pipefail
+          fail=0
+          while IFS= read -r jf; do
+            echo "::group::validate $jf"
+            out=$(nomad job validate "$jf" 2>&1) \
+              || { echo "::error title=nomad validate::$jf failed validation"; echo "$out" | tail -20; fail=1; }
+            echo "$out" | tail -3
+            echo "::endgroup::"
+          done < <(find jobs -name '*.nomad.hcl' ! -path '*/deprecated/*')
+          [ "$fail" -eq 0 ] || { echo "::error::one or more jobs failed nomad validate"; exit 1; }
+
   # ---------------------------------------------------------------------------
-  # Terragrunt leaves: offline HCL formatting gate (ubuntu-latest).
-  # Deep checks (terragrunt hcl validate / plan, trivy/checkov, nomad job
-  # validate) need real env + the Consul state backend + Vault, so they live on
-  # the self-hosted leg -- not added here yet.
+  # Terragrunt leaves: offline HCL formatting gate (ubuntu-latest). `nomad job
+  # validate` now runs on the self-hosted nomad job above. terragrunt validate
+  # (config-level, backend disabled -- no cluster secrets) is the next check to
+  # add here; a full plan is intentionally NOT wired (it would need the whole
+  # provider secret set on a PR-code runner).
   # ---------------------------------------------------------------------------
   terragrunt:
     needs: changes

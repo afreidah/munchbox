@@ -96,6 +96,18 @@ inputs = {
         }
       EOT
     }
+
+    # --- ci-runner: server-side `nomad job validate`/`plan` from CI. submit-job
+    #     is the capability the validate/plan endpoints require; read lists jobs. ---
+    "ci-runner" = {
+      description = "CI runner - validate/plan Nomad jobs against the live server"
+      rules_hcl   = <<-EOT
+        namespace "default" {
+          policy       = "read"
+          capabilities = ["submit-job"]
+        }
+      EOT
+    }
   }
 
   # --- ACL Tokens (services only; operator policies are SSO-attached) ---
@@ -116,6 +128,9 @@ inputs = {
     }
     "ci-runner-scaler" = {
       policies = ["ci-runner-scaler"]
+    }
+    "ci-runner" = {
+      policies = ["ci-runner"]
     }
   }
 
@@ -144,6 +159,13 @@ inputs = {
     "ci-runner-scaler" = {
       vault_path       = "ci-runner-scaler"
       token_key        = "ci-runner-scaler"
+      token_field_name = "nomad_token"
+    }
+    # --- ci-runner-nomad, not ci-runner: secret/ci-runner is the image-signing
+    #     Vault token (service_tokens in vault-config); keep the KV paths distinct. ---
+    "ci-runner" = {
+      vault_path       = "ci-runner-nomad"
+      token_key        = "ci-runner"
       token_field_name = "nomad_token"
     }
   }

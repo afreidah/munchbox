@@ -17,9 +17,12 @@
 #     -meta labels=self-hosted,tf-deep \
 #     ci-runner
 #
-# NOTE: cluster credentials (Consul state token, Vault, Nomad token) for the
-# deep-leg tools are NOT wired yet — added next via a Vault workload-identity
-# template once the runner's Vault policy is defined.
+# Cluster creds: the task carries a Workload Identity, exchanged via vault{} for a
+# Vault token, which the template below uses to read a scoped Nomad ACL token
+# (submit-job) as NOMAD_TOKEN — enough for `nomad job validate`/`plan`. terragrunt
+# validate needs no secrets. Role + policy + token live in infrastructure/terragrunt
+# (_env_helpers/vault-config.hcl + nomad-acls.hcl); apply those before registering
+# this job so the WI role and secret/ci-runner-nomad exist.
 # -------------------------------------------------------------------------------
 
 job "ci-runner" {
@@ -67,8 +70,38 @@ job "ci-runner" {
     task "runner" {
       driver = "docker"
 
+      # --- WI exchanged for a Vault token so the template below can read the
+      #     scoped Nomad ACL token. Role + policy live in terragrunt vault-config. ---
+      vault {
+        role = "ci-runner"
+      }
+
+      # The default WI (identity.env) carries no Nomad policy; the scoped
+      # NOMAD_TOKEN templated in below overrides it.
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
       config {
         image = "registry.munchbox.cc/ci-runner:latest"
+        volumes = [
+          # pki_int signs the Nomad server cert; this CA backs NOMAD_CACERT.
+          "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/munchbox-ca.pem:ro",
+        ]
+      }
+
+      # --- Scoped Nomad ACL token (submit-job) for `nomad job validate`/`plan`.
+      #     Minted by terragrunt nomad-acls -> secret/ci-runner-nomad. ---
+      template {
+        data        = <<-EOF
+        {{ with secret "secret/data/ci-runner-nomad" }}
+        NOMAD_TOKEN={{ .Data.data.nomad_token }}
+        {{ end }}
+        EOF
+        destination = "secrets/nomad.env"
+        env         = true
       }
 
       env {
@@ -81,6 +114,11 @@ job "ci-runner" {
         RUN_AS_ROOT         = "false"
         RUNNER_NAME         = "ci-runner-${NOMAD_ALLOC_ID}"
         RUNNER_WORKDIR      = "/tmp/runner-work"
+
+        # --- Nomad API for `nomad job validate`/`plan`; NOMAD_TOKEN from template ---
+        NOMAD_ADDR            = "https://192.168.68.61:4646"
+        NOMAD_TLS_SERVER_NAME = "server.global.nomad"
+        NOMAD_CACERT          = "/etc/ssl/certs/munchbox-ca.pem"
       }
 
       # --- Ephemeral one-shot, so a flat reservation has no idle cost (no need
