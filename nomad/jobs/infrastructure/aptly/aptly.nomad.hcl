@@ -345,7 +345,7 @@ echo "Setup complete"
       }
 
       config {
-        image              = "urpylka/aptly:1.6.2"
+        image              = "urpylka/aptly:1.6.3"
         image_pull_timeout = "5m"
         ports              = ["http"]
 
