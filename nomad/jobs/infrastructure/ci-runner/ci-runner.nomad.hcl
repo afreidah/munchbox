@@ -86,6 +86,10 @@ job "ci-runner" {
 
       config {
         image = "registry.munchbox.cc/ci-runner:latest"
+        # force_pull so a rebuilt :latest (e.g. a tool version bump) is picked up
+        # on the next dispatch instead of a stale cached image.
+        force_pull         = true
+        image_pull_timeout = "10m"
         volumes = [
           # pki_int signs the Nomad server cert; this CA backs NOMAD_CACERT.
           "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/munchbox-ca.pem:ro",
