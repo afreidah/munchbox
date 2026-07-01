@@ -169,29 +169,21 @@ jobs:
           projectBaseDir: infrastructure/terragrunt/modules
 
   # ---------------------------------------------------------------------------
-  # Nomad jobs: fmt + pack render (fully offline -> ubuntu-latest, no cluster).
-  # Deep `nomad job validate` (per-job vars + a server) is deferred to the
-  # self-hosted leg alongside the terragrunt leaves.
+  # Nomad jobs: fmt + pack render (offline checks). Runs on a self-hosted runner
+  # dispatched on demand by the runnerscaler autoscaler -- nomad + nomad-pack are
+  # baked into the ci-runner image, so there is no install step. Deep
+  # `nomad job validate` (needs a server + token) is still deferred until the
+  # runner's cluster credentials are wired.
   # ---------------------------------------------------------------------------
   nomad:
     needs: changes
     if: ${{ needs.changes.outputs.nomad == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Fetch the munchbox-service pack (nomad/packs/registry submodule)
         run: git submodule update --init nomad/packs/registry
-
-      - name: Install nomad + nomad-pack
-        run: |
-          NOMAD_VER=1.9.7
-          PACK_VER=0.4.1
-          tmp=$(mktemp -d)
-          curl -sSLo "$tmp/nomad.zip" "https://releases.hashicorp.com/nomad/${NOMAD_VER}/nomad_${NOMAD_VER}_linux_amd64.zip"
-          curl -sSLo "$tmp/pack.zip"  "https://releases.hashicorp.com/nomad-pack/${PACK_VER}/nomad-pack_${PACK_VER}_linux_amd64.zip"
-          sudo unzip -oq "$tmp/nomad.zip" -d /usr/local/bin
-          sudo unzip -oq "$tmp/pack.zip"  -d /usr/local/bin
-          nomad version; nomad-pack version
 
       - name: nomad fmt -check
         working-directory: nomad
