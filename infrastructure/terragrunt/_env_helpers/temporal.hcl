@@ -50,7 +50,9 @@ locals {
       workflow_type = "Cleanup"
       task_queue    = "cleanup-task-queue"
       workflow_id   = "cleanup-scheduled"
-      input         = { data_dir = "/opt/nomad/data", grace_days = 7, dry_run = false, docker_prune = true }
+      # containerd_prune stays false until a manual dry-run confirms the store-aware
+      # gate on the fleet; flip to true to reclaim the orphaned containerd moby store.
+      input = { data_dir = "/opt/nomad/data", grace_days = 7, dry_run = false, docker_prune = true, containerd_prune = false }
     }
     "registry-gc-weekly" = {
       schedule_id   = "registry-gc-weekly"

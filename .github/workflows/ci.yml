@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cinc: ${{ steps.filter.outputs.cinc }}
+      docker: ${{ steps.filter.outputs.docker }}
       modules: ${{ steps.filter.outputs.modules }}
       nomad: ${{ steps.filter.outputs.nomad }}
       terragrunt: ${{ steps.filter.outputs.terragrunt }}
@@ -46,6 +47,8 @@ jobs:
           filters: |
             cinc:
               - 'infrastructure/cinc/**'
+            docker:
+              - 'docker/**'
             modules:
               - 'infrastructure/terragrunt/modules/**'
             nomad:
@@ -111,6 +114,37 @@ jobs:
           projectBaseDir: infrastructure/cinc
 
   # ---------------------------------------------------------------------------
+  # Docker: hadolint the Dockerfiles (offline lint; ubuntu-latest). Starts at
+  # error-threshold so the first run reports warnings without blocking; ratchet
+  # to 'warning' + a .hadolint.yaml once the noise is triaged. Image CVE scanning
+  # (trivy image, needs a build) is a follow-up.
+  # ---------------------------------------------------------------------------
+  docker:
+    needs: changes
+    if: ${{ needs.changes.outputs.docker == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install hadolint
+        run: |
+          sudo curl -fsSLo /usr/local/bin/hadolint \
+            https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          sudo chmod +x /usr/local/bin/hadolint
+          hadolint --version
+
+      - name: hadolint Dockerfiles
+        run: |
+          set -uo pipefail
+          fail=0
+          while IFS= read -r df; do
+            echo "::group::hadolint $df"
+            hadolint --failure-threshold error "$df" \
+              || { echo "::error title=hadolint::$df has error-level findings"; fail=1; }
+            echo "::endgroup::"
+          done < <(find docker -name Dockerfile ! -path '*/deprecated/*')
+          [ "$fail" -eq 0 ] || { echo "::error::one or more Dockerfiles failed hadolint"; exit 1; }
+
+  # ---------------------------------------------------------------------------
   # Single required status check (skipped area jobs don't block merges)
   # ---------------------------------------------------------------------------
   # ---------------------------------------------------------------------------
@@ -172,15 +206,16 @@ jobs:
           projectBaseDir: infrastructure/terragrunt/modules
 
   # ---------------------------------------------------------------------------
-  # Nomad jobs: fmt + pack render (offline checks). Runs on a self-hosted runner
-  # dispatched on demand by the runnerscaler autoscaler -- nomad + nomad-pack are
-  # baked into the ci-runner image, so there is no install step. Deep
-  # `nomad job validate` (needs a server + token) is still deferred until the
-  # runner's cluster credentials are wired.
+  # Nomad jobs: fmt + pack render (offline) + server-side `nomad job validate`.
+  # Runs on a self-hosted runner dispatched on demand by the runnerscaler
+  # autoscaler -- nomad + nomad-pack are baked into the ci-runner image, so there
+  # is no install step. The runner carries a scoped NOMAD_TOKEN (submit-job) so
+  # validate hits the live server; because that token is in the runner env, this
+  # job is fork-gated (fork PRs skip it rather than get the token).
   # ---------------------------------------------------------------------------
   nomad:
     needs: changes
-    if: ${{ needs.changes.outputs.nomad == 'true' }}
+    if: ${{ needs.changes.outputs.nomad == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: [self-hosted]
     timeout-minutes: 15
     steps:
@@ -210,30 +245,53 @@ jobs:
           done < <(find jobs -name '*.hcl' ! -name '*.nomad.hcl' ! -path '*/deprecated/*')
           [ "$fail" -eq 0 ] || { echo "::error::one or more service jobs failed pack render"; exit 1; }
 
+      - name: nomad job validate (server-side)
+        working-directory: nomad
+        # NOMAD_ADDR / NOMAD_TOKEN / NOMAD_CACERT come from the ci-runner job env.
+        run: |
+          set -uo pipefail
+          fail=0
+          while IFS= read -r jf; do
+            echo "::group::validate $jf"
+            # Validate bare; jobs that declare shared vars need -var-file (like
+            # `make validate`), but passing it to jobs that don't declare them
+            # errors, so only retry with it on an "Unset variable" failure.
+            if out=$(nomad job validate "$jf" 2>&1); then
+              ok=1
+            elif printf '%s' "$out" | grep -q 'Unset variable' \
+                 && out=$(nomad job validate -var-file=shared.vars.hcl "$jf" 2>&1); then
+              ok=1
+            else
+              ok=0
+            fi
+            if [ "$ok" -eq 1 ]; then
+              printf '%s\n' "$out" | tail -3
+            else
+              echo "::error title=nomad validate::$jf failed validation"
+              printf '%s\n' "$out" | tail -20
+              fail=1
+            fi
+            echo "::endgroup::"
+          done < <(find jobs -name '*.nomad.hcl' ! -path '*/deprecated/*')
+          [ "$fail" -eq 0 ] || { echo "::error::one or more jobs failed nomad validate"; exit 1; }
+
   # ---------------------------------------------------------------------------
-  # Terragrunt leaves: offline HCL formatting gate (ubuntu-latest).
-  # Deep checks (terragrunt hcl validate / plan, trivy/checkov, nomad job
-  # validate) need real env + the Consul state backend + Vault, so they live on
-  # the self-hosted leg -- not added here yet.
+  # Terragrunt leaves: HCL formatting gate on the self-hosted runner (terraform +
+  # terragrunt are baked into the ci-runner image, so no install step). Like the
+  # nomad job, the runner carries NOMAD_TOKEN in its env, so this job is
+  # fork-gated. terragrunt validate (config-level, backend disabled -- no cluster
+  # secrets) is the next check to add here; a full plan is intentionally NOT
+  # wired (it would need the whole provider secret set on a PR-code runner).
   # ---------------------------------------------------------------------------
   terragrunt:
     needs: changes
-    if: ${{ needs.changes.outputs.terragrunt == 'true' }}
-    runs-on: ubuntu-latest
+    if: ${{ needs.changes.outputs.terragrunt == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: [self-hosted]
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.15.4"
-          terraform_wrapper: false
-      - name: Install terragrunt
-        run: |
-          TG_VER=1.0.6
-          sudo curl -sSLo /usr/local/bin/terragrunt \
-            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VER}/terragrunt_linux_amd64"
-          sudo chmod +x /usr/local/bin/terragrunt
-          terragrunt --version
+          fetch-depth: 0 # need base..HEAD history for changed-leaf detection
 
       - name: terragrunt hcl format --check
         working-directory: infrastructure/terragrunt
@@ -242,14 +300,65 @@ jobs:
             echo "::error::terragrunt HCL needs formatting -- run 'terragrunt hcl format'"; exit 1
           fi
 
+      - name: terragrunt validate (changed leaves; config-level, backend disabled)
+        working-directory: infrastructure/terragrunt
+        env:
+          TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tfplugins
+        run: |
+          set -uo pipefail
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          all_leaves() { find . -name terragrunt.hcl ! -path './modules/*' -exec dirname {} \;; }
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          # If the base commit isn't in history (shallow checkout / unknown base),
+          # validate ALL leaves rather than silently skipping (no false green).
+          if [ -z "$base" ] || ! git -C "$GITHUB_WORKSPACE" cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "::warning::base '$base' not in history; validating all leaves"
+            leaves=$(all_leaves | sort -u)
+          else
+            changed=$(git -C "$GITHUB_WORKSPACE" diff --name-only "$base" HEAD \
+              -- infrastructure/terragrunt | grep -v '/modules/' || true)
+            # Resolve changed files -> leaves to validate:
+            #   root.hcl        -> every leaf (all include it)
+            #   _env_helpers/X  -> leaves whose config references X (grep)
+            #   a leaf's file   -> that leaf (nearest ancestor with terragrunt.hcl)
+            leaves=""
+            while IFS= read -r f; do
+              [ -n "$f" ] || continue
+              rel="${f#infrastructure/terragrunt/}"
+              case "$rel" in
+                root.hcl) leaves=$(all_leaves); break ;;
+                _env_helpers/*)
+                  h=$(basename "$rel")
+                  leaves="$leaves"$'\n'$(grep -rl "$h" --include='terragrunt.hcl' . | xargs -r -n1 dirname) ;;
+                *)
+                  d="./$(dirname "$rel")"
+                  while [ "$d" != "." ] && [ "$d" != "./" ] && [ ! -f "$d/terragrunt.hcl" ]; do d=$(dirname "$d"); done
+                  [ -f "$d/terragrunt.hcl" ] && leaves="$leaves"$'\n'"$d" ;;
+              esac
+            done <<< "$changed"
+            leaves=$(printf '%s\n' "$leaves" | sed '/^$/d' | sort -u)
+          fi
+          [ -n "$leaves" ] || { echo "no terragrunt leaves affected"; exit 0; }
+          echo "validating leaves:"; echo "$leaves"
+          fail=0
+          while IFS= read -r leaf; do
+            [ -n "$leaf" ] || continue
+            echo "::group::validate $leaf"
+            ( cd "$leaf" && terragrunt init -backend=false -input=false >/dev/null 2>&1 \
+              && terragrunt validate ) \
+              || { echo "::error title=terragrunt validate::$leaf failed"; fail=1; }
+            echo "::endgroup::"
+          done <<< "$leaves"
+          [ "$fail" -eq 0 ] || { echo "::error::one or more leaves failed terragrunt validate"; exit 1; }
+
   ci-ok:
-    needs: [changes, cinc, terraform-modules, nomad, terragrunt]
+    needs: [changes, cinc, docker, terraform-modules, nomad, terragrunt]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
       - name: Gate on area-job results (skipped is OK, failed is not)
         run: |
-          for r in "${{ needs.cinc.result }}" "${{ needs.terraform-modules.result }}" "${{ needs.nomad.result }}" "${{ needs.terragrunt.result }}"; do
+          for r in "${{ needs.cinc.result }}" "${{ needs.docker.result }}" "${{ needs.terraform-modules.result }}" "${{ needs.nomad.result }}" "${{ needs.terragrunt.result }}"; do
             case "$r" in
               failure|cancelled) echo "a required job did not pass: $r"; exit 1 ;;
             esac

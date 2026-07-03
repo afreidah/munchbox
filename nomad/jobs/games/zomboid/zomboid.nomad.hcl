@@ -16,9 +16,10 @@ job "project-zomboid" {
 
   # --- Update policy ---
   update {
-    max_parallel     = 1
-    healthy_deadline = "10m"
-    auto_revert      = true
+    max_parallel      = 1
+    healthy_deadline  = "10m"
+    progress_deadline = "15m"
+    auto_revert       = true
   }
 
   # --- Rollback policy ---
@@ -258,16 +259,18 @@ job "project-zomboid" {
       # --- Shutdown behavior avoids world corruption during autosave ---
       kill_signal  = "SIGTERM"
       kill_timeout = "2m"
-    }
 
-    # -------------------------------------------------------------------------
-    # STORAGE MOUNTS
-    # -------------------------------------------------------------------------
+      # -----------------------------------------------------------------------
+      # STORAGE MOUNTS
+      # -----------------------------------------------------------------------
 
-    volume_mount {
-      volume      = "pz_data"
-      destination = "pz-data"
-      read_only   = false
+      # volume_mount is a task-level block; the pz_data host volume is declared
+      # at the group scope above.
+      volume_mount {
+        volume      = "pz_data"
+        destination = "pz-data"
+        read_only   = false
+      }
     }
   }
 }

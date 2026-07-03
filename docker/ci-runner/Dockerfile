@@ -17,9 +17,11 @@ FROM myoung34/github-runner:2.334.0-ubuntu-jammy
 # arch ends up with amd64 binaries.
 ARG TARGETARCH
 ARG TERRAFORM_VERSION=1.15.4
-ARG TERRAGRUNT_VERSION=1.0.6
-ARG NOMAD_VERSION=1.9.7
+ARG TERRAGRUNT_VERSION=1.1.0
+ARG NOMAD_VERSION=2.0.3
 ARG NOMAD_PACK_VERSION=0.4.1
+ARG CONSUL_VERSION=2.0.1
+ARG VAULT_VERSION=2.0.3
 
 USER root
 
@@ -27,7 +29,8 @@ RUN set -eux; \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
     apt-get install -y --no-install-recommends ca-certificates curl unzip git python3-pip; \
-    # --- Terraform / Terragrunt / Nomad / Nomad Pack (pinned to match CI) ---
+    # --- Terraform / Terragrunt / Nomad / Nomad Pack / Consul / Vault
+    #     (pinned to the versions the cluster actually runs) ---
     curl -fsSLo /tmp/terraform.zip "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TARGETARCH}.zip"; \
     unzip -o /tmp/terraform.zip terraform -d /usr/local/bin; \
     curl -fsSLo /usr/local/bin/terragrunt "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_${TARGETARCH}"; \
@@ -36,6 +39,10 @@ RUN set -eux; \
     unzip -o /tmp/nomad.zip nomad -d /usr/local/bin; \
     curl -fsSLo /tmp/nomad-pack.zip "https://releases.hashicorp.com/nomad-pack/${NOMAD_PACK_VERSION}/nomad-pack_${NOMAD_PACK_VERSION}_linux_${TARGETARCH}.zip"; \
     unzip -o /tmp/nomad-pack.zip nomad-pack -d /usr/local/bin; \
+    curl -fsSLo /tmp/consul.zip "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${TARGETARCH}.zip"; \
+    unzip -o /tmp/consul.zip consul -d /usr/local/bin; \
+    curl -fsSLo /tmp/vault.zip "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${TARGETARCH}.zip"; \
+    unzip -o /tmp/vault.zip vault -d /usr/local/bin; \
     # --- tflint + trivy (latest; official installers detect arch) ---
     curl -fsSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash; \
     curl -fsSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin; \
@@ -53,5 +60,7 @@ RUN set -eux; \
     tflint --version; \
     nomad version; \
     nomad-pack version; \
+    consul version; \
+    vault version; \
     trivy --version; \
     checkov --version
