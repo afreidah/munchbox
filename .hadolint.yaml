@@ -1,0 +1,12 @@
+# hadolint config for the munchbox Docker images (docker/*/Dockerfile).
+#
+# These warnings are accepted as policy for these homelab/CI images, so the CI
+# gate can run at --failure-threshold warning without flagging them:
+ignored:
+  - DL3008 # pin apt versions -- we deliberately track the distro's current packages
+  - DL3013 # pin pip versions -- same rationale
+  - DL3062 # pin `go install` version -- same rationale
+  - DL3002 # last USER root -- the base images manage the runtime user themselves
+#
+# NOT ignored (fixed in the Dockerfiles instead): DL4006 (SHELL -o pipefail before
+# a piped RUN). Add new ignores here only with a one-line justification.

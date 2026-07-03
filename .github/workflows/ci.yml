@@ -114,9 +114,9 @@ jobs:
           projectBaseDir: infrastructure/cinc
 
   # ---------------------------------------------------------------------------
-  # Docker: hadolint the Dockerfiles (offline lint; ubuntu-latest). Starts at
-  # error-threshold so the first run reports warnings without blocking; ratchet
-  # to 'warning' + a .hadolint.yaml once the noise is triaged. Image CVE scanning
+  # Docker: hadolint the Dockerfiles (offline lint; ubuntu-latest). Gates at
+  # warning threshold; accepted warnings (version pinning, root user) are ignored
+  # in .hadolint.yaml and DL4006 is fixed in the Dockerfile. Image CVE scanning
   # (trivy image, needs a build) is a follow-up.
   # ---------------------------------------------------------------------------
   docker:
@@ -138,8 +138,8 @@ jobs:
           fail=0
           while IFS= read -r df; do
             echo "::group::hadolint $df"
-            hadolint --failure-threshold error "$df" \
-              || { echo "::error title=hadolint::$df has error-level findings"; fail=1; }
+            hadolint --config .hadolint.yaml --failure-threshold warning "$df" \
+              || { echo "::error title=hadolint::$df has warning+ findings"; fail=1; }
             echo "::endgroup::"
           done < <(find docker -name Dockerfile ! -path '*/deprecated/*')
           [ "$fail" -eq 0 ] || { echo "::error::one or more Dockerfiles failed hadolint"; exit 1; }

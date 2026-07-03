@@ -25,6 +25,10 @@ ARG VAULT_VERSION=2.0.3
 
 USER root
 
+# pipefail so a failed `curl` in the `curl … | bash` installers below aborts the
+# build instead of being masked by the piped shell's exit status (hadolint DL4006).
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 RUN set -eux; \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
