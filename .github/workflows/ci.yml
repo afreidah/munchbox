@@ -290,6 +290,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need base..HEAD history for changed-leaf detection
 
       - name: terragrunt hcl format --check
         working-directory: infrastructure/terragrunt
@@ -305,30 +307,37 @@ jobs:
         run: |
           set -uo pipefail
           mkdir -p "$TF_PLUGIN_CACHE_DIR"
-          base="${{ github.event.pull_request.base.sha || github.event.before }}"
-          changed=$(git -C "$GITHUB_WORKSPACE" diff --name-only "$base" HEAD \
-            -- infrastructure/terragrunt | grep -v '/modules/' || true)
-          # Resolve changed files -> leaves to validate:
-          #   root.hcl        -> every leaf (all include it)
-          #   _env_helpers/X  -> leaves whose config references X (grep)
-          #   a leaf's file   -> that leaf (nearest ancestor with terragrunt.hcl)
           all_leaves() { find . -name terragrunt.hcl ! -path './modules/*' -exec dirname {} \;; }
-          leaves=""
-          while IFS= read -r f; do
-            [ -n "$f" ] || continue
-            rel="${f#infrastructure/terragrunt/}"
-            case "$rel" in
-              root.hcl) leaves=$(all_leaves); break ;;
-              _env_helpers/*)
-                h=$(basename "$rel")
-                leaves="$leaves"$'\n'$(grep -rl "$h" --include='terragrunt.hcl' . | xargs -r -n1 dirname) ;;
-              *)
-                d="./$(dirname "$rel")"
-                while [ "$d" != "." ] && [ "$d" != "./" ] && [ ! -f "$d/terragrunt.hcl" ]; do d=$(dirname "$d"); done
-                [ -f "$d/terragrunt.hcl" ] && leaves="$leaves"$'\n'"$d" ;;
-            esac
-          done <<< "$changed"
-          leaves=$(printf '%s\n' "$leaves" | sed '/^$/d' | sort -u)
+          base="${{ github.event.pull_request.base.sha || github.event.before }}"
+          # If the base commit isn't in history (shallow checkout / unknown base),
+          # validate ALL leaves rather than silently skipping (no false green).
+          if [ -z "$base" ] || ! git -C "$GITHUB_WORKSPACE" cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "::warning::base '$base' not in history; validating all leaves"
+            leaves=$(all_leaves | sort -u)
+          else
+            changed=$(git -C "$GITHUB_WORKSPACE" diff --name-only "$base" HEAD \
+              -- infrastructure/terragrunt | grep -v '/modules/' || true)
+            # Resolve changed files -> leaves to validate:
+            #   root.hcl        -> every leaf (all include it)
+            #   _env_helpers/X  -> leaves whose config references X (grep)
+            #   a leaf's file   -> that leaf (nearest ancestor with terragrunt.hcl)
+            leaves=""
+            while IFS= read -r f; do
+              [ -n "$f" ] || continue
+              rel="${f#infrastructure/terragrunt/}"
+              case "$rel" in
+                root.hcl) leaves=$(all_leaves); break ;;
+                _env_helpers/*)
+                  h=$(basename "$rel")
+                  leaves="$leaves"$'\n'$(grep -rl "$h" --include='terragrunt.hcl' . | xargs -r -n1 dirname) ;;
+                *)
+                  d="./$(dirname "$rel")"
+                  while [ "$d" != "." ] && [ "$d" != "./" ] && [ ! -f "$d/terragrunt.hcl" ]; do d=$(dirname "$d"); done
+                  [ -f "$d/terragrunt.hcl" ] && leaves="$leaves"$'\n'"$d" ;;
+              esac
+            done <<< "$changed"
+            leaves=$(printf '%s\n' "$leaves" | sed '/^$/d' | sort -u)
+          fi
           [ -n "$leaves" ] || { echo "no terragrunt leaves affected"; exit 0; }
           echo "validating leaves:"; echo "$leaves"
           fail=0
