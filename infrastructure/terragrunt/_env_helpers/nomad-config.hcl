@@ -22,7 +22,7 @@ terraform {
 
 inputs = {
   scheduler_algorithm             = "spread"
-  memory_oversubscription_enabled = false
+  memory_oversubscription_enabled = true
 
   preemption_config = {
     batch    = false
