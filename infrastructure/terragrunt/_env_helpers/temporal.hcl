@@ -50,7 +50,7 @@ locals {
       workflow_type = "Cleanup"
       task_queue    = "cleanup-task-queue"
       workflow_id   = "cleanup-scheduled"
-      input = { data_dir = "/opt/nomad/data", grace_days = 7, dry_run = false, docker_prune = true, containerd_prune = true, rootfs_prune = true, buildx_volume_prune = true }
+      input         = { data_dir = "/opt/nomad/data", grace_days = 7, dry_run = false, docker_prune = true, containerd_prune = true, rootfs_prune = true, buildx_volume_prune = true }
     }
     "registry-gc-weekly" = {
       schedule_id   = "registry-gc-weekly"
