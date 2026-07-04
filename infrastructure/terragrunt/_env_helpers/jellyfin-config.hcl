@@ -72,7 +72,11 @@ locals {
         Type                          = "m3u"
         ImportFavoritesOnly           = false
         AllowHWTranscoding            = false
-        AllowFmp4TranscodingContainer = false
+        # true -> live-TV transcodes use the segmented fMP4/HLS container instead of a
+        # single continuous .ts, so EnableSegmentDeletion/SegmentKeepSeconds (720s) below
+        # actually bound them. A single-file .ts transcode is unbounded and once grew to
+        # 63G, filling nomad-client-04's root disk.
+        AllowFmp4TranscodingContainer = true
         AllowStreamSharing            = true
         FallbackMaxStreamingBitrate   = 30000000
         EnableStreamLooping           = false
