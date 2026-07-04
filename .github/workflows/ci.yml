@@ -218,8 +218,13 @@ jobs:
     if: ${{ needs.changes.outputs.nomad == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: [self-hosted]
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write # post the nomad plan as a sticky PR comment
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need base..HEAD history to detect changed jobs for plan
       - name: Fetch the munchbox-service pack (nomad/packs/registry submodule)
         run: git submodule update --init nomad/packs/registry
 
@@ -274,6 +279,82 @@ jobs:
             echo "::endgroup::"
           done < <(find jobs -name '*.nomad.hcl' ! -path '*/deprecated/*')
           [ "$fail" -eq 0 ] || { echo "::error::one or more jobs failed nomad validate"; exit 1; }
+
+      # Plan the *changed* jobs and post the server-side diff as a sticky PR comment.
+      # Plan is advisory: `nomad job plan` exit 1 = "has changes" (not a failure), so
+      # this step never fails the job -- errors are surfaced in the comment. PR events
+      # only (a plan comment needs a PR); the job is already fork-gated above.
+      - name: nomad job plan (changed jobs)
+        if: ${{ github.event_name == 'pull_request' }}
+        working-directory: nomad
+        env:
+          BODY: ${{ runner.temp }}/nomad-plan.md
+        run: |
+          set -uo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          {
+            echo '<!-- nomad-plan -->'
+            echo '## Nomad job plan'
+            echo '_Server-side plan of the jobs changed by this PR. `no alloc changes` = plan creates/destroys no allocations (may still be in-place updates -- see details); `CHANGES` = would create/destroy allocations; `ERROR` = plan failed._'
+            echo
+          } > "$BODY"
+          # fetch-depth:0 above means base is normally reachable; if it isn't, don't
+          # silently plan nothing (false green) -- say so in the comment.
+          if [ -z "$base" ] || ! git -C "$GITHUB_WORKSPACE" cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "::warning::base '$base' not in history; skipping plan"
+            echo '_Could not determine changed jobs (base commit unavailable); plan skipped._' >> "$BODY"
+          else
+            changed=$(git -C "$GITHUB_WORKSPACE" diff --name-only "$base" HEAD -- nomad/jobs \
+              | grep '\.nomad\.hcl$' | grep -v '/deprecated/' | sed 's#^nomad/##' || true)
+            if [ -z "$changed" ]; then
+              echo '_No `*.nomad.hcl` job changes in this PR._' >> "$BODY"
+            else
+              while IFS= read -r jf; do
+                [ -n "$jf" ] || continue
+                echo "::group::plan $jf"
+                # Retry with the shared var-file only on an "Unset variable" error,
+                # mirroring the validate step above.
+                rc=0; out=$(nomad job plan "$jf" 2>&1) || rc=$?
+                if [ "$rc" -ge 2 ] && printf '%s' "$out" | grep -q 'Unset variable'; then
+                  rc=0; out=$(nomad job plan -var-file=shared.vars.hcl "$jf" 2>&1) || rc=$?
+                fi
+                case "$rc" in
+                  0) badge='no alloc changes' ;;
+                  1) badge='CHANGES' ;;
+                  *) badge='ERROR'; echo "::warning title=nomad plan::$jf plan errored (rc=$rc)" ;;
+                esac
+                printf '%s\n' "$out" | tail -5
+                {
+                  echo "<details><summary><code>$jf</code> — ${badge}</summary>"
+                  echo
+                  echo '```'
+                  printf '%s\n' "$out" | tail -300
+                  echo '```'
+                  echo '</details>'
+                  echo
+                } >> "$BODY"
+                echo "::endgroup::"
+              done <<< "$changed"
+            fi
+          fi
+
+      - name: Find existing plan comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/find-comment@v3
+        id: nomad_plan_comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: '<!-- nomad-plan -->'
+
+      - name: Post/update plan comment
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.nomad_plan_comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: ${{ runner.temp }}/nomad-plan.md
+          edit-mode: replace
 
   # ---------------------------------------------------------------------------
   # Terragrunt leaves: HCL formatting gate on the self-hosted runner (terraform +
