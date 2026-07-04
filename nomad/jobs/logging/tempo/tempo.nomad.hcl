@@ -243,17 +243,22 @@ metrics_generator:
 
 # Query configuration
 querier:
-  max_concurrent_queries: 10
+  max_concurrent_queries: 4  # was 10; fewer concurrent queries -> lower peak memory
 
 # Overrides. 3.0: retention and compaction live under defaults.compaction. The
 # compactor enforces block_retention - with it disabled, blocks are never
 # deleted, so leave compaction enabled.
 overrides:
   defaults:
+    # --- memory guards (root cause of the OOM kills): both of these are UNBOUNDED
+    #     by default, so a trace/cardinality spike can grow RAM without limit ---
+    ingestion:
+      max_traces_per_user: 10000  # cap live-store traces held in memory
     compaction:
       block_retention: 720h  # 30 day retention
     metrics_generator:
       processors: [service-graphs, span-metrics]
+      max_active_series: 100000  # ceiling on RED-metric cardinality memory
 
 EOH
         destination = "local/config.yaml"
@@ -264,7 +269,7 @@ EOH
       resources {
         cpu        = 800
         memory     = 1024
-        memory_max = 2048
+        memory_max = 4096
       }
 
       # --- Termination ---

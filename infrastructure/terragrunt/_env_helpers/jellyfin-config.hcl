@@ -67,12 +67,16 @@ locals {
     EnableOriginalAudioWithEncodedRecordings = false
     TunerHosts = [
       {
-        Id                            = "1bdb95cd37bb4c4f879ff486cf3549d9"
-        Url                           = "http://ersatztv.service.consul:8409/iptv/channels.m3u"
-        Type                          = "m3u"
-        ImportFavoritesOnly           = false
-        AllowHWTranscoding            = false
-        AllowFmp4TranscodingContainer = false
+        Id                  = "1bdb95cd37bb4c4f879ff486cf3549d9"
+        Url                 = "http://ersatztv.service.consul:8409/iptv/channels.m3u"
+        Type                = "m3u"
+        ImportFavoritesOnly = false
+        AllowHWTranscoding  = false
+        # true -> live-TV transcodes use the segmented fMP4/HLS container instead of a
+        # single continuous .ts, so EnableSegmentDeletion/SegmentKeepSeconds (720s) below
+        # actually bound them. A single-file .ts transcode is unbounded and once grew to
+        # 63G, filling nomad-client-04's root disk.
+        AllowFmp4TranscodingContainer = true
         AllowStreamSharing            = true
         FallbackMaxStreamingBitrate   = 30000000
         EnableStreamLooping           = false
