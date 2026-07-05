@@ -31,7 +31,7 @@ job "forgejo-runner" {
   # ---------------------------------------------------------------------------
 
   group "forgejo-runner" {
-    count = 2
+    count = 1
 
     # Run on Oracle ARM nodes (exclude micro-tier nodes)
     constraint {
