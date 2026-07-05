@@ -57,10 +57,11 @@ locals {
       mode              = "vault"
       vaultPath         = "github/moat-poll"
       registerVaultPath = "github/moat-runner"
+      # maxConcurrent caps each pool; vm is pinned to the two KVM hosts, so keep it low.
       profiles = [
-        { label = "vm", job = "github-runner-moat-vm" },
-        { label = "go", job = "go-ci-runner" },
-        { label = "moat", job = "github-runner-moat" },
+        { label = "vm", job = "github-runner-moat-vm", maxConcurrent = 2 },
+        { label = "go", job = "go-ci-runner", maxConcurrent = 6 },
+        { label = "moat", job = "github-runner-moat", maxConcurrent = 3 },
       ]
     }
   }
