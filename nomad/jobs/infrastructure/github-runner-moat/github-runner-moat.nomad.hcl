@@ -1,42 +1,48 @@
 # -------------------------------------------------------------------------------
-# GitHub Actions Runner — moat (private repo)
+# GitHub Actions Runner — moat (private repo, on-demand)
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Self-hosted GitHub Actions runners scoped to the private `moat` repo so its
-# CI pipeline can run without burning paid hosted-runner minutes. Runs on the
-# amd64 Proxmox VMs (nomad-client-0X) — moat's Packer/Kitchen/Cinc flows expect
-# native amd64; the arm64 .deb is produced via goreleaser cross-compile.
+# Parameterized batch job: each dispatch spawns one EPHEMERAL self-hosted runner
+# (takes a single job, then deregisters and exits) for the private `moat` repo,
+# so its CI runs without burning paid hosted-runner minutes and without an
+# always-on pool. Dispatched by the Temporal ci-runner-scaler when moat has a
+# queued self-hosted job (vault-mode: the scaler polls with the moat PAT and
+# dispatches this job, minting nothing).
 #
-# Registration token is fetched from Vault via workload identity (fine-grained
-# PAT with Administration: Read+Write on the moat repo). Docker socket is
-# mounted so workflow steps can build images and run containers.
+# moat is not our repo, so the GitHub App can't be installed on it to mint runner
+# registration tokens. Instead the runner self-registers from a fine-grained PAT
+# (Administration: Read+Write on moat) read from Vault via workload identity --
+# the same secret the old always-on pool used. The scaler passes repo_url/labels
+# (and, for app-mode repos, runner_token) as meta purely so it can identify the
+# dispatched runner when it reconciles; this job reads its own credential from
+# Vault and ignores them. Docker socket is mounted so workflow steps can build
+# images and run containers. Runs on the amd64 Proxmox VMs (moat's Packer/Kitchen/
+# Cinc flows expect native amd64).
+#
+#   nomad job run github-runner-moat.nomad.hcl   # register the parameterized job
+#   nomad job dispatch \                          # spawn one runner (scaler does this)
+#     -meta repo_url=https://github.com/ev-the-dev/moat \
+#     -meta labels=self-hosted,moat \
+#     github-runner-moat
 # -------------------------------------------------------------------------------
 
 job "github-runner-moat" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "service"
+  type        = "batch"
   node_pool   = "default"
 
-  # ---------------------------------------------------------------------------
-  # Update Strategy
-  # ---------------------------------------------------------------------------
-
-  update {
-    max_parallel     = 1
-    health_check     = "checks"
-    min_healthy_time = "30s"
-    healthy_deadline = "5m"
-    auto_revert      = true
+  # --- Dispatched per queued moat job; all meta is bookkeeping for the scaler,
+  #     so it is optional -- the runner's credential comes from Vault below. ---
+  parameterized {
+    # runner_secret is permitted but unused: the scaler sends it on every
+    # vault-mode dispatch; this job reads its own secret/data/github/moat-runner.
+    meta_optional = ["repo_url", "labels", "runner_token", "runner_secret"]
   }
 
-  # ---------------------------------------------------------------------------
-  # Task Group
-  # ---------------------------------------------------------------------------
-
   group "runner" {
-    count = 2
+    count = 1
 
     # these guys require a lot of resources so limit them to the heaviest nodes
     constraint {
@@ -45,49 +51,20 @@ job "github-runner-moat" {
       value     = "${attr.unique.hostname}"
     }
 
-    # Spread allocations across distinct hosts.
-    constraint {
-      distinct_hosts = true
-    }
-
     network {
       mode = "host"
     }
 
+    # --- One-shot: an ephemeral runner runs a single job then exits; never
+    #     restart or reschedule a finished/failed runner ---
     restart {
-      attempts = 10
-      interval = "10m"
-      delay    = "30s"
-      mode     = "delay"
+      attempts = 0
+      mode     = "fail"
     }
 
     reschedule {
-      delay          = "30s"
-      delay_function = "exponential"
-      max_delay      = "10m"
-      unlimited      = true
-    }
-
-    service {
-      name     = "github-runner-moat"
-      provider = "consul"
-      task     = "runner"
-
-      tags = [
-        "ci",
-        "github-actions",
-        "runner",
-        "moat"
-      ]
-
-      check {
-        name     = "runner-alive"
-        type     = "script"
-        command  = "/bin/sh"
-        args     = ["-c", "pgrep -f Runner.Listener || pgrep -f run.sh"]
-        interval = "30s"
-        timeout  = "5s"
-      }
+      attempts  = 0
+      unlimited = false
     }
 
     # -------------------------------------------------------------------------
@@ -124,7 +101,8 @@ job "github-runner-moat" {
         RUN_AS_ROOT          = "false"
       }
 
-      # --- Registration credentials from Vault ---
+      # --- Registration credentials from Vault (the runner self-registers from
+      #     the PAT; the scaler mints nothing for this repo). ---
       template {
         data        = <<-EOF
 {{- with secret "secret/data/github/moat-runner" }}

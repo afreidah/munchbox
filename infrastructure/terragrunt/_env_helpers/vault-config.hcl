@@ -192,13 +192,22 @@ inputs = {
     #     registration tokens, lists queued jobs) and reads its scoped Nomad ACL
     #     token (minted by nomad-acls -> secret/ci-runner-scaler) to dispatch the
     #     ephemeral ci-runner jobs. The App's installation must also grant
-    #     Administration + Actions on GitHub (set on github.com, not here). ---
+    #     Administration + Actions on GitHub (set on github.com, not here).
+    #     Vault-mode repos the App can't reach (ev-the-dev/moat) are polled with a
+    #     PAT read here from secret/github/moat-runner -- the same secret the
+    #     static moat runners self-register with; the scaler only reads it. ---
     "ci-runner-scaler" = {
       policy = <<-EOT
         path "secret/data/github/token-renewer-app" {
           capabilities = ["read"]
         }
         path "secret/data/ci-runner-scaler" {
+          capabilities = ["read"]
+        }
+        path "secret/data/github/moat-runner" {
+          capabilities = ["read"]
+        }
+        path "secret/data/github/moat-poll" {
           capabilities = ["read"]
         }
       EOT
