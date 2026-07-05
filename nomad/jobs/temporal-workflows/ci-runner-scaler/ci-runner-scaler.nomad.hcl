@@ -6,27 +6,31 @@
 # Temporal worker that scales self-hosted CI runners on demand (zero idle). One
 # task queue (ci-runner-scaler-task-queue), two workflows started by a Temporal
 # Schedule (managed in infrastructure/terragrunt):
-#   * PollAndDispatch (~30s): lists each watched repo's queued self-hosted Actions
-#     jobs and starts one HandleQueuedJob child per job, keyed
-#     runner-<repo>-<job_id> with a reject-duplicate ID policy (Temporal dedups
-#     one runner per job; no external state store).
-#   * HandleQueuedJob: mints a runner registration token and dispatches one
-#     ephemeral ci-runner for the job, then reaps it via a backstop timer.
+#   * PollAndDispatch (~30s): loads the per-repo config, lists each repo's queued
+#     self-hosted Actions jobs through the GitHub client its mode selects, and
+#     reconciles queued depth against the active runners across every dispatched
+#     job -- starting one HandleRunner child per shortfall runner (no external
+#     state store; a job left unserved simply tops the count back up next tick).
+#   * HandleRunner: dispatches one ephemeral runner and reaps it via a backstop
+#     timer. app-mode mints a registration token; vault-mode dispatches a
+#     self-registering job (e.g. the moat pools) and mints nothing.
 #
 # Self-authenticating: the task carries only its Workload Identity. The vault{}
 # block exchanges the WI for a Vault token at /secrets/vault_token (the worker
-# reads the GitHub App key through it); the default WI is exposed as NOMAD_TOKEN
-# (identity.env) and authorizes the Nomad API via its associated ACL policy. The
-# watched repos + profiles come from Consul KV (the local agent's default token).
+# reads the GitHub App key and vault-mode runner PATs through it); the default WI
+# is exposed as NOMAD_TOKEN (identity.env) and authorizes the Nomad API via its
+# associated ACL policy. The per-repo config comes from Consul KV (the local
+# agent's default token).
 #
 # Requires (infrastructure/terragrunt):
-#   * vault-config:  policy "ci-runner-scaler" (read secret/github/token-renewer-app)
-#                    + workload_vault_role "ci-runner-scaler" (bound_claims job_id)
+#   * vault-config:  policy "ci-runner-scaler" (read secret/github/token-renewer-app,
+#                    secret/github/moat-runner) + workload_vault_role
+#                    "ci-runner-scaler" (bound_claims job_id)
 #   * nomad workload-identity ACL policy bound to job "ci-runner-scaler" granting
-#     dispatch-job + read-job + submit-job on the namespace
-#   * consul-kv:     "runners/repos" = newline owner/repo list,
-#                    "runners/profiles" = JSON label->{image} map
-#   * The token-renewer GitHub App must grant Administration + Actions (github.com)
+#     dispatch-job + submit-job on the namespace (covers ci-runner + the moat jobs)
+#   * consul-kv:     "runners/config" = JSON repo->{mode,vaultPath,profiles} map
+#   * The token-renewer GitHub App must grant Administration + Actions (github.com);
+#     vault-mode repos instead reuse a PAT already in the secret store
 # -------------------------------------------------------------------------------
 
 job "ci-runner-scaler" {
@@ -175,12 +179,14 @@ job "ci-runner-scaler" {
         NOMAD_TLS_SERVER_NAME = "server.global.nomad"
         NOMAD_CACERT          = "/etc/ssl/certs/munchbox-ca.pem"
 
-        # GitHub App + Consul KV locations + the dispatched runner job. These match
-        # the worker's built-in defaults; set here for visibility. The KV reads use
-        # the local Consul agent's default ACL token (host networking).
+        # GitHub App + Consul KV location + the default dispatched runner job.
+        # These match the worker's built-in defaults; set here for visibility. The
+        # KV read uses the local Consul agent's default ACL token (host
+        # networking). runners/config is the per-repo provisioning map; the
+        # default RUNNER_JOB_ID (ci-runner) is dispatched for any app-mode repo
+        # whose profile names no job.
         GITHUB_APP_VAULT_PATH = "github/token-renewer-app"
-        RUNNERS_REPOS_KEY     = "runners/repos"
-        RUNNERS_PROFILES_KEY  = "runners/profiles"
+        RUNNERS_CONFIG_KEY    = "runners/config"
         RUNNER_JOB_ID         = "ci-runner"
       }
 

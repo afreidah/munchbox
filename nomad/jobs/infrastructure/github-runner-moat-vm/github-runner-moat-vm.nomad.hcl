@@ -1,32 +1,45 @@
 # -------------------------------------------------------------------------------
-# GitHub Actions Runner — moat (VM pool)
+# GitHub Actions Runner — moat (VM pool, on-demand)
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Sister pool to github-runner-moat. Identical except this pool advertises the
-# `vm,kvm` labels and gets /dev/kvm passed into the container so workflows
-# requiring real virtualization (Packer-qemu, kitchen-vagrant + vagrant-libvirt,
-# load tests) can run natively. Nested virt is already enabled on all amd64
-# nomad-client guests — confirmed via `/dev/kvm` + `vmx` flag.
+# Sister pool to github-runner-moat, parameterized the same way. Identical except
+# this pool advertises the `vm,kvm` labels and gets /dev/kvm passed into the
+# container so workflows requiring real virtualization (Packer-qemu,
+# kitchen-vagrant + vagrant-libvirt, load tests) can run natively. Nested virt is
+# already enabled on all amd64 nomad-client guests -- confirmed via `/dev/kvm` +
+# `vmx` flag.
 #
-# Workflows that need this pool select it via:
+# Dispatched on demand by the Temporal ci-runner-scaler: a queued moat job whose
+# runs-on carries `vm` matches this pool (the scaler's profile list checks `vm`
+# before `moat`, so a job asking for both lands here, not on the plain pool).
+# Self-registers from the same Vault PAT as the standard pool -- moat isn't ours,
+# so no App token is minted; see github-runner-moat for the credential model.
+#
+# Workflows select this pool via:
 #   runs-on: [self-hosted, linux, x64, vm, moat]
 #
 # Plain CI keeps using the regular pool (no `vm` label).
+#
+#   nomad job run github-runner-moat-vm.nomad.hcl   # register the parameterized job
+#   nomad job dispatch \                             # spawn one runner (scaler does this)
+#     -meta repo_url=https://github.com/ev-the-dev/moat \
+#     -meta labels=self-hosted,vm,moat \
+#     github-runner-moat-vm
 # -------------------------------------------------------------------------------
 
 job "github-runner-moat-vm" {
   region      = "global"
   datacenters = ["munchbox"]
-  type        = "service"
+  type        = "batch"
   node_pool   = "default"
 
-  update {
-    max_parallel     = 1
-    health_check     = "checks"
-    min_healthy_time = "30s"
-    healthy_deadline = "5m"
-    auto_revert      = true
+  # --- Dispatched per queued moat vm job; all meta is bookkeeping for the
+  #     scaler, so it is optional -- the credential comes from Vault below. ---
+  parameterized {
+    # runner_secret is permitted but unused: the scaler sends it on every
+    # vault-mode dispatch; this job reads its own secret/data/github/moat-runner.
+    meta_optional = ["repo_url", "labels", "runner_token", "runner_secret"]
   }
 
   group "runner" {
@@ -49,41 +62,16 @@ job "github-runner-moat-vm" {
       mode = "host"
     }
 
+    # --- One-shot: an ephemeral runner runs a single job then exits; never
+    #     restart or reschedule a finished/failed runner ---
     restart {
-      attempts = 10
-      interval = "10m"
-      delay    = "30s"
-      mode     = "delay"
+      attempts = 0
+      mode     = "fail"
     }
 
     reschedule {
-      delay          = "30s"
-      delay_function = "exponential"
-      max_delay      = "10m"
-      unlimited      = true
-    }
-
-    service {
-      name     = "github-runner-moat-vm"
-      provider = "consul"
-      task     = "runner"
-
-      tags = [
-        "ci",
-        "github-actions",
-        "runner",
-        "moat",
-        "vm",
-      ]
-
-      check {
-        name     = "runner-alive"
-        type     = "script"
-        command  = "/bin/sh"
-        args     = ["-c", "pgrep -f Runner.Listener || pgrep -f run.sh"]
-        interval = "30s"
-        timeout  = "5s"
-      }
+      attempts  = 0
+      unlimited = false
     }
 
     task "runner" {
@@ -132,6 +120,8 @@ job "github-runner-moat-vm" {
         RUN_AS_ROOT          = "false"
       }
 
+      # --- Registration credentials from Vault (the runner self-registers from
+      #     the PAT; the scaler mints nothing for this repo). ---
       template {
         data        = <<-EOF
 {{- with secret "secret/data/github/moat-runner" }}
