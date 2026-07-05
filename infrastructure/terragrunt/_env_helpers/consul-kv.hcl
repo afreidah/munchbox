@@ -49,8 +49,8 @@ locals {
   #     literal (not tomap) so the app/vault entries keep their own shapes through
   #     jsonencode. ---
   runner_scaler_config = {
-    "afreidah/munchbox"            = { mode = "app" }
-    "afreidah/nomad-temporal-jobs" = { mode = "app" }
+    "afreidah/munchbox"            = { mode = "app", maxConcurrent = 6 }
+    "afreidah/nomad-temporal-jobs" = { mode = "app", maxConcurrent = 6 }
     # poll/register split: we're only write on moat, so poll with a low-priv PAT
     # and register with the owner's admin PAT.
     "ev-the-dev/moat" = {
