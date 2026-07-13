@@ -171,9 +171,15 @@ job "trivy-scan-worker" {
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
       }
 
+      # --- Memory: trivy in client/server mode still unpacks each scanned
+      #     image's layers locally. Several large images (moat-runner >1GB,
+      #     ersatztv) unpacking concurrently OOM-killed trivy at the old 512MB
+      #     cap. Give a modest reservation with generous burst headroom; scan
+      #     concurrency is also capped low in the workflow (ScanConfig). ---
       resources {
-        cpu    = 500
-        memory = 512
+        cpu        = 500
+        memory     = 1024
+        memory_max = 4096
       }
 
       kill_timeout = "30s"

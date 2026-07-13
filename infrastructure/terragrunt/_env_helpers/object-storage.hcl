@@ -49,7 +49,18 @@ locals {
       account_id  = local.root.locals.cloudflare_account_id
       bucket_name = "munchbox-backups"
     }
-    b2     = { bucket_name = "munchbox-backup-data" }
+    # --- lifecycle_rules: B2 keeps hidden/superseded versions until pruned, so
+    #     high-churn replication (tempo-traces) blew the account storage cap and
+    #     the orchestrator degraded b2 (403 "storage cap exceeded"). Deleting
+    #     hidden versions 1 day after they're hidden -- with no
+    #     days_from_uploading_to_hiding -- keeps only the current version. ---
+    b2 = {
+      bucket_name = "munchbox-backup-data"
+      lifecycle_rules = [{
+        file_name_prefix             = ""
+        days_from_hiding_to_deleting = 1
+      }]
+    }
     gcp    = { bucket_name = "munchbox-backup-data", location = "US" }
     tigris = { bucket_name = "munchbox-backups" }
     # --- S3-compatible-only (aws s3compat) ---

@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "sonarr"
 type         = "service"
-image        = "linuxserver/sonarr:4.0.17"
+image        = "linuxserver/sonarr:4.0.19"
 port         = 8989
 static_port  = 8989
 host_network = true

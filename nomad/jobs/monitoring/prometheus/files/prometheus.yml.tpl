@@ -307,18 +307,19 @@ scrape_configs:
         replacement: "blackbox-exporter-internal.service.consul:9115"
 
   # -----------------------------------------------------------------------
-  # Pi-hole probes — green + logan probed directly over HTTP.
-  # Routed through the internal blackbox so a WireGuard flap doesn't
-  # masquerade as a real pihole outage.
+  # Pi-hole probes — green + logan admin UIs. pihole-*.munchbox.cc resolve
+  # to the Traefik VIP (like every catalog service), which fronts the admin
+  # over HTTPS with a valid cert, so this must be https_2xx. Through the
+  # internal blackbox so a WireGuard flap doesn't fake a pihole outage.
   # -----------------------------------------------------------------------
   - job_name: "pihole_probes"
     metrics_path: "/probe"
     params:
-      module: ["http_2xx"]
+      module: ["https_2xx"]
     static_configs:
       - targets:
-          - "http://pihole-green.munchbox.cc/admin/"
-          - "http://pihole-logan.munchbox.cc/admin/"
+          - "https://pihole-green.munchbox.cc/admin/"
+          - "https://pihole-logan.munchbox.cc/admin/"
     relabel_configs:
       - source_labels: ["__address__"]
         target_label: "__param_target"

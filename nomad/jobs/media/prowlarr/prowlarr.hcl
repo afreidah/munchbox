@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name         = "prowlarr"
 type         = "service"
-image        = "linuxserver/prowlarr:2.3.5"
+image        = "linuxserver/prowlarr:2.5.1-nightly"
 port         = 9696
 static_port  = 9696
 host_network = true
