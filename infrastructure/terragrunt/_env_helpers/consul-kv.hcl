@@ -49,8 +49,8 @@ locals {
   #     literal (not tomap) so the app/vault entries keep their own shapes through
   #     jsonencode. ---
   runner_scaler_config = {
-    "afreidah/munchbox"            = { mode = "app", maxConcurrent = 6 }
-    "afreidah/nomad-temporal-jobs" = { mode = "app", maxConcurrent = 6 }
+    "afreidah/munchbox"            = { mode = "app", maxConcurrent = 3 }
+    "afreidah/nomad-temporal-jobs" = { mode = "app", maxConcurrent = 3 }
     # poll/register split: we're only write on moat, so poll with a low-priv PAT
     # and register with the owner's admin PAT.
     "ev-the-dev/moat" = {
@@ -59,9 +59,9 @@ locals {
       registerVaultPath = "github/moat-runner"
       # maxConcurrent caps each pool; vm is pinned to the two KVM hosts, so keep it low.
       profiles = [
-        { label = "vm", job = "github-runner-moat-vm", maxConcurrent = 2 },
-        { label = "go", job = "go-ci-runner", maxConcurrent = 6 },
-        { label = "moat", job = "github-runner-moat", maxConcurrent = 3 },
+        { label = "vm", job = "github-runner-moat-vm", maxConcurrent = 1 },
+        { label = "go", job = "go-ci-runner", maxConcurrent = 3 },
+        { label = "moat", job = "github-runner-moat", maxConcurrent = 2 },
       ]
     }
   }

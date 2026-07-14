@@ -70,7 +70,7 @@ locals {
       workflow_type = "AptlyCleanup"
       task_queue    = "cleanup-task-queue"
       workflow_id   = "aptly-cleanup-scheduled"
-      input         = { job_name = "aptly", image = "urpylka/aptly:1.6.2" }
+      input         = { job_name = "aptly" }
     }
     "postgres-maintenance-weekly" = {
       schedule_id   = "postgres-maintenance-weekly"

@@ -71,3 +71,44 @@ run "bucket_type_defaults_private" {
     error_message = "bucket_type must default to allPrivate"
   }
 }
+
+# -------------------------------------------------------------------------
+# lifecycle_rules flow through to the bucket's version-pruning rules
+# -------------------------------------------------------------------------
+
+run "lifecycle_rules_flow_through" {
+  command = plan
+
+  variables {
+    lifecycle_rules = [{
+      file_name_prefix             = ""
+      days_from_hiding_to_deleting = 1
+    }]
+  }
+
+  # --- exactly one rule is configured on the bucket ---
+  assert {
+    condition     = length(b2_bucket.this.lifecycle_rules) == 1
+    error_message = "one lifecycle rule must be configured"
+  }
+
+  # --- hidden-version retention flows through ---
+  assert {
+    condition     = one(b2_bucket.this.lifecycle_rules).days_from_hiding_to_deleting == 1
+    error_message = "days_from_hiding_to_deleting must flow through to the bucket"
+  }
+}
+
+# -------------------------------------------------------------------------
+# lifecycle_rules default to none (bucket managed as-is)
+# -------------------------------------------------------------------------
+
+run "lifecycle_rules_default_empty" {
+  command = plan
+
+  # --- no rules unless explicitly set ---
+  assert {
+    condition     = length(b2_bucket.this.lifecycle_rules) == 0
+    error_message = "lifecycle_rules must default to empty"
+  }
+}
