@@ -63,6 +63,11 @@ listener "tcp" {
   tls_disable     = <%= @listener_tls_disable %>
   tls_cert_file   = "<%= @listener_tls_cert_file %>"
   tls_key_file    = "<%= @listener_tls_key_file %>"
+
+  # --- serve /sys/metrics tokenless so standby nodes scrape too (active-only otherwise) ---
+  telemetry {
+    unauthenticated_metrics_access = true
+  }
 }
 
 # -------------------------------------------------------------------------------

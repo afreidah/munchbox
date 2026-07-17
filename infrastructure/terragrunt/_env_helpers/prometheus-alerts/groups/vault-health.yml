@@ -22,14 +22,16 @@
         summary: "Vault is unreachable"
         description: "Cannot scrape Vault metrics on {{ $labels.instance }}. Vault may be down."
 
-    - alert: VaultNotActive
-      expr: vault_core_active == 0
+    - alert: VaultNoActiveNode
+      # HA: one node is active (vault_core_active=1), the rest standby (=0). Alert
+      # only when the whole cluster has no active node, not per standby instance.
+      expr: sum(vault_core_active) < 1
       for: 2m
       labels:
         severity: critical
       annotations:
-        summary: "Vault is not in active-ready state"
-        description: "Vault on {{ $labels.instance }} is sealed or still joining. Check cluster health."
+        summary: "Vault cluster has no active node"
+        description: "No Vault node reports active; the cluster has no leader and cannot serve requests."
 
     - alert: VaultHighRequestLatency
       # vault_core_handle_request is a summary (no _bucket); use rate(_sum)/rate(_count)

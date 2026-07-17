@@ -71,7 +71,7 @@ job "forgejo-runner" {
         name     = "runner-alive"
         type     = "script"
         command  = "/bin/sh"
-        args     = ["-c", "pgrep -f act_runner"]
+        args     = ["-c", "pgrep -f forgejo-runner"]
         interval = "30s"
         timeout  = "5s"
       }
@@ -84,6 +84,10 @@ job "forgejo-runner" {
     task "forgejo-runner" {
       driver = "docker"
 
+      # Native image defaults to a non-root user that can't reach the host
+      # Docker socket; run as root like the old act_runner image did.
+      user = "root"
+
       vault {
         role = "nomad-workloads"
       }
@@ -95,7 +99,7 @@ job "forgejo-runner" {
       }
 
       config {
-        image        = "gitea/act_runner:0.6.1"
+        image        = "code.forgejo.org/forgejo/runner:12.13.0"
         network_mode = "host"
         privileged   = true
 
@@ -104,8 +108,10 @@ job "forgejo-runner" {
           "local/config.yaml:/config.yaml:ro"
         ]
 
-        # Use daemon mode with config file
-        args = ["daemon", "--config", "/config.yaml"]
+        # Native image has no auto-register entrypoint (unlike gitea/act_runner's
+        # run.sh): register from the Vault token env if not yet registered, then daemon.
+        command = "/bin/sh"
+        args    = ["-c", "test -f /data/.runner || /bin/forgejo-runner register --no-interactive --config /config.yaml --instance $GITEA_INSTANCE_URL --token $GITEA_RUNNER_REGISTRATION_TOKEN --name $GITEA_RUNNER_NAME --labels $GITEA_RUNNER_LABELS; exec /bin/forgejo-runner daemon --config /config.yaml"]
       }
 
       # --- Runner Configuration ---

@@ -110,7 +110,7 @@ job "aptly-s3-gateway" {
 
       config {
         # TODO: pin to a specific date tag after first successful deploy.
-        image              = "nginxinc/nginx-s3-gateway:latest-njs-oss"
+        image              = "nginxinc/nginx-s3-gateway:latest-njs-oss-20260413"
         image_pull_timeout = "5m"
         ports              = ["http"]
       }

@@ -6,7 +6,7 @@ Provides cache, session, and queue storage for Forgejo, Trivy Server, etc.
 ## Image
 
 - `redis:8-alpine` (redis server + sentinel)
-- `oliver006/redis_exporter:v1.84.0` (metrics sidecar)
+- `oliver006/redis_exporter:v1.86.0` (metrics sidecar)
 - `busybox:1.38.0` (prestart init-storage)
 
 ## Hostname / exposure

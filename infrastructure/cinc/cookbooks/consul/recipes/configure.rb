@@ -54,6 +54,7 @@ consul_configure 'consul' do
   telemetry_disable_hostname          node[cookbook]['config']['telemetry_disable_hostname']
   gossip_lan_interval                 node[cookbook]['config']['gossip_lan_interval']
   gossip_lan_probe_timeout            node[cookbook]['config']['gossip_lan_probe_timeout']
+  gossip_lan_suspicion_mult           node[cookbook]['config']['gossip_lan_suspicion_mult']
   bin_path                            node[cookbook]['install']['bin_path']
   config_dir                          node[cookbook]['install']['config_dir']
   data_dir                            node[cookbook]['install']['data_dir']

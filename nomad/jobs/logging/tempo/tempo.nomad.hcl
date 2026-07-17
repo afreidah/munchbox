@@ -159,7 +159,7 @@ job "tempo" {
       }
 
       config {
-        image              = "grafana/tempo:3.0.0"
+        image              = "grafana/tempo:3.0.2"
         image_pull_timeout = "10m"
         ports              = ["http", "otlp-grpc", "otlp-http", "zipkin", "jaeger-http", "jaeger-grpc"]
         network_mode       = "host"

@@ -348,7 +348,7 @@ EOH
 
       # --- Container Configuration ---
       config {
-        image              = "codeberg.org/forgejo/forgejo:15.0.2"
+        image              = "codeberg.org/forgejo/forgejo:15.0.4"
         image_pull_timeout = "10m"
         ports              = ["http", "ssh"]
         volumes = [

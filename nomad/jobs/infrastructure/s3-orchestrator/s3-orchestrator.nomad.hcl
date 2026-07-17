@@ -130,7 +130,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.64.0"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.66.3"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
@@ -309,7 +309,10 @@ backends:
 
 circuit_breaker:
   failure_threshold: 3
-  open_timeout: 1200s
+  # Postgres recovers in seconds after a Patroni switchover; probe quickly
+  # rather than holding writes off for 20 min (haproxy-postgres has no primary
+  # for only a few seconds during a leader switch).
+  open_timeout: 30s
   cache_ttl: 120s
   parallel_broadcast: true
   degraded_broadcast_parallelism: 4
@@ -360,7 +363,7 @@ cache:
   ttl: "15m"
 
 reconcile:
-  enabled: false
+  enabled: true
   interval: "24h"
 
 cleanup_queue:

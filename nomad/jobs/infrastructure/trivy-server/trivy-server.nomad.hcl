@@ -107,7 +107,7 @@ job "trivy-server" {
       }
 
       config {
-        image              = "aquasec/trivy:0.71.0"
+        image              = "aquasec/trivy:0.72.0"
         image_pull_timeout = "10m"
         ports              = ["http"]
         args = [

@@ -666,6 +666,12 @@ EOH
       idleConnTimeout = "90s"
   [http.serversTransports.insecure]
     insecureSkipVerify = true
+  [http.serversTransports.streaming]
+    # No idle reap for long-lived SSE/websocket streams (traefik-log-dashboard)
+    [http.serversTransports.streaming.forwardingTimeouts]
+      dialTimeout = "30s"
+      responseHeaderTimeout = "0s"
+      idleConnTimeout = "0s"
 EOH
       }
 
@@ -905,6 +911,9 @@ EOH
         "traefik.http.routers.traefik-logs.entrypoints=websecure",
         "traefik.http.routers.traefik-logs.tls=true",
         "traefik.http.routers.traefik-logs.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,dashboard-allowlan@file",
+        # Streaming service: keep the live-update stream from being idle-reaped
+        "traefik.http.services.traefik-log-dashboard.loadbalancer.serverstransport=streaming@file",
+        "traefik.http.services.traefik-log-dashboard.loadbalancer.responseforwarding.flushinterval=100ms",
         # HTTP router (CF tunnel)
         "traefik.http.routers.traefik-logs-http.rule=Host(`traefik-logs.munchbox.cc`)",
         "traefik.http.routers.traefik-logs-http.entrypoints=web",
@@ -948,7 +957,7 @@ EOH
       }
 
       config {
-        image              = "cloudflare/cloudflared:2026.5.2"
+        image              = "cloudflare/cloudflared:2026.7.1"
         image_pull_timeout = "10m"
         ports              = ["cloudflared-metrics"]
         network_mode       = "host"

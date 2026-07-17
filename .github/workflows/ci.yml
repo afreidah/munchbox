@@ -409,8 +409,12 @@ jobs:
               case "$rel" in
                 root.hcl) leaves=$(all_leaves); break ;;
                 _env_helpers/*)
-                  h=$(basename "$rel")
-                  leaves="$leaves"$'\n'$(grep -rl "$h" --include='terragrunt.hcl' . | xargs -r -n1 dirname) ;;
+                  # Map to the helper root token: a file helper (object-storage.hcl) keeps
+                  # its name; a dir helper (prometheus-alerts/groups/*.yml) resolves to the
+                  # helper dir, not the leaf file. || true so a no-match grep can't trip
+                  # errexit and fail the whole step.
+                  h=$(printf '%s' "${rel#_env_helpers/}" | cut -d/ -f1)
+                  leaves="$leaves"$'\n'$(grep -rl "$h" --include='terragrunt.hcl' . | xargs -r -n1 dirname || true) ;;
                 *)
                   d="./$(dirname "$rel")"
                   while [ "$d" != "." ] && [ "$d" != "./" ] && [ ! -f "$d/terragrunt.hcl" ]; do d=$(dirname "$d"); done

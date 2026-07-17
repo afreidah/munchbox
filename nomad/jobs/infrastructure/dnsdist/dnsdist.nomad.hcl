@@ -171,7 +171,7 @@ job "dnsdist" {
       # --- Docker Configuration ---
       # NOTE: verify/pin the current stable dnsdist tag before deploy.
       config {
-        image        = "powerdns/dnsdist-19:1.9.15"
+        image        = "powerdns/dnsdist-20:2.0.7"
         network_mode = "host"
         args         = ["--supervised", "--disable-syslog", "-C", "/etc/dnsdist/dnsdist.conf"]
         volumes = [

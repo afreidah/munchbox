@@ -13,7 +13,7 @@ service in the cluster routes through here.
 - traefik-log-filter: `busybox:1.38.0`
 - traefik-log-agent: `hhftechnology/traefik-log-dashboard-agent:3.1.1`
 - traefik-log-dashboard: `hhftechnology/traefik-log-dashboard:3.1.1`
-- cloudflared-tunnel: `cloudflare/cloudflared:2026.5.2`
+- cloudflared-tunnel: `cloudflare/cloudflared:2026.7.1`
 
 ## Hostname / exposure
 

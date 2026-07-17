@@ -126,7 +126,7 @@ job "oauth2-proxy" {
 
       # --- Container Configuration ---
       config {
-        image              = "quay.io/oauth2-proxy/oauth2-proxy:v7.15.2"
+        image              = "quay.io/oauth2-proxy/oauth2-proxy:v7.15.3"
         image_pull_timeout = "5m"
         network_mode       = "host"
         ports              = ["http"]

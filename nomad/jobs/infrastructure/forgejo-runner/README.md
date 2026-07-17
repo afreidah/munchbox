@@ -5,7 +5,7 @@ Forgejo server and executes them in Docker containers on the Oracle ARM nodes.
 
 ## image
 
-`gitea/act_runner:0.6.1`
+`code.forgejo.org/forgejo/runner:12.13.0`
 
 ## hostname / exposure
 

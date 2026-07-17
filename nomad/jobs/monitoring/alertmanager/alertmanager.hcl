@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name         = "alertmanager"
-image        = "prom/alertmanager:v0.32.0"
+image        = "prom/alertmanager:v0.33.1"
 port         = 9093
 size         = "tiny"
 cpu          = 50

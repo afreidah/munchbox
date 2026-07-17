@@ -6,7 +6,7 @@ Queried via Grafana with LogQL.
 
 ## Image
 
-`grafana/loki:3.7.2`
+`grafana/loki:3.7.3`
 
 ## Hostname / exposure
 

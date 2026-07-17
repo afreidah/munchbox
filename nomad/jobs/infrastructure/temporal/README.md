@@ -5,7 +5,7 @@ scanning. The server exposes a gRPC API on 7233; the UI is a separate job.
 
 ## Image
 
-- temporal-server: `temporalio/server:1.31.0`
+- temporal-server: `temporalio/server:1.31.2`
 - temporal-ui: `temporalio/ui:2.50.0`
 
 ## Hostname / exposure

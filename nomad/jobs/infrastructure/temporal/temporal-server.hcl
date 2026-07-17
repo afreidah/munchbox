@@ -14,7 +14,7 @@ job_dir = "/home/afreidah/tools/munchbox/nomad/jobs/infrastructure/temporal"
 # --- General Settings ---
 name         = "temporal-server"
 type         = "service"
-image        = "temporalio/server:1.31.0"
+image        = "temporalio/server:1.31.2"
 port         = 7233
 static_port  = 7233
 host_network = true

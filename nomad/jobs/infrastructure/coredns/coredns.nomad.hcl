@@ -3,9 +3,10 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Lightweight DNS forwarder that load balances queries across both Pi-hole
-# servers (green and logan). Runs as a system job on every node so each node
-# has local DNS with round-robin distribution, health checks, and caching.
+# Lightweight per-node DNS forwarder. Runs as a system job on every node so
+# each node has local DNS with health checks and caching. Non-Consul queries
+# forward to the dnsdist VIP, which spreads them across the Pi-hole servers
+# (green and logan); Pi-holes remain a direct fallback if dnsdist is down.
 #
 # Each node's dnsmasq points to localhost:5354 for non-Consul queries.
 # -------------------------------------------------------------------------------
@@ -18,6 +19,11 @@ variable "pihole_1" {
 variable "pihole_2" {
   type    = string
   default = "192.168.68.64"
+}
+
+variable "dnsdist_vip" {
+  type    = string
+  default = "192.168.68.50"
 }
 
 variable "cloudflare" {
@@ -131,7 +137,7 @@ job "coredns" {
 
       # --- Docker Configuration ---
       config {
-        image        = "coredns/coredns:1.14.3"
+        image        = "coredns/coredns:1.14.6"
         network_mode = "host"
         args         = ["-conf", "/etc/coredns/Corefile"]
         volumes = [
@@ -162,9 +168,10 @@ job "coredns" {
         denial 9984 60
     }
 
-    # Forward to both Pi-holes with health checks
-    forward . ${var.pihole_1} ${var.pihole_2} {
-        policy round_robin
+    # Forward to dnsdist, which load-balances across the Pi-holes. Sequential
+    # policy so a down dnsdist VIP falls back to the Pi-holes directly.
+    forward . ${var.dnsdist_vip} ${var.pihole_1} ${var.pihole_2} {
+        policy sequential
         health_check 10s
         max_fails 3
     }

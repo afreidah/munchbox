@@ -91,6 +91,8 @@ default[cookbook]['config'] = {
   # --- gossip_lan tuning (loosened probe_timeout per GH #130 for WG-to-oracle stability). Strings: consul wants duration literals. ---
   gossip_lan_interval: '1s',
   gossip_lan_probe_timeout: '5s',
+  # --- suspicion_mult raised off the upstream 4 so a transient WAN blip on an oracle node's wg path takes more missed probe rounds to be declared failed (Integer multiplier, not a duration). ---
+  gossip_lan_suspicion_mult: 6,
 }
 
 # -------------------------------------------------------------------------------

@@ -124,7 +124,7 @@ job "deluge" {
       driver = "docker"
 
       config {
-        image        = "alpine:3.21.7"
+        image        = "alpine:3.23.5"
         privileged   = true
         network_mode = "host"
         command      = "/bin/sh"
@@ -226,6 +226,9 @@ EOF
 
         # Bridge mode shares network with gluetun sidecar - all traffic routes through VPN
 
+        # deluge download_location/move_completed_path (in the app-owned core.conf,
+        # not templatable here) MUST be /data/torrents -- i.e. under this /tank:/data
+        # mount. Same mount layout as the *arr apps so imports hardlink instead of copy.
         volumes = [
           "/opt/nomad/data/deluge:/config",
           "/tank:/data",
@@ -275,8 +278,11 @@ EOF
       }
 
       resources {
-        cpu    = 1500
-        memory = 192
+        cpu = 1500
+        # 192 MiB OOM-killed deluged every ~1-2 min with 100+ torrents (lost
+        # WebUI connection + reset download state on each kill). Burst to 1 GiB.
+        memory     = 512
+        memory_max = 1024
       }
 
       kill_timeout = "30s"
