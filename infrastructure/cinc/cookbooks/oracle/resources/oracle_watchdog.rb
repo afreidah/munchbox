@@ -39,6 +39,12 @@ action :configure do
 
   munchbox_base_apt_lock_wait "oracle_watchdog_install_#{new_resource.name}"
 
+  # --- Refresh the apt cache every converge so a fresh publish is seen ---
+  # The shared munchbox_base_apt_repo only runs apt-get update on :periodic
+  # (24h); without this the :upgrade below decides against a stale cache and
+  # skips a newly-published version.
+  apt_update "oracle_watchdog_#{new_resource.name}"
+
   apt_package pkg do
     action :upgrade
     notifies :restart, "service[#{svc}]", :delayed

@@ -113,6 +113,29 @@ job "aptly-s3-gateway" {
         image              = "nginxinc/nginx-s3-gateway:latest-njs-oss-20260413"
         image_pull_timeout = "5m"
         ports              = ["http"]
+        volumes = [
+          "local/apt-metadata-nocache.conf:/etc/nginx/conf.d/zz-apt-metadata-nocache.conf:ro",
+        ]
+      }
+
+      # --- Never cache apt repo metadata (dists/) ---
+      # InRelease pins exact hashes of Packages/Packages.bz2. The server-level
+      # proxy_cache (1h) caches each object independently, so right after a
+      # publish apt can get a fresh InRelease against a still-cached old Packages
+      # -> "File has unexpected size" and the new index is rejected. dists/ must
+      # always be served straight from S3; pool/*.deb are immutable so they stay
+      # cached. http-context directives are inherited into the @s3 cache location.
+      template {
+        destination = "local/apt-metadata-nocache.conf"
+        perms       = "0644"
+        data        = <<-EOF
+map $request_uri $apt_no_cache {
+    default      0;
+    "~^/dists/"  1;
+}
+proxy_no_cache     $apt_no_cache;
+proxy_cache_bypass $apt_no_cache;
+        EOF
       }
 
       # --- AWS credentials from Vault (env-injected) ---
