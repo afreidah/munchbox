@@ -34,3 +34,8 @@ nginx don't collide on port 80 inside a shared alloc network.
 - `AWS_SIGS_VERSION = 4`, `S3_STYLE = path`
 - `ALLOW_DIRECTORY_LIST = true` so apt can walk the tree
 - Cache TTLs: 1h on 200, 1m on 404, 30s on 403
+- `dists/` (repo metadata) is served straight from S3, never cached
+  (`zz-apt-metadata-nocache.conf` drop-in). InRelease pins exact hashes of
+  Packages, and independent per-object cache expiry serves a fresh InRelease
+  against a stale Packages -> apt `File has unexpected size` errors right after
+  a publish. Only `pool/*.deb` (immutable) stays cached.
