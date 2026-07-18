@@ -214,7 +214,8 @@ scrape_configs:
     scheme: "https"
     tls_config:
       ca_file: "/etc/prometheus/certs/ca-chain.crt"
-    bearer_token_file: "/etc/prometheus/secrets/vault_token"
+    # /sys/metrics served tokenless (listener unauthenticated_metrics_access);
+    # a bearer token would 403 on standby nodes, scraping only the active one.
     consul_sd_configs:
       - server: "127.0.0.1:8500"
         scheme: "http"

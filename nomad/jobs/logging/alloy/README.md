@@ -7,7 +7,7 @@ host metrics to Prometheus. Runs on every node.
 
 ## Image
 
-`grafana/alloy:v1.16.2`
+`grafana/alloy:v1.17.1`
 
 ## Hostname / exposure
 

@@ -148,6 +148,7 @@ telemetry {
 gossip_lan {
   gossip_interval = "<%= @gossip_lan_interval %>"
   probe_timeout   = "<%= @gossip_lan_probe_timeout %>"
+  suspicion_mult  = <%= @gossip_lan_suspicion_mult %>
 }
 
 <% if @tls_enabled -%>

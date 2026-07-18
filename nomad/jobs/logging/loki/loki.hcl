@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name         = "loki"
-image        = "grafana/loki:3.7.2"
+image        = "grafana/loki:3.7.3"
 port         = 3100
 static_port  = 3100
 host_network = true

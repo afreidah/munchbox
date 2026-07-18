@@ -96,6 +96,7 @@ property :telemetry_prometheus_retention_time, String, default: '30s'
 property :telemetry_disable_hostname, [true, false], default: false
 property :gossip_lan_interval,        String, default: '1s'
 property :gossip_lan_probe_timeout,   String, default: '5s'
+property :gossip_lan_suspicion_mult,  Integer, default: 6
 property :bin_path,                   String, default: '/usr/local/bin/consul'
 property :config_dir,                 String, default: '/etc/consul.d'
 property :data_dir,                   String, default: '/opt/consul/data'
@@ -160,7 +161,8 @@ action :configure do
       telemetry_prometheus_retention_time: new_resource.telemetry_prometheus_retention_time,
       telemetry_disable_hostname: new_resource.telemetry_disable_hostname,
       gossip_lan_interval: new_resource.gossip_lan_interval,
-      gossip_lan_probe_timeout: new_resource.gossip_lan_probe_timeout
+      gossip_lan_probe_timeout: new_resource.gossip_lan_probe_timeout,
+      gossip_lan_suspicion_mult: new_resource.gossip_lan_suspicion_mult
     )
     notifies :restart, 'service[consul]', :delayed
   end

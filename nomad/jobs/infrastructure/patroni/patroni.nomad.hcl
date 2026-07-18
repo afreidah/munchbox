@@ -384,9 +384,14 @@ postgresql:
 # --- Bootstrap Configuration (for new cluster) ---
 bootstrap:
   dcs:
-    ttl: 30
+    # ttl raised off the 30s floor (ttl >= loop_wait + 2*retry_timeout) so a
+    # transient Consul-gossip storm from the WG-tunneled oracle nodes can't
+    # expire the leader's DCS session and force a false failover (see README).
+    # NOTE: bootstrap.dcs only seeds a NEW cluster; apply to the running one
+    # with `patronictl edit-config`.
+    ttl: 90
     loop_wait: 10
-    retry_timeout: 10
+    retry_timeout: 15
     maximum_lag_on_failover: 1048576  # 1MB
     postgresql:
       use_pg_rewind: true
@@ -450,7 +455,7 @@ tags:
       }
 
       config {
-        image        = "quay.io/prometheuscommunity/postgres-exporter:v0.19.1"
+        image        = "quay.io/prometheuscommunity/postgres-exporter:v0.20.1"
         network_mode = "host"
       }
 

@@ -73,6 +73,7 @@ control 'consul-gossip-lan' do
     its('content') { should match(/^gossip_lan\s*\{/) }
     its('content') { should match(/gossip_interval\s*=\s*"1s"/) }
     its('content') { should match(/probe_timeout\s*=\s*"5s"/) }
+    its('content') { should match(/suspicion_mult\s*=\s*6/) }
   end
 end
 

@@ -69,6 +69,7 @@ RSpec.describe 'consul::configure' do
       template = chef_run.template('/etc/consul.d/consul.hcl')
       expect(template.variables[:gossip_lan_interval]).to eq('1s')
       expect(template.variables[:gossip_lan_probe_timeout]).to eq('5s')
+      expect(template.variables[:gossip_lan_suspicion_mult]).to eq(6)
     end
 
     # --- Nomad consul-sync recovery: nomad does nothing on its own but restarts

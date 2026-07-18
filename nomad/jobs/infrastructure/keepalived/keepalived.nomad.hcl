@@ -87,7 +87,7 @@ job "keepalived" {
       driver = "docker"
 
       config {
-        image        = "alpine:3.21.7"
+        image        = "alpine:3.23.5"
         network_mode = "host"
 
         # Required for VRRP and VIP management

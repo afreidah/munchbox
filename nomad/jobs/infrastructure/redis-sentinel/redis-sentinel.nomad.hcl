@@ -262,7 +262,7 @@ job "redis-sentinel" {
 
       # --- Docker Configuration ---
       config {
-        image              = "redis:8-alpine"
+        image              = "redis:8.8.0-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
         command            = "/bin/sh"
@@ -415,7 +415,7 @@ SENTINEL_ADDRS={{ range $i, $s := service "redis-sentinel" }}{{ if ne $i 0 }} {{
 
       # --- Docker Configuration ---
       config {
-        image              = "redis:8-alpine"
+        image              = "redis:8.8.0-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
         command            = "/bin/sh"
@@ -495,7 +495,7 @@ sentinel announce-port {{ env "NOMAD_PORT_sentinel" }}
       }
 
       config {
-        image        = "oliver006/redis_exporter:v1.84.0"
+        image        = "oliver006/redis_exporter:v1.86.0"
         network_mode = "host"
       }
 
@@ -579,7 +579,7 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
       }
 
       config {
-        image              = "redis:8-alpine"
+        image              = "redis:8.8.0-alpine"
         image_pull_timeout = "10m"
         network_mode       = "host"
         command            = "/bin/sh"

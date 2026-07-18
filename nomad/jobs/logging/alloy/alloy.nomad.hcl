@@ -84,7 +84,7 @@ job "alloy" {
     task "alloy" {
       driver = "docker"
       config {
-        image              = "grafana/alloy:v1.16.2"
+        image              = "grafana/alloy:v1.17.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
