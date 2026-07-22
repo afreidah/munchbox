@@ -231,8 +231,11 @@ job "patroni" {
       driver = "docker"
 
       # --- Vault Integration ---
+      # WI token re-derives at the role's 24h max_ttl; noop so that token
+      # cycle does not restart Postgres (a restart = a primary failover).
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {
@@ -262,11 +265,20 @@ job "patroni" {
       # Note: postgres user in Spilo container has UID/GID 999
       template {
         destination = "secrets/server.crt"
-        change_mode = "restart"
-        perms       = "0644"
-        uid         = 999
-        gid         = 999
-        data        = <<-EOF
+        # --- Reload Postgres in place on cert rotation (SIGHUP to postmaster);
+        # a task restart here would fail the primary over. pg_ctl targets the
+        # postmaster directly since PID 1 in the container is Patroni, not it. ---
+        change_mode = "script"
+        change_script {
+          command       = "/bin/sh"
+          args          = ["-c", "pg_ctl reload -D /home/postgres/data/pgdata"]
+          timeout       = "30s"
+          fail_on_error = false
+        }
+        perms = "0644"
+        uid   = 999
+        gid   = 999
+        data  = <<-EOF
 {{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,haproxy-postgres.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=2160h" }}
 {{ .Data.certificate }}
 {{ .Data.issuing_ca }}
@@ -276,11 +288,17 @@ job "patroni" {
 
       template {
         destination = "secrets/server.key"
-        change_mode = "restart"
-        perms       = "0600"
-        uid         = 999
-        gid         = 999
-        data        = <<-EOF
+        change_mode = "script"
+        change_script {
+          command       = "/bin/sh"
+          args          = ["-c", "pg_ctl reload -D /home/postgres/data/pgdata"]
+          timeout       = "30s"
+          fail_on_error = false
+        }
+        perms = "0600"
+        uid   = 999
+        gid   = 999
+        data  = <<-EOF
 {{ with secret "pki_int/issue/postgres" "common_name=postgres.service.consul" "alt_names=postgres-primary.service.consul,postgres-replica.service.consul,haproxy-postgres.service.consul,localhost" "ip_sans=127.0.0.1" "ttl=2160h" }}
 {{ .Data.private_key }}
 {{ end }}
@@ -289,11 +307,17 @@ job "patroni" {
 
       template {
         destination = "secrets/ca.crt"
-        change_mode = "restart"
-        perms       = "0644"
-        uid         = 999
-        gid         = 999
-        data        = <<-EOF
+        change_mode = "script"
+        change_script {
+          command       = "/bin/sh"
+          args          = ["-c", "pg_ctl reload -D /home/postgres/data/pgdata"]
+          timeout       = "30s"
+          fail_on_error = false
+        }
+        perms = "0644"
+        uid   = 999
+        gid   = 999
+        data  = <<-EOF
 {{ with secret "pki_int/cert/ca" }}
 {{ .Data.certificate }}
 {{ end }}
@@ -444,8 +468,10 @@ tags:
         sidecar = true
       }
 
+      # --- noop token cycle: exporter need not restart when the WI token rotates ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {
