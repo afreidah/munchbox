@@ -24,11 +24,12 @@ help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
 
 build: ## Build for current architecture
-	docker build -t $(FULL_IMAGE):$(TAG) -t $(FULL_IMAGE):pg$(PG_VERSION) .
+	docker build --pull -t $(FULL_IMAGE):$(TAG) -t $(FULL_IMAGE):pg$(PG_VERSION) .
 
 build-multiarch: ## Build for current platform (use 'push' for multi-arch)
 	docker buildx create --name munchbox-builder --driver-opt network=host --use 2>/dev/null || docker buildx use munchbox-builder
 	docker buildx build \
+		--pull \
 		-t $(FULL_IMAGE):$(TAG) \
 		-t $(FULL_IMAGE):pg$(PG_VERSION) \
 		-t $(FULL_IMAGE):pg$(PG_VERSION)-patroni$(PATRONI_VERSION) \
@@ -38,6 +39,7 @@ build-multiarch: ## Build for current platform (use 'push' for multi-arch)
 push: ## Build and push to registry
 	docker buildx create --name munchbox-builder --driver-opt network=host --use 2>/dev/null || docker buildx use munchbox-builder
 	docker buildx build \
+		--pull \
 		--platform linux/amd64,linux/arm64 \
 		-t $(FULL_IMAGE):$(TAG) \
 		-t $(FULL_IMAGE):pg$(PG_VERSION) \

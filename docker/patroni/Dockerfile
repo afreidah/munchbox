@@ -4,20 +4,18 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Minimal Patroni image with PostgreSQL 18 and Consul DCS support.
-# Based on official postgres:18 image with Patroni installed via pip.
-# Images are signed with cosign using Vault Transit.
+# Multi-stage: the Patroni venv is compiled in a builder stage so the -dev and
+# compiler packages never ship in the runtime image. Base is postgres:18-trixie
+# (Debian 13, current stable). Images are signed with cosign using Vault Transit.
 # -------------------------------------------------------------------------------
 
-FROM postgres:18-bookworm
+# --- Builder stage: compile the Patroni virtualenv ---
+FROM postgres:18-trixie AS builder
 
-LABEL maintainer="Alex Freidah"
-LABEL description="Patroni HA PostgreSQL 18 with Consul support"
-
-# --- Environment ---
 ENV PATRONI_VERSION=4.0.4
 ENV DEBIAN_FRONTEND=noninteractive
 
-# --- Install dependencies ---
+# --- Build-only dependencies (do not ship in the runtime image) ---
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -26,6 +24,37 @@ RUN set -eux; \
         python3-venv \
         python3-dev \
         libpq-dev \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
+# --- Build the virtualenv with Patroni + Consul support ---
+ENV VIRTUAL_ENV=/opt/patroni
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN set -eux; \
+    pip install --no-cache-dir \
+        "patroni[consul]==${PATRONI_VERSION}" \
+        psycopg[binary] \
+        python-consul2 \
+    ; \
+    patroni --version
+
+# -------------------------------------------------------------------------------
+# Runtime stage
+# -------------------------------------------------------------------------------
+FROM postgres:18-trixie
+
+LABEL maintainer="Alex Freidah"
+LABEL description="Patroni HA PostgreSQL 18 with Consul support"
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --- Patch base-preinstalled packages, then install runtime-only deps ---
+RUN set -eux; \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install -y --no-install-recommends \
+        python3 \
         curl \
         jq \
         netcat-openbsd \
@@ -36,27 +65,17 @@ RUN set -eux; \
     ; \
     rm -rf /var/lib/apt/lists/*
 
-# --- Create virtual environment for Patroni ---
+# --- Bring in the prebuilt Patroni virtualenv ---
 ENV VIRTUAL_ENV=/opt/patroni
-RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+COPY --from=builder /opt/patroni /opt/patroni
 
-# --- Install Patroni with Consul support ---
-RUN set -eux; \
-    pip install --no-cache-dir \
-        "patroni[consul]==${PATRONI_VERSION}" \
-        psycopg[binary] \
-        python-consul2 \
-    ; \
-    # Verify installation
-    patroni --version
-
-# --- Create patroni user (use postgres user/group) ---
+# --- Create patroni directories (use postgres user/group) ---
 RUN set -eux; \
     mkdir -p /etc/patroni /home/postgres/data; \
     chown -R postgres:postgres /etc/patroni /home/postgres
 
-# --- Patroni configuration directory ---
+# --- Patroni data directory ---
 VOLUME ["/home/postgres/data"]
 
 # --- Expose ports ---
