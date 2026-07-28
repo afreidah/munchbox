@@ -29,9 +29,11 @@ job "patroni" {
   # ---------------------------------------------------------------------------
 
   update {
-    max_parallel      = 1
-    health_check      = "task_states"
-    min_healthy_time  = "30s"
+    max_parallel = 1
+    # --- gate on the /health check (node rejoined as a Patroni member), not just
+    #     container start; primary/replica routing checks are on_update=ignore ---
+    health_check      = "checks"
+    min_healthy_time  = "60s"
     healthy_deadline  = "10m"
     progress_deadline = "15m"
     auto_revert       = true
@@ -120,6 +122,8 @@ job "patroni" {
         path     = "/primary"
         interval = "5s"
         timeout  = "2s"
+        # --- routing only (fails on replicas by design); don't gate deploys ---
+        on_update = "ignore"
       }
     }
 
@@ -145,6 +149,8 @@ job "patroni" {
         path     = "/replica"
         interval = "5s"
         timeout  = "2s"
+        # --- routing only (fails on the leader by design); don't gate deploys ---
+        on_update = "ignore"
       }
     }
 
@@ -246,7 +252,7 @@ job "patroni" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/patroni:e2410f77"
+        image              = "registry.munchbox.cc/patroni:115bb0f6"
         image_pull_timeout = "10m"
         network_mode       = "host"
 
