@@ -246,7 +246,7 @@ job "patroni" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/patroni:pg18"
+        image              = "registry.munchbox.cc/patroni:e2410f77"
         image_pull_timeout = "10m"
         network_mode       = "host"
 
