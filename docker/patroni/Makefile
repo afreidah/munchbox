@@ -1,51 +1,12 @@
 # -------------------------------------------------------------------------------
-# Patroni Image Build
+# Patroni image build -- PostgreSQL 18 HA (multi-arch)
 #
 # Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
 
-REGISTRY := registry.munchbox.cc
-IMAGE := patroni
-TAG := latest
-PG_VERSION := 18
+IMAGE           := patroni
+PG_VERSION      := 18
 PATRONI_VERSION := 4.0.4
+EXTRA_TAGS      := pg$(PG_VERSION) pg$(PG_VERSION)-patroni$(PATRONI_VERSION)
 
-FULL_IMAGE := $(REGISTRY)/$(IMAGE)
-
-.PHONY: help build build-multiarch push clean
-.DEFAULT_GOAL := help
-
-help: ## Show this help
-	@echo "Patroni Image Build"
-	@echo ""
-	@echo "Usage: make [target]"
-	@echo ""
-	@echo "Targets:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
-
-build: ## Build for current architecture
-	docker build --pull -t $(FULL_IMAGE):$(TAG) -t $(FULL_IMAGE):pg$(PG_VERSION) .
-
-build-multiarch: ## Build for current platform (use 'push' for multi-arch)
-	docker buildx create --name munchbox-builder --driver-opt network=host --use 2>/dev/null || docker buildx use munchbox-builder
-	docker buildx build \
-		--pull \
-		-t $(FULL_IMAGE):$(TAG) \
-		-t $(FULL_IMAGE):pg$(PG_VERSION) \
-		-t $(FULL_IMAGE):pg$(PG_VERSION)-patroni$(PATRONI_VERSION) \
-		--load \
-		.
-
-push: ## Build and push to registry
-	docker buildx create --name munchbox-builder --driver-opt network=host --use 2>/dev/null || docker buildx use munchbox-builder
-	docker buildx build \
-		--pull \
-		--platform linux/amd64,linux/arm64 \
-		-t $(FULL_IMAGE):$(TAG) \
-		-t $(FULL_IMAGE):pg$(PG_VERSION) \
-		-t $(FULL_IMAGE):pg$(PG_VERSION)-patroni$(PATRONI_VERSION) \
-		--push \
-		.
-
-clean: ## Remove local images
-	docker rmi $(FULL_IMAGE):$(TAG) $(FULL_IMAGE):pg$(PG_VERSION) 2>/dev/null || true
+include ../_common.mk

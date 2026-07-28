@@ -18,6 +18,11 @@ size         = "small"
 memory       = 32
 storage      = "ephemeral"
 
+# --- Placement: image is amd64-only; keep it off the arm64 nodes ---
+constraints = [
+  { attribute = "$${attr.cpu.arch}", operator = "=", value = "amd64" }
+]
+
 # --- Volume mounts ---
 volumes = [
   "/var/run/dbus/system_bus_socket:/var/run/dbus/system_bus_socket:ro"
