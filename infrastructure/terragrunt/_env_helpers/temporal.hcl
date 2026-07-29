@@ -129,6 +129,17 @@ locals {
       workflow_id   = "ci-runner-scaler-scheduled"
       input         = { concurrency = 4 }
     }
+    # Every 2 hours: reconcile completed Deluge downloads (grabbed outside
+    # Sonarr/Radarr) into the library so Jellyfin picks them up.
+    "media-reconcile" = {
+      schedule_id   = "media-reconcile"
+      year          = "*"
+      hour          = "0,2,4,6,8,10,12,14,16,18,20,22"
+      workflow_type = "Reconcile"
+      task_queue    = "media-import-task-queue"
+      workflow_id   = "media-reconcile-scheduled"
+      input         = { concurrency = 4, dry_run = false }
+    }
   }
 }
 

@@ -274,6 +274,8 @@ inputs = {
     "lidarr",
     "readarr",
     "prowlarr",
+    "jellyfin",
+    "media-import",
     "g3",
     "wireguard",
     "pihole/green",
