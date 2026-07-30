@@ -48,6 +48,12 @@ job "nginx-resume" {
     operator  = "!="
     value     = "ingress"
   }
+  # --- Keep off the GPU/media node (nomad-client-04) to spare its load ---
+  constraint {
+    attribute = "${meta.gpu}"
+    operator  = "!="
+    value     = "true"
+  }
 
   # ---------------------------------------------------------------------------
   # Task Group: nginx-resume

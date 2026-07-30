@@ -52,8 +52,10 @@ tags = [
   "traefik.http.routers.temporal-ui-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file"
 ]
 
-# --- Exclude Oracle nodes (unreliable WAN link) ---
+# --- Exclude Oracle nodes (unreliable WAN link); keep off the GPU/media
+#     node (nomad-client-04) to spare its load ---
 constraints = [
   { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode1" },
-  { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode2" }
+  { attribute = "$${node.unique.name}", operator = "!=", value = "oraclenode2" },
+  { attribute = "$${meta.gpu}", operator = "!=", value = "true" }
 ]
