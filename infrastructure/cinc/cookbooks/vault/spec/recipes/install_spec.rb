@@ -18,12 +18,12 @@ RSpec.describe 'vault::install' do
     ChefSpec::SoloRunner.new(step_into: %w(vault_install)).converge(described_recipe)
   end
 
-  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'vault 2.0.1') }
+  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'vault 2.0.3') }
 
   it 'declares the vault_install resource' do
     expect(chef_run).to install_vault_install('vault')
       .with(
-        version: '2.0.1',
+        version: '2.0.3',
         bin_path: '/usr/local/bin/vault',
         user: 'vault',
         group: 'vault',
@@ -51,17 +51,17 @@ RSpec.describe 'vault::install' do
 
   # --- Hands off the download/verify/install to the shared artifact resource ---
   it 'delegates the install to munchbox_lib_artifact' do
-    expect(chef_run).to install_munchbox_lib_artifact('vault 2.0.1')
+    expect(chef_run).to install_munchbox_lib_artifact('vault 2.0.3')
   end
 
   # --- HashiCorp release archive URL (amd64 on the default chefspec kernel) ---
   it 'builds the vault release archive url' do
-    expect(artifact.source).to eq('https://releases.hashicorp.com/vault/2.0.1/vault_2.0.1_linux_amd64.zip')
+    expect(artifact.source).to eq('https://releases.hashicorp.com/vault/2.0.3/vault_2.0.3_linux_amd64.zip')
   end
 
   # --- Verifies against HashiCorp's published SHA256SUMS rather than a pinned sha ---
   it 'verifies against the published SHA256SUMS' do
-    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/vault/2.0.1/vault_2.0.1_SHA256SUMS')
+    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/vault/2.0.3/vault_2.0.3_SHA256SUMS')
   end
 
   # --- Extracts the zip into the binary's directory ---
