@@ -17,7 +17,7 @@ RSpec.describe 'consul::install' do
     ChefSpec::SoloRunner.new(step_into: %w(consul_install)).converge('consul::install')
   end
 
-  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'consul 2.0.0') }
+  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'consul 2.0.2') }
 
   # --- Resource declaration ---
   it 'declares the consul_install resource' do
@@ -45,17 +45,17 @@ RSpec.describe 'consul::install' do
 
   # --- Hands off the download/verify/install to the shared artifact resource ---
   it 'delegates the install to munchbox_lib_artifact' do
-    expect(chef_run).to install_munchbox_lib_artifact('consul 2.0.0')
+    expect(chef_run).to install_munchbox_lib_artifact('consul 2.0.2')
   end
 
   # --- HashiCorp release archive URL (amd64 on the default chefspec kernel) ---
   it 'builds the consul release archive url' do
-    expect(artifact.source).to eq('https://releases.hashicorp.com/consul/2.0.0/consul_2.0.0_linux_amd64.zip')
+    expect(artifact.source).to eq('https://releases.hashicorp.com/consul/2.0.2/consul_2.0.2_linux_amd64.zip')
   end
 
   # --- Verifies against HashiCorp's published SHA256SUMS rather than a pinned sha ---
   it 'verifies against the published SHA256SUMS' do
-    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/consul/2.0.0/consul_2.0.0_SHA256SUMS')
+    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/consul/2.0.2/consul_2.0.2_SHA256SUMS')
   end
 
   # --- Extracts the zip into the binary's directory ---
