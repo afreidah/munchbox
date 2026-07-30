@@ -26,7 +26,7 @@
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  version: '2.0.1',
+  version: '2.0.3',
   bin_path: '/usr/local/bin/vault',
   user: 'vault',
   group: 'vault',
