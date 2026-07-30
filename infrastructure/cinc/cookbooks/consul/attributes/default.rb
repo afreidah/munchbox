@@ -13,7 +13,7 @@
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  version: '2.0.0',
+  version: '2.0.2',
   bin_path: '/usr/local/bin/consul',
   user: 'consul',
   group: 'consul',
