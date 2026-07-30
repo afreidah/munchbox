@@ -26,6 +26,7 @@ nomad_configure 'nomad' do
   bootstrap_expect                node[cookbook]['config']['bootstrap_expect']
   server_join                     node[cookbook]['config']['server_join']
   client_enabled                  node[cookbook]['config']['client_enabled']
+  template_use_client_consul_token node[cookbook]['config']['template_use_client_consul_token']
   servers                         node[cookbook]['config']['servers']
   node_pool                       node[cookbook]['config']['node_pool']
   node_class                      node[cookbook]['config']['node_class']
