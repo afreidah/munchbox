@@ -17,7 +17,7 @@ RSpec.describe 'nomad::install' do
     ChefSpec::SoloRunner.new(step_into: %w(nomad_install)).converge('nomad::install')
   end
 
-  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'nomad 2.0.3') }
+  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'nomad 2.0.4') }
 
   # --- Resource declaration ---
   it 'declares the nomad_install resource' do
@@ -43,17 +43,17 @@ RSpec.describe 'nomad::install' do
 
   # --- Hands off the download/verify/install to the shared artifact resource ---
   it 'delegates the install to munchbox_lib_artifact' do
-    expect(chef_run).to install_munchbox_lib_artifact('nomad 2.0.3')
+    expect(chef_run).to install_munchbox_lib_artifact('nomad 2.0.4')
   end
 
   # --- HashiCorp release archive URL (amd64 on the default chefspec kernel) ---
   it 'builds the nomad release archive url' do
-    expect(artifact.source).to eq('https://releases.hashicorp.com/nomad/2.0.3/nomad_2.0.3_linux_amd64.zip')
+    expect(artifact.source).to eq('https://releases.hashicorp.com/nomad/2.0.4/nomad_2.0.4_linux_amd64.zip')
   end
 
   # --- Verifies against HashiCorp's published SHA256SUMS rather than a pinned sha ---
   it 'verifies against the published SHA256SUMS' do
-    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/nomad/2.0.3/nomad_2.0.3_SHA256SUMS')
+    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/nomad/2.0.4/nomad_2.0.4_SHA256SUMS')
   end
 
   # --- Extracts the zip into the binary's directory ---
