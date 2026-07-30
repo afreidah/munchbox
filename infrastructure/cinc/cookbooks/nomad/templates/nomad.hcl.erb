@@ -64,6 +64,15 @@ client {
 <% if @network_interface -%>
   network_interface = "<%= @network_interface %>"
 <% end -%>
+<% if @template_use_client_consul_token -%>
+  # --- Share the agent's Consul token with the template runner. Nomad 2.0.4
+  #     (GH-28106) closed the ambient-authority loophole that let non-WI
+  #     workloads read Consul from `template` blocks; this opts back in so
+  #     service/kv lookups keep working without Consul Workload Identity. ---
+  template {
+    use_client_consul_token = true
+  }
+<% end -%>
 }
 <% end -%>
 <% if @consul_enabled -%>

@@ -34,6 +34,7 @@ property :bootstrap_expect,           [Integer, nil]
 property :server_join,                Array, default: []
 
 property :client_enabled,             [true, false], default: true
+property :template_use_client_consul_token, [true, false], default: true
 property :servers,                    Array, default: []
 property :node_pool,                  String, default: 'default'
 property :node_class,                 [String, nil]
@@ -140,6 +141,7 @@ action :configure do
       bootstrap_expect: new_resource.bootstrap_expect,
       server_join: new_resource.server_join,
       client_enabled: new_resource.client_enabled,
+      template_use_client_consul_token: new_resource.template_use_client_consul_token,
       servers: new_resource.servers,
       node_pool: new_resource.node_pool,
       node_class: new_resource.node_class,

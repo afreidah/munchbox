@@ -48,6 +48,8 @@ default[cookbook]['config'] = {
 
   client_enabled: true,
   servers: [], # array of "<ip>:4647" (clients only)
+  # --- Nomad 2.0.4 (GH-28106) closed the loophole that let non-WI workloads read Consul from template blocks; share the agent token with the template runner so service/kv lookups keep working without Consul WI. ---
+  template_use_client_consul_token: true,
   node_pool: 'default',
   node_class: nil, # optional client.node_class string (rendered only when set)
   client_meta: {}, # extra meta beyond auto arch

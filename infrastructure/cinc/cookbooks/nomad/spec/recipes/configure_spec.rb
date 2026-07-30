@@ -77,6 +77,14 @@ RSpec.describe 'nomad::configure' do
       expect(template.variables[:network_interface]).to eq('wg1')
     end
 
+    # --- Consul token fallback opt-in (Nomad 2.0.4 GH-28106) ---
+    it 'renders the client template block with use_client_consul_token = true' do
+      template = chef_run.template('/etc/nomad.d/nomad.hcl')
+      expect(template.variables[:template_use_client_consul_token]).to eq(true)
+      expect(chef_run).to render_file('/etc/nomad.d/nomad.hcl')
+        .with_content(/template \{\s*use_client_consul_token = true/m)
+    end
+
     # --- Systemd unit lifecycle ---
     it 'installs + enables + starts the nomad.service systemd unit' do
       expect(chef_run).to create_systemd_unit('nomad.service')
