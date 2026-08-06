@@ -132,7 +132,7 @@ job "g3-proxy" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/g3:v0.5.3"
+        image              = "registry.munchbox.cc/g3:v0.5.6"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"

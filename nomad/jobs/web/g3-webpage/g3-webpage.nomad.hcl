@@ -137,7 +137,7 @@ job "g3-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/g3-web:v0.5.3"
+        image              = "registry.munchbox.cc/g3-web:v0.5.6"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
