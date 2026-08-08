@@ -12,6 +12,18 @@ job "s3-orchestrator" {
   priority    = 50
 
   # ---------------------------------------------------------------------------
+  # Placement
+  # ---------------------------------------------------------------------------
+  # Keep this heavy, bursty workload off the ingress nodes. A saturation storm
+  # here must never be able to starve traefik/keepalived/oauth2-proxy and drag
+  # the ingress VIP down with it.
+  constraint {
+    attribute = "${meta.role}"
+    operator  = "!="
+    value     = "ingress"
+  }
+
+  # ---------------------------------------------------------------------------
   # Metadata
   # ---------------------------------------------------------------------------
 
@@ -130,7 +142,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.77.0"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.80.4"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]

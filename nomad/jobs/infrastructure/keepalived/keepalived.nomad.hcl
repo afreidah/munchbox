@@ -122,6 +122,7 @@ global_defs {
 vrrp_script check_traefik {
   script "/etc/keepalived/check_traefik.sh"
   interval 2
+  timeout 3
   weight -50
   fall 3
   rise 2
@@ -131,6 +132,7 @@ vrrp_script check_traefik {
 vrrp_script check_wireguard {
   script "/etc/keepalived/check_wireguard.sh"
   interval 5
+  timeout 4
   weight -50
   fall 3
   rise 2
@@ -196,9 +198,15 @@ vrrp_instance VI_WIREGUARD {
         change_mode = "restart"
         data        = <<-EOF
 #!/bin/sh
-# Check if Traefik is responding on the local node
-curl -sf http://127.0.0.1:8081/ping > /dev/null 2>&1
-exit $?
+# The VIP must follow whether THIS node can actually serve authenticated
+# ingress, not merely whether keepalived is alive. Each probe is hard-bounded
+# with --max-time so a HUNG component (I/O-wedged node, stuck Traefik) fails
+# the check instead of blocking forever -- that hang-vs-fail gap is why a
+# wedged goren held MASTER on 2026-08-08. Traefik data plane AND the local
+# oauth2-proxy forward-auth both have to answer.
+curl -sf --max-time 2 http://127.0.0.1:8081/ping > /dev/null 2>&1 || exit 1
+curl -sf --max-time 2 http://127.0.0.1:4180/ping > /dev/null 2>&1 || exit 1
+exit 0
         EOF
       }
 
