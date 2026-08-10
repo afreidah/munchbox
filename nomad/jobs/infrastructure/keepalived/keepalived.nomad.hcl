@@ -160,14 +160,12 @@ vrrp_instance VI_TRAEFIK {
   }
 }
 
-# VIP: 192.168.68.49 (goren primary, nomad-client-05 backup)
-# Floats to whichever ingress node currently has a healthy WireGuard
-# interface. The home router (TP-Link Deco) binds port-forwards to
-# MAC+IP, and use_vmac (RFC 5798 virtual MAC) tripped Deco's mesh ARP
-# bridging across wired/wifi segments. Reverted to plain VIP without
-# use_vmac; the port-forward is bound to goren's MAC + .49, so failover
-# to nomad-client-05 currently requires a manual Deco reconfig. Tracked
-# as a separate hardening item.
+# VIP: 192.168.68.49 -- LAN gateway into the oracle WireGuard subnet
+# (10.200.0.0/24). The ingress nodes are WG *clients* that dial OUT to the
+# oracle nodes over interface wg1; nothing is port-forwarded inbound, which is
+# how we dropped the old Deco dependency -- the VIP can now float between
+# ingress nodes with zero router-side reconfig. Floats to whichever ingress
+# node currently has a healthy wg1 client tunnel to oracle.
 vrrp_instance VI_WIREGUARD {
   state {{ if eq (env "node.unique.name") "goren" }}MASTER{{ else }}BACKUP{{ end }}
   interface {{ env "meta.vrrp_interface" }}
@@ -221,8 +219,11 @@ exit 0
         change_mode = "restart"
         data        = <<-EOF
 #!/bin/sh
-ip link show wg0 >/dev/null 2>&1 || exit 1
-wg show wg0 latest-handshakes 2>/dev/null \
+# Ingress nodes reach oracle as WG clients over wg1 (NOT wg0). Healthy when
+# wg1 exists AND at least one oracle peer has handshaken in the last 180s, so
+# the .49 gateway VIP follows a node with a live tunnel.
+ip link show wg1 >/dev/null 2>&1 || exit 1
+wg show wg1 latest-handshakes 2>/dev/null \
   | awk -v now=$(date +%s) '{ if ($2 > 0 && (now - $2) < 180) found=1 } END { exit !found }'
         EOF
       }

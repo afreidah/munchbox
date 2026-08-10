@@ -188,7 +188,10 @@ VPN_TYPE=wireguard
 WIREGUARD_PRIVATE_KEY={{ .Data.data.wg_private_key }}
 WIREGUARD_ADDRESSES={{ .Data.data.wg_address }}
 {{- end }}
-SERVER_CITIES=Los Angeles CA
+# Widen the pool: pinning to LA alone rolls dice on a handful of servers,
+# many of which complete the WireGuard handshake but blackhole traffic. A
+# regional pool gives gluetun enough healthy candidates to land on and hold.
+SERVER_CITIES=Los Angeles CA,San Jose CA,Seattle WA,Phoenix AZ,Denver CO
 FIREWALL_VPN_INPUT_PORTS=6881
 FIREWALL_OUTBOUND_SUBNETS=192.168.68.0/24,10.200.0.0/24
 HTTP_CONTROL_SERVER_ADDRESS=:8000
