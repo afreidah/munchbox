@@ -33,6 +33,7 @@
     "nomad": {
       "config": {
         "node_name": "stabler",
+        "network_interface": "eth0",
         "advertise_ip": "192.168.68.61",
         "server_join": [
           "192.168.68.60:4648",

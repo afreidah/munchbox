@@ -10,7 +10,7 @@
 
 # --- Core job configuration ---
 name         = "grafana"
-image        = "grafana/grafana:13.1.0"
+image        = "grafana/grafana:13.1.1"
 port         = 3030
 host_network = true
 size         = "medium"
