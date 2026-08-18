@@ -142,7 +142,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.80.15"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.89.1"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -344,11 +344,8 @@ write_path:
 integrity:
   enabled: true
   verify_on_read: false
-  # The scrubber only runs on a tick, never on start, so a year-long interval
-  # meant it never ran at all between deploys. 6h x 95 sweeps ~11.3k copies
-  # in about a month; raise the batch if the fleet grows.
   scrubber_interval: "2h"
-  scrubber_batch_size: 200
+  scrubber_batch_size: 400
 
 encryption:
   enabled: true

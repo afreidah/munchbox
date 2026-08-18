@@ -34,6 +34,7 @@ locals {
     "afreidah/g3",
     "afreidah/cloudflare-log-collector",
     "afreidah/oracle-watchdog",
+    "afreidah/flight-fetcher",
   ]
 
   # --- ci-runner-scaler: per-repo provisioning config. app-mode repos are polled

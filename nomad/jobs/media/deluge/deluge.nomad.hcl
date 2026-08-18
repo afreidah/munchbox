@@ -32,8 +32,8 @@ job "deluge" {
     max_parallel      = 1
     health_check      = "checks"
     min_healthy_time  = "30s"
-    healthy_deadline  = "5m"
-    progress_deadline = "10m"
+    healthy_deadline  = "15m"
+    progress_deadline = "20m"
     auto_revert       = true
   }
 
@@ -106,7 +106,7 @@ job "deluge" {
 
         check_restart {
           limit = 3
-          grace = "90s"
+          grace = "300s"
         }
       }
     }
