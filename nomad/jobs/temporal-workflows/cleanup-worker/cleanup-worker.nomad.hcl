@@ -119,10 +119,12 @@ job "cleanup-worker" {
         network_mode       = "host"
         ports              = ["metrics"]
         volumes = [
-          "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro",
-          "secrets/ssh-key:/root/.ssh/id_ed25519:ro",
-          "secrets/ssh-client-cert.pub:/root/.ssh/id_ed25519-cert.pub:ro",
-          "secrets/ssh-host-ca.pub:/root/.ssh/ssh-host-ca.pub:ro",
+          "/opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/nomad-ca.pem:ro"
+          # --- No per-file bind for the SSH material; SSH_*_PATH below point at
+          # /secrets, the alloc secrets/ dir Nomad already mounts. A single-file
+          # bind latches to the inode at container start, and consul-template
+          # renders by rename, so the re-signed client cert never reached the
+          # container. Same fix as patroni's TLS material. ---
         ]
       }
 
@@ -179,9 +181,9 @@ job "cleanup-worker" {
         NOMAD_ADDR                  = "https://192.168.68.61:4646"
         NOMAD_TLS_SERVER_NAME       = "server.global.nomad"
         NOMAD_CACERT                = "/etc/ssl/certs/nomad-ca.pem"
-        SSH_KEY_PATH                = "/root/.ssh/id_ed25519"
-        SSH_CERT_PATH               = "/root/.ssh/id_ed25519-cert.pub"
-        SSH_HOST_CA_PATH            = "/root/.ssh/ssh-host-ca.pub"
+        SSH_KEY_PATH                = "/secrets/ssh-key"
+        SSH_CERT_PATH               = "/secrets/ssh-client-cert.pub"
+        SSH_HOST_CA_PATH            = "/secrets/ssh-host-ca.pub"
         PG_HOST                     = "postgres-primary.service.consul"
         PG_USER                     = "postgres"
         PG_SSLMODE                  = "prefer"

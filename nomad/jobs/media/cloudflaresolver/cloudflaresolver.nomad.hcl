@@ -86,7 +86,7 @@ job "cloudflaresolverr" {
       driver = "docker"
 
       config {
-        image              = "ghcr.io/thephaseless/byparr:2.1.0"
+        image              = "ghcr.io/thephaseless/byparr:3.0.4"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
