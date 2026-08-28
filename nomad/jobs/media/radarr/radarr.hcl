@@ -10,7 +10,7 @@
 # --- Core job configuration ---
 name        = "radarr"
 type        = "service"
-image       = "linuxserver/radarr:6.3.0-nightly"
+image       = "linuxserver/radarr:6.4.2-nightly"
 port        = 7878
 static_port = 7878
 constraints = [

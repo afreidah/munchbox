@@ -143,14 +143,14 @@ RUN set -eux; \
   echo "==================="
 
 # --- Non-root user ---
-ARG USERNAME=ci-runner
+ARG APP_USER=ci-runner
 ARG UID=10001
 ARG GID=10001
 RUN set -eux; \
-  addgroup --gid "$GID" "$USERNAME"; \
-  adduser --disabled-password --gecos "" --uid "$UID" --gid "$GID" "$USERNAME"; \
+  addgroup --gid "$GID" "$APP_USER"; \
+  adduser --disabled-password --gecos "" --uid "$UID" --gid "$GID" "$APP_USER"; \
   mkdir -p /workspace "$GOPATH"; \
-  chown -R "$USERNAME:$USERNAME" /workspace "$GOPATH"
+  chown -R "$APP_USER:$APP_USER" /workspace "$GOPATH"
 
 WORKDIR /workspace
-USER $USERNAME
+USER $APP_USER

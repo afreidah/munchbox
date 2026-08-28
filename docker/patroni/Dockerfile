@@ -85,7 +85,7 @@ EXPOSE 5432 8008
 
 # --- Health check ---
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
-    CMD curl -sf http://localhost:8008/health || exit 1
+    CMD ["/bin/sh", "-c", "curl -sf http://localhost:8008/health || exit 1"]
 
 # --- Run as postgres user ---
 USER postgres

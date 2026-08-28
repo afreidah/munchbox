@@ -21,7 +21,7 @@
 # to the latest release at build time -- pass the ARG to pin them.
 # -------------------------------------------------------------------------------
 
-FROM myoung34/github-runner:2.334.0-ubuntu-jammy
+FROM myoung34/github-runner:2.337.0-ubuntu-jammy
 
 # TARGETARCH is auto-populated by BuildKit/buildx per target platform (amd64|arm64).
 # Do NOT give it a default -- a default overrides the per-platform value and every

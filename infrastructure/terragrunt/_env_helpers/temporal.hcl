@@ -60,7 +60,9 @@ locals {
       workflow_type = "RegistryGC"
       task_queue    = "cleanup-task-queue"
       workflow_id   = "registry-gc-scheduled"
-      input         = { job_name = "registry", registry_data_dir = "/mnt/gdrive/munchbox-data/registry", registry_image = "registry:3", dry_run = false, delete_untagged = true }
+      # registry_image must match the tag the registry job runs (registry.hcl)
+      # -- the GC activity requires the image already present locally, no pull.
+      input = { job_name = "registry", registry_data_dir = "/mnt/gdrive/munchbox-data/registry", registry_image = "registry:3.1.1", dry_run = false, delete_untagged = true }
     }
     "aptly-cleanup-weekly" = {
       schedule_id   = "aptly-cleanup-weekly"

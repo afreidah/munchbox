@@ -142,7 +142,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.89.1"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.102.1"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -344,6 +344,10 @@ write_path:
 integrity:
   enabled: true
   verify_on_read: false
+  # Off deliberately: the read-back doubles the egress a replica costs, and the
+  # scrubber is already deferring ~3x more copies than it checks against these
+  # backends' egress budgets.
+  verify_on_replicate: false
   scrubber_interval: "2h"
   scrubber_batch_size: 400
 
@@ -355,6 +359,17 @@ encryption:
     key_name: "s3-orchestrator"
     mount_path: "transit"
     ca_cert: "/secrets/vault-ca.pem"
+
+# Compression runs before encryption (ciphertext does not compress) and applies
+# to new writes only; existing objects need `admin compress-existing`. Not
+# reloadable - every field here needs a task restart, which change_mode already
+# forces.
+compression:
+  enabled: true
+  level: "default"
+  chunk_size: 1048576
+  min_size: 4096
+  min_ratio: 0.95
 
 rate_limit:
   enabled: true

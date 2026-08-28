@@ -259,11 +259,13 @@ job "patroni" {
         volumes = [
           # Persistent data - use host path for durability
           "/opt/nomad/data/patroni-${NOMAD_ALLOC_INDEX}:/home/postgres/data",
-          "local/patroni.yml:/etc/patroni/patroni.yml:ro",
-          # TLS certificates from Vault PKI
-          "secrets/server.crt:/etc/patroni/ssl/server.crt:ro",
-          "secrets/server.key:/etc/patroni/ssl/server.key:ro",
-          "secrets/ca.crt:/etc/patroni/ssl/ca.crt:ro"
+          "local/patroni.yml:/etc/patroni/patroni.yml:ro"
+          # --- No per-file bind for the TLS material: Postgres reads it out of
+          # /secrets, the alloc secrets/ dir Nomad already mounts. A single-file
+          # bind latches to the inode at container start, and consul-template
+          # renders by rename, so every rotation would orphan the mount and
+          # freeze the cert until the alloc was recreated. Same reason prometheus
+          # reads its rules through /local. ---
         ]
       }
 
@@ -390,9 +392,9 @@ postgresql:
 
     # --- TLS/SSL ---
     ssl: "on"
-    ssl_cert_file: /etc/patroni/ssl/server.crt
-    ssl_key_file: /etc/patroni/ssl/server.key
-    ssl_ca_file: /etc/patroni/ssl/ca.crt
+    ssl_cert_file: /secrets/server.crt
+    ssl_key_file: /secrets/server.key
+    ssl_ca_file: /secrets/ca.crt
 
     # --- Logging ---
     log_destination: stderr
