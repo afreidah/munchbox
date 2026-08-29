@@ -87,9 +87,14 @@ resource "vault_jwt_auth_backend_role" "nomad_workloads" {
     "nomad_task"      = "nomad_task"
   }
 
+  # Periodic so the token renews indefinitely instead of dying at a max_ttl.
+  # A non-periodic token forces Nomad to mint a fresh one at the ceiling, which
+  # trips the vault{} change_mode and restarts every task on a 24h cycle. An
+  # explicit token_max_ttl would still cap a periodic token, so it is omitted;
+  # Nomad revokes the token when the allocation stops.
   token_type     = "service"
   token_ttl      = 3600
-  token_max_ttl  = 86400
+  token_period   = 3600
   token_policies = ["nomad-workloads"]
 }
 

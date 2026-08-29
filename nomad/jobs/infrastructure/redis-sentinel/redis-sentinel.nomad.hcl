@@ -250,8 +250,12 @@ job "redis-sentinel" {
       driver = "docker"
 
       # --- Vault Integration ---
+      # WI token re-derives at the role's max_ttl; noop so that token cycle
+      # does not restart redis (a restart = a sentinel failover, and the
+      # replica bounces seconds later inside the same failover-timeout).
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {
@@ -404,7 +408,8 @@ SENTINEL_ADDRS={{ range $i, $s := service "redis-sentinel" }}{{ if ne $i 0 }} {{
 
       # --- Vault Integration ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {
@@ -485,7 +490,8 @@ sentinel announce-port {{ env "NOMAD_PORT_sentinel" }}
       }
 
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {
@@ -569,7 +575,8 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
       driver = "docker"
 
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {
