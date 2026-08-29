@@ -399,15 +399,16 @@ munchbox/
 |
 +- src/                               <- operator-built apps shipped as containers
    +- vault-cert-manager/             <- Vault PKI cert lifecycle manager (submodule)
-   +- s3-orchestrator/                <- S3 multiplexer across 13 backends
-   +- cloudflare-log-collector/       <- CF GraphQL -> Loki/Tempo (submodule)
-   +- oracle-watchdog/                <- OCI instance recovery + DDNS (submodule)
    +- trivy-dashboard/                <- vuln dashboard UI
    +- dashboard/                      <- Hugo-based homepage at dashboard.munchbox.cc
    +- personal-site/                  <- alexfreidah.com
-   +- resume/                         <- resume.alexfreidah.com (submodule)
    +- phlebotomy-game/ theme-server/  <- smaller bespoke apps
 ```
+
+These projects graduated to their own repos and are no longer vendored here --
+clone them alongside munchbox rather than looking under `src/`:
+`s3-orchestrator`, `cloudflare-log-collector`, `oracle-watchdog`,
+`nomad-temporal-jobs`, `resume`.
 
 > **For per-area conventions, jump to the README and STYLE_GUIDE next to the
 > code.** This file stays at the architectural / cluster level.
