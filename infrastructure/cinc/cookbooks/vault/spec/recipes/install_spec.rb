@@ -5,17 +5,18 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 # install recipe spec
 #
-# Covers user/group/dir + consul-group membership + the hand-off to
-# munchbox_lib_artifact (URL, SHA256SUMS verify url, zip target). The
-# critical vault invariant: install must NEVER notify a service restart
-# (vault is shamir-sealed; restart = manual unseal x3). The actual
-# download/verify/unzip live in munchbox_lib_artifact (not stepped into);
-# kitchen verifies the real install end-to-end.
+# Covers user/group/dir + consul-group membership + the hand-off through
+# munchbox_lib_hashicorp_install to munchbox_lib_artifact (URL, SHA256SUMS
+# verify url, zip target), and the drift-only service restart. The restart
+# is safe to automate because the seal is OCI KMS; it was deliberately
+# absent back when vault was shamir-sealed. The actual download/verify/unzip
+# live in munchbox_lib_artifact (not stepped into); kitchen verifies the real
+# install end-to-end.
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'vault::install' do
   cached(:chef_run) do
-    ChefSpec::SoloRunner.new(step_into: %w(vault_install)).converge(described_recipe)
+    ChefSpec::SoloRunner.new(step_into: %w(vault_install munchbox_lib_hashicorp_install)).converge(described_recipe)
   end
 
   let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'vault 2.0.4') }

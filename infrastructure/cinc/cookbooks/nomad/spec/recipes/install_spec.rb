@@ -14,7 +14,7 @@ require 'spec_helper'
 
 RSpec.describe 'nomad::install' do
   cached(:chef_run) do
-    ChefSpec::SoloRunner.new(step_into: %w(nomad_install)).converge('nomad::install')
+    ChefSpec::SoloRunner.new(step_into: %w(nomad_install munchbox_lib_hashicorp_install)).converge('nomad::install')
   end
 
   let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'nomad 2.0.5') }

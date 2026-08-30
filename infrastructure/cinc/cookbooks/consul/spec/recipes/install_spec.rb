@@ -14,7 +14,7 @@ require 'spec_helper'
 
 RSpec.describe 'consul::install' do
   cached(:chef_run) do
-    ChefSpec::SoloRunner.new(step_into: %w(consul_install)).converge('consul::install')
+    ChefSpec::SoloRunner.new(step_into: %w(consul_install munchbox_lib_hashicorp_install)).converge('consul::install')
   end
 
   let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'consul 2.0.3') }
