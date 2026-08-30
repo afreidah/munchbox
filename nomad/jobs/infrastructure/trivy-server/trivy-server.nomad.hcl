@@ -113,6 +113,11 @@ job "trivy-server" {
         args = [
           "server",
           "--listen", "0.0.0.0:4954",
+          # --- Bound the fanal blob cache. Redis runs maxmemory-policy
+          # noeviction and shares that budget with forgejo's job queue, so an
+          # unbounded never-expiring cache here would eventually make forgejo's
+          # queue writes fail with OOM rather than evicting anything. ---
+          "--cache-ttl", "168h",
         ]
       }
 
