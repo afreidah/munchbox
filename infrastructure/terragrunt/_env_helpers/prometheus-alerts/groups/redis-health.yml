@@ -1,6 +1,11 @@
 # redis-health alert group
-# Two-server Redis cluster (sentinel-fronted): liveness, memory pressure,
-# eviction/rejection rates, client count, fragmentation.
+# Two-server Redis cluster (sentinel-fronted): liveness, replication health,
+# split-brain, persistence, memory pressure, rejection rates, client count,
+# fragmentation.
+#
+# NOTE: the servers run maxmemory-policy noeviction, so nothing is ever
+# evicted. Memory exhaustion shows up as rejected writes, not evictions --
+# do not add an eviction-rate alert here, it can never fire.
 
 - name: redis-health
   interval: 30s
@@ -30,16 +35,7 @@
         severity: critical
       annotations:
         summary: "Redis memory nearly exhausted"
-        description: "Redis on {{ $labels.instance }} is using {{ $value | printf \"%.1f\" }}% of max memory. Evictions imminent."
-
-    - alert: RedisHighEvictionRate
-      expr: rate(redis_evicted_keys_total[5m]) > 100
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: "Redis high eviction rate"
-        description: "Redis on {{ $labels.instance }} is evicting {{ $value | printf \"%.0f\" }} keys/second."
+        description: "Redis on {{ $labels.instance }} is using {{ $value | printf \"%.1f\" }}% of max memory. Policy is noeviction, so writes will start failing with OOM rather than evicting."
 
     - alert: RedisRejectedConnections
       expr: increase(redis_rejected_connections_total[5m]) > 0
@@ -68,3 +64,44 @@
       annotations:
         summary: "Redis memory fragmentation high"
         description: "Redis on {{ $labels.instance }} memory fragmentation ratio is {{ $value | printf \"%.2f\" }}."
+
+    - alert: RedisSplitBrain
+      # Sentinel failover does not always demote the old master; both nodes then
+      # answer role:master and haproxy load-balances across two divergent sets.
+      expr: count(redis_instance_info{role="master"}) > 1
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Redis split-brain: {{ $value | printf \"%.0f\" }} masters"
+        description: "More than one Redis instance reports role:master. Check sentinel get-master-addr-by-name and demote the node sentinel does not acknowledge."
+
+    - alert: RedisNoMaster
+      # Longer window than a normal failover takes, so this means the cluster
+      # failed to elect rather than that it is mid-election.
+      expr: count(redis_instance_info{role="master"}) == 0
+      for: 3m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Redis has no master"
+        description: "No Redis instance reports role:master. Sentinel has not completed a failover."
+
+    - alert: RedisReplicationLinkDown
+      # Only exported by replicas, so this cannot fire on the master.
+      expr: redis_master_link_up == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Redis replication link down"
+        description: "Replica {{ $labels.instance }} has lost its link to the master; it is serving stale data and cannot be promoted cleanly."
+
+    - alert: RedisPersistenceFailing
+      expr: redis_rdb_last_bgsave_status == 0 or redis_aof_last_write_status == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Redis persistence failing"
+        description: "Redis on {{ $labels.instance }} reports a failed RDB bgsave or AOF write. A restart would lose everything since the last good snapshot."

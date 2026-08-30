@@ -69,6 +69,16 @@ job "redis-sentinel" {
       value     = "stabler,goren,nomad-server-03,nomad-client-01,nomad-client-02,nomad-client-03,nomad-client-04,nomad-client-05"
     }
 
+    # --- Keep Redis off the ingress nodes. Patroni is constrained to
+    # meta.role=ingress, so without this the Redis master and the Postgres
+    # primary drift onto the same host and one node loss takes both, plus
+    # traefik/keepalived and the monitoring that would report it. ---
+    constraint {
+      attribute = "${meta.role}"
+      operator  = "!="
+      value     = "ingress"
+    }
+
     # --- Network Configuration ---
     network {
       mode = "host"
@@ -534,10 +544,15 @@ REDIS_EXPORTER_INCL_SYSTEM_METRICS=true
   group "sentinel-quorum" {
     count = 1
 
-    # --- Pin to nomad-client-04 (needs Consul ACL access for service queries) ---
+    # --- Eligible nodes for the quorum-only sentinel. Kept to clients with the
+    # Consul ACL access it needs for service queries, but as a set rather than a
+    # single pin: hard-pinning meant one node being down left two sentinels, and
+    # losing a Redis node with its co-located sentinel then left one, which
+    # cannot authorise a failover. ---
     constraint {
       attribute = "${node.unique.name}"
-      value     = "nomad-client-04"
+      operator  = "set_contains_any"
+      value     = "nomad-client-02,nomad-client-03,nomad-client-04"
     }
 
     # --- Network Configuration ---

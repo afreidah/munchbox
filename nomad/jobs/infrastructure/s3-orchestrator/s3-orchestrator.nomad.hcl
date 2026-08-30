@@ -18,7 +18,7 @@ job "s3-orchestrator" {
   # here must never be able to starve traefik/keepalived/oauth2-proxy and drag
   # the ingress VIP down with it.
   constraint {
-    attribute = "${meta.role}"
+    attribute = meta.role
     operator  = "!="
     value     = "ingress"
   }
@@ -409,11 +409,11 @@ lifecycle:
   batch_size: 100
   rules:
     - prefix: "backups/nomad/"
-      expiration_days: 30
+      expiration_days: 15
     - prefix: "backups/consul/"
-      expiration_days: 30
+      expiration_days: 15
     - prefix: "backups/postgres/"
-      expiration_days: 90
+      expiration_days: 20
 
 rebalance:
   enabled: true
