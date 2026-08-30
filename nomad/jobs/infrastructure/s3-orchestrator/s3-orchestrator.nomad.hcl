@@ -403,16 +403,19 @@ cleanup_queue:
 # tag-based so it also covers backups written before tagging existed; the
 # expiry cutoff is the object's creation time.
 #
-# The backup job runs its own S3 sweep as well, so these are redundant until
-# that is disabled. Both are idempotent with each other.
+# Prefixes are matched against the bucket-namespaced internal key, so they must
+# carry the "unified/" bucket that the backup worker writes to.
+#
+# The backup job's own S3 sweep is off (s3_cleanup = false), so this is the only
+# thing expiring these objects.
 lifecycle:
   batch_size: 100
   rules:
-    - prefix: "backups/nomad/"
+    - prefix: "unified/backups/nomad/"
       expiration_days: 15
-    - prefix: "backups/consul/"
+    - prefix: "unified/backups/consul/"
       expiration_days: 15
-    - prefix: "backups/postgres/"
+    - prefix: "unified/backups/postgres/"
       expiration_days: 20
 
 rebalance:
