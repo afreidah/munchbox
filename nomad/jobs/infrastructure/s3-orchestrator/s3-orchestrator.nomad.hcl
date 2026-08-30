@@ -142,7 +142,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.102.1"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.108.0"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -398,6 +398,22 @@ cleanup_queue:
   concurrency: 4
   multipart_stale_timeout: "24h"
   claim_grace_period: "10m"
+
+# Retention for the temporal backup job's uploads. Prefix-based rather than
+# tag-based so it also covers backups written before tagging existed; the
+# expiry cutoff is the object's creation time.
+#
+# The backup job runs its own S3 sweep as well, so these are redundant until
+# that is disabled. Both are idempotent with each other.
+lifecycle:
+  batch_size: 100
+  rules:
+    - prefix: "backups/nomad/"
+      expiration_days: 30
+    - prefix: "backups/consul/"
+      expiration_days: 30
+    - prefix: "backups/postgres/"
+      expiration_days: 90
 
 rebalance:
   enabled: true

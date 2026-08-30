@@ -32,7 +32,12 @@ locals {
       workflow_type = "Backup"
       task_queue    = "backup-task-queue"
       workflow_id   = "backup-scheduled"
-      input         = { local_days = 7, s3_days = 30, dump_concurrency = 4 }
+      # s3_cleanup = false: uploads are tagged (backup=nomad|consul|postgres,
+      # plus database=<name>), so S3 retention belongs in s3-orchestrator
+      # lifecycle rules that expire per backup type. s3_days is omitted because
+      # the workflow only reads it when the sweep is on. Nothing expires S3
+      # backups until those lifecycle rules exist.
+      input = { local_days = 7, s3_cleanup = false, dump_concurrency = 4 }
     }
     "trivy-daily" = {
       schedule_id   = "trivy-daily"
