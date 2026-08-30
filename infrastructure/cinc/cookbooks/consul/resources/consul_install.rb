@@ -39,13 +39,6 @@ property :log_dir,    String, default: '/var/log/consul'
 
 default_action :install
 
-# --- arch detection (arm64 for Pi5/oracle-arm, amd64 elsewhere); URL + SHA256SUMS come from the shared HashiCorp helpers ---
-action_class do
-  def arch
-    MunchboxLibCookbook::Artifact.normalize_arch(node['kernel']['machine'])
-  end
-end
-
 # -------------------------------------------------------------------------------
 # Action :install
 # -------------------------------------------------------------------------------
@@ -64,34 +57,13 @@ action :install do
     manage_home false
   end
 
-  # --- setup required consul directories ---
-  [new_resource.config_dir, new_resource.data_dir, new_resource.tls_dir, new_resource.log_dir].each do |d|
-    directory d do
-      owner     new_resource.user
-      group     new_resource.group
-      mode      '0750'
-      recursive true
-    end
-  end
-
-  version     = new_resource.version
-  drift_guard = "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Consul v#{version}'"
-
-  # --- install consul with the shared munchbox_lib_artifact resource ---
-  munchbox_lib_artifact "consul #{version}" do
-    source           MunchboxLibCookbook::Artifact.hashicorp_url('consul', version, arch)
-    sums_url         MunchboxLibCookbook::Artifact.hashicorp_sums_url('consul', version)
-    format           :zip
-    bin_dir          ::File.dirname(new_resource.bin_path)
-
-    # --- guards and notifications ---
-    not_if_installed drift_guard
-    notifies :restart, 'service[consul]', :delayed
-  end
-
-  # --- Shadow service declaration so the notify above resolves inside this resource's collection (unified_mode sandboxes notify lookups per-action). ---
-  service 'consul' do
-    action :nothing
+  # --- dirs + release-zip install + drift-only restart, shared with nomad/vault ---
+  munchbox_lib_hashicorp_install 'consul' do
+    version  new_resource.version
+    bin_path new_resource.bin_path
+    dirs     [new_resource.config_dir, new_resource.data_dir, new_resource.tls_dir, new_resource.log_dir]
+    owner    new_resource.user
+    group    new_resource.group
   end
 
   # --- Setup systemd service script ---

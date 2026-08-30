@@ -5,25 +5,26 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 # install recipe spec
 #
-# Covers user/group/dir + consul-group membership + the hand-off to
-# munchbox_lib_artifact (URL, SHA256SUMS verify url, zip target). The
-# critical vault invariant: install must NEVER notify a service restart
-# (vault is shamir-sealed; restart = manual unseal x3). The actual
-# download/verify/unzip live in munchbox_lib_artifact (not stepped into);
-# kitchen verifies the real install end-to-end.
+# Covers user/group/dir + consul-group membership + the hand-off through
+# munchbox_lib_hashicorp_install to munchbox_lib_artifact (URL, SHA256SUMS
+# verify url, zip target), and the drift-only service restart. The restart
+# is safe to automate because the seal is OCI KMS; it was deliberately
+# absent back when vault was shamir-sealed. The actual download/verify/unzip
+# live in munchbox_lib_artifact (not stepped into); kitchen verifies the real
+# install end-to-end.
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'vault::install' do
   cached(:chef_run) do
-    ChefSpec::SoloRunner.new(step_into: %w(vault_install)).converge(described_recipe)
+    ChefSpec::SoloRunner.new(step_into: %w(vault_install munchbox_lib_hashicorp_install)).converge(described_recipe)
   end
 
-  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'vault 2.0.3') }
+  let(:artifact) { chef_run.find_resource('munchbox_lib_artifact', 'vault 2.0.4') }
 
   it 'declares the vault_install resource' do
     expect(chef_run).to install_vault_install('vault')
       .with(
-        version: '2.0.3',
+        version: '2.0.4',
         bin_path: '/usr/local/bin/vault',
         user: 'vault',
         group: 'vault',
@@ -51,17 +52,17 @@ RSpec.describe 'vault::install' do
 
   # --- Hands off the download/verify/install to the shared artifact resource ---
   it 'delegates the install to munchbox_lib_artifact' do
-    expect(chef_run).to install_munchbox_lib_artifact('vault 2.0.3')
+    expect(chef_run).to install_munchbox_lib_artifact('vault 2.0.4')
   end
 
   # --- HashiCorp release archive URL (amd64 on the default chefspec kernel) ---
   it 'builds the vault release archive url' do
-    expect(artifact.source).to eq('https://releases.hashicorp.com/vault/2.0.3/vault_2.0.3_linux_amd64.zip')
+    expect(artifact.source).to eq('https://releases.hashicorp.com/vault/2.0.4/vault_2.0.4_linux_amd64.zip')
   end
 
   # --- Verifies against HashiCorp's published SHA256SUMS rather than a pinned sha ---
   it 'verifies against the published SHA256SUMS' do
-    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/vault/2.0.3/vault_2.0.3_SHA256SUMS')
+    expect(artifact.sums_url).to eq('https://releases.hashicorp.com/vault/2.0.4/vault_2.0.4_SHA256SUMS')
   end
 
   # --- Extracts the zip into the binary's directory ---
@@ -70,10 +71,17 @@ RSpec.describe 'vault::install' do
     expect(artifact.bin_dir).to eq('/usr/local/bin')
   end
 
-  # --- THE vault invariant: a sealed server must never be auto-restarted, so the
-  #     install hands off WITHOUT any service notify. ---
-  it 'never notifies a vault service restart (sealed -- restart is a planned op)' do
-    expect(artifact).not_to notify('service[vault]')
+  # --- vault is restarted ONLY when the artifact actually re-installed (drift),
+  #     never on a no-op converge. Safe to automate because the OCI KMS seal
+  #     brings the node back unsealed; without it the binary swaps under a
+  #     running vault and the process keeps serving the old version. ---
+  it 'restarts vault only when the artifact re-installs (drift)' do
+    expect(artifact).to notify('service[vault]').to(:restart).delayed
+  end
+
+  # --- The shadow service is otherwise inert (the configure recipe owns enable) ---
+  it 'declares the vault service as do-nothing here' do
+    expect(chef_run.service('vault')).to do_nothing
   end
 
   it 'declares the consul-group append (action :modify, only_if-gated)' do

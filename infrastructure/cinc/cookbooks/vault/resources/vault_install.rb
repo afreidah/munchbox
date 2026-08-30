@@ -8,12 +8,15 @@
 # both server + agent + cli, same binary). Also lays down the system
 # user/group + standard directory layout if they don't already exist.
 #
-# DOES NOT notify the vault service to restart on a version change.
-# Vault servers are shamir-sealed (5 shares, threshold 3); an
-# unattended restart leaves the daemon sealed and locks out tenants
-# until an operator manually unseals it x3. Version bumps must be
-# planned events: change the pin here, upload, then the operator
-# `systemctl restart vault` + `vault operator unseal` x3 per node.
+# Restarts the service on a version change, via the shared
+# munchbox_lib_hashicorp_install. Safe to automate because the seal is
+# OCI KMS -- a node comes back unsealed on its own. This used to be
+# skipped deliberately when vault was shamir-sealed, which meant the
+# binary swapped under a running vault and the process kept serving the
+# old version until someone restarted it by hand.
+#
+# Still a planned event: converge one node at a time and
+# `vault operator step-down` before promoting the active one.
 #
 # Properties:
 #   version    - vault version (e.g. '1.15.4'); used to build the
@@ -40,17 +43,6 @@ property :data_dir,   String, default: '/opt/vault/data'
 property :tls_dir,    String, default: '/etc/vault.d/tls'
 
 default_action :install
-
-# -------------------------------------------------------------------------------
-# arch detection (arm64 for Pi5; amd64 elsewhere); URL + SHA256SUMS come from
-# the shared HashiCorp helpers
-# -------------------------------------------------------------------------------
-
-action_class do
-  def arch
-    MunchboxLibCookbook::Artifact.normalize_arch(node['kernel']['machine'])
-  end
-end
 
 # -------------------------------------------------------------------------------
 # Action :install  --  Ensure user/group/dirs, install binary only on drift
@@ -83,30 +75,21 @@ action :install do
     end
   end
 
-  # --- Config + data + tls dirs are vault:vault 0750; matches what ansible left. ---
-  [new_resource.config_dir, new_resource.data_dir, new_resource.tls_dir].each do |d|
-    directory d do
-      owner     new_resource.user
-      group     new_resource.group
-      mode      '0750'
-      recursive true
-    end
-  end
-
-  version     = new_resource.version
-  drift_guard = "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Vault v#{version}'"
-
-  # --- Download + SHA256SUMS-verify + extract. INTENTIONALLY no service notify:
-  #     vault is shamir-sealed, so an unattended restart leaves it sealed and
-  #     locks out tenants until an operator unseals x3. Version bumps are planned
-  #     events -- bump the pin, converge, then `systemctl restart vault` +
-  #     `vault operator unseal` x3 per node by hand. ---
-  munchbox_lib_artifact "vault #{version}" do
-    source           MunchboxLibCookbook::Artifact.hashicorp_url('vault', version, arch)
-    sums_url         MunchboxLibCookbook::Artifact.hashicorp_sums_url('vault', version)
-    format           :zip
-    bin_dir          ::File.dirname(new_resource.bin_path)
-    not_if_installed drift_guard
+  # --- dirs (vault:vault 0750, matching what ansible left) + release-zip install
+  #     + drift-only restart, shared with consul/nomad.
+  #
+  #     The restart is safe to automate because the seal is OCI KMS, so a node
+  #     comes back unsealed on its own -- the old shamir rationale for skipping
+  #     it no longer applies, and without it the binary swaps under a running
+  #     vault and the process keeps serving the previous version indefinitely.
+  #     Still converge one node at a time: restarting the active node forces a
+  #     failover, so `vault operator step-down` before promoting it. ---
+  munchbox_lib_hashicorp_install 'vault' do
+    version  new_resource.version
+    bin_path new_resource.bin_path
+    dirs     [new_resource.config_dir, new_resource.data_dir, new_resource.tls_dir]
+    owner    new_resource.user
+    group    new_resource.group
   end
 end
 
