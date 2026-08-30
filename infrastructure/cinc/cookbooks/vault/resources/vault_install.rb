@@ -96,17 +96,26 @@ action :install do
   version     = new_resource.version
   drift_guard = "test -x #{new_resource.bin_path} && #{new_resource.bin_path} version | grep -q 'Vault v#{version}'"
 
-  # --- Download + SHA256SUMS-verify + extract. INTENTIONALLY no service notify:
-  #     vault is shamir-sealed, so an unattended restart leaves it sealed and
-  #     locks out tenants until an operator unseals x3. Version bumps are planned
-  #     events -- bump the pin, converge, then `systemctl restart vault` +
-  #     `vault operator unseal` x3 per node by hand. ---
+  # --- Download + SHA256SUMS-verify + extract, then restart so the new binary
+  #     actually takes effect. The seal is OCI KMS, so a node comes back unsealed
+  #     on its own -- the old shamir rationale for skipping this notify no longer
+  #     applies. Without it the binary swaps under a running vault and the process
+  #     keeps serving the previous version indefinitely.
+  #
+  #     Still converge one node at a time: restarting the active node forces a
+  #     failover, so `vault operator step-down` before promoting it. ---
   munchbox_lib_artifact "vault #{version}" do
     source           MunchboxLibCookbook::Artifact.hashicorp_url('vault', version, arch)
     sums_url         MunchboxLibCookbook::Artifact.hashicorp_sums_url('vault', version)
     format           :zip
     bin_dir          ::File.dirname(new_resource.bin_path)
     not_if_installed drift_guard
+    notifies         :restart, 'service[vault]', :delayed
+  end
+
+  # --- Shadow service declaration so the notify above resolves inside this resource's collection (unified_mode sandboxes notify lookups per-action). ---
+  service 'vault' do
+    action :nothing
   end
 end
 

@@ -21,12 +21,13 @@
 # Binary install
 #
 # Pinned to the version currently running in the munchbox cluster.
-# Bumping = re-upload + planned restart cycle (each node = restart +
-# manual unseal x3).
+# Bumping = re-upload + converge; the install notifies a restart and the OCI KMS
+# seal brings the node back unsealed on its own. Converge one node at a time and
+# step the active node down before promoting it.
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  version: '2.0.3',
+  version: '2.0.4',
   bin_path: '/usr/local/bin/vault',
   user: 'vault',
   group: 'vault',
