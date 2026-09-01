@@ -27,14 +27,14 @@ FROM myoung34/github-runner:2.337.0-ubuntu-jammy
 # Do NOT give it a default -- a default overrides the per-platform value and every
 # arch ends up with amd64 binaries.
 ARG TARGETARCH
-ARG GO_VERSION=1.26.4
-ARG GOLANGCI_LINT_VERSION=2.10.1
-ARG NODE_MAJOR=22
+ARG GO_VERSION=1.27.0
+ARG GOLANGCI_LINT_VERSION=2.13.2
+ARG NODE_MAJOR=24
 # goreleaser: empty => latest at build time; pass a tag to lock. sqlc: pinned
 # because `sqlc generate` stamps its version into committed code, so it must
 # match what consuming repos generated with (moat: v1.30.0).
 ARG GORELEASER_VERSION=
-ARG SQLC_VERSION=1.30.0
+ARG SQLC_VERSION=1.31.1
 
 USER root
 
