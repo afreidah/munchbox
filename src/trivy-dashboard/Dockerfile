@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 WORKDIR /build
 
@@ -11,7 +11,7 @@ COPY static/ static/
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o trivy-dashboard .
 
-FROM alpine:3.21
+FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates
 

@@ -99,7 +99,7 @@ RUN set -eux; \
   rm -rf /var/lib/apt/lists/*
 
 # --- Docker CLI (official static binary) ---
-ARG DOCKER_VERSION="27.5.1"
+ARG DOCKER_VERSION="29.7.2"
 RUN set -eux; \
   curl -fsSL "https://download.docker.com/linux/static/stable/$(uname -m)/docker-${DOCKER_VERSION}.tgz" -o /tmp/docker.tgz; \
   tar -xzf /tmp/docker.tgz -C /tmp; \
