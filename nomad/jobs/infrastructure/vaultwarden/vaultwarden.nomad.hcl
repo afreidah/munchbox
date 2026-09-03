@@ -82,7 +82,8 @@ job "vaultwarden" {
 
       # --- Vault Integration ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       # --- Workload Identity ---

@@ -101,7 +101,8 @@ job "media-import-worker" {
       # --- WI: the nomad-workloads role grants read on secret/{media-import,
       #     deluge,jellyfin}; the worker reads them through its own Vault client. ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {

@@ -99,7 +99,8 @@ job "trivy-dashboard" {
       driver = "docker"
 
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {

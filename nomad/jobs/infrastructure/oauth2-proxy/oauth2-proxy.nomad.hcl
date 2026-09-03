@@ -114,7 +114,8 @@ job "oauth2-proxy" {
 
       # --- Vault Integration ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       # --- Workload Identity ---

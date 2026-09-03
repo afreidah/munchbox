@@ -363,12 +363,34 @@ Job-level when every task needs Vault:
 
 ```hcl
 vault {
-  policies = ["nomad-workloads"]
+  role        = "nomad-workloads"
+  change_mode = "noop"
 }
 ```
 
 Task-level when only one task in a group needs Vault. Workload identity is
 on by default.
+
+### `change_mode` on the `vault {}` block
+
+Always set `change_mode = "noop"`. This is separate from the `template {}`
+`change_mode` above and is easy to miss -- it defaults to `restart`.
+
+Nomad mints the workload-identity JWT with `default_identity.ttl = "1h"`
+(agent config, cinc-managed) and re-authenticates to Vault at half-life. A
+login always returns a *new* token -- there is no renew-via-login -- so the
+default `restart` bounces the task every 30 minutes, forever. That is ~48
+restarts/task/day across every Vault-using job.
+
+`noop` is safe because nothing here needs the restart:
+
+- `template {}` consumers: consul-template picks the new token up in-process.
+- Direct consumers read `/secrets/vault_token`, which Nomad rewrites on
+  rotation. The `nomad-temporal-jobs` shared client re-reads it every 60s;
+  s3-orchestrator's `tokenRenewalLoop` every 5m. Both beat the 1h TTL.
+
+If a new job reads the token *once* at startup and caches it, fix the job to
+re-read the file rather than reverting to `restart`.
 
 ### Adding a new Vault secret path
 

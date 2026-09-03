@@ -106,7 +106,8 @@ job "cert-acquirer-worker" {
       #     granting nomad-workloads (read, incl. cloudflare-wandns) plus
       #     cert-acquirer-worker (write wildcard/staging/acme-account). ---
       vault {
-        role = "cert-acquirer-worker"
+        role        = "cert-acquirer-worker"
+        change_mode = "noop"
       }
 
       identity {

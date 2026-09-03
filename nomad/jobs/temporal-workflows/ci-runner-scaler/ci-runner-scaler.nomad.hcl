@@ -126,7 +126,8 @@ job "ci-runner-scaler" {
       #     GitHub App key). Role + policy are in infrastructure/terragrunt
       #     vault-config. ---
       vault {
-        role = "ci-runner-scaler"
+        role        = "ci-runner-scaler"
+        change_mode = "noop"
       }
 
       # The default WI (identity.env) has no ACL policy bound to it, so a scoped

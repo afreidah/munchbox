@@ -87,17 +87,19 @@ resource "vault_jwt_auth_backend_role" "nomad_workloads" {
     "nomad_task"      = "nomad_task"
   }
 
-  # Do NOT make these periodic with token_period == token_ttl. That was tried and
-  # reverted: nomad renews at half the ttl, and with the period equal to the ttl
-  # every renewal came back as a fresh token, tripping the vault{} change_mode.
-  # Fleet-wide restarts went from ~1/day to ~47/day -- twice an hour, every task
-  # with a vault block, including a TLS blip on traefik each time.
+  # No max ttl, so nomad can renew these forever. Per HashiCorp's Vault/Nomad
+  # workload-identity guidance, service tokens want an explicit max ttl of 0 for
+  # indefinite renewal. A successful renewal is invisible to the task; only a
+  # *replacement* token trips the vault{} change_mode, which defaults to restart.
+  # With a 24h max_ttl here, renewal became impossible once a day, nomad derived
+  # a replacement, and every task without change_mode = "noop" bounced -- daily,
+  # cluster-wide.
   #
-  # The 24h max_ttl does mean one re-derive per task per day, which restarts any
-  # task that has not set change_mode = "noop". That is the known, tolerated cost.
+  # Do NOT reach for token_period to solve this. Setting it equal to token_ttl was
+  # tried and made things worse: replacements every 30 minutes rather than daily,
+  # ~47 restarts/task/day, including a TLS blip on traefik each time.
   token_type     = "service"
   token_ttl      = 3600
-  token_max_ttl  = 86400
   token_policies = ["nomad-workloads"]
 }
 

@@ -159,7 +159,8 @@ job "dnsdist" {
 
       # --- Vault Integration (web console password + API key) ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {

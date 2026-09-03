@@ -98,7 +98,8 @@ job "flight-fetcher" {
       driver = "docker"
 
       vault {
-        role = "flight-fetcher"
+        role        = "flight-fetcher"
+        change_mode = "noop"
       }
 
       identity {

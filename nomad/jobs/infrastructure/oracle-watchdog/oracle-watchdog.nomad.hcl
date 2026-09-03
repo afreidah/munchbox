@@ -108,7 +108,8 @@ job "oracle-watchdog" {
 
       # --- Vault Integration ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {
