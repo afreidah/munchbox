@@ -212,7 +212,8 @@ job "haproxy" {
 
       # --- Vault Integration (for Redis password) ---
       vault {
-        role = "nomad-workloads"
+        role        = "nomad-workloads"
+        change_mode = "noop"
       }
 
       identity {

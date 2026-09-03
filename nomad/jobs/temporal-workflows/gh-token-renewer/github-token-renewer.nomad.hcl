@@ -120,7 +120,8 @@ job "github-token-renewer" {
       #     secret/github/token-renewer-app). Role + policy are defined in
       #     infrastructure/terragrunt vault-config. ---
       vault {
-        role = "github-token-renewer"
+        role        = "github-token-renewer"
+        change_mode = "noop"
       }
 
       identity {

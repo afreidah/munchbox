@@ -73,7 +73,8 @@ job "ci-runner" {
       # --- WI exchanged for a Vault token so the template below can read the
       #     scoped Nomad ACL token. Role + policy live in terragrunt vault-config. ---
       vault {
-        role = "ci-runner"
+        role        = "ci-runner"
+        change_mode = "noop"
       }
 
       # The default WI (identity.env) carries no Nomad policy; the scoped

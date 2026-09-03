@@ -133,7 +133,8 @@ job "s3-orchestrator" {
     task "s3-orchestrator" {
       driver = "docker"
       vault {
-        role = "s3-orchestrator"
+        role        = "s3-orchestrator"
+        change_mode = "noop"
       }
 
       identity {
