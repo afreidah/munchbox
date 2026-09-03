@@ -28,34 +28,48 @@ RUN mkdir -p /tmp/bin
 
 # --- Go (for building tools) ---
 RUN set -eux; \
-  GO_VERSION="1.25.5"; \
+  GO_VERSION="1.27.0"; \
   curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${ARCH_DL}.tar.gz" -o /tmp/go.tgz; \
   tar -C /usr/local -xzf /tmp/go.tgz; rm -f /tmp/go.tgz
 ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go
 
-# --- Download all binaries in parallel (much faster) ---
+# --- Download all binaries in parallel (much faster).
+#
+#     Every download is waited on BY PID and its status checked. A bare `wait`
+#     returns 0 no matter how the children exited, so `set -e` never sees a
+#     failed curl -- a dead URL then surfaces ~100s later as "command not found"
+#     in the sanity check below, pointing at the wrong thing entirely. That is
+#     exactly how the deleted trivy 0.58.0 release presented.
+#
+#     HashiCorp CLIs track the running cluster, not just latest. ---
 RUN set -eux; \
-  TF_VERSION="1.14.4"; \
-  TG_VERSION="0.91.5"; \
-  NOMAD_VERSION="1.11.1"; \
-  PACK_VERSION="0.1.2"; \
-  CONSUL_VERSION="1.20.1"; \
-  VAULT_VERSION="1.18.3"; \
-  TFLINT_VERSION="0.54.0"; \
-  TRIVY_VERSION="0.58.0"; \
-  COSIGN_VERSION="2.4.1"; \
+  TF_VERSION="1.16.0"; \
+  TG_VERSION="1.1.4"; \
+  NOMAD_VERSION="2.0.5"; \
+  PACK_VERSION="0.4.2"; \
+  CONSUL_VERSION="2.0.3"; \
+  VAULT_VERSION="2.0.4"; \
+  TFLINT_VERSION="0.64.0"; \
+  TRIVY_VERSION="0.74.0"; \
+  COSIGN_VERSION="3.1.3"; \
   if [ "$ARCH_DL" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="64bit"; fi; \
   \
-  curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/tf.zip & \
-  curl -fsSL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_${ARCH_DL}" -o /tmp/bin/terragrunt & \
-  curl -fsSL "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/nomad.zip & \
-  curl -fsSL "https://releases.hashicorp.com/nomad-pack/${PACK_VERSION}/nomad-pack_${PACK_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/pack.zip & \
-  curl -fsSL "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/consul.zip & \
-  curl -fsSL "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH_DL}.zip" -o /tmp/vault.zip & \
-  curl -fsSL "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" -o /tmp/tflint.zip & \
-  curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" -o /tmp/trivy.tgz & \
-  curl -fsSL "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${ARCH_DL}" -o /tmp/bin/cosign & \
-  wait; \
+  pids=""; \
+  dl() { curl -fsSL "$1" -o "$2" & pids="$pids $!:$1"; }; \
+  dl "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_${ARCH_DL}.zip" /tmp/tf.zip; \
+  dl "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_${ARCH_DL}" /tmp/bin/terragrunt; \
+  dl "https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_${ARCH_DL}.zip" /tmp/nomad.zip; \
+  dl "https://releases.hashicorp.com/nomad-pack/${PACK_VERSION}/nomad-pack_${PACK_VERSION}_linux_${ARCH_DL}.zip" /tmp/pack.zip; \
+  dl "https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_${ARCH_DL}.zip" /tmp/consul.zip; \
+  dl "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${ARCH_DL}.zip" /tmp/vault.zip; \
+  dl "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" /tmp/tflint.zip; \
+  dl "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" /tmp/trivy.tgz; \
+  dl "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${ARCH_DL}" /tmp/bin/cosign; \
+  rc=0; \
+  for p in $pids; do \
+    if ! wait "${p%%:*}"; then echo "download failed: ${p#*:}" >&2; rc=1; fi; \
+  done; \
+  [ "$rc" -eq 0 ] || { echo "one or more downloads failed" >&2; exit 1; }; \
   \
   chmod +x /tmp/bin/terragrunt /tmp/bin/cosign; \
   unzip -o -d /tmp /tmp/tf.zip && install -m0755 /tmp/terraform /tmp/bin/terraform; \
