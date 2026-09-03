@@ -58,6 +58,18 @@ locals {
     always_online = "on"
   }
 
+  # --- numeric-valued settings; separate map because the string one would
+  #     quote the integer and the API rejects that ---
+  #
+  # browser_cache_ttl 0 = "Respect Existing Headers". Cloudflare's default is
+  # 14400, and it overwrites whatever the origin sent on the way out -- so
+  # nginx's `no-cache` on html became `max-age=14400` and every deploy pinned
+  # the previous page in every visitor's browser for four hours. The origin
+  # already sets this correctly per content type; let it through.
+  baseline_numeric = {
+    browser_cache_ttl = 0
+  }
+
   # --- flatten zones x baseline into the module's keyed map ---
   zone_settings = merge([
     for zkey, zid in local.zones : {
@@ -66,6 +78,37 @@ locals {
     }
   ]...)
 
+  zone_settings_numeric = merge([
+    for zkey, zid in local.zones : {
+      for sid, val in local.baseline_numeric :
+      "${zkey}-${sid}" => { zone_id = zid, setting_id = sid, value = val }
+    }
+  ]...)
+
+  # --- Cache Rules. These outrank browser_cache_ttl above, so anything set
+  #     here wins; codified so a dashboard edit can't quietly override the
+  #     baseline again.
+  #
+  # The s3-orchestrator rule was override_origin 14400 browser / 86400 edge,
+  # which ignored the origin entirely: nginx's `no-cache` on html became a 4h
+  # browser pin, and the edge served day-old html. respect_origin hands the
+  # decision back to nginx, which already sets it per content type (no-cache
+  # for html, 1y for hashed assets). cache stays true so those assets are
+  # still edge-cacheable on their own headers. ---
+  cache_rulesets = {
+    munchbox = {
+      zone_id = local.zones.munchbox
+      name    = "default"
+      rules = [{
+        description = "s3-orchestrator"
+        expression  = "(http.request.full_uri contains \"s3-orchestrator.munchbox.cc\")"
+        cache       = true
+        browser_ttl = { mode = "respect_origin" }
+        edge_ttl    = { mode = "respect_origin" }
+      }]
+    }
+  }
+
   dnssec_zones = {
     munchbox    = { zone_id = local.zones.munchbox }
     alexfreidah = { zone_id = local.zones.alexfreidah, multi_signer = true }
@@ -73,7 +116,9 @@ locals {
 }
 
 inputs = {
-  zone_settings        = local.zone_settings
-  dnssec_zones         = local.dnssec_zones
-  cloudflare_api_token = dependency.cloudflare_tokens.outputs.token_values["zonecfg"]
+  zone_settings         = local.zone_settings
+  zone_settings_numeric = local.zone_settings_numeric
+  cache_rulesets        = local.cache_rulesets
+  dnssec_zones          = local.dnssec_zones
+  cloudflare_api_token  = dependency.cloudflare_tokens.outputs.token_values["zonecfg"]
 }
