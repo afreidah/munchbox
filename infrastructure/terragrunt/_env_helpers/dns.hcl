@@ -45,15 +45,23 @@ locals {
     no_tls_verify            = false
   }
 
-  # --- munchbox.cc: static wg A-record (non-proxied, kept current by oracle-watchdog) ---
+  # --- munchbox.cc: wg A-record (non-proxied), the WireGuard endpoint the
+  #     oracle nodes dial home on.
+  #
+  # oracle-watchdog repoints this whenever the WAN IP changes, using the
+  # narrowly-scoped wandns token. external_content hands `content` to it: the
+  # literal below only seeds creation and drift on it is ignored. Without that
+  # flag terraform reverted the record to a stale address on every apply, which
+  # holds until the tunnels rekey and then drops all four oracle nodes. ---
   munchbox_static = {
     "munchbox-wg" = {
-      zone_id = local.munchbox_zone_id
-      name    = "wg"
-      type    = "A"
-      content = "23.240.245.39"
-      proxied = false
-      ttl     = 60
+      zone_id          = local.munchbox_zone_id
+      name             = "wg"
+      type             = "A"
+      content          = "154.27.123.93"
+      proxied          = false
+      ttl              = 60
+      external_content = true
     }
   }
 

@@ -3,9 +3,9 @@
 # -----------------------------------------------------------------------------
 
 output "records" {
-  description = "Map of created DNS records with their hostnames"
+  description = "Map of created DNS records with their hostnames, across both the terraform-owned and external-content resources."
   value = {
-    for key, record in cloudflare_dns_record.records : key => {
+    for key, record in merge(cloudflare_dns_record.records, cloudflare_dns_record.external_records) : key => {
       hostname = record.name
       type     = record.type
       proxied  = record.proxied

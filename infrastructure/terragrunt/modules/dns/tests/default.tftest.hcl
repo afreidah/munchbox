@@ -98,6 +98,46 @@ run "ttl_defaulting" {
 }
 
 # -------------------------------------------------------------------------
+# external_content: splits onto its own resource, still in the records output
+# -------------------------------------------------------------------------
+
+run "external_content_split" {
+  command = plan
+
+  variables {
+    dns_records = {
+      "apex" = { zone_id = "0123456789abcdef0123456789abcdef", name = "@", content = "tunnel.example", type = "CNAME" }
+      "wg" = { zone_id = "0123456789abcdef0123456789abcdef", name = "wg", content = "1.2.3.4", type = "A",
+      proxied = false, ttl = 60, external_content = true }
+    }
+  }
+
+  # --- only the terraform-owned record lands on the default resource ---
+  assert {
+    condition     = toset(keys(cloudflare_dns_record.records)) == toset(["apex"])
+    error_message = "external_content entries must not land on the owned resource"
+  }
+
+  # --- and the external one on its own ---
+  assert {
+    condition     = toset(keys(cloudflare_dns_record.external_records)) == toset(["wg"])
+    error_message = "external_content entry must land on the external resource"
+  }
+
+  # --- non-content fields are still managed on the external record ---
+  assert {
+    condition     = cloudflare_dns_record.external_records["wg"].proxied == false && cloudflare_dns_record.external_records["wg"].ttl == 60
+    error_message = "external records must still manage proxied/ttl"
+  }
+
+  # --- the output spans both resources so consumers see no difference ---
+  assert {
+    condition     = toset(keys(output.records)) == toset(["apex", "wg"])
+    error_message = "records output must include external-content records"
+  }
+}
+
+# -------------------------------------------------------------------------
 # tunnel_config null -> no tunnel resource (count = 0)
 # -------------------------------------------------------------------------
 
