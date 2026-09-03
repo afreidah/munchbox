@@ -143,7 +143,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.119.0"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.121.0"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -205,9 +205,12 @@ backends:
     access_key_id: "{{ .Data.data.oci_s3_access_key }}"
     secret_access_key: "{{ .Data.data.oci_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 10737418240
+    # Always Free: 20 GB combined tiers, 50k requests/mo, 10 TB/mo egress
+    # (tenancy-wide, shared with the A1 compute instances). OCI does not
+    # class requests, so one flat budget is the accurate shape.
+    quota_bytes: 17179869184          # 16 GiB of the 20 GB pool
     api_request_limit: 50000
-    egress_byte_limit: 10737418240
+    egress_byte_limit: 1099511627776  # 1 TB of the tenancy's 10 TB
   - name: "r2"
     endpoint: "{{ .Data.data.r2_s3_endpoint }}"
     region: "auto"
@@ -215,8 +218,16 @@ backends:
     access_key_id: "{{ .Data.data.r2_s3_access_key }}"
     secret_access_key: "{{ .Data.data.r2_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 10737418240
-    api_request_limit: 1000000
+    # Free tier: 10 GB-month, 1M Class A, 10M Class B, egress free.
+    quota_bytes: 10000000000
+    unmetered: [DeleteObject, DeleteObjects, AbortMultipartUpload]
+    request_limits:
+      - name: class_a
+        operations: [PutObject, CopyObject, ListObjects, ListObjectsV2, CreateMultipartUpload, UploadPart, CompleteMultipartUpload, GetParts]
+        limit: 1000000
+      - name: class_b
+        operations: [GetObject, HeadObject]
+        limit: 10000000
   - name: "e2"
     endpoint: "{{ .Data.data.e2_s3_endpoint }}"
     region: "{{ .Data.data.e2_s3_region }}"
@@ -236,9 +247,19 @@ backends:
     access_key_id: "{{ .Data.data.ibm_s3_access_key }}"
     secret_access_key: "{{ .Data.data.ibm_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 5368709120
-    egress_byte_limit: 5368709120
-    ingress_byte_limit: 5368709120
+    # Free tier: 5 GB Smart Tier, 2k Class A, 20k Class B, 5 GB public
+    # egress. Ingress is not metered. IBM's Class B is "GET and all
+    # others", so deletes and aborts are charged there rather than free.
+    quota_bytes: 5000000000
+    egress_byte_limit: 5000000000
+    ingress_byte_limit: 0
+    request_limits:
+      - name: class_a
+        operations: [PutObject, CopyObject, ListObjects, ListObjectsV2, CreateMultipartUpload, UploadPart, CompleteMultipartUpload]
+        limit: 2000
+      - name: class_b
+        operations: [GetObject, HeadObject, GetParts, DeleteObject, DeleteObjects, AbortMultipartUpload]
+        limit: 20000
   - name: "gcp"
     endpoint: "{{ .Data.data.gcp_s3_endpoint }}"
     region: "{{ .Data.data.gcp_s3_region }}"
@@ -249,10 +270,20 @@ backends:
     disable_checksum: true
     unsigned_payload: true
     strip_sdk_headers: true
-    quota_bytes: 5368709120
+    # Always Free: 5 GB regional storage (us-east1/us-west1/us-central1
+    # only), 5k Class A, 50k Class B, 100 GB North America egress.
+    # Ingress is not metered; Class A is the real write ceiling.
+    quota_bytes: 5000000000
     egress_byte_limit: 107374182400
-    ingress_byte_limit: 5368709120
-    api_request_limit: 5000
+    ingress_byte_limit: 0
+    unmetered: [DeleteObject, DeleteObjects, AbortMultipartUpload]
+    request_limits:
+      - name: class_a
+        operations: [PutObject, CopyObject, ListObjects, ListObjectsV2, CreateMultipartUpload, UploadPart, CompleteMultipartUpload, GetParts]
+        limit: 5000
+      - name: class_b
+        operations: [GetObject, HeadObject]
+        limit: 50000
   - name: "b2"
     endpoint: "{{ .Data.data.b2_s3_endpoint }}"
     region: "{{ .Data.data.b2_s3_region }}"
@@ -260,9 +291,11 @@ backends:
     access_key_id: "{{ .Data.data.b2_s3_access_key }}"
     secret_access_key: "{{ .Data.data.b2_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 10737418240       # 10 GB storage
-    egress_byte_limit: 32212254720 # 30 GB/month egress (1 GB/day × 30)
-    api_request_limit: 75000       # 2,500/day × 30 Class B/C
+    # Class A/B/C transactions are free, so no request budget. Egress is
+    # free up to 3x average monthly stored bytes, which scales with what
+    # b2 actually holds rather than with the quota.
+    quota_bytes: 10000000000       # 10 GB free storage
+    egress_byte_limit: 30000000000 # 3x a full 10 GB backend
   - name: "g3"
     endpoint: "{{ .Data.data.g3_s3_endpoint }}"
     region: "us-east-1"
@@ -271,7 +304,7 @@ backends:
     access_key_id: "{{ .Data.data.g3_s3_access_key }}"
     secret_access_key: "{{ .Data.data.g3_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 16106127360      # 15 GB
+    quota_bytes: 10737418240      # 10 GiB of a 15 GB quota shared with Gmail/Photos
   - name: "supabase"
     endpoint: "{{ .Data.data.supabase_s3_endpoint }}"
     region: "{{ .Data.data.supabase_s3_region }}"
@@ -290,8 +323,8 @@ backends:
     access_key_id: "{{ .Data.data.c2_s3_access_key }}"
     secret_access_key: "{{ .Data.data.c2_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 16106127360       # 15 GB storage
-    egress_byte_limit: 16106127360 # 15 GB/month egress
+    quota_bytes: 15000000000       # 15 GB storage
+    egress_byte_limit: 15000000000 # 15 GB/month egress
   - name: "tigris"
     endpoint: "{{ .Data.data.tigris_s3_endpoint }}"
     region: "{{ .Data.data.tigris_s3_region }}"
@@ -299,8 +332,16 @@ backends:
     access_key_id: "{{ .Data.data.tigris_s3_access_key }}"
     secret_access_key: "{{ .Data.data.tigris_s3_secret_key }}"
     force_path_style: true
-    quota_bytes: 5368709120        # 5 GB storage
-    api_request_limit: 110000      # 10K Class A + 100K Class B/month
+    # Free tier: 5 GB, 10k Class A, 100k Class B, egress free, deletes free.
+    quota_bytes: 5000000000
+    unmetered: [DeleteObject, DeleteObjects, AbortMultipartUpload]
+    request_limits:
+      - name: class_a
+        operations: [PutObject, CopyObject, ListObjects, ListObjectsV2, CreateMultipartUpload, UploadPart, CompleteMultipartUpload, GetParts]
+        limit: 10000
+      - name: class_b
+        operations: [GetObject, HeadObject]
+        limit: 100000
   - name: "minio"
     endpoint: "{{ .Data.data.minio_s3_endpoint }}"
     region: "us-east-1"
