@@ -15,14 +15,15 @@
 # -----------------------------------------------------------------------------
 
 variable "dns_records" {
-  description = "Map of DNS records to create"
+  description = "Map of DNS records to create. Set external_content on records whose value is maintained at runtime by something outside terraform; content then seeds creation only and drift on it is ignored."
   type = map(object({
-    zone_id = string
-    name    = string
-    content = string
-    type    = string
-    proxied = optional(bool, true)
-    ttl     = optional(number, 1)
+    zone_id          = string
+    name             = string
+    content          = string
+    type             = string
+    proxied          = optional(bool, true)
+    ttl              = optional(number, 1)
+    external_content = optional(bool, false)
   }))
   default = {}
 }

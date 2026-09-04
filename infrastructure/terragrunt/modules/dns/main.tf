@@ -12,8 +12,16 @@
 # DNS RECORDS
 # -----------------------------------------------------------------------------
 
+locals {
+  # --- split on who owns `content`. ignore_changes takes a static list and
+  #     cannot be varied per for_each instance, so the two groups need
+  #     separate resources. ---
+  owned_records    = { for k, r in var.dns_records : k => r if !r.external_content }
+  external_records = { for k, r in var.dns_records : k => r if r.external_content }
+}
+
 resource "cloudflare_dns_record" "records" {
-  for_each = var.dns_records
+  for_each = local.owned_records
 
   zone_id = each.value.zone_id
   name    = each.value.name
@@ -23,10 +31,37 @@ resource "cloudflare_dns_record" "records" {
   ttl     = lookup(each.value, "ttl", 1)
 }
 
+# --- Records whose value is maintained at runtime. Terraform still owns that
+#     the record exists and its name/type/proxied/ttl; only `content` is
+#     conceded. `content` here seeds creation and is not reconciled after --
+#     a literal in code cannot track an address that changes on its own, and
+#     applying one over a live value takes the endpoint offline. ---
+resource "cloudflare_dns_record" "external_records" {
+  for_each = local.external_records
+
+  zone_id = each.value.zone_id
+  name    = each.value.name
+  content = each.value.content
+  type    = each.value.type
+  proxied = lookup(each.value, "proxied", true)
+  ttl     = lookup(each.value, "ttl", 1)
+
+  lifecycle {
+    ignore_changes = [content]
+  }
+}
+
 # --- cloudflare v4 -> v5 rename; state migrates in place, no recreate ---
 moved {
   from = cloudflare_record.records
   to   = cloudflare_dns_record.records
+}
+
+# --- wg moves to the external-content resource; state migrates in place so the
+#     live record is not destroyed. Safe to drop once applied. ---
+moved {
+  from = cloudflare_dns_record.records["munchbox-wg"]
+  to   = cloudflare_dns_record.external_records["munchbox-wg"]
 }
 
 # -----------------------------------------------------------------------------

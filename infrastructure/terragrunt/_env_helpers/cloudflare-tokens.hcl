@@ -58,10 +58,14 @@ locals {
       }]
     }
     # --- cloudflare-zone-settings leaf: provider creds for zone settings + dnssec ---
+    # Cache Settings read/write covers the http_request_cache_settings ruleset
+    # (Cache Rules). Those outrank the browser_cache_ttl zone setting, so without
+    # them the codified baseline can be silently overridden by a dashboard rule
+    # that nothing here can even read. Zone-scoped, same two zones as the rest.
     zonecfg = {
       name = "munchbox-zone-settings-tls-dnssec"
       policies = [{
-        permission_groups = ["Zone Settings Read", "Zone Settings Write", "DNS Read", "DNS Write"]
+        permission_groups = ["Zone Settings Read", "Zone Settings Write", "DNS Read", "DNS Write", "Cache Settings Read", "Cache Settings Write"]
         resources = {
           "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
           "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_alexfreidah_zone_id}" = "*"

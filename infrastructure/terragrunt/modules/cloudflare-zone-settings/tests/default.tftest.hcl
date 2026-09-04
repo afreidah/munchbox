@@ -17,6 +17,23 @@ variables {
     "munchbox-min_tls_version" = { zone_id = "zone-mb", setting_id = "min_tls_version", value = "1.2" }
     "alexfreidah-ssl"          = { zone_id = "zone-af", setting_id = "ssl", value = "strict" }
   }
+  zone_settings_numeric = {
+    "munchbox-browser_cache_ttl" = { zone_id = "zone-mb", setting_id = "browser_cache_ttl", value = 0 }
+  }
+  # --- cloudflare_ruleset validates zone_id as 32-char hex, unlike
+  #     zone_setting/zone_dnssec above which accept the short mock ids ---
+  cache_rulesets = {
+    munchbox = {
+      zone_id = "0123456789abcdef0123456789abcdef"
+      name    = "default"
+      rules = [{
+        description = "s3-orchestrator"
+        expression  = "(http.request.full_uri contains \"s3-orchestrator.munchbox.cc\")"
+        browser_ttl = { mode = "respect_origin" }
+        edge_ttl    = { mode = "respect_origin" }
+      }]
+    }
+  }
   dnssec_zones = {
     munchbox    = { zone_id = "zone-mb" }
     alexfreidah = { zone_id = "zone-af", multi_signer = true }
@@ -40,6 +57,34 @@ run "fan_out_per_entry" {
   assert {
     condition     = cloudflare_zone_setting.this["munchbox-ssl"].setting_id == "ssl"
     error_message = "munchbox-ssl entry must set setting_id ssl"
+  }
+
+  # --- numeric settings fan out on their own resource ---
+  assert {
+    condition     = length(cloudflare_zone_setting.numeric) == 1
+    error_message = "one zone_settings_numeric entry -> one cloudflare_zone_setting"
+  }
+
+  # --- 0 stays a number; a quoted integer is rejected by the API ---
+  assert {
+    condition     = cloudflare_zone_setting.numeric["munchbox-browser_cache_ttl"].value == 0
+    error_message = "browser_cache_ttl must pass through as numeric 0"
+  }
+
+  # --- cache ruleset lands on the cache phase with the right action ---
+  assert {
+    condition     = cloudflare_ruleset.cache["munchbox"].phase == "http_request_cache_settings"
+    error_message = "cache rulesets must use the http_request_cache_settings phase"
+  }
+
+  # --- respect_origin, so nginx's per-content-type headers survive ---
+  assert {
+    condition = alltrue([
+      cloudflare_ruleset.cache["munchbox"].rules[0].action == "set_cache_settings",
+      cloudflare_ruleset.cache["munchbox"].rules[0].action_parameters.browser_ttl.mode == "respect_origin",
+      cloudflare_ruleset.cache["munchbox"].rules[0].action_parameters.edge_ttl.mode == "respect_origin",
+    ])
+    error_message = "cache rule must set_cache_settings with both TTL modes respect_origin"
   }
 
   # --- one cloudflare_zone_dnssec per zone ---
@@ -69,14 +114,22 @@ run "empty_inputs_no_resources" {
   command = plan
 
   variables {
-    zone_settings = {}
-    dnssec_zones  = {}
+    zone_settings         = {}
+    zone_settings_numeric = {}
+    cache_rulesets        = {}
+    dnssec_zones          = {}
   }
 
   # --- no settings when the map is empty ---
   assert {
     condition     = length(cloudflare_zone_setting.this) == 0
     error_message = "empty zone_settings -> no cloudflare_zone_setting resources"
+  }
+
+  # --- same for the numeric map ---
+  assert {
+    condition     = length(cloudflare_zone_setting.numeric) == 0
+    error_message = "empty zone_settings_numeric -> no cloudflare_zone_setting resources"
   }
 
   # --- no dnssec when the map is empty ---

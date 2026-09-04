@@ -224,6 +224,26 @@ consul_names:add("consul")
 addAction(SuffixMatchNodeRule(consul_names), PoolAction("consul"))
 
 -- -------------------------------------------------------------------------
+-- Suppress HTTPS/SVCB (type 65) for our own zone.
+--
+-- Pi-hole rewrites the A record to the ingress VIP but forwards the HTTPS
+-- record from Cloudflare untouched, so LAN clients get an answer carrying
+-- ipv4hint=<cloudflare edge> plus an ECH config for it -- split-horizon only
+-- half applied. Firefox on plain DNS never asks for type 65 so it goes
+-- unnoticed, but any resolver that honours the record (Firefox with DoH on,
+-- Chrome, curl 8.14+) follows the hint straight out to the edge and picks up
+-- its cache instead of the local origin.
+--
+-- NOERROR with no answer is NODATA: clients fall back to the A record.
+-- -------------------------------------------------------------------------
+local_names = newSuffixMatchNode()
+local_names:add("munchbox.cc")
+addAction(
+  AndRule({SuffixMatchNodeRule(local_names), QTypeRule(DNSQType.HTTPS)}),
+  RCodeAction(DNSRCode.NOERROR)
+)
+
+-- -------------------------------------------------------------------------
 -- Packet cache -- offloads repeat lookups from the weak armv6 Pi-holes (the
 -- whole point of fronting them). Caps at the record's own TTL (maxTTL 1h);
 -- staleTTL serves slightly-stale answers if both Pi-holes are briefly down.
