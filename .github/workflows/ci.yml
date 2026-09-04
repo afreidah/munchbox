@@ -439,6 +439,13 @@ jobs:
             elif ! ( cd "$leaf" && terragrunt validate ); then
               echo "::error title=terragrunt validate::$leaf failed validate"; fail=1
             fi
+            # --- Drop the backend-less .terraform this leaf just created. A leaf
+            #     that is someone's dependency (cluster/secrets/cloudflare-tokens)
+            #     otherwise looks initialized-without-a-backend to the dependent
+            #     leaf's output lookup, which then fails on the consul backend
+            #     instead of falling back to mock_outputs. Only bites when a
+            #     dependency and its dependents change together. ---
+            rm -rf "$leaf/.terraform"
             echo "::endgroup::"
           done <<< "$leaves"
           [ "$fail" -eq 0 ] || { echo "::error::one or more leaves failed terragrunt validate"; exit 1; }
