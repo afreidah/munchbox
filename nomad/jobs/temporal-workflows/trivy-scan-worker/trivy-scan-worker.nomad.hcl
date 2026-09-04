@@ -110,7 +110,7 @@ job "trivy-scan-worker" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "trivy-scan-worker"
         change_mode = "noop"
       }
 

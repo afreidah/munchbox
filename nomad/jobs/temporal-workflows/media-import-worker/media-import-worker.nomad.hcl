@@ -98,10 +98,10 @@ job "media-import-worker" {
     task "media-import-worker" {
       driver = "docker"
 
-      # --- WI: the nomad-workloads role grants read on secret/{media-import,
+      # --- WI: the media-import-worker role grants read on secret/{media-import,
       #     deluge,jellyfin}; the worker reads them through its own Vault client. ---
       vault {
-        role        = "nomad-workloads"
+        role        = "media-import-worker"
         change_mode = "noop"
       }
 

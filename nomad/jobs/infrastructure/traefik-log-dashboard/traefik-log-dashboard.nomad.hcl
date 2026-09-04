@@ -156,7 +156,7 @@ job "traefik-log-dashboard" {
       }
 
       vault {
-        role        = "nomad-workloads"
+        role        = "traefik-log-dashboard"
         change_mode = "noop"
       }
 
@@ -197,7 +197,7 @@ EOH
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "traefik-log-dashboard"
         change_mode = "noop"
       }
 

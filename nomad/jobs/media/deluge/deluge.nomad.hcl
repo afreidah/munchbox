@@ -154,7 +154,7 @@ job "deluge" {
       }
 
       vault {
-        role        = "nomad-workloads"
+        role        = "deluge"
         change_mode = "noop"
       }
 
@@ -216,7 +216,7 @@ EOF
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "deluge"
         change_mode = "noop"
       }
 

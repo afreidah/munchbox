@@ -24,7 +24,8 @@ size         = "medium"
 constraints = [
   { attribute = "$${meta.role}", operator = "=", value = "ingress" }
 ]
-vault = true
+vault      = true
+vault_role = "prometheus"
 
 # --- Storage ---
 volumes = [

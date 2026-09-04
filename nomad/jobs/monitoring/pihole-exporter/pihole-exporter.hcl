@@ -16,6 +16,7 @@ static_port = 9617
 size        = "tiny"
 memory      = 64
 vault       = true
+vault_role  = "pihole-exporter"
 
 # --- Traefik routing ---
 traefik = false

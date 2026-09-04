@@ -23,7 +23,10 @@ infrastructure/terragrunt/
 +-- root.hcl                    # Centralized config: paths, locals, generate blocks, remote_state
 +-- _env_helpers/               # One per module; bridges root.hcl locals -> module inputs
 +-- modules/                    # Reusable terraform modules (one concern per module)
-+-- global/                     # Provider-agnostic leaves (consul-acls, vault-config, dns, ...)
++-- cluster/                    # Provider-agnostic leaves (consul-acls, nomad-acls, vault-config, vault-secrets, secrets)
++-- dns/                        # Pihole + Cloudflare records
++-- data/                       # Postgres databases and roles
++-- apps/                       # Per-application leaves
 +-- oci/                        # OCI per-node + per-service leaves
 +-- proxmox/                    # Proxmox cluster + per-VM leaves
 +-- ibm/                        # IBM Cloud leaves

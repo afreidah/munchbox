@@ -107,6 +107,13 @@ run "baseline_jwt_auth_enabled" {
     condition     = output.jwt_auth_path == "jwt-nomad"
     error_message = "jwt_auth_path output should be 'jwt-nomad' when enabled"
   }
+
+  # --- the default role carries the templated policy, so a job gets its own
+  #     KV prefix without being named anywhere ---
+  assert {
+    condition     = contains(vault_jwt_auth_backend_role.nomad_workloads[0].token_policies, "nomad-workload-self")
+    error_message = "the default role must carry nomad-workload-self so new jobs need no config"
+  }
 }
 
 # -------------------------------------------------------------------------
@@ -199,9 +206,10 @@ run "baseline_policies_created" {
     error_message = "Policy 'consul-token-read' should exist"
   }
 
-  # --- policy_names output lists every policy (no nomad_workloads without workload_secrets) ---
+  # --- policy_names lists the map keys plus nomad_workload_self, which rides
+  #     on jwt_auth_enabled; nomad_workloads stays out without workload_secrets ---
   assert {
-    condition     = toset(keys(output.policy_names)) == toset(["consul-token-read", "nomad-server", "redis-acl"])
+    condition     = toset(keys(output.policy_names)) == toset(["consul-token-read", "nomad-server", "redis-acl", "nomad_workload_self"])
     error_message = "policy_names must list every created policy"
   }
 
@@ -269,6 +277,61 @@ run "disable_jwt_auth" {
   assert {
     condition     = length(vault_jwt_auth_backend_role.nomad_workloads) == 0
     error_message = "JWT role should not be created when JWT is disabled"
+  }
+
+  # --- the self-scoped policy needs the backend's accessor, so it goes too ---
+  assert {
+    condition     = length(vault_policy.nomad_workload_self) == 0
+    error_message = "nomad-workload-self should not be created without the JWT backend"
+  }
+}
+
+# -------------------------------------------------------------------------
+# Self-scoped workload policy templates on the JWT accessor
+# -------------------------------------------------------------------------
+
+run "workload_self_policy_templated" {
+  command = plan
+
+  # --- the accessor is provider-assigned, so the policy body is unknown at
+  #     plan time unless it is pinned here ---
+  override_resource {
+    target          = vault_jwt_auth_backend.nomad[0]
+    override_during = plan
+    values = {
+      accessor = "auth_jwt_mocktest"
+    }
+  }
+
+  # --- created alongside the JWT backend ---
+  assert {
+    condition     = length(vault_policy.nomad_workload_self) == 1
+    error_message = "nomad-workload-self should be created when JWT auth and policies are enabled"
+  }
+
+  # --- grants the job's own prefix and its children, both templated ---
+  assert {
+    condition = alltrue([
+      strcontains(vault_policy.nomad_workload_self[0].policy, "path \"secret/data/{{identity.entity.aliases."),
+      strcontains(vault_policy.nomad_workload_self[0].policy, ".name}}/*\" {"),
+    ])
+    error_message = "nomad-workload-self must template the job's own KV prefix and its children"
+  }
+
+  # --- interpolates the live accessor rather than a mount path ---
+  assert {
+    condition     = !strcontains(vault_policy.nomad_workload_self[0].policy, "aliases.jwt-nomad.")
+    error_message = "the template must use the backend accessor, not the mount path"
+  }
+
+  # --- carries none of the privileged grants the static policy hands out ---
+  assert {
+    condition = alltrue([
+      !strcontains(vault_policy.nomad_workload_self[0].policy, "ssh-client-signer"),
+      !strcontains(vault_policy.nomad_workload_self[0].policy, "consul/creds"),
+      !strcontains(vault_policy.nomad_workload_self[0].policy, "postgres-shared"),
+    ])
+    error_message = "nomad-workload-self must not grant SSH signing, Consul creds, or shared Postgres"
   }
 }
 
@@ -402,6 +465,104 @@ run "database_roles_subset" {
 # -------------------------------------------------------------------------
 # Custom workload_secrets list is accepted (nomad_workloads still created)
 # -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# The shared workloads policy no longer carries the privileged grants
+# -------------------------------------------------------------------------
+
+run "workloads_policy_drops_privileged_grants" {
+  command = plan
+
+  variables {
+    ssh_ca_enabled   = true
+    workload_secrets = ["traefik", "grafana"]
+  }
+
+  # --- SSH client signing belongs to the one worker that needs it ---
+  assert {
+    condition     = !strcontains(vault_policy.nomad_workloads[0].policy, "ssh-client-signer")
+    error_message = "nomad-workloads must not grant SSH client certificate signing"
+  }
+
+  # --- no dynamic Consul token minting; nothing consumes it ---
+  assert {
+    condition     = !strcontains(vault_policy.nomad_workloads[0].policy, "consul/creds")
+    error_message = "nomad-workloads must not grant Consul dynamic credentials"
+  }
+
+  # --- the KV paths it does exist for are still generated ---
+  assert {
+    condition = alltrue([
+      strcontains(vault_policy.nomad_workloads[0].policy, "path \"secret/data/traefik\""),
+      strcontains(vault_policy.nomad_workloads[0].policy, "path \"secret/data/grafana\""),
+    ])
+    error_message = "nomad-workloads must still generate a path per workload secret"
+  }
+}
+
+# -------------------------------------------------------------------------
+# Per-job extra-grant policies fan out from workload_extra_secrets
+# -------------------------------------------------------------------------
+
+run "workload_extra_secrets_generate_policies" {
+  command = plan
+
+  variables {
+    workload_extra_secrets = {
+      gitgogit = { secrets = ["forgejo"] }
+      patroni = {
+        secrets     = ["postgres-shared/root"]
+        extra_paths = { "pki_int/issue/postgres" = ["create", "update"] }
+      }
+    }
+  }
+
+  # --- one policy per map key ---
+  assert {
+    condition     = length(vault_policy.workload_extra) == 2
+    error_message = "each workload_extra_secrets entry should generate a policy"
+  }
+
+  # --- named <job>-secrets so it cannot collide with a hand-written policy ---
+  assert {
+    condition     = vault_policy.workload_extra["gitgogit"].name == "gitgogit-secrets"
+    error_message = "generated policies should be named <job>-secrets"
+  }
+
+  # --- KV names become read grants under secret/data/ ---
+  assert {
+    condition     = strcontains(vault_policy.workload_extra["gitgogit"].policy, "path \"secret/data/forgejo\" {")
+    error_message = "secrets entries should grant read on secret/data/<name>"
+  }
+
+  # --- extra_paths are written verbatim with their own capabilities ---
+  assert {
+    condition = alltrue([
+      strcontains(vault_policy.workload_extra["patroni"].policy, "path \"pki_int/issue/postgres\" {"),
+      strcontains(vault_policy.workload_extra["patroni"].policy, "[\"create\",\"update\"]"),
+    ])
+    error_message = "extra_paths should be emitted verbatim with their capabilities"
+  }
+
+  # --- a job grants nothing another job named ---
+  assert {
+    condition     = !strcontains(vault_policy.workload_extra["gitgogit"].policy, "postgres-shared")
+    error_message = "a generated policy must carry only its own job's paths"
+  }
+}
+
+# -------------------------------------------------------------------------
+# No extra grants declared -> no generated policies
+# -------------------------------------------------------------------------
+
+run "no_workload_extra_secrets" {
+  command = plan
+
+  assert {
+    condition     = length(vault_policy.workload_extra) == 0
+    error_message = "no policies should be generated when the map is empty"
+  }
+}
 
 run "custom_workload_secrets" {
   command = plan

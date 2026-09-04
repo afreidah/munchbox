@@ -252,7 +252,7 @@ is mutual-TLS. The PKI tree:
 |---|---|
 | SSH (human + cinc-client + ci) | Vault SSH CA, host CA + short-lived user certs (8h `client-user`, 24h `client-service`) |
 | Chef -> Vault | AppRole; per-node `role_id` + `secret_id` in encrypted data bag, token sink at `/run/vault-agent/token` |
-| Nomad jobs -> Vault | Workload identity (JWT) via `jwt-nomad` backend; default role `nomad-workloads`; per-job roles bind on `nomad_job_id` |
+| Nomad jobs -> Vault | Workload identity (JWT) via `jwt-nomad` backend. The default `nomad-workloads` role carries a templated policy resolving `secret/data/<job id>` from the token's entity alias, so a job reaches only its own prefix with no per-job config. Reading another job's secret needs a `workload_extra_secrets` entry and a role bound on `nomad_job_id` |
 | Humans -> public services | Google OAuth via oauth2-proxy forward-auth (3 allowed emails) |
 | External ingress | Cloudflare tunnel -- no inbound NAT rules |
 | Internal service ACLs | Consul ACL default-deny + Nomad ACLs; per-service tokens in Vault |

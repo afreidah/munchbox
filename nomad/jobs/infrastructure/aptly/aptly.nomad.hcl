@@ -110,7 +110,7 @@ job "aptly" {
       }
 
       vault {
-        role        = "nomad-workloads"
+        role        = "aptly"
         change_mode = "noop"
       }
 
@@ -252,7 +252,7 @@ echo "Web UI installed at $WEBUI_DIR"
 
       # --- Vault Integration ---
       vault {
-        role        = "nomad-workloads"
+        role        = "aptly"
         change_mode = "noop"
       }
 
@@ -337,7 +337,7 @@ echo "Setup complete"
 
       # --- Vault Integration ---
       vault {
-        role        = "nomad-workloads"
+        role        = "aptly"
         change_mode = "noop"
       }
 

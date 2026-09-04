@@ -24,7 +24,7 @@ vuln-database downloads and enabling concurrent scans.
 ## Dependencies
 
 - Redis via `haproxy-redis.service.consul:6380` as the vuln-DB cache backend
-- Vault `secret/data/redis-shared` (Redis password) via `nomad-workloads` role
+- Vault `secret/data/redis-shared` (Redis password) via the `trivy-server` role
 - Temporal backup worker is the main caller
 
 ## Notable configuration

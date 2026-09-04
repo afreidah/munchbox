@@ -98,7 +98,7 @@ job "flight-fetcher" {
       driver = "docker"
 
       vault {
-        role        = "flight-fetcher"
+        role        = "nomad-workloads"
         change_mode = "noop"
       }
 

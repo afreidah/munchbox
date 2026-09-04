@@ -129,10 +129,14 @@ For raw jobs: include a `vault {}` block at the task level + a `template {}`
 block rendering the secret. Workload identity (`identity { ... }`) is on
 by default for new jobs.
 
-If a Vault read fails with 403, **fix the policy in
-`infrastructure/terragrunt/_env_helpers/vault-config.hcl`** (specifically
-the `workload_secrets` list), then `terragrunt apply` on `global/vault-config/`.
-Then `nomad job restart <name>` to re-fetch.
+Secrets stored at `secret/data/<job id>` need nothing in terragrunt -- the
+default role grants a job its own prefix via a templated policy.
+
+A 403 means the job is reading a path outside that prefix. Add it to
+`workload_extra_secrets` in
+`infrastructure/terragrunt/_env_helpers/vault-config.hcl`, point the job at
+`role = "<job id>"`, `terragrunt apply` on `cluster/vault-config/`, then
+redeploy. See the Vault section of `STYLE_GUIDE.md`.
 
 ---
 
