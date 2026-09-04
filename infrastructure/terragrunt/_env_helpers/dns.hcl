@@ -63,6 +63,50 @@ locals {
       ttl              = 60
       external_content = true
     }
+
+    # --- Bing Webmaster Tools ownership proofs.
+    #
+    # Bing resolves the token hostname and treats an answer of verify.bing.com
+    # as proof of control; nothing is served from it. Chosen over the file and
+    # meta-tag methods because those would each mean a rebuild, an image push,
+    # and a job redeploy to ship a token.
+    #
+    # `name` is relative to the zone, so the property decides the depth: each
+    # property here is a subdomain, and Bing looks the token up beneath it. A
+    # token at the apex verifies nothing -- Bing answered "did not detect
+    # verify.bing.com for the host" against exactly that mistake, which is what
+    # -apex below is left over from. It can go once nothing regresses.
+    #
+    # All must stay non-proxied. An orange-cloud record answers as Cloudflare
+    # and the lookup never sees verify.bing.com. Deleting a verified one
+    # un-verifies its property and Bing stops reporting on the site. ---
+    "munchbox-bing-verify" = {
+      zone_id = local.munchbox_zone_id
+      name    = "c8fc810efbcb45115267ac5a40760db4.s3-orchestrator"
+      type    = "CNAME"
+      content = "verify.bing.com"
+      proxied = false
+      ttl     = 300
+    }
+
+    "munchbox-bing-verify-apex" = {
+      zone_id = local.munchbox_zone_id
+      name    = "c8fc810efbcb45115267ac5a40760db4"
+      type    = "CNAME"
+      content = "verify.bing.com"
+      proxied = false
+      ttl     = 300
+    }
+
+    # --- resume.alexfreidah.com, other zone, same shape ---
+    "alexfreidah-bing-verify-resume" = {
+      zone_id = local.alexfreidah_zone_id
+      name    = "4a0d63523be1e5f1c740dbf9f74d451f.resume"
+      type    = "CNAME"
+      content = "verify.bing.com"
+      proxied = false
+      ttl     = 300
+    }
   }
 
   # --- proxied CNAME -> tunnel for each public munchbox.cc service ---

@@ -49,10 +49,22 @@ inputs = {
       crawler_protection = "enabled"
     }
     # --- alexfreidah.com: Pro plan -> Super Bot Fight Mode + AI bot controls.
-    #     "likely automated" tier is Business+ only, so it's intentionally unset. ---
+    #     "likely automated" tier is Business+ only, so it's intentionally unset.
+    #
+    # definitely_automated is a challenge rather than a block because SBFM
+    # classifies on source IP, not user agent: a plain browser from any
+    # datacenter or hosting ASN was getting a hard 403. Verified from an Oracle
+    # node, where a normal Chrome UA was refused while the same request from a
+    # residential IP succeeded. That catches corporate VPNs, egress proxies and
+    # WARP -- and resume.alexfreidah.com exists to be read by strangers, often
+    # from exactly those networks.
+    #
+    # managed_challenge still fails automation, which cannot solve the JS, but
+    # lets a real browser through. Crawlers are unaffected either way; they take
+    # the verified_bots path below. ---
     alexfreidah = {
       zone_id                         = local.az
-      sbfm_definitely_automated       = "block"
+      sbfm_definitely_automated       = "managed_challenge"
       sbfm_verified_bots              = "allow"
       sbfm_static_resource_protection = false
       optimize_wordpress              = false
