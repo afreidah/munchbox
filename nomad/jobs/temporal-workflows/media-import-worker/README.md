@@ -24,7 +24,7 @@ workflow is started on schedule by a Temporal Schedule.
 ## Dependencies
 
 - Temporal at `temporal-server.service.consul:7233`
-- Vault via Workload Identity (`nomad-workloads` role); reads Sonarr/Radarr keys
+- Vault via Workload Identity (`media-import-worker` role); reads Sonarr/Radarr keys
   from `secret/media-import`, Deluge `web_password` from `secret/deluge`, and
   the Jellyfin `api_key` from `secret/jellyfin`
 - Sonarr `sonarr.service.consul:8989`, Radarr `radarr.service.consul:7878`,

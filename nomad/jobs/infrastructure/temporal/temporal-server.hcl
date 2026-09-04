@@ -33,7 +33,8 @@ env = {
 }
 
 # --- Vault integration ---
-vault = true
+vault      = true
+vault_role = "temporal-server"
 
 # --- Templates (inject secrets from Vault as env vars) ---
 templates = [

@@ -105,7 +105,7 @@ job "cloudflare-log-collector" {
 
       # --- Vault Integration (for Cloudflare API token) ---
       vault {
-        role        = "nomad-workloads"
+        role        = "cloudflare-log-collector"
         change_mode = "noop"
       }
 

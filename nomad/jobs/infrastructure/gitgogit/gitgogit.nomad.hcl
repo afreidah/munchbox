@@ -103,7 +103,7 @@ job "gitgogit" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "gitgogit"
         change_mode = "noop"
       }
 

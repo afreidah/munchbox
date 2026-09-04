@@ -54,6 +54,9 @@ output "policy_names" {
     { for k, v in vault_policy.policy : k => v.name },
     length(var.workload_secrets) > 0 && var.policies_enabled ? {
       nomad_workloads = vault_policy.nomad_workloads[0].name
+    } : {},
+    var.jwt_auth_enabled && var.policies_enabled ? {
+      nomad_workload_self = vault_policy.nomad_workload_self[0].name
     } : {}
   )
 }

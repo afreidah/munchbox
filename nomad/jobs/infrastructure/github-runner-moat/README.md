@@ -25,7 +25,7 @@ fine-grained PAT pulled from Vault. Plain Nomad job (not the
 ## Dependencies
 
 - Vault `secret/data/github/moat-runner` (token, repo_url, optional
-  runner_group) via `nomad-workloads` role / workload identity
+  runner_group) via the `github-runner-moat` role / workload identity
 - Docker socket mount on the host (`/var/run/docker.sock`)
 - Internal registry for the runner image
 
@@ -37,5 +37,7 @@ fine-grained PAT pulled from Vault. Plain Nomad job (not the
 - 120s kill timeout to let in-flight jobs unwind
 - Token rotation: fine-grained PATs cap at 1 year; refresh in Vault before
   expiry or registration silently 401s
-- Vault policy access to `secret/data/github/moat-runner` is granted via the
-  `workload_secrets` list in `infrastructure/terragrunt/root.hcl`
+- `secret/data/github/moat-runner` sits outside this job's own prefix and is
+  shared with github-runner-moat-vm, so it is granted by the
+  `github-runner-moat-secrets` policy from `workload_extra_secrets` in
+  `infrastructure/terragrunt/_env_helpers/vault-config.hcl`

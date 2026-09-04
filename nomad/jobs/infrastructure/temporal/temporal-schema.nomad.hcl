@@ -36,7 +36,7 @@ job "temporal-schema" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "temporal-schema"
         change_mode = "noop"
       }
 

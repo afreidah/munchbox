@@ -216,6 +216,15 @@ variable "vault_policies" {
 # WORKLOAD VAULT ROLES
 # -------------------------------------------------------------------------
 
+variable "workload_extra_secrets" {
+  description = "Nomad job id -> the grants it needs beyond its own secret/data/<job id> prefix. secrets are KV names granted read; extra_paths maps a full Vault path to its capabilities. Each entry generates a <job>-secrets policy."
+  type = map(object({
+    secrets     = optional(list(string), [])
+    extra_paths = optional(map(list(string)), {})
+  }))
+  default = {}
+}
+
 variable "workload_vault_roles" {
   description = "Map of dedicated JWT auth roles for specific Nomad workloads"
   type = map(object({

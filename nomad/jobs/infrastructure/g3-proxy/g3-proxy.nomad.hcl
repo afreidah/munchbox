@@ -121,7 +121,7 @@ job "g3-proxy" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "g3-proxy"
         change_mode = "noop"
       }
 

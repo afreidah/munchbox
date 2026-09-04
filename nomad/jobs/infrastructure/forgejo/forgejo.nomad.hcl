@@ -191,7 +191,7 @@ job "forgejo" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "forgejo"
         change_mode = "noop"
       }
 

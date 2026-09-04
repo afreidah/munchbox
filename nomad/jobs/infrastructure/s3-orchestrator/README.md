@@ -40,7 +40,7 @@ through here.
 
 ## Notable configuration
 
-- Vault role `s3-orchestrator` (not the generic `nomad-workloads`)
+- Vault role `s3-orchestrator`: its own prefix plus the three `s3-bucket/*` keys and transit
 - Routing strategy `spread`; replication factor 2
 - Per-backend `disable_checksum` / `unsigned_payload` /
   `strip_sdk_headers` flags for GCS and e2 compatibility

@@ -97,7 +97,7 @@ job "trivy-server" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "trivy-server"
         change_mode = "noop"
       }
 

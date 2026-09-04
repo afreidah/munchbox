@@ -78,7 +78,7 @@ job "github-runner-moat-vm" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "github-runner-moat-vm"
         change_mode = "noop"
       }
 

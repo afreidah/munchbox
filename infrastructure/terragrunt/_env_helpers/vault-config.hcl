@@ -33,6 +33,56 @@ locals {
     max_ttl                     = tostring(8760 * 3600)
     issued_by                   = ["cert-manager"]
   }
+
+
+  # --- Per-job grants: everything a job reads outside its own
+  #     secret/data/<job id> prefix. Each entry becomes a <job>-secrets policy
+  #     bound to that job's role, so a shared credential reaches only the jobs
+  #     that name it. Jobs absent from this map read nothing but their own
+  #     prefix, via the templated nomad-workload-self policy. ---
+  workload_extra_secrets = {
+    "aptly"                    = { secrets = ["aptly-admin", "s3-bucket/aptly"] }
+    "aptly-s3-gateway"         = { secrets = ["aptly"] }
+    "backup-worker"            = { secrets = ["consul/backup-worker-token", "postgres-shared/root", "s3-bucket/unified"] }
+    "cloudflare-log-collector" = { secrets = ["cloudflare-logcollector"] }
+    "deluge"                   = { secrets = ["mullvad"] }
+    "forgejo"                  = { secrets = ["redis-shared"] }
+    "g3-proxy"                 = { secrets = ["g3"] }
+    "gitgogit"                 = { secrets = ["forgejo"] }
+    "github-runner-moat"       = { secrets = ["github/moat-runner"] }
+    "github-runner-moat-vm"    = { secrets = ["github/moat-runner"] }
+    "haproxy"                  = { secrets = ["redis-shared"] }
+    "oracle-watchdog"          = { secrets = ["cloudflare-wandns"] }
+    "pihole-exporter"          = { secrets = ["pihole/green"] }
+    "prometheus"               = { secrets = ["aptly-admin", "dnsdist", "prometheus-nomad"] }
+    "pve-exporter"             = { secrets = ["proxmox"] }
+    "redis-sentinel"           = { secrets = ["redis-shared"] }
+    "tempo"                    = { secrets = ["s3-bucket/tempo-traces"] }
+    "temporal-schema"          = { secrets = ["temporal"] }
+    "temporal-server"          = { secrets = ["temporal"] }
+    "traefik-log-dashboard"    = { secrets = ["maxmind"] }
+    "trivy-scan-worker"        = { secrets = ["backup-worker", "trivy-dashboard"] }
+    "trivy-server"             = { secrets = ["redis-shared"] }
+
+    # --- traefik proxies these services and injects their credentials as
+    #     basic-auth headers, so it reads secrets it does not own. ---
+    "traefik" = {
+      secrets = ["cloudflared", "dnsdist", "nomad-ui", "traefik-log-dashboard", "zfswatcher"]
+    }
+
+    # --- patroni self-issues the Postgres server cert on top of the shared
+    #     superuser and replication credentials. ---
+    "patroni" = {
+      secrets     = ["postgres-shared/replication", "postgres-shared/root"]
+      extra_paths = { "pki_int/issue/postgres" = ["create", "update", "read"] }
+    }
+
+    # --- s3-orchestrator fronts every bucket, so it holds all three keys. ---
+    "s3-orchestrator" = {
+      secrets = ["s3-bucket/aptly", "s3-bucket/tempo-traces", "s3-bucket/unified"]
+    }
+  }
+
 }
 
 inputs = {
@@ -156,6 +206,52 @@ inputs = {
       EOT
     }
 
+    # --- cleanup-worker: the one workload that signs itself an SSH client cert,
+    #     which it uses to reach nodes and prune their on-disk artifacts. That
+    #     grant carries root and ubuntu as principals, so it lives here rather
+    #     than in nomad-workloads where every job would hold it. Also reads the
+    #     Postgres superuser for the database side of the same cleanup. ---
+    "cleanup-worker" = {
+      policy = <<-EOT
+        path "ssh-client-signer/sign/client-service" {
+          capabilities = ["create", "update"]
+        }
+        path "ssh-client-signer/config/ca" {
+          capabilities = ["read"]
+        }
+        path "ssh-host-signer/config/ca" {
+          capabilities = ["read"]
+        }
+        path "secret/data/ssh/backup-worker" {
+          capabilities = ["read"]
+        }
+        path "secret/data/backup-worker" {
+          capabilities = ["read"]
+        }
+        path "secret/data/postgres-shared/root" {
+          capabilities = ["read"]
+        }
+      EOT
+    }
+
+    # --- media-import-worker: reads these three through its own Vault client
+    #     at runtime rather than a template, so nothing in the job spec shows
+    #     the dependency. deluge and jellyfin belong to those jobs; media-import
+    #     is its own but sits outside its job-id prefix. ---
+    "media-import-worker" = {
+      policy = <<-EOT
+        path "secret/data/media-import" {
+          capabilities = ["read"]
+        }
+        path "secret/data/deluge" {
+          capabilities = ["read"]
+        }
+        path "secret/data/jellyfin" {
+          capabilities = ["read"]
+        }
+      EOT
+    }
+
     # --- cert-acquirer-worker: the Temporal worker that issues the wildcard.
     #     Writes the published cert, the pre-publish staging copy, and the
     #     persisted ACME account; the Cloudflare token read comes from
@@ -225,65 +321,12 @@ inputs = {
     }
   }
 
-  # --- Workload Secrets (for nomad-workloads policy) ---
-  workload_secrets = [
-    "traefik",
-    "traefik/wildcard",
-    "grafana",
-    "backup-worker",
-    "prometheus",
-    "prometheus-nomad",
-    "nomad-ui",
-    "alertmanager",
-    "redis-shared",
-    "postgres-shared/root",
-    "postgres-shared/replication",
-    "deluge",
-    "pia",
-    "mullvad",
-    "cloudflared",
-    "cloudflare",
-    "cloudflare-wandns",
-    "cloudflare-logcollector",
-    "aptly-admin",
-    "vaultwarden",
-    "temporal",
-    "trivy-dashboard",
-    "forgejo",
-    "forgejo-runner",
-    "github/moat-runner",
-    "umami",
-    "minio",
-    "s3-orchestrator",
-    "flight-fetcher",
-    "patroni",
-    "oauth2-proxy",
-    "traefik-log-dashboard",
-    "maxmind",
-    "oracle-watchdog",
-    "proxmox",
-    "aptly",
-    "immich",
-    "redis",
-    "haproxy",
-    "zfswatcher",
-    "consul/backup-worker-token",
-    "ssh/backup-worker",
-    "sonarr",
-    "radarr",
-    "lidarr",
-    "readarr",
-    "prowlarr",
-    "jellyfin",
-    "media-import",
-    "g3",
-    "wireguard",
-    "pihole/green",
-    "s3-bucket/unified",
-    "s3-bucket/aptly",
-    "s3-bucket/tempo-traces",
-    "dnsdist"
-  ]
+  workload_extra_secrets = local.workload_extra_secrets
+
+  # --- nomad-workloads is retired: every job now reads through its own
+  #     policy plus the templated nomad-workload-self. An empty list drops the
+  #     policy entirely. ---
+  workload_secrets = []
 
   # --- AppRole auth for chef-managed nodes ---
   approle_auth_enabled = true
@@ -348,44 +391,49 @@ inputs = {
   }
 
   # --- Workload Vault Roles (per-job JWT auth) ---
-  workload_vault_roles = {
-    "s3-orchestrator" = {
-      policies = ["nomad-workloads", "s3-orchestrator-transit"]
-      bound_claims = {
-        nomad_job_id = "s3-orchestrator"
+  #     Generated from workload_extra_secrets: each such job gets a bound role
+  #     carrying nomad-workload-self plus its own <job>-secrets policy. The
+  #     explicit entries below are jobs that additionally need a hand-written
+  #     policy (transit, SSH signing, an API credential set). Every other job
+  #     uses the default nomad-workloads role, which carries only the template.
+  workload_vault_roles = merge(
+    {
+      for job, cfg in local.workload_extra_secrets : job => {
+        policies     = ["nomad-workload-self", "${job}-secrets"]
+        bound_claims = { nomad_job_id = job }
+      }
+    },
+    {
+      "s3-orchestrator" = {
+        policies     = ["nomad-workload-self", "s3-orchestrator-secrets", "s3-orchestrator-transit"]
+        bound_claims = { nomad_job_id = "s3-orchestrator" }
+      }
+      "cleanup-worker" = {
+        policies     = ["nomad-workload-self", "cleanup-worker"]
+        bound_claims = { nomad_job_id = "cleanup-worker" }
+      }
+      "media-import-worker" = {
+        policies     = ["nomad-workload-self", "media-import-worker"]
+        bound_claims = { nomad_job_id = "media-import-worker" }
+      }
+      "cert-acquirer-worker" = {
+        policies     = ["nomad-workload-self", "cert-acquirer-worker"]
+        bound_claims = { nomad_job_id = "cert-acquirer-worker" }
+      }
+      "github-token-renewer" = {
+        policies     = ["nomad-workload-self", "github-token-renewer"]
+        bound_claims = { nomad_job_id = "github-token-renewer" }
+      }
+      "ci-runner-scaler" = {
+        policies     = ["nomad-workload-self", "ci-runner-scaler"]
+        bound_claims = { nomad_job_id = "ci-runner-scaler" }
+      }
+      "ci-runner" = {
+        policies     = ["nomad-workload-self", "ci-runner"]
+        bound_claims = { nomad_job_id = "ci-runner" }
       }
     }
-    "flight-fetcher" = {
-      policies = ["nomad-workloads"]
-      bound_claims = {
-        nomad_job_id = "flight-fetcher"
-      }
-    }
-    "cert-acquirer-worker" = {
-      policies = ["nomad-workloads", "cert-acquirer-worker"]
-      bound_claims = {
-        nomad_job_id = "cert-acquirer-worker"
-      }
-    }
-    "github-token-renewer" = {
-      policies = ["nomad-workloads", "github-token-renewer"]
-      bound_claims = {
-        nomad_job_id = "github-token-renewer"
-      }
-    }
-    "ci-runner-scaler" = {
-      policies = ["nomad-workloads", "ci-runner-scaler"]
-      bound_claims = {
-        nomad_job_id = "ci-runner-scaler"
-      }
-    }
-    "ci-runner" = {
-      policies = ["nomad-workloads", "ci-runner"]
-      bound_claims = {
-        nomad_job_id = "ci-runner"
-      }
-    }
-  }
+  )
 
   # --- Service Tokens ---
   service_tokens = {

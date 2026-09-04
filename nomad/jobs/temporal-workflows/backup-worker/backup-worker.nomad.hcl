@@ -113,7 +113,7 @@ job "backup-worker" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "backup-worker"
         change_mode = "noop"
       }
 

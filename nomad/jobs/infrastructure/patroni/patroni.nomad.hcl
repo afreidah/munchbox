@@ -240,7 +240,7 @@ job "patroni" {
       # WI token re-derives at the role's 24h max_ttl; noop so that token
       # cycle does not restart Postgres (a restart = a primary failover).
       vault {
-        role        = "nomad-workloads"
+        role        = "patroni"
         change_mode = "noop"
       }
 
@@ -478,7 +478,7 @@ tags:
 
       # --- noop token cycle: exporter need not restart when the WI token rotates ---
       vault {
-        role        = "nomad-workloads"
+        role        = "patroni"
         change_mode = "noop"
       }
 

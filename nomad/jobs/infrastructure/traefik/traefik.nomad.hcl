@@ -108,7 +108,7 @@ job "traefik" {
 
       # --- Vault Integration ---
       vault {
-        role        = "nomad-workloads"
+        role        = "traefik"
         change_mode = "noop"
       }
 
@@ -770,7 +770,7 @@ EOH
       }
 
       vault {
-        role        = "nomad-workloads"
+        role        = "traefik"
         change_mode = "noop"
       }
 
@@ -848,7 +848,7 @@ EOH
       }
 
       vault {
-        role        = "nomad-workloads"
+        role        = "traefik"
         change_mode = "noop"
       }
 

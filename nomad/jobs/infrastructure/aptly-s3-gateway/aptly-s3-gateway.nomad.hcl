@@ -99,7 +99,7 @@ job "aptly-s3-gateway" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "aptly-s3-gateway"
         change_mode = "noop"
       }
 

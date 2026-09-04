@@ -28,7 +28,7 @@ dashboard plus a squawk monitor.
 - Redis at `redis.service.consul:6379` (password from Vault)
 - Vault path `secret/data/flight-fetcher` with OpenSky id/secret,
   AirLabs key, FlightAware key, Redis password, db creds
-- Vault role `flight-fetcher`
+- Vault: the default `nomad-workloads` role, which grants `secret/data/flight-fetcher` via the templated self-scoped policy
 - Tempo at `tempo.service.consul:4317`
 - External: OpenSky API, AirLabs, FlightAware, dump1090 at
   `192.168.68.79`

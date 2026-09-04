@@ -149,7 +149,7 @@ job "tempo" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "tempo"
         change_mode = "noop"
       }
 

@@ -368,6 +368,10 @@ vault {
 }
 ```
 
+`nomad-workloads` is the default role and grants the job its own
+`secret/data/<job id>` prefix. A job that also reads someone else's secret
+names its own role instead -- see *Adding a new Vault secret path* below.
+
 Task-level when only one task in a group needs Vault. Workload identity is
 on by default.
 
@@ -394,13 +398,49 @@ re-read the file rather than reverting to `restart`.
 
 ### Adding a new Vault secret path
 
-1. Add the path to `infrastructure/terragrunt/_env_helpers/vault-config.hcl`
-   -> `workload_secrets` list (just the path under `secret/data/`).
-2. `cd infrastructure/terragrunt/global/vault-config && terragrunt apply`.
-3. `nomad job restart <name>` to re-fetch with the new policy.
+Store the secret at `secret/data/<job id>` and nothing is needed in
+terragrunt. The default `nomad-workloads` role carries the templated
+`nomad-workload-self` policy, which resolves the job id from the token's own
+entity alias and grants read on that prefix and everything beneath it:
 
-A 403 from a template render means the policy is wrong -- fix in (1),
-not by changing the secret path in the job.
+```
+path "secret/data/{{identity.entity.aliases.<accessor>.name}}/*"
+```
+
+A sub-path works the same way, so `secret/data/<job id>/api` needs no
+declaration either.
+
+Reading a secret that is **not** under the job's own prefix -- a credential
+shared with another job, or one whose name predates the job's -- needs an
+entry in `workload_extra_secrets` in
+`infrastructure/terragrunt/_env_helpers/vault-config.hcl`:
+
+```hcl
+"gitgogit" = { secrets = ["forgejo"] }
+```
+
+That generates a `<job>-secrets` policy and a JWT role bound to the job id.
+Point the job at it with `role = "<job id>"`, apply, and redeploy.
+
+A 403 from a template render means the path is outside the job's prefix and
+has no entry -- fix it there, not by moving the secret.
+
+### Removing a Vault secret path
+
+Order matters and getting it backwards causes an outage. A token's policy
+set is fixed when it is minted, but policy *contents* are read per request,
+so deleting a path takes effect immediately for every job already holding a
+token that names the policy.
+
+Redeploy the consuming job first so it is running on a token carrying the
+replacement grant, confirm with:
+
+```
+vault write sys/capabilities-accessor accessor=<accessor> paths=<path>
+```
+
+then remove the path. Check the role that minted the token too -- a job on a
+dedicated role does not inherit what the default role grants.
 
 ---
 
@@ -656,9 +696,10 @@ When adding or modifying a job, verify before commit:
       tags -> storage -> placement.
 - [ ] Raw section order respected at job / group / task levels.
 - [ ] Image pinned to an explicit tag (no `:latest`).
-- [ ] If Vault is used: matching path in
-      `infrastructure/terragrunt/_env_helpers/vault-config.hcl` ->
-      `workload_secrets`.
+- [ ] If Vault is used: secrets live under `secret/data/<job id>`, or the
+      job has a `workload_extra_secrets` entry in
+      `infrastructure/terragrunt/_env_helpers/vault-config.hcl` and a
+      `role = "<job id>"` to match.
 - [ ] If Traefik is used: middlewares match exposure level (no oauth on
       LAN-only routes).
 - [ ] If consul-template + `{{ ... }}` in rendered output: escapes

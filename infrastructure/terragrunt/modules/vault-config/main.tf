@@ -98,9 +98,15 @@ resource "vault_jwt_auth_backend_role" "nomad_workloads" {
   # Do NOT reach for token_period to solve this. Setting it equal to token_ttl was
   # tried and made things worse: replacements every 30 minutes rather than daily,
   # ~47 restarts/task/day, including a TLS blip on traefik each time.
+  #
+  # nomad-workload-self rides on the default role so a job's own KV prefix needs
+  # no configuration at all -- a new job authenticates here and reads
+  # secret/data/<its job id> because the policy resolves the prefix from the
+  # token's entity alias. Only a job needing something beyond its own prefix
+  # gets a dedicated role in workload_vault_roles.
   token_type     = "service"
   token_ttl      = 3600
-  token_policies = ["nomad-workloads"]
+  token_policies = ["nomad-workload-self"]
 }
 
 # -------------------------------------------------------------------------

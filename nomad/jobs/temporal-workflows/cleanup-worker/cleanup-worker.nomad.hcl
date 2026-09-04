@@ -103,7 +103,7 @@ job "cleanup-worker" {
       driver = "docker"
 
       vault {
-        role        = "nomad-workloads"
+        role        = "cleanup-worker"
         change_mode = "noop"
       }
 
