@@ -86,10 +86,6 @@ job "traefik" {
         static = 5000
       }
 
-      port "log-dashboard" {
-        static = 3000
-      }
-
       port "cloudflared-metrics" {
         static = 2000
       }
@@ -237,7 +233,10 @@ EOH
 [accessLog]
   filePath = "/alloc/data/access.log"
   format = "json"
-  bufferingSize = 100
+  # Lines held in memory before the file is written. At 100 the backup ingress
+  # node, which serves almost nothing, took minutes to flush a line and its
+  # log-agent looked stalled.
+  bufferingSize = 10
   [accessLog.filters]
     statusCodes = ["200-599"]
     retryAttempts = true
@@ -730,53 +729,6 @@ EOH
     }
 
     # -----------------------------------------------------------------------
-    # Task: geoip-updater (prestart)
-    # Downloads MaxMind GeoLite2 databases for geolocation
-    # -----------------------------------------------------------------------
-
-    task "geoip-updater" {
-      driver = "docker"
-
-      lifecycle {
-        hook    = "prestart"
-        sidecar = false
-      }
-
-      vault {
-        role        = "nomad-workloads"
-        change_mode = "noop"
-      }
-
-      identity {
-        env  = true
-        file = true
-        aud  = ["vault.io"]
-      }
-
-      config {
-        image = "maxmindinc/geoipupdate:v7"
-      }
-
-      template {
-        destination = "secrets/geoip.env"
-        env         = true
-        data        = <<EOH
-{{ with secret "secret/data/maxmind" }}
-GEOIPUPDATE_ACCOUNT_ID={{ .Data.data.account_id }}
-GEOIPUPDATE_LICENSE_KEY={{ .Data.data.license_key }}
-{{ end }}
-GEOIPUPDATE_EDITION_IDS=GeoLite2-City GeoLite2-Country
-GEOIPUPDATE_DB_DIR=/alloc/data
-EOH
-      }
-
-      resources {
-        cpu    = 100
-        memory = 128
-      }
-    }
-
-    # -----------------------------------------------------------------------
     # Task: traefik-log-filter
     # Filters out Nomad blocking queries (index=) from access logs
     # -----------------------------------------------------------------------
@@ -852,82 +804,27 @@ EOH
     }
 
     # -----------------------------------------------------------------------
-    # Task: traefik-log-dashboard
-    # Web UI for viewing Traefik traffic analytics
-    # -----------------------------------------------------------------------
-
-    task "traefik-log-dashboard" {
-      driver = "docker"
-
-      lifecycle {
-        hook    = "poststart"
-        sidecar = true
-      }
-
-      vault {
-        role        = "nomad-workloads"
-        change_mode = "noop"
-      }
-
-      identity {
-        env  = true
-        file = true
-        aud  = ["vault.io"]
-      }
-
-      config {
-        image        = "hhftechnology/traefik-log-dashboard:3.1.1"
-        network_mode = "host"
-        ports        = ["log-dashboard"]
-      }
-
-      template {
-        destination = "secrets/dashboard.env"
-        env         = true
-        data        = <<EOH
-{{ with secret "secret/data/traefik-log-dashboard" }}
-AGENT_API_TOKEN={{ .Data.data.auth_token }}
-{{ end }}
-AGENT_API_URL=http://127.0.0.1:5000
-PORT=3000
-GEOIP_DB_PATH=/alloc/data/GeoLite2-City.mmdb
-EOH
-      }
-
-      resources {
-        cpu    = 150
-        memory = 128
-      }
-    }
-
-    # -----------------------------------------------------------------------
-    # Service: traefik-log-dashboard
+    # Service: traefik-log-agent
+    #
+    # Not routed through Traefik -- only the traefik-log-dashboard job calls
+    # it, over the LAN. Registered so its health is visible and the dashboard's
+    # two targets can be found without reading this file.
     # -----------------------------------------------------------------------
 
     service {
-      name     = "traefik-log-dashboard"
-      port     = "log-dashboard"
+      name     = "traefik-log-agent"
+      port     = "log-agent"
       provider = "consul"
+
       tags = [
-        "traefik.enable=true",
-        # HTTPS router (LAN)
-        "traefik.http.routers.traefik-logs.rule=Host(`traefik-logs.munchbox.cc`)",
-        "traefik.http.routers.traefik-logs.entrypoints=websecure",
-        "traefik.http.routers.traefik-logs.tls=true",
-        "traefik.http.routers.traefik-logs.middlewares=oauth2-proxy-errors@file,oauth2-proxy@file,dashboard-allowlan@file",
-        # Streaming service: keep the live-update stream from being idle-reaped
-        "traefik.http.services.traefik-log-dashboard.loadbalancer.serverstransport=streaming@file",
-        "traefik.http.services.traefik-log-dashboard.loadbalancer.responseforwarding.flushinterval=100ms",
-        # HTTP router (CF tunnel)
-        "traefik.http.routers.traefik-logs-http.rule=Host(`traefik-logs.munchbox.cc`)",
-        "traefik.http.routers.traefik-logs-http.entrypoints=web",
-        "traefik.http.routers.traefik-logs-http.middlewares=cf-tunnel-https@file,oauth2-proxy-errors@file,oauth2-proxy@file"
+        "traefik.enable=false",
+        "ingress",
       ]
 
       check {
-        name     = "traefik-log-dashboard-health"
+        name     = "traefik-log-agent-health"
         type     = "http"
-        path     = "/"
+        path     = "/api/logs/status"
         interval = "30s"
         timeout  = "5s"
       }
