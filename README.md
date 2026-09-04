@@ -213,7 +213,10 @@ browser
 local dnsmasq        on each cluster node (consul::dns recipe)
    | everything not .consul -> 127.0.0.1:5354
 CoreDNS              system job on every node
-   | round-robin, health-checked, 5min cache
+   | forwards to dnsdist first, sequential policy, health-checked, 5min cache
+dnsdist              on the ingress VIP (.50:53)
+   | leastOutstanding across both Pi-holes
+   |   (a failed VIP health check falls straight through to them)
 green / logan        Pi-hole + custom dnsmasq.d
    | catalogued *.munchbox.cc names -> 192.168.68.50 (Traefik VIP)
    |   (deny-by-default: only names in the web_services catalog resolve)
@@ -265,7 +268,7 @@ is mutual-TLS. The PKI tree:
 | Consul / Nomad / Vault servers | 3 (goren + stabler + nomad-server-03) | Raft, `bootstrap_expect=3` |
 | Patroni Postgres | 2 (stabler + nc05) | Patroni leader election, HAProxy reads `/primary` |
 | Redis | 2 + Sentinel (bare metal) | Sentinel CONFIG REWRITE, HAProxy reads role |
-| Pi-hole DNS | 2 (green + logan) | cluster nodes: CoreDNS per-node round-robin; LAN clients: dnsdist on the ingress VIP (leastOutstanding) |
+| Pi-hole DNS | 2 (green + logan) | dnsdist on the ingress VIP (leastOutstanding) for both LAN clients and cluster nodes; the per-node CoreDNS lists the Pi-holes behind dnsdist so a failed VIP falls straight through |
 | Recursive DNS | 1 per Pi-hole (unbound on each) | independent -- no shared state |
 
 **Acknowledged single points of failure**
@@ -487,8 +490,9 @@ The node joins Consul + Nomad automatically once converged.
   wiring, Traefik tags, health checks, Prometheus scrape, OTel) so new
   workloads slot into the observability + ingress + auth machinery for
   free.
-- Layered fallback at every tier. CoreDNS round-robins both Pi-holes with
-  health checks; if Pi-hole is down, dnsmasq has them as upstreams too.
+- Layered fallback at every tier. CoreDNS forwards to dnsdist, which spreads
+  across both Pi-holes, and lists the Pi-holes behind it so a failed VIP
+  health check falls straight through; dnsmasq has them as upstreams too.
   HAProxy reads Patroni REST in real time. Each Pi-hole has its own
   unbound. s3-orchestrator has per-backend circuit breakers.
 
