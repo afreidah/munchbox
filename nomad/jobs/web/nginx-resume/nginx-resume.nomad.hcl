@@ -44,13 +44,13 @@ job "nginx-resume" {
     value    = "true"
   }
   constraint {
-    attribute = "${meta.role}"
+    attribute = meta.role
     operator  = "!="
     value     = "ingress"
   }
   # --- Keep off the GPU/media node (nomad-client-04) to spare its load ---
   constraint {
-    attribute = "${meta.gpu}"
+    attribute = meta.gpu
     operator  = "!="
     value     = "true"
   }
@@ -132,7 +132,7 @@ job "nginx-resume" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/alex-resume:v0.0.5"
+        image              = "registry.munchbox.cc/alex-resume:v0.0.8"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
