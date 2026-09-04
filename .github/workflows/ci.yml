@@ -426,12 +426,19 @@ jobs:
           [ -n "$leaves" ] || { echo "no terragrunt leaves affected"; exit 0; }
           echo "validating leaves:"; echo "$leaves"
           fail=0
+          init_log="$(mktemp)"
           while IFS= read -r leaf; do
             [ -n "$leaf" ] || continue
             echo "::group::validate $leaf"
-            ( cd "$leaf" && terragrunt init -backend=false -input=false >/dev/null 2>&1 \
-              && terragrunt validate ) \
-              || { echo "::error title=terragrunt validate::$leaf failed"; fail=1; }
+            # --- init output is kept and replayed on failure. Discarding it
+            #     reported "$leaf failed" with no cause, indistinguishable from a
+            #     real validate error, and left provider-install failures unreadable. ---
+            if ! ( cd "$leaf" && terragrunt init -backend=false -input=false ) >"$init_log" 2>&1; then
+              echo "--- terragrunt init output ---"; cat "$init_log"
+              echo "::error title=terragrunt validate::$leaf failed during init"; fail=1
+            elif ! ( cd "$leaf" && terragrunt validate ); then
+              echo "::error title=terragrunt validate::$leaf failed validate"; fail=1
+            fi
             echo "::endgroup::"
           done <<< "$leaves"
           [ "$fail" -eq 0 ] || { echo "::error::one or more leaves failed terragrunt validate"; exit 1; }
