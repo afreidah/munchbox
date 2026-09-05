@@ -1,7 +1,8 @@
 # backup-health alert group
-# Temporal-driven backup pipeline: the long-running `backup-worker`
-# service that executes activities, and the periodic
-# `temporal-backup-trigger` batch job that kicks workflows on schedule.
+# Temporal-driven backup pipeline: the `backup-worker` service that runs the
+# activities, and the state of the task queue it serves. The worker exposes
+# Temporal Go SDK metrics on its own /metrics endpoint, scraped via the
+# `metrics` service tag.
 
 - name: backup-health
   interval: 60s
@@ -15,12 +16,55 @@
         summary: "Backup worker is down"
         description: "backup-worker has no running allocations; new workflow tasks will queue indefinitely."
 
-    - alert: BackupJobFailed
-      # _summary_failed is cumulative across alloc history; rate over 1h catches recent failures only
-      expr: increase(nomad_nomad_job_summary_failed{exported_job="temporal-backup-trigger"}[1h]) > 0
-      for: 5m
+    # A worker can hold its allocation while serving no pollers: the container
+    # is up, the task queue is unserved, and BackupWorkerDown stays green.
+    - alert: BackupWorkerNotPolling
+      expr: sum(temporal_temporal_num_pollers{task_queue="backup-task-queue"}) == 0
+      for: 10m
       labels:
         severity: warning
       annotations:
-        summary: "temporal-backup-trigger had recent failures"
-        description: "{{ $value | printf \"%.0f\" }} new failed allocations on temporal-backup-trigger in the last hour."
+        summary: "No pollers on the backup task queue"
+        description: "backup-worker is running but has no pollers on backup-task-queue; scheduled backups will not execute."
+
+    # Sustained long-poll failures mean the worker cannot reach the Temporal
+    # frontend, so nothing on the queue runs regardless of worker health.
+    - alert: BackupWorkerPollFailing
+      expr: increase(temporal_temporal_long_request_failure{job="backup-worker"}[15m]) > 10
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Backup worker cannot reach Temporal"
+        description: "{{ $value | printf \"%.0f\" }} failed long-poll requests in 15m ({{ $labels.operation }}, status {{ $labels.status_code }})."
+
+    # Backup freshness. workflow_success is a server-side counter labelled by
+    # workflowType, so absent_over_time covers both "the workflow ran and
+    # failed" and "the schedule never fired" -- the second of which leaves no
+    # series at all and is what an `increase(...) == 0` rule silently misses.
+    # 36h spans the daily schedule with room for one late run.
+    #
+    # for: 25h rather than an hour so a cold start stays quiet: with no series
+    # yet -- new metrics, a fresh TSDB -- the expression is true and correct,
+    # but that is Prometheus lacking history rather than a failed backup. A
+    # full day of silence outlasts the daily schedule, so a real miss still
+    # fires while the cold start resolves itself on the next run.
+    - alert: BackupWorkflowStale
+      expr: absent_over_time(workflow_success{workflowType="Backup"}[36h])
+      for: 25h
+      labels:
+        severity: critical
+      annotations:
+        summary: "No successful backup in 36h"
+        description: "The Backup workflow has not completed successfully in 36 hours; the daily schedule is failing or not firing."
+
+    # The scrape is the liveness signal for the two rules above: if the worker
+    # stops serving /metrics, neither can fire.
+    - alert: BackupWorkerMetricsUnreachable
+      expr: up{job="backup-worker"} == 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Backup worker metrics endpoint unreachable"
+        description: "Prometheus cannot scrape backup-worker; the queue and poll alerts are blind."

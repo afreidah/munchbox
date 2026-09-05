@@ -44,10 +44,14 @@ The same worker also hosts the registry GC workflow.
 ## Observability
 
 All workers emit OpenTelemetry traces to Tempo with proper service graph
-edges (nomad, consul, postgres, s3-orchestrator, trivy-server). Workers
-expose Prometheus metrics on port 9090 for SDK metrics (workflow/activity
-latency, retry counts, task queue depth). Structured JSON logging via slog
-to stdout for Alloy/Loki collection.
+edges (nomad, consul, postgres, s3-orchestrator, trivy-server). Structured
+JSON logging via slog to stdout for Alloy/Loki collection.
+
+Each worker serves Temporal Go SDK metrics (`temporal_temporal_*`: pollers,
+long-poll failures, task slots, workflow and activity latency) on a
+dynamically allocated `metrics` port, bound via `METRICS_LISTEN`. The
+service carries the `metrics` tag, which is what Prometheus's `consul-auto`
+job selects on -- without it the endpoint is served but never scraped.
 
 ## Notable Configuration
 

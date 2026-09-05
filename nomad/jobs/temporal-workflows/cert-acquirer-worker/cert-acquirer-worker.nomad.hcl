@@ -76,6 +76,7 @@ job "cert-acquirer-worker" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "temporal",
         "cert-acquirer",
         "traefik.enable=false",
