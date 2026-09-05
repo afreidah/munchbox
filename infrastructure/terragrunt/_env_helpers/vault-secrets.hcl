@@ -37,6 +37,15 @@ dependency "aptly_secrets" {
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
+dependency "gossip_keys" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/gossip-keys"
+
+  mock_outputs = {
+    vault_data = { nomad = { key = "bW9jay1nb3NzaXAta2V5LTMyLWJ5dGVzLXBhZGRpbmc=" } }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+}
+
 dependency "access_keys" {
   config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/access-keys"
 
@@ -69,6 +78,10 @@ locals {
     "cloudflare-logcollector" = {
       source = "cloudflare_tokens"
       key    = "logcollector"
+    }
+    "nomad/gossip-key" = {
+      source = "gossip_keys"
+      key    = "nomad"
     }
     "cloudflare-dnsedge" = {
       source = "cloudflare_tokens"
@@ -105,6 +118,7 @@ inputs = {
           aptly_secrets     = dependency.aptly_secrets.outputs.vault_data
           cloudflare_tokens = dependency.cloudflare_tokens.outputs.vault_data
           access_keys       = dependency.access_keys.outputs.vault_data
+          gossip_keys       = dependency.gossip_keys.outputs.vault_data
         }[s.source][s.key],
       )
     }

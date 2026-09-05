@@ -1,29 +1,5 @@
 # -------------------------------------------------------------------------------
 # Cookstyle (rubocop) config for munchbox_lib.
-#
-# Inherits cookstyle defaults; overrides below are project-specific only.
 # -------------------------------------------------------------------------------
 
-require:
-  - cookstyle
-
-inherit_gem:
-  cookstyle: config/cookstyle.yml
-
-AllCops:
-  NewCops: enable
-  TargetRubyVersion: 3.1
-  Exclude:
-    - 'Berksfile.lock'
-    - 'Gemfile.lock'
-    - 'tmp/**/*'
-    - 'vendor/**/*'
-
-# --- Long top-of-file box comments are common; let them be ---
-Layout/LineLength:
-  Max: 120
-
-# --- Specs use long descriptions; don't fight rspec idioms ---
-Metrics/BlockLength:
-  Exclude:
-    - 'spec/**/*'
+inherit_from: ../../.rubocop-base.yml

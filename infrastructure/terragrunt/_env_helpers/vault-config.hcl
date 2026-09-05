@@ -345,6 +345,8 @@ inputs = {
     "consul/oracle-watchdog-token",
     # nomad restart-only ACL token for the auto-restart-webhook receiver (read + alloc-lifecycle, no management); stabler-only at runtime, policy is fleet-wide
     "nomad/auto-restart-webhook",
+    # nomad serf gossip key; only the 3 servers render it, policy is fleet-wide
+    "nomad/gossip-key",
     # consul ACL token vault servers use to write to vault/ KV in consul storage backend (vault-storage policy); only the 3 vault servers actually need this but policy is fleet-wide
     "consul/vault-storage-token",
     # vault-cert-manager AppRole creds (role_id is semi-public; secret_id is sensitive, both required to auth)

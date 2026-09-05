@@ -28,6 +28,7 @@ override_attributes(
     config: {
       server_enabled: true,
       bootstrap_expect: 3,
+      gossip_encrypt_enabled: true,
     },
   }
 )

@@ -31,6 +31,9 @@ advertise {
 server {
   enabled = true
   bootstrap_expect = <%= @bootstrap_expect %>
+<% if @gossip_encrypt_key -%>
+  encrypt = "<%= @gossip_encrypt_key %>"
+<% end -%>
 <% unless @server_join.empty? -%>
 
   server_join {

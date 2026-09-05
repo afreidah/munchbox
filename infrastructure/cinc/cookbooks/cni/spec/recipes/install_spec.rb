@@ -34,8 +34,9 @@ RSpec.describe 'cni::install' do
   end
 
   it 'extracts the tarball into the install dir' do
-    expect(chef_run).to run_execute('extract cni plugins v1.4.0')
-      .with(command: include('tar -xzf'))
+    arch = (RbConfig::CONFIG['host_cpu'] == 'aarch64' ? 'arm64' : 'amd64')
+    expect(chef_run).to extract_archive_file('extract cni plugins v1.4.0')
+      .with(path: "/tmp/cni-plugins-linux-#{arch}-v1.4.0.tgz", destination: '/opt/cni/bin')
   end
 
   it 'writes the version stamp file' do

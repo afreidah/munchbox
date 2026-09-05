@@ -44,6 +44,7 @@ nomad_configure 'nomad' do
   consul_key_file                 node[cookbook]['config']['consul_key_file']
   # --- Lazy: vault_fetch runs at converge time in the resource context. Skipped when consul integration is disabled. ---
   consul_token(lazy { node[cookbook]['config']['consul_enabled'] ? vault_fetch('secret/data/consul/nomad-client-token', 'token') : nil })
+  gossip_encrypt_key(lazy { node[cookbook]['config']['gossip_encrypt_enabled'] ? vault_fetch('secret/data/nomad/gossip-key', 'key') : nil })
   vault_enabled                   node[cookbook]['config']['vault_enabled']
   vault_address                   node[cookbook]['config']['vault_address']
   vault_ca_file                   node[cookbook]['config']['vault_ca_file']

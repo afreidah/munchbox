@@ -74,7 +74,10 @@ jobs:
 
       - name: Install Cinc Workstation
         run: |
-          curl -fsSL https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -P cinc-workstation
+          # --- Pinned: an unpinned install lands new cookstyle cops as a surprise
+          #     batch of failures on an unrelated PR, and drifts from whatever
+          #     version developers have locally. Bump deliberately. ---
+          curl -fsSL https://omnitruck.cinc.sh/install.sh | sudo bash -s -- -P cinc-workstation -v 26.2.3
           # _common.mk hardcodes /usr/local/bin/{chef,cookstyle,kitchen}; cinc ships `cinc`.
           for b in cinc cookstyle kitchen; do
             p=$(command -v "$b" || true); [ -n "$p" ] && sudo ln -sf "$p" "/usr/local/bin/$b"
@@ -439,13 +442,15 @@ jobs:
             elif ! ( cd "$leaf" && terragrunt validate ); then
               echo "::error title=terragrunt validate::$leaf failed validate"; fail=1
             fi
-            # --- Drop the backend-less .terraform this leaf just created. A leaf
-            #     that is someone's dependency (cluster/secrets/cloudflare-tokens)
-            #     otherwise looks initialized-without-a-backend to the dependent
-            #     leaf's output lookup, which then fails on the consul backend
-            #     instead of falling back to mock_outputs. Only bites when a
+            # --- Drop the backend-less .terraform and the terragrunt cache this
+            #     leaf just created. A leaf that is someone's dependency
+            #     (cluster/secrets/cloudflare-tokens) otherwise looks
+            #     initialized-without-a-backend to the dependent leaf's output
+            #     lookup, which then fails on the consul backend instead of
+            #     falling back to mock_outputs. The dependency is read out of
+            #     .terragrunt-cache, so both have to go. Only bites when a
             #     dependency and its dependents change together. ---
-            rm -rf "$leaf/.terraform"
+            rm -rf "$leaf/.terraform" "$leaf/.terragrunt-cache"
             echo "::endgroup::"
           done <<< "$leaves"
           [ "$fail" -eq 0 ] || { echo "::error::one or more leaves failed terragrunt validate"; exit 1; }
