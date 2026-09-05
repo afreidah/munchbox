@@ -160,11 +160,14 @@ run "vault_secrets_for_each" {
     condition     = vault_kv_secret_v2.bootstrap[0].name == "consul/bootstrap-token"
     error_message = "bootstrap token KV name must be consul/bootstrap-token"
   }
-}
 
-# -------------------------------------------------------------------------
-# Empty maps: zero ACL resources, plan still succeeds
-# -------------------------------------------------------------------------
+  # --- one secret-id lookup per token; the KV write needs the secret, and the
+  #     resource only carries the accessor ---
+  assert {
+    condition     = length(data.consul_acl_token_secret_id.token) == length(var.tokens)
+    error_message = "every token needs a secret-id lookup for its Vault write"
+  }
+}
 
 run "empty_inputs" {
   command = plan

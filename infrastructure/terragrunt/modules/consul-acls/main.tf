@@ -51,6 +51,20 @@ resource "consul_acl_token" "token" {
 }
 
 # -------------------------------------------------------------------------
+# TOKEN SECRETS
+# -------------------------------------------------------------------------
+# consul_acl_token exposes only the accessor as its id -- the provider keeps
+# the secret off the resource deliberately. Consul rejects an accessor used
+# as a token ("ACL not found"), so the value written to Vault has to come
+# from here.
+
+data "consul_acl_token_secret_id" "token" {
+  for_each = var.tokens
+
+  accessor_id = consul_acl_token.token[each.key].id
+}
+
+# -------------------------------------------------------------------------
 # ANONYMOUS TOKEN
 # -------------------------------------------------------------------------
 
@@ -94,7 +108,7 @@ resource "vault_kv_secret_v2" "token" {
 
   data_json = jsonencode(merge(
     {
-      (each.value.token_field_name) = consul_acl_token.token[each.value.token_key].id
+      (each.value.token_field_name) = data.consul_acl_token_secret_id.token[each.value.token_key].secret_id
     },
     each.value.include_accessor_id ? {
       accessor_id = consul_acl_token.token[each.value.token_key].accessor_id
