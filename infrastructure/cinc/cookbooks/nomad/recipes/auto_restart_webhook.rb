@@ -5,10 +5,11 @@
 # Recipe:: auto_restart_webhook
 #
 # Thin wrapper around nomad_auto_restart_webhook custom resource. Opt-in:
-# include only on the node(s) that should run the AlertManager receiver
-# (stabler today). Every property is sourced from
-# node[:nomad][:auto_restart_webhook] so per-fleet / per-node attrs can
-# override anything without re-implementing the resource.
+# include only on the node(s) that should run the AlertManager receiver.
+# Every property is sourced from node[:nomad][:auto_restart_webhook] so
+# per-fleet / per-node attrs can override anything without re-implementing
+# the resource. The `enabled` attribute selects the action: :configure
+# stands the receiver up, :remove tears it down.
 # -------------------------------------------------------------------------------
 
 w     = node[cookbook]['auto_restart_webhook']
@@ -52,4 +53,7 @@ nomad_auto_restart_webhook 'baseline' do
 
   # --- attribute override wins (kitchen / break-glass); otherwise lazy vault_fetch at converge time ---
   nomad_token(lazy { w['nomad_token'] || vault_fetch(paths['nomad_token']['path'], paths['nomad_token']['field']) })
+
+  # --- :remove never reads nomad_token, so a disabled node makes no vault call ---
+  action w['enabled'] ? :configure : :remove
 end

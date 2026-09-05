@@ -1,0 +1,10 @@
+---
+name: nomad-auto-restart-webhook-removed
+title: nomad::auto_restart_webhook :remove integration controls
+maintainer: Alex Freidah
+copyright: Alex Freidah
+license: MIT
+summary: Validates that enabled=false converges the resource's :remove action to a clean no-op on a node that never ran the receiver -- no script, unit, consul registration, cooldown dir or log, and no vault read for a nomad_token it does not need.
+version: 0.1.0
+supports:
+  - platform: debian

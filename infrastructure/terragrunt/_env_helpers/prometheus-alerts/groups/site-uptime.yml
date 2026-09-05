@@ -37,14 +37,3 @@
       annotations:
         summary: "Slow response time: {{ $labels.instance }}"
         description: "Site {{ $labels.instance }} response time is above 5 seconds."
-
-    - alert: OAuth2ProxySlowResponse
-      expr: probe_duration_seconds{job="site_https", instance=~".*auth.munchbox.cc.*"} > 2
-      for: 2m
-      labels:
-        severity: critical
-        auto_restart: "true"
-        nomad_job: "oauth2-proxy"
-      annotations:
-        summary: "oauth2-proxy is responding slowly"
-        description: "oauth2-proxy response time is above 2 seconds (current: {{ $value | printf \"%.2f\" }}s). Auto-restart triggered."

@@ -12,15 +12,6 @@ route:
   repeat_interval: 2h
 
   routes:
-    # Auto-restart route - triggers job restart webhook and also notifies via telegram
-    - matchers:
-        - auto_restart="true"
-      receiver: 'auto-restart-webhook'
-      group_wait: 10s
-      group_interval: 1m
-      repeat_interval: 10m
-      continue: true  # Also send to telegram
-
     - matchers:
         - severity="critical"
       receiver: 'telegram-critical'
@@ -35,13 +26,6 @@ route:
       repeat_interval: 4h
 
 receivers:
-  # Auto-restart webhook receiver - restarts Nomad jobs when triggered
-  - name: 'auto-restart-webhook'
-    webhook_configs:
-      - url: 'http://192.168.68.61:9095'
-        send_resolved: false
-        max_alerts: 5
-
   - name: 'telegram'
     telegram_configs:
       - bot_token: '{{ with secret "secret/data/alertmanager" }}{{ .Data.data.telegram_bot_token }}{{ end }}'

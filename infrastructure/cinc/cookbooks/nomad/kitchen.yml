@@ -73,6 +73,9 @@ suites:
     attributes:
       nomad:
         auto_restart_webhook:
+          # --- attribute default is false (fleet-wide opt-out); this suite
+          #     exercises the :configure path, so flip it on here.
+          enabled: true
           # --- bypass vault_fetch; consul user owns the consul-service template
           #     so we also need to disable that path OR install consul first.
           nomad_token: kitchen-fake-nomad-token
@@ -81,3 +84,18 @@ suites:
     verifier:
       inspec_tests:
         - test/integration/auto_restart_webhook
+
+  - name: auto_restart_webhook_removed
+    # --- :remove on a node that never had the receiver. Proves the teardown is
+    #     a clean no-op, which is what every node in the fleet converges once
+    #     the default flips to false. No nomad_token is set: :remove must not
+    #     require one.
+    run_list:
+      - recipe[nomad::auto_restart_webhook]
+    attributes:
+      nomad:
+        auto_restart_webhook:
+          enabled: false
+    verifier:
+      inspec_tests:
+        - test/integration/auto_restart_webhook_removed
