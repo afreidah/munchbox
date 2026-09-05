@@ -1,0 +1,37 @@
+# -------------------------------------------------------------------------------
+# Shared cookstyle (rubocop) config for every Munchbox cookbook.
+#
+# Cookbook .rubocop.yml files inherit this and add only their own exclusions.
+# -------------------------------------------------------------------------------
+
+require:
+  - cookstyle
+
+inherit_gem:
+  cookstyle: config/cookstyle.yml
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.1
+  Exclude:
+    - 'Berksfile.lock'
+    - 'Gemfile.lock'
+    - 'tmp/**/*'
+    - 'vendor/**/*'
+
+# --- Long top-of-file box comments are common; let them be ---
+Layout/LineLength:
+  Max: 120
+
+# --- Resource property blocks pad their values into a column. AllowForAlignment
+#     does not cover it: the cop only treats a run as aligned when the padding
+#     matches line to line, and `source`/`owner`/`mode` pad by different amounts
+#     to reach the same column.
+Layout/ExtraSpacing:
+  Enabled: false
+
+# --- Specs + inspec controls use long describe blocks; don't fight that ---
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - 'test/**/*'

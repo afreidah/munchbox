@@ -2,25 +2,11 @@
 # Cookstyle (rubocop) config for consul.
 # -------------------------------------------------------------------------------
 
-require:
-  - cookstyle
+inherit_from: ../../.rubocop-base.yml
 
-inherit_gem:
-  cookstyle: config/cookstyle.yml
-
-AllCops:
-  NewCops: enable
-  TargetRubyVersion: 3.1
-  Exclude:
-    - 'Berksfile.lock'
-    - 'Gemfile.lock'
-    - 'tmp/**/*'
-    - 'vendor/**/*'
-
-Layout/LineLength:
-  Max: 120
-
-Metrics/BlockLength:
-  Exclude:
-    - 'spec/**/*'
-    - 'test/**/*'
+# --- consul_service reloads a running consul to pick up a service definition.
+#     The service resource would manage consul's lifecycle; this only ever
+#     reloads it, guarded by an only_if on the unit so a greenfield converge
+#     (and chefspec) is a clean no-op.
+Chef/Correctness/ServiceResource:
+  Enabled: false

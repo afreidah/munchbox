@@ -1,33 +1,8 @@
 # -------------------------------------------------------------------------------
 # Cookstyle (rubocop) config for munchbox_base.
-#
-# Inherits cookstyle defaults; project-specific overrides only.
 # -------------------------------------------------------------------------------
 
-require:
-  - cookstyle
-
-inherit_gem:
-  cookstyle: config/cookstyle.yml
-
-AllCops:
-  NewCops: enable
-  TargetRubyVersion: 3.1
-  Exclude:
-    - 'Berksfile.lock'
-    - 'Gemfile.lock'
-    - 'tmp/**/*'
-    - 'vendor/**/*'
-
-# --- Long top-of-file box comments are common; let them be ---
-Layout/LineLength:
-  Max: 120
-
-# --- Specs + inspec controls use long describe blocks; don't fight that ---
-Metrics/BlockLength:
-  Exclude:
-    - 'spec/**/*'
-    - 'test/**/*'
+inherit_from: ../../.rubocop-base.yml
 
 # --- sysctl drop-ins go in named files (/etc/sysctl.d/99-munchbox.conf,
 #     99-disable-ipv6-ra.conf) for operator discoverability rather than chef's

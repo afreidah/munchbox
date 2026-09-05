@@ -59,10 +59,12 @@ action :install do
       action  :run
     end
 
-    execute "extract cni plugins v#{new_resource.version}" do
-      command "tar -xzf #{tarball} -C #{new_resource.install_dir}"
-      user    'root'
-      action  :run
+    archive_file "extract cni plugins v#{new_resource.version}" do
+      path        tarball
+      destination new_resource.install_dir
+      owner       'root'
+      group       'root'
+      action      :extract
     end
 
     file version_stamp do
