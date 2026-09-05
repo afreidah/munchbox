@@ -14,6 +14,12 @@
 # Every visible knob is a property so other cookbooks / nodes can swap
 # in custom paths, ports, ACL tokens, service names, dependencies, etc.
 # Defaults reproduce the live stabler deployment.
+#
+# Actions:
+#   :configure - render the script, install + start the unit, register with consul
+#   :remove    - stop the unit, delete the script, unit, consul registration,
+#                cooldown dir and log. No-op on a node that never had it, and
+#                needs no nomad_token.
 # -------------------------------------------------------------------------------
 
 unified_mode true
@@ -48,7 +54,7 @@ property :nomad_addr,           String,  default: 'https://127.0.0.1:4646'
 property :nomad_cacert,         String,  default: '/etc/nomad.d/tls/ca.crt'
 property :nomad_client_cert,    String,  default: '/etc/nomad.d/tls/nomad.crt'
 property :nomad_client_key,     String,  default: '/etc/nomad.d/tls/nomad.key'
-property :nomad_token,          [String, nil], required: true, sensitive: true
+property :nomad_token,          [String, nil], required: [:configure], sensitive: true
 
 # --- Consul service registration ---
 property :consul_service_file,  String,  default: '/etc/consul.d/nomad-auto-restart-webhook.json'
@@ -146,6 +152,45 @@ action :configure do
   end
 
   # --- Declared so the consul-service template can notify a reload; consul itself is owned by the consul cookbook. ---
+  service 'consul' do
+    action :nothing
+  end
+end
+
+# -------------------------------------------------------------------------------
+# Action :remove  --  Stop the unit, then delete everything :configure creates
+# -------------------------------------------------------------------------------
+
+action :remove do
+  # --- Stop before the unit file goes; systemctl can't stop what it can't see ---
+  service new_resource.service_name do
+    action %i(stop disable)
+    only_if "systemctl list-unit-files | grep -q '^#{new_resource.service_name}.service'"
+  end
+
+  systemd_unit "#{new_resource.service_name}.service" do
+    action :delete
+  end
+
+  file new_resource.consul_service_file do
+    action :delete
+    notifies :reload, 'service[consul]', :delayed
+  end
+
+  paths = [new_resource.script_path, new_resource.log_file] + new_resource.stale_paths.to_a
+
+  paths.each do |path|
+    file path do
+      action :delete
+    end
+  end
+
+  directory new_resource.cooldown_dir do
+    recursive true
+    action :delete
+  end
+
+  # --- Declared so the consul-service delete can notify a reload; consul itself is owned by the consul cookbook. ---
   service 'consul' do
     action :nothing
   end

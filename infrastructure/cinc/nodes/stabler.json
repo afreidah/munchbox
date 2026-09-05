@@ -4,7 +4,6 @@
   "run_list": [
     "role[bare_metal_pi5]",
     "recipe[wireguard::route]",
-    "recipe[nomad::auto_restart_webhook]",
     "role[vault_server]"
   ],
   "normal": {

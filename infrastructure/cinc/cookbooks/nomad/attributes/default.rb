@@ -117,8 +117,10 @@ default[cookbook]['config'] = {
 # `auto_restart=true` + `nomad_job=<name>` and shells out to
 # `nomad job restart` (with a per-job cooldown to absorb flapping).
 #
-# Opt-in: include `recipe[nomad::auto_restart_webhook]` only on the
-# node(s) that should run the receiver. Currently stabler-only.
+# Opt-in on two axes: the recipe has to be in the run list, and
+# `enabled` has to be true. `enabled` false converges the resource's
+# :remove action, so a node that drops the switch is torn down rather
+# than left with an orphaned daemon.
 #
 # Port must match AlertManager's webhook URL
 # (monitoring/alertmanager/files/alertmanager.yml.tpl). The pre-takeover
@@ -127,6 +129,9 @@ default[cookbook]['config'] = {
 # -------------------------------------------------------------------------------
 
 default[cookbook]['auto_restart_webhook'] = {
+  # --- Action switch: true converges :configure, false converges :remove ---
+  enabled: false,
+
   # --- Identity / service ---
   service_name: 'nomad-auto-restart-webhook',
   service_description: 'AlertManager Webhook for Nomad Job Auto-Restart',
