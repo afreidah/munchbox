@@ -22,3 +22,25 @@
       annotations:
         summary: "Temporal UI is down"
         description: "temporal-ui has no running allocations; web console at temporal.munchbox.cc is unreachable."
+
+    # The server renders its Prometheus listener from PROMETHEUS_ENDPOINT.
+    # Losing the scrape hides every schedule and workflow metric.
+    - alert: TemporalServerMetricsUnreachable
+      expr: up{job="temporal-server"} == 0
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Temporal server metrics endpoint unreachable"
+        description: "Prometheus cannot scrape temporal-server on :9464."
+
+    # Any worker holding its allocation while serving no pollers on its task
+    # queue -- the failure a Nomad-level "is it running" check cannot see.
+    - alert: TemporalTaskQueueUnserved
+      expr: sum by (task_queue) (temporal_temporal_num_pollers) == 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "No pollers on {{ $labels.task_queue }}"
+        description: "A Temporal worker is running but not polling {{ $labels.task_queue }}; scheduled work on that queue will not execute."

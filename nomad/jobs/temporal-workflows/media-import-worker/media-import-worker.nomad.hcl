@@ -74,6 +74,7 @@ job "media-import-worker" {
       port     = "metrics"
       provider = "consul"
       tags = [
+        "metrics",
         "temporal",
         "media",
         "traefik.enable=false",

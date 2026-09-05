@@ -82,6 +82,7 @@ job "trivy-scan-worker" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "temporal",
         "scanner",
         "traefik.enable=false",

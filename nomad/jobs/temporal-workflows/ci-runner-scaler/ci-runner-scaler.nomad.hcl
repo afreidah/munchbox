@@ -95,6 +95,7 @@ job "ci-runner-scaler" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "temporal",
         "ci-runner-scaler",
         "traefik.enable=false",

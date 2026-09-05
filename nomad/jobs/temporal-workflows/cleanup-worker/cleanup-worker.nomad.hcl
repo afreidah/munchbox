@@ -76,6 +76,7 @@ job "cleanup-worker" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "temporal",
         "cleanup",
         "traefik.enable=false",

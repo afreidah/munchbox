@@ -35,6 +35,12 @@ scanning. The server exposes a gRPC API on 7233; the UI is a separate job.
 
 - Server runs all four services in one process
   (`SERVICES=frontend,history,matching,worker`)
+- Prometheus metrics on static port 9464. The image ships no server config
+  file: `temporal-server` renders one from a template embedded in the binary
+  at startup, so `PROMETHEUS_ENDPOINT` is what sets
+  `global.metrics.prometheus.listenAddress`. The Consul service port is gRPC,
+  so the `scrape-port=9464` tag points Prometheus at the metrics listener
+  instead
 - UI explicitly disables TLS host verification and server name (server is
   reached over the LAN, not via Traefik)
 - 500 MHz / 512 MiB server reservation

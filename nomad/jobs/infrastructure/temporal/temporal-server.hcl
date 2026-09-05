@@ -30,7 +30,19 @@ env = {
   OTEL_EXPORTER_OTLP_ENDPOINT = "http://tempo.service.consul:4317"
   OTEL_EXPORTER_OTLP_PROTOCOL = "grpc"
   OTEL_SERVICE_NAME           = "temporal"
+
+  # --- Prometheus listener. The server renders its config from an embedded
+  #     template at startup, which maps this to
+  #     global.metrics.prometheus.listenAddress; there is no config file to
+  #     mount. Serves /metrics for schedule, workflow and task-queue metrics. ---
+  PROMETHEUS_ENDPOINT = "0.0.0.0:9464"
 }
+
+# --- Metrics port. Static because the scrape-port tag below is a literal and
+#     cannot reference a dynamically allocated port. ---
+extra_ports = [
+  { name = "metrics", port = 9464, static = true }
+]
 
 # --- Vault integration ---
 vault      = true
@@ -52,6 +64,10 @@ health_type = "none"
 
 # --- Service tags ---
 tags = [
+  # --- the service port is gRPC, so scrape-port redirects Prometheus to the
+  #     metrics listener ---
+  "metrics",
+  "scrape-port=9464",
   "temporal",
   "frontend",
   "grpc"

@@ -85,6 +85,7 @@ job "backup-worker" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "temporal",
         "backup",
         "traefik.enable=false",

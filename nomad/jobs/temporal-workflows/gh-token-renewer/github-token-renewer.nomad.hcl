@@ -89,6 +89,7 @@ job "github-token-renewer" {
       provider = "consul"
 
       tags = [
+        "metrics",
         "temporal",
         "github-token-renewer",
         "traefik.enable=false",
