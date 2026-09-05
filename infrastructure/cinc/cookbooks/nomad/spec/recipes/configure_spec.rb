@@ -119,6 +119,50 @@ RSpec.describe 'nomad::configure' do
       expect(template.variables[:client_enabled]).to eq(false)
       expect(template.variables[:bootstrap_expect]).to eq(3)
     end
+
+    # --- gossip encryption is opt-in, so a plain server stays unencrypted ---
+    it 'omits encrypt when gossip_encrypt_enabled is false' do
+      expect(chef_run).to render_file('/etc/nomad.d/nomad.hcl')
+        .with_content(/^server \{(?:(?!encrypt).)*^\}/m)
+    end
+  end
+
+  context 'as a server with gossip encryption enabled' do
+    cached(:chef_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(nomad_configure)) do |node|
+        node.override[:nomad][:config][:node_name]              = 'goren'
+        node.override[:nomad][:config][:bind_addr]              = '192.168.68.60'
+        node.override[:nomad][:config][:advertise_ip]           = '192.168.68.60'
+        node.override[:nomad][:config][:server_enabled]         = true
+        node.override[:nomad][:config][:client_enabled]         = false
+        node.override[:nomad][:config][:bootstrap_expect]       = 3
+        node.override[:nomad][:config][:servers]                = []
+        node.override[:nomad][:config][:gossip_encrypt_enabled] = true
+      end.converge('nomad::configure')
+    end
+
+    it 'renders encrypt inside the server stanza' do
+      expect(chef_run).to render_file('/etc/nomad.d/nomad.hcl')
+        .with_content(/server \{[^}]*encrypt = "test-consul-token"/m)
+    end
+  end
+
+  context 'as a client with gossip encryption enabled' do
+    cached(:chef_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(nomad_configure)) do |node|
+        node.override[:nomad][:config][:node_name]              = 'nomad-client-01'
+        node.override[:nomad][:config][:bind_addr]              = '192.168.68.67'
+        node.override[:nomad][:config][:advertise_ip]           = '192.168.68.67'
+        node.override[:nomad][:config][:servers]                = ['192.168.68.60:4647']
+        node.override[:nomad][:config][:gossip_encrypt_enabled] = true
+      end.converge('nomad::configure')
+    end
+
+    # --- clients never join the serf pool, so the key must not reach them ---
+    it 'never renders encrypt without a server stanza' do
+      expect(chef_run).to_not render_file('/etc/nomad.d/nomad.hcl')
+        .with_content(/encrypt = /)
+    end
   end
 
   # --- the resource fail-fasts on two missing-attribute combinations:

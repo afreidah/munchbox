@@ -32,6 +32,7 @@ property :log_level,                  String, default: 'INFO'
 property :server_enabled,             [true, false], default: false
 property :bootstrap_expect,           [Integer, nil]
 property :server_join,                Array, default: []
+property :gossip_encrypt_key,         [String, nil], sensitive: true
 
 property :client_enabled,             [true, false], default: true
 property :template_use_client_consul_token, [true, false], default: true
@@ -140,6 +141,7 @@ action :configure do
       server_enabled: new_resource.server_enabled,
       bootstrap_expect: new_resource.bootstrap_expect,
       server_join: new_resource.server_join,
+      gossip_encrypt_key: new_resource.gossip_encrypt_key,
       client_enabled: new_resource.client_enabled,
       template_use_client_consul_token: new_resource.template_use_client_consul_token,
       servers: new_resource.servers,

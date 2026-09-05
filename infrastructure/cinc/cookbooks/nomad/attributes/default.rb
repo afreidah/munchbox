@@ -45,6 +45,7 @@ default[cookbook]['config'] = {
   server_enabled: false,
   bootstrap_expect: nil,
   server_join: [], # array of "<ip>:4648"
+  gossip_encrypt_enabled: false, # serf is server-only; all servers flip together
 
   client_enabled: true,
   servers: [], # array of "<ip>:4647" (clients only)
