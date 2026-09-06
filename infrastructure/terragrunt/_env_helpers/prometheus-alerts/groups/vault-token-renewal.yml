@@ -1,0 +1,44 @@
+# vault-token-renewal alert group
+# Nomad renews each task's Vault token on a lease; when renewal stops
+# succeeding it kills the task, and the alloc fails rather than rescheduling.
+# A capped token_max_ttl on the minting JWT role is the way this happens: every
+# task on that role dies a fixed interval after its alloc started. Cause,
+# generic backstop, and an outcome check on the ingress path.
+
+- name: vault-token-renewal
+  interval: 30s
+  rules:
+    # --- Cause. Emitted only while renewals are erroring, so the series is
+    #     absent in the healthy case; max_over_time tolerates that, rate/increase
+    #     would not. Fires before Nomad gives up and kills anything. ---
+    - alert: NomadVaultTokenRenewalErrors
+      expr: max by (host) (max_over_time(nomad_client_vault_renew_token_error[10m])) > 0
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Nomad cannot renew Vault tokens on {{ $labels.host }}"
+        description: "{{ $labels.host }} has logged {{ $value | printf \"%.0f\" }} Vault token renewal errors in the last 10 minutes. Nomad kills a task whose token it can no longer renew, and the allocation fails instead of rescheduling. Check token_max_ttl on the job's jwt-nomad role: 0 means renewable forever, anything else is a fuse."
+
+    # --- Backstop. Level, not delta, would fire forever: some jobs carry a
+    #     standing nonzero failed count. Comparing against 15m ago catches a
+    #     new failure whatever caused it. ---
+    - alert: NomadJobAllocationsFailing
+      expr: (max by (exported_job) (nomad_nomad_job_summary_failed) - max by (exported_job) (nomad_nomad_job_summary_failed offset 15m)) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Allocations failing for {{ $labels.exported_job }}"
+        description: "{{ $labels.exported_job }} has gained {{ $value | printf \"%.0f\" }} failed allocations in the last 15 minutes."
+
+    # --- Outcome. Independent of cause: if nothing is running on the ingress
+    #     path, every web service is unreachable regardless of why. ---
+    - alert: IngressJobNotRunning
+      expr: max by (exported_job) (nomad_nomad_job_summary_running{exported_job=~"traefik|oauth2-proxy|dnsdist|haproxy"}) == 0
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "{{ $labels.exported_job }} has no running allocations"
+        description: "{{ $labels.exported_job }} is down cluster-wide. Web services behind Traefik are unreachable while this holds."

@@ -228,10 +228,15 @@ variable "workload_extra_secrets" {
 variable "workload_vault_roles" {
   description = "Map of dedicated JWT auth roles for specific Nomad workloads"
   type = map(object({
-    policies      = list(string)
-    bound_claims  = optional(map(string), {})
-    token_ttl     = optional(number, 3600)
-    token_max_ttl = optional(number, 86400)
+    policies     = list(string)
+    bound_claims = optional(map(string), {})
+    token_ttl    = optional(number, 3600)
+    # --- 0 = renewable forever, matching the default nomad-workloads role. A
+    #     finite max_ttl makes renewal impossible once it elapses: nomad kills
+    #     the task on the failed renew, so every job on this role dies on a
+    #     fixed clock from whenever its alloc started. See the rationale at
+    #     main.tf:90 on vault_jwt_auth_backend_role.nomad. ---
+    token_max_ttl = optional(number, 0)
   }))
   default = {}
 }
