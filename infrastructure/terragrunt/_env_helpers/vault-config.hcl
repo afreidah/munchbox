@@ -291,7 +291,10 @@ inputs = {
     #     Administration + Actions on GitHub (set on github.com, not here).
     #     Vault-mode repos the App can't reach (ev-the-dev/moat) are polled with a
     #     PAT read here from secret/github/moat-runner -- the same secret the
-    #     static moat runners self-register with; the scaler only reads it. ---
+    #     static moat runners self-register with; the scaler only reads it.
+    #     forgejo-mode repos are polled and minted with one instance API token at
+    #     secret/forgejo/scaler: Forgejo issues registration tokens against the
+    #     same credential that reads the queue, so there is no second one. ---
     "ci-runner-scaler" = {
       policy = <<-EOT
         path "secret/data/github/token-renewer-app" {
@@ -304,6 +307,9 @@ inputs = {
           capabilities = ["read"]
         }
         path "secret/data/github/moat-poll" {
+          capabilities = ["read"]
+        }
+        path "secret/data/forgejo/scaler" {
           capabilities = ["read"]
         }
       EOT

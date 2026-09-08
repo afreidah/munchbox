@@ -6,7 +6,7 @@ registry (`registry.munchbox.cc`). Two apps live here today:
 | Dir | Image | Consumed by |
 |---|---|---|
 | `patroni/` | `registry.munchbox.cc/patroni:pg18` | `nomad/jobs/infrastructure/patroni/` (HA PG18 + Patroni 4.0.4, cosign-signed via Vault Transit) |
-| `ops-build-image/` | `registry.munchbox.cc/ops-build-image:latest` | `nomad/jobs/infrastructure/forgejo-runner/` (CI toolchain for `ops`-labeled Forgejo Actions jobs) |
+| `ops-build-image/` | `registry.munchbox.cc/ops-build-image:latest` | `nomad/jobs/infrastructure/forgejo-ci-runner/` (CI toolchain for `ops`-labeled Forgejo Actions jobs) |
 
 > **Style guide:** [STYLE_GUIDE.md](./STYLE_GUIDE.md) -- Dockerfile +
 > Makefile conventions used here.

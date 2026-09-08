@@ -87,8 +87,8 @@ and a Temporal-driven backup / scan / cleanup loop.
    |  oracle-arm-1    A1.Flex ARM 2c           wg 10.200.0.13  12G RAM | <- MinIO (80G OCI block vol)
    |  oracle-arm-2    A1.Flex ARM 2c           wg 10.200.0.14  12G RAM | <- MinIO (80G OCI block vol)
    |                                                                   |
-   |  Runs: oauth2-proxy, oracle-watchdog, theme-server, vault-ui,     |
-   |        forgejo-runner, blackbox-exporter-external, kavita         |
+   |  Runs: static webpages, theme-server, registry-ui, coredns/alloy, |
+   |        blackbox-exporter-external, forgejo-ci-runner (dispatched) |
    +-------------------------------------------------------------------+
 ```
 
