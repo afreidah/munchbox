@@ -21,31 +21,106 @@ on:
   push:
     branches: [main]
 
+env:
+  NOMAD_ADDR: https://192.168.68.61:4646
+  NOMAD_TLS_SERVER_NAME: server.global.nomad
+  # The runner shares the host network stack, so the node's own Consul agent
+  # answers plain HTTP on loopback and needs no CA.
+  CONSUL_HTTP_ADDR: http://127.0.0.1:8500
+
 jobs:
   # ---------------------------------------------------------------------------
-  # Record which commit is deployed.
+  # Deploy the Nomad jobs this push changed.
   #
-  # Deliberately the smallest real mutation: one Consul KV key. It proves the
-  # whole chain end to end -- merge -> mirror -> queued job -> scaler dispatch ->
-  # ephemeral runner -> authenticated write against cluster state -- without
-  # putting anything at risk if a step misbehaves.
-  #
-  # It is also a prerequisite for the deploy work that follows. A push event's
-  # base SHA is not reliable here: the mirror is force-pushed and pruned, and one
-  # mirror interval can deliver several commits as a single push. Diffing from a
-  # recorded last-deployed SHA is what makes changed-path detection trustworthy.
+  # Scope comes from diffing against the last commit this workflow deployed,
+  # recorded in Consul KV by the job below. A push event's own base SHA is not
+  # usable here: the mirror is force-pushed and pruned, and one mirror interval
+  # can deliver several commits as a single push.
   # ---------------------------------------------------------------------------
-  record:
-    name: Record the deployed commit
+  nomad:
+    name: Deploy changed Nomad jobs
     runs-on: ops
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so the recorded base SHA is resolvable, and submodules
+          # because pack jobs render from nomad/packs/registry.
+          fetch-depth: 0
+          submodules: true
 
+      - name: Resolve the deploy range
+        id: range
+        env:
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          base=$(consul kv get deploy/munchbox/last-sha 2>/dev/null || true)
+
+          # No recorded base, or one this tree does not contain (the mirror is
+          # force-pushed, so a recorded commit can vanish): deploy nothing and
+          # let the record step below re-establish the baseline. Deploying
+          # everything instead would redeploy the whole cluster.
+          if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "no usable base (got '${base:-<unset>}'); skipping deploys this run"
+            echo "jobs=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # A change anywhere under a job's directory redeploys that job, so
+          # edits to its files/ templates count too. Directory name is the job
+          # name by convention, and is what `make run JOB=` resolves.
+          jobs=$(git diff --name-only "$base" "${{ github.sha }}" -- nomad/jobs/ \
+            | grep -v '^nomad/jobs/deprecated/' \
+            | awk -F/ 'NF>=4 {print $4}' \
+            | sort -u)
+
+          echo "base: $base"
+          echo "changed jobs: ${jobs:-<none>}"
+          echo "jobs=$(echo "$jobs" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        if: ${{ steps.range.outputs.jobs != '' }}
+        env:
+          NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+        run: |
+          set -euo pipefail
+
+          # pki_int signs the Nomad server cert. Its chain is served
+          # unauthenticated, so the runner needs no credential and no mounted CA.
+          curl -sf "${VAULT_ADDR}/v1/pki_int/ca_chain" -o /tmp/nomad-ca.pem
+          export NOMAD_CACERT=/tmp/nomad-ca.pem
+
+          # Jobs that must never deploy from here: the first two would tear down
+          # the run that is deploying them, and the rest move the cluster out
+          # from under it -- patroni rolls the Postgres primary, traefik and
+          # keepalived carry the ingress VIP. Those stay manual.
+          never="forgejo forgejo-ci-runner patroni traefik keepalived"
+
+          rc=0
+          for job in ${{ steps.range.outputs.jobs }}; do
+            if echo " $never " | grep -q " $job "; then
+              echo "::warning title=skipped::$job changed but is deploy-by-hand only"
+              continue
+            fi
+            echo "=== $job ==="
+            ( cd nomad && make run JOB="$job" ) || { echo "::error title=deploy::$job failed"; rc=1; }
+          done
+          exit $rc
+
+  # ---------------------------------------------------------------------------
+  # Record which commit is deployed, once the deploy above has succeeded, so the
+  # key means the last commit that actually landed and the next run resumes from
+  # a truthful baseline.
+  # ---------------------------------------------------------------------------
+  record:
+    name: Record the deployed commit
+    needs: [nomad]
+    runs-on: ops
+    steps:
       - name: Record the deployed commit in Consul KV
         env:
-          # The runner shares the host network stack, so the node's own Consul
-          # agent answers plain HTTP on loopback and needs no CA.
-          CONSUL_HTTP_ADDR: http://127.0.0.1:8500
           CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
         run: |
           set -euo pipefail
