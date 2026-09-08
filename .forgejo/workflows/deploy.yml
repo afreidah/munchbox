@@ -1,0 +1,63 @@
+# -------------------------------------------------------------------------------
+# munchbox post-merge deploy
+#
+# Runs inside the cluster on an on-demand forgejo-ci-runner, which is dispatched
+# by the ci-runner-scaler Temporal workflow when this job goes queued.
+#
+# The branch filter is required: gitgogit mirrors every branch with no filter, so
+# an unfiltered workflow would run off feature branches too.
+#
+# The presence of this directory is load-bearing. Forgejo resolves workflows from
+# the first of .forgejo/workflows, .gitea/workflows, .github/workflows that
+# exists and stops there, so this file is what keeps it from re-running the
+# GitHub pipeline that gitgogit mirrors in.
+#
+# Author: Alex Freidah / Project: Munchbox
+# -------------------------------------------------------------------------------
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Record which commit is deployed.
+  #
+  # Deliberately the smallest real mutation: one Consul KV key. It proves the
+  # whole chain end to end -- merge -> mirror -> queued job -> scaler dispatch ->
+  # ephemeral runner -> authenticated write against cluster state -- without
+  # putting anything at risk if a step misbehaves.
+  #
+  # It is also a prerequisite for the deploy work that follows. A push event's
+  # base SHA is not reliable here: the mirror is force-pushed and pruned, and one
+  # mirror interval can deliver several commits as a single push. Diffing from a
+  # recorded last-deployed SHA is what makes changed-path detection trustworthy.
+  # ---------------------------------------------------------------------------
+  record:
+    name: Record the deployed commit
+    runs-on: ops
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Record the deployed commit in Consul KV
+        env:
+          # The runner shares the host network stack, so the node's own Consul
+          # agent answers plain HTTP on loopback and needs no CA.
+          CONSUL_HTTP_ADDR: http://127.0.0.1:8500
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          consul kv put deploy/munchbox/last-sha "${{ github.sha }}"
+          consul kv put deploy/munchbox/last-ref "${{ github.ref }}"
+          consul kv put deploy/munchbox/last-deployed-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          # Read back, so a silently-accepted write cannot pass as a success.
+          got=$(consul kv get deploy/munchbox/last-sha)
+          [ "$got" = "${{ github.sha }}" ] || {
+            echo "::error::readback mismatch: stored $got, expected ${{ github.sha }}"
+            exit 1
+          }
+          echo "recorded ${got}"
