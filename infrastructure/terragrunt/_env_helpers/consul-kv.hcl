@@ -12,9 +12,10 @@
 #
 #   ci-runner-scaler -> the JSON per-repo provisioning config the runnerscaler
 #   worker reads at runners/config. Each repo picks a mode: "app" (poll the
-#   GitHub App, mint a registration token per dispatch) or "vault" (poll with a
+#   GitHub App, mint a registration token per dispatch), "vault" (poll with a
 #   PAT from the secret store, dispatch a self-registering job that mints
-#   nothing), with an optional ordered label->job profile list.
+#   nothing), or "forgejo" (poll a Forgejo instance with a stored API token and
+#   mint per dispatch), with an optional ordered label->job profile list.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -64,6 +65,24 @@ locals {
         { label = "go", job = "go-ci-runner", maxConcurrent = 3 },
         { label = "moat", job = "github-runner-moat", maxConcurrent = 2 },
       ]
+    }
+    # The Forgejo mirror of munchbox, kept in sync from GitHub by gitgogit. It
+    # has no workflows of its own, so it runs the mirrored .github/workflows,
+    # whose only runs-on labels are these two. Both profiles name the same job
+    # because one forgejo-ci-runner registers the whole label set; they exist to
+    # point the dispatch at that job rather than the GitHub-shaped default, and
+    # to cap each label's pool separately. The instance is addressed internally:
+    # the public host sits behind oauth2-proxy, which the scaler cannot
+    # authenticate through.
+    "alex/munchbox" = {
+      mode       = "forgejo"
+      forgejoUrl = "http://forgejo.service.consul:30028"
+      vaultPath  = "forgejo/scaler"
+      profiles = [
+        { label = "self-hosted", job = "forgejo-ci-runner", maxConcurrent = 2 },
+        { label = "ubuntu-latest", job = "forgejo-ci-runner", maxConcurrent = 2 },
+      ]
+      maxConcurrent = 2
     }
   }
 
