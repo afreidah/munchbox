@@ -88,14 +88,14 @@ jobs:
         if: ${{ steps.range.outputs.jobs != '' }}
         env:
           NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
-          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          # pki_int signs the Nomad server cert, and the runner mounts its chain
+          # into every job container. It cannot be fetched from Vault instead:
+          # Vault serves the chain over a connection secured by that same CA, so
+          # a client that does not already trust it is refused before it can
+          # download it.
+          NOMAD_CACERT: /etc/ssl/certs/munchbox-ca.pem
         run: |
           set -euo pipefail
-
-          # pki_int signs the Nomad server cert. Its chain is served
-          # unauthenticated, so the runner needs no credential and no mounted CA.
-          curl -sf "${VAULT_ADDR}/v1/pki_int/ca_chain" -o /tmp/nomad-ca.pem
-          export NOMAD_CACERT=/tmp/nomad-ca.pem
 
           # Jobs that must never deploy from here: the first two would tear down
           # the run that is deploying them, and the rest move the cluster out

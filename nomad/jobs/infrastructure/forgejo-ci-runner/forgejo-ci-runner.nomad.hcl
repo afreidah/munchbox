@@ -124,9 +124,15 @@ job "forgejo-ci-runner" {
         container:
           network: host
           privileged: true
-          options: "--dns=192.168.68.64 --dns=192.168.68.62"
+          # pki_int signs the Nomad and Vault server certs, so a workflow that
+          # talks to either needs its chain. It is mounted from the host rather
+          # than fetched, because it cannot be fetched: Vault serves the chain
+          # over a connection secured by that same CA, so a client that does not
+          # already trust it is refused before it can download it.
+          options: "--dns=192.168.68.64 --dns=192.168.68.62 -v /opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/munchbox-ca.pem:ro"
           valid_volumes:
             - /var/run/docker.sock
+            - /opt/nomad/tls/vault-intermediate-ca.pem
           docker_host: unix:///var/run/docker.sock
         EOF
         destination = "local/config.yaml"
