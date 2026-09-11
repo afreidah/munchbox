@@ -70,14 +70,19 @@ jobs:
           # A change anywhere under a job's directory redeploys that job, so
           # edits to its files/ templates count too. Directory name is the job
           # name by convention, and is what `make run JOB=` resolves.
+          #
+          # awk excludes deprecated/ rather than grep: grep exits 1 when it
+          # matches nothing, so under pipefail a push touching no Nomad job --
+          # the ordinary case -- would fail this step. awk exits 0 on empty
+          # input.
           jobs=$(git diff --name-only "$base" "${{ github.sha }}" -- nomad/jobs/ \
-            | grep -v '^nomad/jobs/deprecated/' \
-            | awk -F/ 'NF>=4 {print $4}' \
-            | sort -u)
+            | awk -F/ 'NF>=4 && $3 != "deprecated" {print $4}' \
+            | sort -u \
+            | tr '\n' ' ')
 
           echo "base: $base"
           echo "changed jobs: ${jobs:-<none>}"
-          echo "jobs=$(echo "$jobs" | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+          echo "jobs=${jobs}" >> "$GITHUB_OUTPUT"
 
       - name: Deploy
         if: ${{ steps.range.outputs.jobs != '' }}
