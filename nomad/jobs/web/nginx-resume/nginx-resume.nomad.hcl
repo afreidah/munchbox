@@ -7,6 +7,9 @@
 # over HTTP via the Cloudflare tunnel (router resume-public: www redirect,
 # security headers, rate limit); TLS terminates at Cloudflare, so Traefik only
 # sees :80. No Vault.
+#
+# Placement is unconstrained (node_pool "all"): the container serves baked-in
+# static files and keeps no local state, so any client can run it.
 # -------------------------------------------------------------------------------
 
 job "nginx-resume" {
