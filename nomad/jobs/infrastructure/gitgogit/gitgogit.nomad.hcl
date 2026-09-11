@@ -34,13 +34,13 @@ job "gitgogit" {
     count = 1
 
     constraint {
-      attribute = "${node.unique.name}"
+      attribute = node.unique.name
       operator  = "!="
       value     = "oraclenode1"
     }
 
     constraint {
-      attribute = "${node.unique.name}"
+      attribute = node.unique.name
       operator  = "!="
       value     = "oraclenode2"
     }
@@ -231,7 +231,7 @@ repos:
           env: FORGEJO_API_TOKEN
 
 daemon:
-  interval: 30m
+  interval: 2m
   log_file: /dev/stdout
   web:
     enabled: true

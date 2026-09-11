@@ -98,10 +98,35 @@ locals {
       ttl     = 300
     }
 
+    # --- g3.munchbox.cc. Bing scopes a property to one host and does not walk
+    #     down from the zone, so each site verifies separately even though they
+    #     share a zone. ---
+    "munchbox-bing-verify-g3" = {
+      zone_id = local.munchbox_zone_id
+      name    = "7b8720432b0931ddfd3cd5a9fe59080f.g3"
+      type    = "CNAME"
+      content = "verify.bing.com"
+      proxied = false
+      ttl     = 300
+    }
+
     # --- resume.alexfreidah.com, other zone, same shape ---
     "alexfreidah-bing-verify-resume" = {
       zone_id = local.alexfreidah_zone_id
       name    = "4a0d63523be1e5f1c740dbf9f74d451f.resume"
+      type    = "CNAME"
+      content = "verify.bing.com"
+      proxied = false
+      ttl     = 300
+    }
+
+    # --- alexfreidah.com itself. The property is the apex, so its token sits
+    #     one label below it and carries no service prefix. This is a different
+    #     token than the resume property above: Bing issues one per property
+    #     and each verifies only its own. ---
+    "alexfreidah-bing-verify-apex" = {
+      zone_id = local.alexfreidah_zone_id
+      name    = "05e1b3470b8c86d17ecea52e6d156b70"
       type    = "CNAME"
       content = "verify.bing.com"
       proxied = false

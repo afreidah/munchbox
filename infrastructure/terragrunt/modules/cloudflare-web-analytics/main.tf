@@ -3,12 +3,13 @@
 # -----------------------------------------------------------------------------
 #
 # Enables Cloudflare Web Analytics (RUM) per zone. Each cloudflare_web_analytics_site
-# is created at the account level and, for orange-clouded zones, auto-injects the
-# browser beacon (auto_install) so no site code change is needed; once enabled the
-# rum* GraphQL datasets populate for that zone. The resource needs Account Settings
-# Read + Write, which is why this is its own module/token rather than an extension
-# of cloudflare-zone-settings (whose token is zone-scoped). Enabling is not
-# retroactive - RUM collection starts going forward.
+# is created at the account level and mints the site token the browser beacon
+# carries; the rum* GraphQL datasets populate for a zone once its beacon reports.
+# The resource needs Account Settings Read + Write, which is why this is its own
+# module/token rather than an extension of cloudflare-zone-settings (whose token is
+# zone-scoped). auto_install asks the edge to inject the beacon and the edge does
+# not do it, so each site embeds the snippets output itself; enabling is not
+# retroactive and collection starts going forward.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
