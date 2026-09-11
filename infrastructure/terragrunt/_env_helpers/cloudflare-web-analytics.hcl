@@ -29,8 +29,10 @@ dependency "cloudflare_tokens" {
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
-  # --- RUM sites: auto_install injects the beacon for these orange-clouded
-  # (proxied) zones, so no site code change is needed. ---
+  # --- RUM sites. auto_install asks the edge to inject the beacon and the edge
+  #     does not do it, so each site embeds the snippets output in its own
+  #     template. The record plans clean either way, so absence of drift here is
+  #     not evidence the beacon reports. ---
   sites = {
     munchbox = {
       zone_tag     = local.root.locals.cloudflare_munchbox_zone_id
