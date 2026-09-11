@@ -132,7 +132,7 @@ job "nginx-resume" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/alex-resume:v0.0.8"
+        image              = "registry.munchbox.cc/alex-resume:v0.0.9"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

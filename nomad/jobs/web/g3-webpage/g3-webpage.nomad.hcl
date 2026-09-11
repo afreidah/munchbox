@@ -43,13 +43,13 @@ job "g3-webpage" {
     value    = "true"
   }
   constraint {
-    attribute = "${meta.role}"
+    attribute = meta.role
     operator  = "!="
     value     = "ingress"
   }
   # --- Keep off the GPU/media node (nomad-client-04) to spare its load ---
   constraint {
-    attribute = "${meta.gpu}"
+    attribute = meta.gpu
     operator  = "!="
     value     = "true"
   }
@@ -137,7 +137,7 @@ job "g3-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/g3-web:v0.5.6"
+        image              = "registry.munchbox.cc/g3-web:v0.5.8"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
