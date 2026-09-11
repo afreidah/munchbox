@@ -9,6 +9,8 @@
 # -------------------------------------------------------------------------------
 set -euo pipefail
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+
 # Find the service name (varies by package)
 svc_name=""
 if systemctl list-unit-files | grep -q '^warp-svc'; then
@@ -17,19 +19,20 @@ elif systemctl list-unit-files | grep -q '^cloudflare-warp'; then
   svc_name="cloudflare-warp"
 fi
 
-# Release the Consul split-DNS override BEFORE disconnecting, so WARP can
-# restore the normal resolv.conf on its way down. dnsmasq is only needed
-# while the tunnel is up, so stop it too.
+# Release the Consul split-DNS override before stopping the resolver behind it.
 sudo chattr -i /etc/resolv.conf 2>/dev/null || true
 sudo systemctl stop dnsmasq 2>/dev/null || true
 
 # Try to disconnect first (daemon must be running for this step)
-warp-cli disconnect || true
+warp_cli disconnect || true
 
 # Optionally stop the daemon so the TUN device disappears
 if [[ -n "$svc_name" ]]; then
   sudo systemctl stop "$svc_name" || true
 fi
+
+# Last, so the daemon cannot rewrite resolv.conf after we put the original back.
+restore_upstream_dns
 
 # Don't call warp-cli status here (daemon is stopped).
 # Instead, show that the interface is gone:
