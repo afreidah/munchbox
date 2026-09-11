@@ -143,7 +143,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.129.1"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.135.2"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -382,6 +382,12 @@ write_path:
     reaper_tick: 10m
     min_age: 15m
     batch_size: 10
+
+  # The write places both copies itself, so the replicator never reads the
+  # object back to make the second one.
+  parallel_copies:
+    enabled: true
+    max_in_flight: 64
 
 integrity:
   enabled: true
