@@ -61,3 +61,41 @@
       annotations:
         summary: "S3 Orchestrator high request latency"
         description: "95th percentile request latency is {{ $value | printf \"%.1f\" }} seconds."
+
+    # Circuit breaker state: 0=closed, 1=open, 2=half-open. The rules below
+    # catch a backend the request-rate alerts miss, because an open breaker
+    # stops sending traffic and drives the error rate back to zero.
+
+    - alert: S3OrchestratorDatabaseBreakerOpen
+      # The metadata DB breaker is what raises s3o_degraded_mode_active, so
+      # this covers both. 5m rides out a Patroni switchover, which reopens
+      # within seconds of the new primary taking over.
+      expr: s3o_circuit_breaker_state{name="database"} > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "S3 Orchestrator metadata database is unreachable"
+        description: "The database circuit breaker is open. Reads fall back to the location cache and writes are refused until it closes."
+
+    - alert: S3OrchestratorBackendBreakerOpen
+      # e2 is excluded for the same reason as S3OrchestratorBackendFailures.
+      # An open backend is excluded from replication and so receives no
+      # traffic; the breaker only probes when a scrubber or replication cycle
+      # reaches it, which is slower than its own open_timeout.
+      expr: s3o_circuit_breaker_state{name!="database",name!="e2"} > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "S3 Orchestrator backend {{ $labels.name }} is degraded"
+        description: "The circuit breaker for {{ $labels.name }} is open. The backend is excluded from replica counts and its copies go unverified until it recovers."
+
+    - alert: S3OrchestratorMultipleBackendsDegraded
+      expr: count by (instance) (s3o_circuit_breaker_state{name!="database",name!="e2"} > 0) >= 3
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "{{ $value | printf \"%.0f\" }} S3 Orchestrator backends are degraded"
+        description: "Three or more storage backends have open circuit breakers at once. Replication factor 2 leaves little headroom for placing new writes."
