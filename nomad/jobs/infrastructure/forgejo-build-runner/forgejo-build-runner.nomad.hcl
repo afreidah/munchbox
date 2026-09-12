@@ -7,12 +7,14 @@
 # forgejo-ci-runner is, and one-shot for the same reason: it registers, runs a
 # single job, and exits.
 #
-# It exists separately because this runner hands the Docker socket to the
-# workflow container. That is what `make push` needs to drive buildx, and it is
-# also enough to escape the container, so the runner that holds cluster
-# credentials does not get it. The split reduces blast radius rather than
-# enforcing a boundary -- a job picks its own runner with runs-on, and Forgejo
-# action secrets are per repository.
+# It exists separately so image builds do not run on the runner that carries
+# cluster credentials. act_runner mounts the Docker socket into the workflow
+# container by itself whenever docker_host names one, so the socket is not what
+# distinguishes the two -- mounting it again here is a duplicate mount and the
+# container fails to create.
+#
+# The split reduces blast radius rather than enforcing a boundary: a job picks
+# its own runner with runs-on, and Forgejo action secrets are per repository.
 #
 # Placement is the proxmox clients rather than the oracle nodes: more cores and
 # disk, and the amd64 half of a multi-arch build runs native there. Nothing here
@@ -92,6 +94,11 @@ job "forgejo-build-runner" {
       # the allocation. The 3h timeout is longer than the deploy runner's
       # because the foreign half of a multi-arch build is emulated, which is
       # slow for an image carrying a language toolchain.
+      #
+      # --user root because ops-build-image runs as uid 10001 and the host's
+      # docker socket is root-owned, so buildx cannot reach it otherwise.
+      # force_pull because the image is tagged :latest: a node that already
+      # cached it would otherwise keep running a stale toolchain forever.
       template {
         data        = <<-EOF
         log:
@@ -111,7 +118,8 @@ job "forgejo-build-runner" {
         container:
           network: host
           privileged: true
-          options: "--dns=192.168.68.64 --dns=192.168.68.62 -v /var/run/docker.sock:/var/run/docker.sock"
+          force_pull: true
+          options: "--dns=192.168.68.64 --dns=192.168.68.62 --user root"
           valid_volumes:
             - /var/run/docker.sock
           docker_host: unix:///var/run/docker.sock
