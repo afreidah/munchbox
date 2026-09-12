@@ -108,6 +108,20 @@ inputs = {
         }
       EOT
     }
+
+    # --- forgejo-ci-runner: the post-merge deploy runs `nomad job run` against
+    #     the live server, which is submit-job. It replaces a management token
+    #     the workflow read from Forgejo's secret store, so the point is what it
+    #     cannot do: no ACL writes, no node drains, no other namespace. ---
+    "forgejo-ci-runner" = {
+      description = "Forgejo CI runner - deploy Nomad jobs on merge to main"
+      rules_hcl   = <<-EOT
+        namespace "default" {
+          policy       = "read"
+          capabilities = ["submit-job", "dispatch-job"]
+        }
+      EOT
+    }
   }
 
   # --- ACL Tokens (services only; operator policies are SSO-attached) ---
@@ -131,6 +145,9 @@ inputs = {
     }
     "ci-runner" = {
       policies = ["ci-runner"]
+    }
+    "forgejo-ci-runner" = {
+      policies = ["forgejo-ci-runner"]
     }
   }
 
@@ -166,6 +183,11 @@ inputs = {
     "ci-runner" = {
       vault_path       = "ci-runner-nomad"
       token_key        = "ci-runner"
+      token_field_name = "nomad_token"
+    }
+    "forgejo-ci-runner" = {
+      vault_path       = "forgejo-ci-runner-nomad"
+      token_key        = "forgejo-ci-runner"
       token_field_name = "nomad_token"
     }
   }
