@@ -30,6 +30,38 @@ locals {
       "${name}|${pattern}" => { script = name, pattern = pattern }
     }
   ]...))
+
+  # One read per distinct path, however many bindings draw from it.
+  vault_paths = nonsensitive(toset(flatten([
+    for w in values(var.workers) : [for sb in w.secret_bindings : sb.vault_path]
+  ])))
+}
+
+# -----------------------------------------------------------------------------
+# SECRET BINDINGS
+# -----------------------------------------------------------------------------
+# Resolved here rather than passed in, so a credential never travels through a
+# terragrunt input. It still lands in state, which is the real boundary.
+
+data "vault_kv_secret_v2" "bindings" {
+  for_each = local.vault_paths
+
+  mount = var.vault_mount
+  name  = each.key
+}
+
+locals {
+  bindings = {
+    for name, w in var.workers :
+    name => concat(
+      w.bindings,
+      [for sb in w.secret_bindings : {
+        name = sb.name
+        type = "secret_text"
+        text = data.vault_kv_secret_v2.bindings[sb.vault_path].data[sb.vault_field]
+      }]
+    )
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -61,7 +93,7 @@ resource "cloudflare_workers_script" "this" {
   )
   main_module        = var.workers[each.key].main_module
   compatibility_date = var.workers[each.key].compatibility_date
-  bindings           = var.workers[each.key].bindings
+  bindings           = local.bindings[each.key]
 
   lifecycle {
     precondition {

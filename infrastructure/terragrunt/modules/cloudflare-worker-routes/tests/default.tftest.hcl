@@ -11,6 +11,14 @@
 mock_provider "cloudflare" {}
 mock_provider "aws" {}
 
+mock_provider "vault" {
+  mock_data "vault_kv_secret_v2" {
+    defaults = {
+      data = { access_key = "MOCKKEY", secret_key = "mock-secret" }
+    }
+  }
+}
+
 variables {
   cloudflare_api_token = "mock-token"
   account_id           = "00000000000000000000000000000000"
@@ -109,6 +117,39 @@ run "bindings" {
   assert {
     condition     = length(cloudflare_workers_script.this["bound"].bindings) == 2
     error_message = "bindings must be attached to the script"
+  }
+}
+
+# -------------------------------------------------------------------------
+# secret bindings resolve from vault and join the inline ones
+# -------------------------------------------------------------------------
+
+run "secret_bindings" {
+  command = plan
+
+  variables {
+    workers = {
+      "proxied" = {
+        content  = "export default {};"
+        bindings = [{ name = "ORIGIN_HOST", type = "plain_text", text = "example.com" }]
+        secret_bindings = [
+          { name = "PROXY_ACCESS_KEY_ID", vault_path = "edge-proxy/b2", vault_field = "access_key" },
+          { name = "PROXY_SECRET_ACCESS_KEY", vault_path = "edge-proxy/b2", vault_field = "secret_key" },
+        ]
+      }
+    }
+  }
+
+  # --- one inline plus two resolved ---
+  assert {
+    condition     = length(cloudflare_workers_script.this["proxied"].bindings) == 3
+    error_message = "secret bindings must be appended to the inline ones"
+  }
+
+  # --- two bindings drawing on one path is still one read ---
+  assert {
+    condition     = length(data.vault_kv_secret_v2.bindings) == 1
+    error_message = "a path shared by several bindings must be read once"
   }
 }
 
