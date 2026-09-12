@@ -117,10 +117,14 @@ jobs:
   # ---------------------------------------------------------------------------
   # Build and push the container images this push changed.
   #
-  # Runs on the build runner, which is the only one that hands the Docker socket
-  # to the workflow container. Each image owns its own build: the Makefile
-  # declares the platforms and tags, and this runs `make push` exactly as it
-  # would be run by hand, so CI never decides the build strategy.
+  # Covers both trees that hold one: docker/ for the CI and database images, and
+  # src/ for the applications that have not outgrown this repo. A directory
+  # qualifies by having a push target, which is also what excludes
+  # src/vault-cert-manager -- it is a submodule and builds no image.
+  #
+  # Each image owns its own build: the Makefile declares the platforms and tags,
+  # and this runs `make push` exactly as it would be run by hand, so CI never
+  # decides the build strategy.
   #
   # binfmt is installed first because the clients carry no qemu handlers, so
   # buildx would otherwise report only amd64 and the multi-arch push would fail.
@@ -148,13 +152,21 @@ jobs:
             exit 0
           fi
 
-          images=$(git diff --name-only "$base" "${{ github.sha }}" -- docker/ \
-            | awk -F/ 'NF>=3 {print $2}' \
-            | sort -u \
-            | tr '\n' ' ')
+          dirs=$(git diff --name-only "$base" "${{ github.sha }}" -- docker/ src/ \
+            | awk -F/ 'NF>=3 {print $1"/"$2}' \
+            | sort -u)
+
+          # `make -n` rather than grepping for the target: docker/ images take
+          # push from the shared _common.mk, so it is not in their own Makefile.
+          images=""
+          for d in $dirs; do
+            make -C "$d" -n push >/dev/null 2>&1 && images="$images $d"
+          done
+          images=$(echo "$images" | sed 's/^ *//')
 
           echo "base: $base"
-          echo "changed images: ${images:-<none>}"
+          echo "changed dirs: ${dirs:-<none>}"
+          echo "buildable: ${images:-<none>}"
           echo "images=${images}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
@@ -165,10 +177,9 @@ jobs:
           docker run --privileged --rm tonistiigi/binfmt --install all
 
           rc=0
-          for img in ${{ steps.range.outputs.images }}; do
-            [ -f "docker/$img/Makefile" ] || { echo "::warning::docker/$img has no Makefile, skipped"; continue; }
-            echo "=== $img ==="
-            make -C "docker/$img" push || { echo "::error title=build::$img failed"; rc=1; }
+          for dir in ${{ steps.range.outputs.images }}; do
+            echo "=== $dir ==="
+            make -C "$dir" push || { echo "::error title=build::$dir failed"; rc=1; }
           done
           exit $rc
 
