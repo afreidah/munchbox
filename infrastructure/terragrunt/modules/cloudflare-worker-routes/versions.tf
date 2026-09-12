@@ -17,5 +17,11 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    # Resolves secret bindings. Auth comes from VAULT_ADDR/VAULT_TOKEN in the
+    # environment, as in forgejo-secrets.
+    vault = {
+      source  = "hashicorp/vault"
+      version = "~> 5.0"
+    }
   }
 }

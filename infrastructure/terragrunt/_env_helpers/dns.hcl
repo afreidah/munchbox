@@ -110,6 +110,43 @@ locals {
       ttl     = 300
     }
 
+    # --- Bandwidth Alliance edge proxies. A Worker route only matches a
+    #     hostname that resolves through Cloudflare, and nothing here has an
+    #     origin -- the Worker answers every request itself. So these are
+    #     placeholder A records (RFC 5737 TEST-NET-1) that exist to be
+    #     orange-clouded; the address is never connected to. Losing the proxy
+    #     flag would send callers to an unroutable address rather than
+    #     silently bypassing the Worker. ---
+    "munchbox-edge-proxy-b2" = {
+      zone_id          = local.munchbox_zone_id
+      name             = "b2-proxy"
+      type             = "A"
+      content          = "192.0.2.1"
+      proxied          = true
+      ttl              = 1
+      external_content = true
+    }
+
+    "munchbox-edge-proxy-ibm" = {
+      zone_id          = local.munchbox_zone_id
+      name             = "ibm-proxy"
+      type             = "A"
+      content          = "192.0.2.1"
+      proxied          = true
+      ttl              = 1
+      external_content = true
+    }
+
+    "munchbox-edge-proxy-oci" = {
+      zone_id          = local.munchbox_zone_id
+      name             = "oci-proxy"
+      type             = "A"
+      content          = "192.0.2.1"
+      proxied          = true
+      ttl              = 1
+      external_content = true
+    }
+
     # --- resume.alexfreidah.com, other zone, same shape ---
     "alexfreidah-bing-verify-resume" = {
       zone_id = local.alexfreidah_zone_id

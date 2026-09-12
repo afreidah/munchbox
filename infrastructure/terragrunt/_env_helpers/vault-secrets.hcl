@@ -55,6 +55,9 @@ dependency "access_keys" {
       "s3-bucket/aptly"        = { access_key = "MOCKAPTLYACCESSKEY", secret_key = "mock-aptly-secret-key" }
       "s3-bucket/tempo-traces" = { access_key = "MOCKTEMPOTRACESACCESSKEY", secret_key = "mock-tempo-traces-secret-key" }
       "s3-bucket/artifacts"    = { access_key = "MOCKARTIFACTSACCESSKEY", secret_key = "mock-artifacts-secret-key" }
+      "edge-proxy/b2"          = { access_key = "MOCKEDGEPROXYB2KEY", secret_key = "mock-edge-proxy-b2-secret" }
+      "edge-proxy/ibm"         = { access_key = "MOCKEDGEPROXYIBMKEY", secret_key = "mock-edge-proxy-ibm-secret" }
+      "edge-proxy/oci"         = { access_key = "MOCKEDGEPROXYOCIKEY", secret_key = "mock-edge-proxy-oci-secret" }
       "dnsdist"                = { access_key = "MOCKDNSDISTACCESSKEY", secret_key = "mock-dnsdist-secret-key" }
     }
   }
@@ -103,6 +106,18 @@ locals {
     "s3-bucket/artifacts" = {
       source = "access_keys"
       key    = "s3-bucket/artifacts"
+    }
+    "edge-proxy/b2" = {
+      source = "access_keys"
+      key    = "edge-proxy/b2"
+    }
+    "edge-proxy/ibm" = {
+      source = "access_keys"
+      key    = "edge-proxy/ibm"
+    }
+    "edge-proxy/oci" = {
+      source = "access_keys"
+      key    = "edge-proxy/oci"
     }
     "dnsdist" = {
       source = "access_keys"

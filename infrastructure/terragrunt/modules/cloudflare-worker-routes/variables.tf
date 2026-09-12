@@ -51,9 +51,24 @@ variable "workers" {
       text = optional(string)
     })), [])
 
+    # Secret bindings resolved from Vault rather than passed in, so a
+    # credential never travels through a terragrunt input. Each becomes a
+    # secret_text binding alongside the ones above.
+    secret_bindings = optional(list(object({
+      name        = string
+      vault_path  = string
+      vault_field = string
+    })), [])
+
     # Route pattern => zone id. One cloudflare_workers_route per entry.
     routes = optional(map(string), {})
   }))
   default   = {}
   sensitive = true
+}
+
+variable "vault_mount" {
+  description = "KV v2 mount that secret_bindings paths are relative to."
+  type        = string
+  default     = "secret"
 }
