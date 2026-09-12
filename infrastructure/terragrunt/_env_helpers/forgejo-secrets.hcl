@@ -26,13 +26,20 @@ inputs = {
       vault_field = "password"
       secret_name = "APTLY_PASS"
     }
+    # --- Scoped to what the post-merge deploy actually does: submit Nomad jobs,
+    #     and write the commit it deployed to one Consul key prefix. These were
+    #     the Nomad management token and the Consul bootstrap token, which any
+    #     workflow on the repo could read, on a runner holding the Docker
+    #     socket. A Forgejo action secret is a row in a Postgres database
+    #     running on the cluster it grants access to, so what lives here should
+    #     be the least that works. ---
     "nomad-token" = {
-      vault_path  = "nomad/management-token"
-      vault_field = "token"
+      vault_path  = "forgejo-ci-runner-nomad"
+      vault_field = "nomad_token"
       secret_name = "NOMAD_TOKEN"
     }
     "consul-token" = {
-      vault_path  = "consul/bootstrap-token"
+      vault_path  = "consul/forgejo-ci-runner-token"
       vault_field = "token"
       secret_name = "CONSUL_HTTP_TOKEN"
     }

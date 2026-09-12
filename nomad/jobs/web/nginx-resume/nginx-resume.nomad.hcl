@@ -10,6 +10,10 @@
 #
 # Placement is unconstrained (node_pool "all"): the container serves baked-in
 # static files and keeps no local state, so any client can run it.
+#
+# Deploys canary-first with auto_promote and auto_revert, so a bad image is
+# caught on one allocation and rolled back without the site going dark. That
+# also makes this a safe job for the post-merge deploy to be tried against.
 # -------------------------------------------------------------------------------
 
 job "nginx-resume" {

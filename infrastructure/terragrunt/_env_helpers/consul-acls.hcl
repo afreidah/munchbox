@@ -154,6 +154,18 @@ locals {
       EOT
     }
 
+    # --- forgejo-ci-runner: the post-merge deploy records which commit it
+    #     deployed, and nothing else. It replaces the bootstrap token the
+    #     workflow read from Forgejo's secret store, so the whole point is the
+    #     narrowness: one key prefix, write, no ACLs, no services, no nodes. ---
+    "forgejo-ci-runner" = {
+      description       = "Forgejo CI runner - record the deployed commit"
+      token_description = "Token for the Forgejo post-merge deploy"
+      rules             = <<-EOT
+        key_prefix "deploy/" { policy = "write" }
+      EOT
+    }
+
     "backup-worker" = {
       description       = "Backup worker - Consul snapshot access"
       token_description = "Token for backup worker Consul snapshots"
