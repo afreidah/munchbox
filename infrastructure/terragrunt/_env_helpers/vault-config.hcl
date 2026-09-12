@@ -77,9 +77,9 @@ locals {
       extra_paths = { "pki_int/issue/postgres" = ["create", "update", "read"] }
     }
 
-    # --- s3-orchestrator fronts every bucket, so it holds all three keys. ---
+    # --- s3-orchestrator fronts every bucket, so it holds all four keys. ---
     "s3-orchestrator" = {
-      secrets = ["s3-bucket/aptly", "s3-bucket/tempo-traces", "s3-bucket/unified"]
+      secrets = ["s3-bucket/aptly", "s3-bucket/artifacts", "s3-bucket/tempo-traces", "s3-bucket/unified"]
     }
   }
 

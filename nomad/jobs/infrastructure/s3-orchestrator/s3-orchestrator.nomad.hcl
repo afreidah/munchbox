@@ -185,6 +185,12 @@ buckets:
     credentials:
       - access_key_id: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.access_key }}{{ end }}"
         secret_access_key: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.secret_key }}{{ end }}"
+  # Build artifacts that infrastructure code reads back, kept out of unified so
+  # the credentials a deployer holds cannot also read the backups.
+  - name: "artifacts"
+    credentials:
+      - access_key_id: "{{ with secret "secret/data/s3-bucket/artifacts" }}{{ .Data.data.access_key }}{{ end }}"
+        secret_access_key: "{{ with secret "secret/data/s3-bucket/artifacts" }}{{ .Data.data.secret_key }}{{ end }}"
 
 database:
   host: "haproxy-postgres.service.consul"
