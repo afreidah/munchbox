@@ -80,6 +80,7 @@ locals {
       forgejoUrl = "http://forgejo.service.consul:30028"
       vaultPath  = "forgejo/scaler"
       profiles = [
+        { label = "build", job = "forgejo-build-runner", maxConcurrent = 1 },
         { label = "ops", job = "forgejo-ci-runner", maxConcurrent = 1 },
         { label = "self-hosted", job = "forgejo-ci-runner", maxConcurrent = 2 },
         { label = "ubuntu-latest", job = "forgejo-ci-runner", maxConcurrent = 2 },
