@@ -204,19 +204,22 @@ database:
   max_conn_lifetime: "5m"
 
 backends:
+  # Reached through its Cloudflare edge proxy; see the b2 backend for why the
+  # credentials here are the edge-proxy keypair rather than Oracle's.
   - name: "oci"
-    endpoint: "{{ .Data.data.oci_s3_endpoint }}"
+    endpoint: "https://oci-proxy.munchbox.cc"
     region: "{{ .Data.data.oci_s3_region }}"
     bucket: "{{ .Data.data.oci_s3_bucket }}"
-    access_key_id: "{{ .Data.data.oci_s3_access_key }}"
-    secret_access_key: "{{ .Data.data.oci_s3_secret_key }}"
+    access_key_id: "{{ with secret "secret/data/edge-proxy/oci" }}{{ .Data.data.access_key }}{{ end }}"
+    secret_access_key: "{{ with secret "secret/data/edge-proxy/oci" }}{{ .Data.data.secret_key }}{{ end }}"
     force_path_style: true
-    # Always Free: 20 GB combined tiers, 50k requests/mo, 10 TB/mo egress
-    # (tenancy-wide, shared with the A1 compute instances). OCI does not
-    # class requests, so one flat budget is the accurate shape.
+    # Always Free: 20 GB combined tiers, 50k requests/mo. OCI does not class
+    # requests, so one flat budget is the accurate shape. Egress is unmetered
+    # here because every read leaves through Cloudflare, which Oracle does not
+    # bill for; the tenancy's 10 TB allowance is no longer the constraint.
     quota_bytes: 17179869184          # 16 GiB of the 20 GB pool
     api_request_limit: 50000
-    egress_byte_limit: 1099511627776  # 1 TB of the tenancy's 10 TB
+    egress_byte_limit: 0              # unlimited: alliance egress via the edge proxy
   - name: "r2"
     endpoint: "{{ .Data.data.r2_s3_endpoint }}"
     region: "auto"
@@ -246,18 +249,22 @@ backends:
     egress_byte_limit: 1000000000000  # 1 TB/month egress
     ingress_byte_limit: 0             # unlimited
     api_request_limit: 0              # unlimited
+  # Reached through its Cloudflare edge proxy; see the b2 backend for why the
+  # credentials here are the edge-proxy keypair rather than IBM's.
   - name: "ibm"
-    endpoint: "{{ .Data.data.ibm_s3_endpoint }}"
+    endpoint: "https://ibm-proxy.munchbox.cc"
     region: "{{ .Data.data.ibm_s3_region }}"
     bucket: "{{ .Data.data.ibm_s3_bucket }}"
-    access_key_id: "{{ .Data.data.ibm_s3_access_key }}"
-    secret_access_key: "{{ .Data.data.ibm_s3_secret_key }}"
+    access_key_id: "{{ with secret "secret/data/edge-proxy/ibm" }}{{ .Data.data.access_key }}{{ end }}"
+    secret_access_key: "{{ with secret "secret/data/edge-proxy/ibm" }}{{ .Data.data.secret_key }}{{ end }}"
     force_path_style: true
-    # Free tier: 5 GB Smart Tier, 2k Class A, 20k Class B, 5 GB public
-    # egress. Ingress is not metered. IBM's Class B is "GET and all
-    # others", so deletes and aborts are charged there rather than free.
+    # Free tier: 5 GB Smart Tier, 2k Class A, 20k Class B. Ingress is not
+    # metered, and egress no longer is either: reads leave through Cloudflare,
+    # which IBM does not bill for, so the 5 GB public egress allowance stops
+    # being the binding limit. Requests still are. IBM's Class B is "GET and
+    # all others", so deletes and aborts are charged there rather than free.
     quota_bytes: 5000000000
-    egress_byte_limit: 5000000000
+    egress_byte_limit: 0              # unlimited: alliance egress via the edge proxy
     ingress_byte_limit: 0
     request_limits:
       - name: class_a
@@ -290,18 +297,23 @@ backends:
       - name: class_b
         operations: [GetObject, HeadObject]
         limit: 50000
+  # Reached through its Cloudflare edge proxy. Backblaze waives egress on
+  # traffic leaving to Cloudflare, so a read pulled through the worker costs
+  # nothing. The credentials here are the edge-proxy keypair, not Backblaze's:
+  # the worker verifies this signature and re-signs to the origin with the real
+  # keys, which never leave Cloudflare.
   - name: "b2"
-    endpoint: "{{ .Data.data.b2_s3_endpoint }}"
+    endpoint: "https://b2-proxy.munchbox.cc"
     region: "{{ .Data.data.b2_s3_region }}"
     bucket: "{{ .Data.data.b2_s3_bucket }}"
-    access_key_id: "{{ .Data.data.b2_s3_access_key }}"
-    secret_access_key: "{{ .Data.data.b2_s3_secret_key }}"
+    access_key_id: "{{ with secret "secret/data/edge-proxy/b2" }}{{ .Data.data.access_key }}{{ end }}"
+    secret_access_key: "{{ with secret "secret/data/edge-proxy/b2" }}{{ .Data.data.secret_key }}{{ end }}"
     force_path_style: true
-    # Class A/B/C transactions are free, so no request budget. Egress is
-    # free up to 3x average monthly stored bytes, which scales with what
-    # b2 actually holds rather than with the quota.
+    # Class A/B/C transactions are free, so no request budget. The 3x-stored-
+    # bytes egress allowance no longer binds either: reads leave through
+    # Cloudflare, which Backblaze does not bill for. Storage is what is left.
     quota_bytes: 10000000000       # 10 GB free storage
-    egress_byte_limit: 30000000000 # 3x a full 10 GB backend
+    egress_byte_limit: 0           # unlimited: alliance egress via the edge proxy
   - name: "g3"
     endpoint: "{{ .Data.data.g3_s3_endpoint }}"
     region: "us-east-1"

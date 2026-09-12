@@ -77,9 +77,15 @@ locals {
       extra_paths = { "pki_int/issue/postgres" = ["create", "update", "read"] }
     }
 
-    # --- s3-orchestrator fronts every bucket, so it holds all four keys. ---
+    # --- s3-orchestrator fronts every bucket, so it holds all four keys. The
+    #     edge-proxy keypairs are what it signs with when it reaches an alliance
+    #     backend through that backend's Cloudflare worker; the backend's own
+    #     credentials stay at the edge. ---
     "s3-orchestrator" = {
-      secrets = ["s3-bucket/aptly", "s3-bucket/artifacts", "s3-bucket/tempo-traces", "s3-bucket/unified"]
+      secrets = [
+        "edge-proxy/b2", "edge-proxy/ibm", "edge-proxy/oci",
+        "s3-bucket/aptly", "s3-bucket/artifacts", "s3-bucket/tempo-traces", "s3-bucket/unified",
+      ]
     }
   }
 
