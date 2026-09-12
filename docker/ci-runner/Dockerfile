@@ -8,6 +8,10 @@
 # leaf inputs, and `nomad job validate` against a Nomad server. Ships only that
 # toolchain on top of the base GitHub runner -- deliberately NOT the heavy
 # moat-runner-standard (Go/Node/Cinc/...), which these jobs never use.
+#
+# Published amd64-only (see the Makefile's push target) even though the arch
+# handling below is per-platform: the jobs that use it are pinned to amd64 nodes,
+# so the arm64 leg would cost build time nothing ever pulls.
 # -------------------------------------------------------------------------------
 
 FROM myoung34/github-runner:2.337.0-ubuntu-jammy

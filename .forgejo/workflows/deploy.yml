@@ -115,13 +115,71 @@ jobs:
           exit $rc
 
   # ---------------------------------------------------------------------------
+  # Build and push the container images this push changed.
+  #
+  # Runs on the build runner, which is the only one that hands the Docker socket
+  # to the workflow container. Each image owns its own build: the Makefile
+  # declares the platforms and tags, and this runs `make push` exactly as it
+  # would be run by hand, so CI never decides the build strategy.
+  #
+  # binfmt is installed first because the clients carry no qemu handlers, so
+  # buildx would otherwise report only amd64 and the multi-arch push would fail.
+  # ---------------------------------------------------------------------------
+  images:
+    name: Build and push changed images
+    runs-on: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve the build range
+        id: range
+        env:
+          CONSUL_HTTP_ADDR: http://127.0.0.1:8500
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          base=$(consul kv get deploy/munchbox/last-sha 2>/dev/null || true)
+          if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "no usable base (got '${base:-<unset>}'); skipping builds this run"
+            echo "images=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          images=$(git diff --name-only "$base" "${{ github.sha }}" -- docker/ \
+            | awk -F/ 'NF>=3 {print $2}' \
+            | sort -u \
+            | tr '\n' ' ')
+
+          echo "base: $base"
+          echo "changed images: ${images:-<none>}"
+          echo "images=${images}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        if: ${{ steps.range.outputs.images != '' }}
+        run: |
+          set -euo pipefail
+
+          docker run --privileged --rm tonistiigi/binfmt --install all
+
+          rc=0
+          for img in ${{ steps.range.outputs.images }}; do
+            [ -f "docker/$img/Makefile" ] || { echo "::warning::docker/$img has no Makefile, skipped"; continue; }
+            echo "=== $img ==="
+            make -C "docker/$img" push || { echo "::error title=build::$img failed"; rc=1; }
+          done
+          exit $rc
+
+  # ---------------------------------------------------------------------------
   # Record which commit is deployed, once the deploy above has succeeded, so the
   # key means the last commit that actually landed and the next run resumes from
   # a truthful baseline.
   # ---------------------------------------------------------------------------
   record:
     name: Record the deployed commit
-    needs: [nomad]
+    needs: [nomad, images]
     runs-on: ops
     steps:
       - name: Record the deployed commit in Consul KV
