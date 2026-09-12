@@ -120,6 +120,20 @@ RUN set -eux; \
   install -m0755 /tmp/docker/docker /usr/local/bin/docker; \
   rm -rf /tmp/docker /tmp/docker.tgz
 
+# --- Buildx (CLI plugin; the static tarball ships none, so `docker buildx` is
+#     an unknown command without it, and every multi-arch push here uses it) ---
+ARG BUILDX_VERSION="v0.30.1"
+RUN set -eux; \
+  case "$(uname -m)" in \
+    x86_64)  BX_ARCH=amd64 ;; \
+    aarch64) BX_ARCH=arm64 ;; \
+    *) echo "unsupported arch $(uname -m)" >&2; exit 1 ;; \
+  esac; \
+  mkdir -p /usr/local/lib/docker/cli-plugins; \
+  curl -fsSL "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-${BX_ARCH}" \
+    -o /usr/local/lib/docker/cli-plugins/docker-buildx; \
+  chmod 0755 /usr/local/lib/docker/cli-plugins/docker-buildx
+
 # --- Copy all binaries from builder ---
 COPY --from=builder /tmp/bin/ /usr/local/bin/
 
@@ -149,6 +163,7 @@ RUN set -eux; \
   trivy --version && \
   cosign version && \
   docker --version && \
+  docker buildx version && \
   golangci-lint version --format short && \
   go version && \
   node --version && \
