@@ -26,12 +26,10 @@ ARG NOMAD_VERSION=2.0.5
 ARG NOMAD_PACK_VERSION=0.4.2
 ARG CONSUL_VERSION=2.0.3
 ARG VAULT_VERSION=2.0.4
+ARG TFLINT_VERSION=0.64.0
+ARG TRIVY_VERSION=0.74.0
 
 USER root
-
-# pipefail so a failed `curl` in the `curl … | bash` installers below aborts the
-# build instead of being masked by the piped shell's exit status (hadolint DL4006).
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN set -eux; \
     export DEBIAN_FRONTEND=noninteractive; \
@@ -51,13 +49,19 @@ RUN set -eux; \
     unzip -o /tmp/consul.zip consul -d /usr/local/bin; \
     curl -fsSLo /tmp/vault.zip "https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_${TARGETARCH}.zip"; \
     unzip -o /tmp/vault.zip vault -d /usr/local/bin; \
-    # --- tflint + trivy (latest; official installers detect arch) ---
-    curl -fsSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash; \
-    curl -fsSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin; \
+    # --- tflint + trivy, from pinned release artifacts like every tool above.
+    #     Their upstream `curl | sh` installers resolve "latest" at build time
+    #     and live on a branch, so they drift and can vanish -- tflint's
+    #     install_linux.sh is gone from master and 404s. ---
+    if [ "${TARGETARCH}" = "arm64" ]; then TRIVY_ARCH=ARM64; else TRIVY_ARCH=64bit; fi; \
+    curl -fsSLo /tmp/tflint.zip "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${TARGETARCH}.zip"; \
+    unzip -o /tmp/tflint.zip tflint -d /usr/local/bin; \
+    curl -fsSLo /tmp/trivy.tgz "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz"; \
+    tar -xzf /tmp/trivy.tgz -C /usr/local/bin trivy; \
     # --- checkov (system pip; ubuntu-jammy does not enforce PEP 668) ---
     pip3 install --no-cache-dir checkov; \
     # --- Cleanup ---
-    rm -f /tmp/*.zip; \
+    rm -f /tmp/*.zip /tmp/*.tgz; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/*
 
