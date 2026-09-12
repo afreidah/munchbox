@@ -22,6 +22,14 @@ locals {
     "s3-bucket/aptly"        = { id_length = 32, secret_length = 64 }
     "s3-bucket/tempo-traces" = {}
     "s3-bucket/artifacts"    = {}
+
+    # --- edge-proxy/*: the keypair s3-orchestrator signs with when it reaches a
+    #     backend through its Cloudflare worker. The worker verifies this
+    #     signature, then re-signs to the origin with the backend's own
+    #     credentials, so the two are deliberately separate. ---
+    "edge-proxy/b2"  = {}
+    "edge-proxy/ibm" = {}
+    "edge-proxy/oci" = {}
     # --- dnsdist web console pair: access_key -> apiKey, secret_key -> password ---
     "dnsdist" = {}
   }

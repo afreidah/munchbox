@@ -42,26 +42,24 @@ locals {
     Preferred-Languages: en
   EOT
 
-  # --- per-leaf worker definitions, keyed by leaf dir name ---
+  # --- per-leaf worker definitions, keyed by leaf dir name. Each branch is a
+  #     map of script name => worker, so a leaf can deploy more than one. ---
   configs = {
     "security-txt" = {
-      script_name = "security-txt"
-      content     = "export default { async fetch() { return new Response(${jsonencode(local.security_txt_body)}, { headers: { \"content-type\": \"text/plain; charset=utf-8\" } }); } };"
-      routes = {
-        # --- munchbox.cc omitted: apex isn't publicly proxied (no apex site), so
-        #     the edge Worker can't serve it; that finding is dismissed. ---
-        "alexfreidah.com/.well-known/security.txt" = local.az
+      "security-txt" = {
+        content = "export default { async fetch() { return new Response(${jsonencode(local.security_txt_body)}, { headers: { \"content-type\": \"text/plain; charset=utf-8\" } }); } };"
+        routes = {
+          # --- munchbox.cc omitted: apex isn't publicly proxied (no apex site),
+          #     so the edge Worker can't serve it; that finding is dismissed. ---
+          "alexfreidah.com/.well-known/security.txt" = local.az
+        }
       }
     }
   }
-
-  cfg = local.configs[local.leaf]
 }
 
 inputs = {
   cloudflare_api_token = dependency.cloudflare_tokens.outputs.token_values["workers"]
   account_id           = local.root.locals.cloudflare_account_id
-  script_name          = local.cfg.script_name
-  content              = local.cfg.content
-  routes               = local.cfg.routes
+  workers              = local.configs[local.leaf]
 }
