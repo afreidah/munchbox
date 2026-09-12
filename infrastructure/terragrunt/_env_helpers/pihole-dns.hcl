@@ -38,6 +38,22 @@ locals {
     "oracle-arm-1"    = { domain = "oracle-arm-1.munchbox.cc", ip = "10.200.0.13" }
     "oracle-arm-2"    = { domain = "oracle-arm-2.munchbox.cc", ip = "10.200.0.14" }
     "cinc-server"     = { domain = "cinc-server.munchbox.cc", ip = "192.168.68.99" }
+
+    # --- Bandwidth Alliance edge proxies. These are Cloudflare Workers with no
+    #     origin, and the egress waiver they exist for only applies to traffic
+    #     that actually leaves through Cloudflare -- so they must not resolve to
+    #     anything on the LAN. The *.munchbox.cc wildcard in dnsmasq would
+    #     otherwise answer them with traefik, and a `server=` override cannot
+    #     undo that: address= answers locally, so the query is never forwarded.
+    #     An explicit record wins, which is why every catalogued service already
+    #     reaches the VIP rather than the wildcard's address.
+    #
+    #     The address is a Cloudflare edge IP for the zone. Pinning one is safe
+    #     because the edge routes by Host, so any Cloudflare address serves this
+    #     zone even if the zone's own anycast pair changes. ---
+    "b2-proxy"  = { domain = "b2-proxy.munchbox.cc", ip = "104.21.21.42" }
+    "ibm-proxy" = { domain = "ibm-proxy.munchbox.cc", ip = "104.21.21.42" }
+    "oci-proxy" = { domain = "oci-proxy.munchbox.cc", ip = "104.21.21.42" }
   }
 
   # --- munchbox.cc services from the shared catalog (root.locals.web_services)
