@@ -213,6 +213,10 @@ backends:
     access_key_id: "{{ with secret "secret/data/edge-proxy/oci" }}{{ .Data.data.access_key }}{{ end }}"
     secret_access_key: "{{ with secret "secret/data/edge-proxy/oci" }}{{ .Data.data.secret_key }}{{ end }}"
     force_path_style: true
+    # Cloudflare rewrites accept-encoding in transit, and the Go SDK signs it,
+    # so the edge cannot reproduce the signature. Stripping the SDK's own
+    # headers before signing leaves only what survives the hop.
+    strip_sdk_headers: true
     # Always Free: 20 GB combined tiers, 50k requests/mo. OCI does not class
     # requests, so one flat budget is the accurate shape. Egress is unmetered
     # here because every read leaves through Cloudflare, which Oracle does not
@@ -258,6 +262,10 @@ backends:
     access_key_id: "{{ with secret "secret/data/edge-proxy/ibm" }}{{ .Data.data.access_key }}{{ end }}"
     secret_access_key: "{{ with secret "secret/data/edge-proxy/ibm" }}{{ .Data.data.secret_key }}{{ end }}"
     force_path_style: true
+    # Cloudflare rewrites accept-encoding in transit, and the Go SDK signs it,
+    # so the edge cannot reproduce the signature. Stripping the SDK's own
+    # headers before signing leaves only what survives the hop.
+    strip_sdk_headers: true
     # Free tier: 5 GB Smart Tier, 2k Class A, 20k Class B. Ingress is not
     # metered, and egress no longer is either: reads leave through Cloudflare,
     # which IBM does not bill for, so the 5 GB public egress allowance stops
@@ -309,6 +317,10 @@ backends:
     access_key_id: "{{ with secret "secret/data/edge-proxy/b2" }}{{ .Data.data.access_key }}{{ end }}"
     secret_access_key: "{{ with secret "secret/data/edge-proxy/b2" }}{{ .Data.data.secret_key }}{{ end }}"
     force_path_style: true
+    # Cloudflare rewrites accept-encoding in transit, and the Go SDK signs it,
+    # so the edge cannot reproduce the signature. Stripping the SDK's own
+    # headers before signing leaves only what survives the hop.
+    strip_sdk_headers: true
     # Class A/B/C transactions are free, so no request budget. The 3x-stored-
     # bytes egress allowance no longer binds either: reads leave through
     # Cloudflare, which Backblaze does not bill for. Storage is what is left.
