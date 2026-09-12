@@ -54,6 +54,7 @@ dependency "access_keys" {
       "s3-bucket/unified"      = { access_key = "MOCKUNIFIEDACCESSKEY", secret_key = "mock-unified-secret-key" }
       "s3-bucket/aptly"        = { access_key = "MOCKAPTLYACCESSKEY", secret_key = "mock-aptly-secret-key" }
       "s3-bucket/tempo-traces" = { access_key = "MOCKTEMPOTRACESACCESSKEY", secret_key = "mock-tempo-traces-secret-key" }
+      "s3-bucket/artifacts"    = { access_key = "MOCKARTIFACTSACCESSKEY", secret_key = "mock-artifacts-secret-key" }
       "dnsdist"                = { access_key = "MOCKDNSDISTACCESSKEY", secret_key = "mock-dnsdist-secret-key" }
     }
   }
@@ -98,6 +99,10 @@ locals {
     "s3-bucket/tempo-traces" = {
       source = "access_keys"
       key    = "s3-bucket/tempo-traces"
+    }
+    "s3-bucket/artifacts" = {
+      source = "access_keys"
+      key    = "s3-bucket/artifacts"
     }
     "dnsdist" = {
       source = "access_keys"
