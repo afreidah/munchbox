@@ -43,7 +43,7 @@ ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go
 #
 #     HashiCorp CLIs track the running cluster, not just latest. ---
 RUN set -eux; \
-  TF_VERSION="1.16.0"; \
+  TF_VERSION="1.16.2"; \
   TG_VERSION="1.1.4"; \
   NOMAD_VERSION="2.0.5"; \
   PACK_VERSION="0.4.2"; \
@@ -108,12 +108,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG TARGETARCH
 ENV ARCH_DL=${TARGETARCH}
 
-# --- Base packages + Python for Ansible + Node.js for GitHub Actions ---
+# --- Base packages + Node.js, which the Actions runner needs to execute
+#     JavaScript actions like actions/checkout ---
 RUN set -eux; \
   apt-get update; \
   apt-get -y install --no-install-recommends \
     ca-certificates curl git jq make openssh-client \
-    python3 python3-pip pipx nodejs npm; \
+    nodejs npm; \
   rm -rf /var/lib/apt/lists/*
 
 # --- Docker CLI (official static binary) ---
@@ -145,15 +146,6 @@ COPY --from=builder /tmp/bin/ /usr/local/bin/
 COPY --from=builder /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:/usr/local/bin:$PATH GOPATH=/go
 
-# --- Ansible + ansible-lint ---
-ENV PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=cache,target=/root/.cache/pipx \
-    set -eux; \
-  mkdir -p "$PIPX_HOME"; \
-  pipx install --include-deps ansible; \
-  pipx install ansible-lint
-
 # --- Sanity check ---
 RUN set -eux; \
   echo "=== Tool Versions ===" && \
@@ -172,8 +164,6 @@ RUN set -eux; \
   golangci-lint version --format short && \
   go version && \
   node --version && \
-  ansible --version | head -n1 && \
-  ansible-lint --version && \
   echo "==================="
 
 # --- Non-root user ---

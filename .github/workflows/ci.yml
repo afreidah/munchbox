@@ -163,9 +163,12 @@ jobs:
         with:
           fetch-depth: 0 # Sonar new-code + module change-detection diff
 
+      # Same version the runner images carry. Module tests run here but the
+      # modules are applied from those images, so a split lets a test pass on a
+      # version nothing applies with.
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.15.4"
+          terraform_version: "1.16.2"
           terraform_wrapper: false
       - uses: terraform-linters/setup-tflint@v4
 
