@@ -8,10 +8,9 @@
 # `user-show` as the existence check. When `org` is set, the user is also added
 # to that org as an admin so they can manage cookbooks/nodes from `knife`.
 #
-# The key comes from exactly one of two sources: `public_key` installs a
-# supplied PEM so the server mints nothing and the private half never lands on
-# this host, while `key_path` lets the server generate the pair and captures
-# the private key there.
+# The key comes from exactly one of two sources. `public_key` is attached after
+# create and the server's own minted key deleted, so no private half is kept on
+# this host; `key_path` instead captures the minted private key to that path.
 #
 # Properties:
 #   username        - Login name (default: resource name).
@@ -74,13 +73,10 @@ action :create do
     end
   end
 
-  # --- `--prevent-keygen` stops the server minting a pair we would then have to
-  #     move off this host; `--filename` captures one when it does mint ---
-  key_args = if supplied_key
-               ['--user-key', new_resource.public_key_path, '--prevent-keygen']
-             else
-               ['--filename', new_resource.key_path]
-             end
+  # --- user-create always mints its own key: `--user-key` and `--prevent-keygen`
+  #     both send `create_key: nil`, which the API rejects. Without `--filename`
+  #     the minted private key goes to stdout and is dropped on the floor. ---
+  key_args = supplied_key ? [] : ['--filename', new_resource.key_path]
 
   execute "chef-server-ctl user-create #{new_resource.username}" do
     command [
@@ -94,6 +90,25 @@ action :create do
     environment 'CINC_LICENSE' => 'accept', 'CHEF_LICENSE' => 'accept'
     sensitive true
     not_if "chef-server-ctl user-show '#{new_resource.username}'"
+  end
+
+  if supplied_key
+    execute "chef-server-ctl add-user-key #{new_resource.username}" do
+      command [
+        'chef-server-ctl', 'add-user-key', new_resource.username,
+        '-p', new_resource.public_key_path,
+        '-k', new_resource.username
+      ]
+      environment 'CINC_LICENSE' => 'accept', 'CHEF_LICENSE' => 'accept'
+      not_if "chef-server-ctl list-user-keys '#{new_resource.username}' | grep -q '^name: #{new_resource.username}$'"
+    end
+
+    # --- ordered after the attach, so the user is never left without a key ---
+    execute "chef-server-ctl delete-user-key #{new_resource.username} default" do
+      command ['chef-server-ctl', 'delete-user-key', new_resource.username, 'default']
+      environment 'CINC_LICENSE' => 'accept', 'CHEF_LICENSE' => 'accept'
+      only_if "chef-server-ctl list-user-keys '#{new_resource.username}' | grep -q '^name: default$'"
+    end
   end
 
   unless supplied_key
