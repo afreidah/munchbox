@@ -46,6 +46,18 @@ dependency "gossip_keys" {
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
+dependency "passwords" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/passwords"
+
+  mock_outputs = {
+    vault_data = {
+      "proxmox/api-token"           = { id = "mock-token-id", secret = "mock-token-secret" }
+      "vaultwarden/master-password" = { password = "mock-master-password" }
+    }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+}
+
 dependency "cinc_server_keys" {
   config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/cinc-server-keys"
 
@@ -108,6 +120,16 @@ locals {
       source = "cinc_server_keys"
       key    = "forgejo-ci"
     }
+    # --- the credentials terraform authenticates to Proxmox and Vaultwarden
+    #     with; their own paths, since the parent secrets hold other fields. ---
+    "proxmox/api-token" = {
+      source = "passwords"
+      key    = "proxmox/api-token"
+    }
+    "vaultwarden/master-password" = {
+      source = "passwords"
+      key    = "vaultwarden/master-password"
+    }
     "cloudflare-dnsedge" = {
       source = "cloudflare_tokens"
       key    = "dnsedge"
@@ -161,6 +183,7 @@ inputs = {
           access_keys       = dependency.access_keys.outputs.vault_data
           gossip_keys       = dependency.gossip_keys.outputs.vault_data
           cinc_server_keys  = dependency.cinc_server_keys.outputs.vault_data
+          passwords         = dependency.passwords.outputs.vault_data
         }[s.source][s.key],
       )
     }
