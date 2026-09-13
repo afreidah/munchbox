@@ -364,9 +364,13 @@ EOH
       }
 
       # --- Resources ---
+      # The limit covers more than the server: every push forks git
+      # receive-pack and gc --auto inside this container, and the page cache
+      # those fill counts against the cgroup too. At 512 the server's own 120 MB
+      # left no room for that, and a burst of mirror pushes OOM-killed it.
       resources {
         cpu    = 500
-        memory = 512
+        memory = 1024
       }
 
       # --- Termination ---
