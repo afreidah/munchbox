@@ -82,6 +82,9 @@ locals {
       profiles = [
         { label = "build", job = "forgejo-build-runner", maxConcurrent = 1 },
         { label = "ops", job = "forgejo-ci-runner", maxConcurrent = 1 },
+        # cinc-runner carries cinc-workstation, which nothing else needs; the
+        # job is the same, only the image the label selects differs.
+        { label = "cinc", job = "forgejo-ci-runner", maxConcurrent = 1 },
         { label = "self-hosted", job = "forgejo-ci-runner", maxConcurrent = 2 },
         { label = "ubuntu-latest", job = "forgejo-ci-runner", maxConcurrent = 2 },
       ]
