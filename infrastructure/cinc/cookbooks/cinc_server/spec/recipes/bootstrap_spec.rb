@@ -7,11 +7,19 @@ require 'spec_helper'
 # -------------------------------------------------------------------------------
 
 RSpec.describe 'cinc_server::bootstrap' do
-  # --- Resource not_if guards shell out to chef-server-ctl; stub them so chefspec doesn't try to run them ---
-  before do
+  # --- Resource not_if guards shell out to chef-server-ctl; stub them so
+  #     chefspec doesn't try to run them. Every user the recipe declares needs
+  #     its own pair, so this grows with bootstrap['extra_users']. ---
+  def stub_server_ctl
     stub_command("chef-server-ctl org-show 'munchbox'").and_return(false)
-    stub_command("chef-server-ctl user-show 'alex'").and_return(false)
-    stub_command("chef-server-ctl user-show 'alex' --with-orgs | grep -E '^organizations:' | grep -wq 'munchbox'").and_return(false)
+    %w(alex forgejo-ci).each do |user|
+      stub_command("chef-server-ctl user-show '#{user}'").and_return(false)
+      stub_command("chef-server-ctl user-show '#{user}' --with-orgs | grep -E '^organizations:' | grep -wq 'munchbox'").and_return(false)
+    end
+  end
+
+  before do
+    stub_server_ctl
   end
 
   cached(:chef_run) do
@@ -77,6 +85,40 @@ RSpec.describe 'cinc_server::bootstrap' do
     expect(chef_run).to run_execute('chef-server-ctl org-user-add munchbox alex --admin')
   end
 
+  # -------------------------------------------------------------------------------
+  # extra_users -- the CI identity Forgejo uploads cookbooks/roles/nodes with
+  # -------------------------------------------------------------------------------
+
+  it 'declares the forgejo-ci user tied to the munchbox org' do
+    expect(chef_run).to create_cinc_server_user('forgejo-ci')
+      .with(
+        first_name: 'Forgejo',
+        last_name: 'CI',
+        email: 'forgejo-ci@munchbox.cc',
+        org: 'munchbox'
+      )
+  end
+
+  # --- A duplicate email is rejected by user-create, so this must not match the admin's ---
+  it 'gives forgejo-ci an email distinct from the admin' do
+    expect(chef_run.cinc_server_user('forgejo-ci').email)
+      .not_to eq(chef_run.cinc_server_user('alex').email)
+  end
+
+  it 'sources the forgejo-ci password from its own vault path (stubbed)' do
+    expect(chef_run.cinc_server_user('forgejo-ci').password).to eq('fake-vault-password')
+  end
+
+  it 'captures the forgejo-ci key to its own path' do
+    expect(chef_run.cinc_server_user('forgejo-ci').key_path)
+      .to eq('/etc/cinc-bootstrap/forgejo-ci.pem')
+  end
+
+  it 'queues user-create and org-user-add for forgejo-ci' do
+    expect(chef_run).to run_execute('chef-server-ctl user-create forgejo-ci')
+    expect(chef_run).to run_execute('chef-server-ctl org-user-add munchbox forgejo-ci --admin')
+  end
+
   # --- Pretend the pem exists post-user-create so the perms-lockdown file resource runs ---
   context 'when the captured pem exists' do
     cached(:chef_run_with_pem) do
@@ -85,11 +127,17 @@ RSpec.describe 'cinc_server::bootstrap' do
       stub_command("chef-server-ctl user-show 'alex' --with-orgs | grep -E '^organizations:' | grep -wq 'munchbox'").and_return(false)
       allow(File).to receive(:exist?).and_call_original
       allow(File).to receive(:exist?).with('/etc/cinc-bootstrap/alex.pem').and_return(true)
+      allow(File).to receive(:exist?).with('/etc/cinc-bootstrap/forgejo-ci.pem').and_return(true)
       ChefSpec::SoloRunner.new(step_into: %w(cinc_server_org cinc_server_user)).converge('cinc_server::bootstrap')
     end
 
     it 'locks the captured pem down to 0600 root:root' do
       expect(chef_run_with_pem).to create_file('/etc/cinc-bootstrap/alex.pem')
+        .with(owner: 'root', group: 'root', mode: '0600')
+    end
+
+    it 'locks the forgejo-ci pem down the same way' do
+      expect(chef_run_with_pem).to create_file('/etc/cinc-bootstrap/forgejo-ci.pem')
         .with(owner: 'root', group: 'root', mode: '0600')
     end
   end

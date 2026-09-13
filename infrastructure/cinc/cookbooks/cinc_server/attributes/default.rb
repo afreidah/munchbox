@@ -64,6 +64,23 @@ default[cookbook]['bootstrap'] = {
     password: nil,
     key_path: '/etc/cinc-bootstrap/alex.pem',
   },
+  # --- Non-human org members. Forgejo CI uploads cookbooks, roles and nodes
+  #     under its own identity, so those uploads are attributable and can be
+  #     revoked without touching the admin key. Emails must be unique across
+  #     the server -- reusing the admin's is rejected by user-create.
+  #
+  #     cinc_server_user adds org members as admins, so this is a separate
+  #     identity rather than a lesser-privileged one. ---
+  extra_users: [
+    {
+      username: 'forgejo-ci',
+      first_name: 'Forgejo',
+      last_name: 'CI',
+      email: 'forgejo-ci@munchbox.cc',
+      password: nil,
+      key_path: '/etc/cinc-bootstrap/forgejo-ci.pem',
+    },
+  ],
 }
 
 # -------------------------------------------------------------------------------
@@ -79,5 +96,15 @@ default[cookbook]['vault_paths'] = {
   admin_password: {
     path: 'secret/data/cinc-server/admin/alex',
     field: 'password',
+  },
+  # --- Keyed by username so a new extra_users entry needs one more path here
+  #     and nothing in the recipe. The secret must exist before the converge
+  #     that creates the user; the private key the server generates is written
+  #     to key_path, and uploading it back into Vault is what lets CI use it. ---
+  extra_user_passwords: {
+    'forgejo-ci' => {
+      path: 'secret/data/cinc-server/ci/forgejo',
+      field: 'password',
+    },
   },
 }
