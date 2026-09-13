@@ -52,7 +52,9 @@ RUN set -eux; \
   TFLINT_VERSION="0.64.0"; \
   TRIVY_VERSION="0.74.0"; \
   COSIGN_VERSION="3.1.3"; \
+  GORELEASER_VERSION="2.18.1"; \
   if [ "$ARCH_DL" = "arm64" ]; then TRIVY_ARCH="ARM64"; else TRIVY_ARCH="64bit"; fi; \
+  if [ "$ARCH_DL" = "arm64" ]; then GR_ARCH="arm64"; else GR_ARCH="x86_64"; fi; \
   \
   pids=""; \
   dl() { curl -fsSL "$1" -o "$2" & pids="$pids $!:$1"; }; \
@@ -65,6 +67,7 @@ RUN set -eux; \
   dl "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${ARCH_DL}.zip" /tmp/tflint.zip; \
   dl "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${TRIVY_ARCH}.tar.gz" /tmp/trivy.tgz; \
   dl "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${ARCH_DL}" /tmp/bin/cosign; \
+  dl "https://github.com/goreleaser/goreleaser/releases/download/v${GORELEASER_VERSION}/goreleaser_Linux_${GR_ARCH}.tar.gz" /tmp/goreleaser.tgz; \
   rc=0; \
   for p in $pids; do \
     if ! wait "${p%%:*}"; then echo "download failed: ${p#*:}" >&2; rc=1; fi; \
@@ -79,7 +82,8 @@ RUN set -eux; \
   unzip -o -d /tmp /tmp/vault.zip && install -m0755 /tmp/vault /tmp/bin/vault; \
   unzip -o -d /tmp /tmp/tflint.zip && install -m0755 /tmp/tflint /tmp/bin/tflint; \
   tar -xzf /tmp/trivy.tgz -C /tmp trivy && install -m0755 /tmp/trivy /tmp/bin/trivy; \
-  rm -f /tmp/*.zip /tmp/*.tgz /tmp/terraform /tmp/nomad /tmp/nomad-pack /tmp/consul /tmp/vault /tmp/tflint /tmp/trivy
+  tar -xzf /tmp/goreleaser.tgz -C /tmp goreleaser && install -m0755 /tmp/goreleaser /tmp/bin/goreleaser; \
+  rm -f /tmp/*.zip /tmp/*.tgz /tmp/terraform /tmp/nomad /tmp/nomad-pack /tmp/consul /tmp/vault /tmp/tflint /tmp/trivy /tmp/goreleaser
 
 # --- Go linting/testing tools ---
 RUN --mount=type=cache,target=/go/pkg/mod \
@@ -162,6 +166,7 @@ RUN set -eux; \
   terragrunt --version && \
   trivy --version && \
   cosign version && \
+  goreleaser --version && \
   docker --version && \
   docker buildx version && \
   golangci-lint version --format short && \
