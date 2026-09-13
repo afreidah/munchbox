@@ -45,6 +45,14 @@ job "forgejo" {
     attribute = "${attr.unique.hostname}"
   }
 
+  # Every push forks git inside this container and fills page cache doing it, so
+  # keep that I/O away from the nodes carrying the ingress VIP.
+  constraint {
+    attribute = meta.role
+    operator  = "!="
+    value     = "ingress"
+  }
+
   # ---------------------------------------------------------------------------
   # Update Strategy
   # ---------------------------------------------------------------------------
