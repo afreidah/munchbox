@@ -24,6 +24,26 @@ variable "temporal_insecure" {
 }
 
 # -----------------------------------------------------------------------------
+# NAMESPACES
+# -----------------------------------------------------------------------------
+
+variable "namespaces" {
+  description = "Map of Temporal namespaces to manage; map key is the namespace name."
+  type = map(object({
+    owner_email = string
+    description = optional(string)
+    # Days, not hours -- the provider's own unit. One day is the floor.
+    retention_days = optional(number, 30)
+  }))
+  default = {}
+
+  validation {
+    condition     = alltrue([for n in var.namespaces : n.retention_days >= 1])
+    error_message = "retention_days must be at least 1; the provider stores retention in whole days."
+  }
+}
+
+# -----------------------------------------------------------------------------
 # SCHEDULES
 # -----------------------------------------------------------------------------
 
