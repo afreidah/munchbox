@@ -331,6 +331,17 @@ inputs = {
         }
       EOT
     }
+
+    # --- cinc-upload: the client key and password the Forgejo workflow uses to
+    #     push cookbooks, roles and nodes to the cinc server. Scoped to that one
+    #     identity, so it grants nothing the admin key would. ---
+    "cinc-upload" = {
+      policy = <<-EOT
+        path "secret/data/cinc-server/ci/forgejo" {
+          capabilities = ["read"]
+        }
+      EOT
+    }
   }
 
   workload_extra_secrets = local.workload_extra_secrets
@@ -347,6 +358,10 @@ inputs = {
     "cinc-server/admin/*",
     "cinc-server/validator",
     "cinc-server/trusted-cert",
+    # non-human org members the bootstrap recipe creates; it reads their
+    # password to run user-create. Kept out of admin/* so the runner that
+    # consumes these can be granted them without seeing the admin's.
+    "cinc-server/ci/*",
     # wireguard mesh keys (per node, both public + private)
     "wireguard-v2/*",
     # consul agent ACL token (consul/* deliberately NOT listed -- bootstrap-token would be exposed)
@@ -452,7 +467,7 @@ inputs = {
   # --- Service Tokens ---
   service_tokens = {
     "ci-runner" = {
-      policies   = ["image-signing"]
+      policies   = ["image-signing", "cinc-upload"]
       vault_path = "ci-runner"
       # --- vault_token stores the duration string as-given (unlike pki/ssh roles which store seconds) ---
       ttl = "8760h"
