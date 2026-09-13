@@ -180,6 +180,7 @@ job "cleanup-worker" {
 
       env {
         TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
+        TEMPORAL_NAMESPACE          = "maintenance"
         NOMAD_ADDR                  = "https://192.168.68.61:4646"
         NOMAD_TLS_SERVER_NAME       = "server.global.nomad"
         NOMAD_CACERT                = "/etc/ssl/certs/nomad-ca.pem"

@@ -5,13 +5,25 @@
 #
 # Asserts the schedules for_each fan-out, the calendar-item mapping, the
 # optional-field defaults (namespace=default, overlap_policy=Skip), explicit
-# overrides, and the empty-map edge case.
+# overrides, the namespace fan-out and retention defaulting, and the empty-map
+# edge cases.
 # -----------------------------------------------------------------------------
 
 mock_provider "temporal" {}
 
 variables {
   temporal_host = "mock-temporal.test"
+
+  namespaces = {
+    "ci" = {
+      owner_email    = "owner@example.test"
+      description    = "High-frequency CI orchestration."
+      retention_days = 1
+    }
+    "backup" = {
+      owner_email = "owner@example.test"
+    }
+  }
 
   schedules = {
     "backup-daily" = {
@@ -119,19 +131,64 @@ run "optional_defaulting" {
 }
 
 # -------------------------------------------------------------------------
-# Empty inputs edge case: zero schedules
+# namespaces: for_each fan-out, name from the map key, retention defaulting
+# -------------------------------------------------------------------------
+
+run "namespaces_for_each" {
+  command = plan
+
+  # --- two namespace inputs -> two resources ---
+  assert {
+    condition     = length(temporal_namespace.this) == 2
+    error_message = "two namespace inputs -> two resources"
+  }
+
+  # --- the map key is the namespace name ---
+  assert {
+    condition     = temporal_namespace.this["ci"].name == "ci"
+    error_message = "namespace name should come from the map key"
+  }
+
+  # --- explicit retention respected; the provider stores whole days ---
+  assert {
+    condition     = temporal_namespace.this["ci"].retention == 1
+    error_message = "explicit retention_days should be respected"
+  }
+
+  # --- unset retention_days defaults to 30 ---
+  assert {
+    condition     = temporal_namespace.this["backup"].retention == 30
+    error_message = "retention_days should default to 30 when omitted"
+  }
+
+  # --- namespaces output keys on every namespace and carries its retention ---
+  assert {
+    condition     = toset(keys(output.namespaces)) == toset(["ci", "backup"]) && output.namespaces["ci"] == 1
+    error_message = "namespaces output must key on every namespace and carry retention"
+  }
+}
+
+# -------------------------------------------------------------------------
+# Empty inputs edge case: zero schedules, zero namespaces
 # -------------------------------------------------------------------------
 
 run "empty_inputs" {
   command = plan
 
   variables {
-    schedules = {}
+    schedules  = {}
+    namespaces = {}
   }
 
   # --- empty schedules -> zero resources ---
   assert {
     condition     = length(temporal_schedule.this) == 0
     error_message = "empty schedules -> zero resources"
+  }
+
+  # --- empty namespaces -> zero resources ---
+  assert {
+    condition     = length(temporal_namespace.this) == 0
+    error_message = "empty namespaces -> zero resources"
   }
 }
