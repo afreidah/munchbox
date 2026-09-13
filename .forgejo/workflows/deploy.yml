@@ -212,13 +212,154 @@ jobs:
           exit $rc
 
   # ---------------------------------------------------------------------------
+  # Upload the cinc cookbooks, roles and nodes this push changed.
+  #
+  # Runs on the cinc label, whose image is the only one carrying knife. That
+  # image has neither the consul nor the vault CLI, so both lookups go over
+  # HTTP: consul answers plain HTTP on loopback, and vault is reached with the
+  # intermediate CA the runner mounts into every job container.
+  #
+  # The client key and the server's certificate are fetched at run time rather
+  # than held as Forgejo action secrets, so rotating either is a Vault write
+  # and nothing here changes.
+  #
+  # Uploads carry whatever version metadata.rb declares. Requiring a bump is a
+  # review-time gate on the GitHub side, not something this enforces.
+  # ---------------------------------------------------------------------------
+  cinc:
+    name: Upload changed cinc cookbooks, roles and nodes
+    runs-on: cinc
+    env:
+      CINC_LICENSE: accept
+      CHEF_LICENSE: accept
+      CINC_CI_DIR: /tmp/cinc-ci
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve the upload range
+        id: range
+        env:
+          CONSUL_HTTP_ADDR: http://127.0.0.1:8500
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          base=$(curl -sS -H "X-Consul-Token: ${CONSUL_HTTP_TOKEN}" \
+            "${CONSUL_HTTP_ADDR}/v1/kv/deploy/munchbox/last-sha?raw" || true)
+
+          if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "no usable base (got '${base:-<unset>}'); skipping uploads this run"
+            { echo "cookbooks="; echo "roles="; echo "nodes="; echo "any="; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # --diff-filter=d drops deletions: knife has no delete-from-file form,
+          # and uploading a path that no longer exists just fails the run.
+          #
+          # awk rather than grep for the extension filters: grep exits 1 when it
+          # matches nothing, so under pipefail a push touching no cinc file --
+          # the ordinary case -- would fail this step.
+          changed() {
+            git diff --name-only --diff-filter=d "$base" "${{ github.sha }}" -- "$@"
+          }
+
+          # A cookbook is named by its directory, so NF>=5 keeps loose files
+          # directly under cookbooks/ (simplecov_bootstrap.rb) out of the list.
+          # Roles are ruby, nodes are json; filtering on the wrong extension
+          # uploads nothing and says nothing.
+          cookbooks=$(changed infrastructure/cinc/cookbooks/ \
+            | awk -F/ 'NF>=5 {print $4}' | sort -u | tr '\n' ' ')
+          roles=$(changed infrastructure/cinc/roles/ | awk '/\.rb$/' | sort -u | tr '\n' ' ')
+          nodes=$(changed infrastructure/cinc/nodes/ | awk '/\.json$/' | sort -u | tr '\n' ' ')
+
+          echo "base: $base"
+          echo "cookbooks: ${cookbooks:-<none>}"
+          echo "roles: ${roles:-<none>}"
+          echo "nodes: ${nodes:-<none>}"
+
+          {
+            echo "cookbooks=${cookbooks}"
+            echo "roles=${roles}"
+            echo "nodes=${nodes}"
+            echo "any=${cookbooks}${roles}${nodes}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Configure knife
+        if: ${{ steps.range.outputs.any != '' }}
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "${CINC_CI_DIR}/trusted_certs"
+
+          # --fail so an auth or policy error is a failed step rather than a
+          # jq parse of an error document; -e so a null field fails too.
+          vault_field() {
+            curl -sS --fail --cacert /etc/ssl/certs/munchbox-ca.pem \
+              -H "X-Vault-Token: ${VAULT_TOKEN}" \
+              "${VAULT_ADDR}/v1/secret/data/$1" | jq -er ".data.data.$2"
+          }
+
+          vault_field cinc-server/ci/forgejo private_key > "${CINC_CI_DIR}/forgejo-ci.pem"
+          # cinc-server presents its own self-signed certificate, which the
+          # mounted intermediate CA does not chain to; knife trusts it from here.
+          vault_field cinc-server/trusted-cert cert > "${CINC_CI_DIR}/trusted_certs/cinc-server_munchbox_cc.crt"
+
+          cat > "${CINC_CI_DIR}/knife.rb" <<EOF
+          chef_server_url   'https://cinc-server.munchbox.cc/organizations/munchbox'
+          node_name         'forgejo-ci'
+          client_key        '${CINC_CI_DIR}/forgejo-ci.pem'
+          trusted_certs_dir '${CINC_CI_DIR}/trusted_certs'
+          cookbook_path     '${GITHUB_WORKSPACE}/infrastructure/cinc/cookbooks'
+          EOF
+
+          knife client list -c "${CINC_CI_DIR}/knife.rb" >/dev/null
+          echo "authenticated to cinc-server as forgejo-ci"
+
+      - name: Upload
+        if: ${{ steps.range.outputs.any != '' }}
+        run: |
+          set -euo pipefail
+
+          cfg="${CINC_CI_DIR}/knife.rb"
+          rc=0
+
+          for cookbook in ${{ steps.range.outputs.cookbooks }}; do
+            echo "=== cookbook $cookbook ==="
+            knife cookbook upload "$cookbook" -c "$cfg" \
+              || { echo "::error title=cinc::cookbook $cookbook failed"; rc=1; }
+          done
+
+          for role in ${{ steps.range.outputs.roles }}; do
+            echo "=== role $role ==="
+            knife role from file "$role" -c "$cfg" \
+              || { echo "::error title=cinc::role $role failed"; rc=1; }
+          done
+
+          for node in ${{ steps.range.outputs.nodes }}; do
+            echo "=== node $node ==="
+            knife node from file "$node" -c "$cfg" \
+              || { echo "::error title=cinc::node $node failed"; rc=1; }
+          done
+
+          exit $rc
+
+      - name: Drop the fetched credentials
+        if: ${{ always() }}
+        run: rm -rf "${CINC_CI_DIR}"
+
+  # ---------------------------------------------------------------------------
   # Record which commit is deployed, once the deploy above has succeeded, so the
   # key means the last commit that actually landed and the next run resumes from
   # a truthful baseline.
   # ---------------------------------------------------------------------------
   record:
     name: Record the deployed commit
-    needs: [nomad, images]
+    needs: [nomad, images, cinc]
     runs-on: ops
     steps:
       - name: Record the deployed commit in Consul KV

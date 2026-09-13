@@ -332,12 +332,17 @@ inputs = {
       EOT
     }
 
-    # --- cinc-upload: the client key and password the Forgejo workflow uses to
-    #     push cookbooks, roles and nodes to the cinc server. Scoped to that one
-    #     identity, so it grants nothing the admin key would. ---
+    # --- cinc-upload: the client key the Forgejo workflow uses to push
+    #     cookbooks, roles and nodes to the cinc server, plus that server's own
+    #     certificate, which is self-signed and so chains to no CA the runner
+    #     already trusts. Scoped to that one identity, so it grants nothing the
+    #     admin key would. ---
     "cinc-upload" = {
       policy = <<-EOT
         path "secret/data/cinc-server/ci/forgejo" {
+          capabilities = ["read"]
+        }
+        path "secret/data/cinc-server/trusted-cert" {
           capabilities = ["read"]
         }
       EOT
