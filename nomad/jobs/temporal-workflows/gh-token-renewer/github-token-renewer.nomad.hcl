@@ -144,6 +144,7 @@ job "github-token-renewer" {
 
       env {
         TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
+        TEMPORAL_NAMESPACE          = "tokens"
         VAULT_ADDR                  = "https://vault.service.consul:8200"
         VAULT_CACERT                = "/etc/ssl/certs/vault-ca.pem"
         VAULT_TOKEN_FILE            = "/secrets/vault_token"

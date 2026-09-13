@@ -168,6 +168,7 @@ job "ci-runner-scaler" {
 
       env {
         TEMPORAL_ADDRESS            = "temporal-server.service.consul:7233"
+        TEMPORAL_NAMESPACE          = "ci"
         METRICS_LISTEN              = ":${NOMAD_PORT_metrics}"
         OTEL_EXPORTER_OTLP_ENDPOINT = "tempo.service.consul:4317"
 

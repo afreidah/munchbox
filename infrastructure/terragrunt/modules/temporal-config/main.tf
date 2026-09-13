@@ -9,11 +9,30 @@
 # -----------------------------------------------------------------------------
 
 # -----------------------------------------------------------------------------
+# NAMESPACES
+# -----------------------------------------------------------------------------
+
+# Retention is days: the provider multiplies by 24h on write and divides on
+# read, so sub-day values round to zero and never converge.
+resource "temporal_namespace" "this" {
+  for_each = var.namespaces
+
+  name        = each.key
+  owner_email = each.value.owner_email
+  description = each.value.description
+  retention   = each.value.retention_days
+}
+
+# -----------------------------------------------------------------------------
 # WORKFLOW SCHEDULES
 # -----------------------------------------------------------------------------
 
 resource "temporal_schedule" "this" {
   for_each = var.schedules
+
+  # A schedule targeting a namespace this module also creates must not be
+  # submitted first -- Temporal rejects the unknown namespace.
+  depends_on = [temporal_namespace.this]
 
   namespace   = each.value.namespace
   schedule_id = each.value.schedule_id

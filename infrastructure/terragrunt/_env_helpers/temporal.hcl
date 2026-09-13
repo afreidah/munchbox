@@ -20,6 +20,60 @@ locals {
   temporal_port     = "7233"
   temporal_insecure = true
 
+  # --- Namespaces, one per worker domain. The UI lists executions per
+  #     namespace, and retention is set per namespace, so a domain's volume no
+  #     longer decides how long every other domain's history is kept.
+  #
+  #     Nothing is left in `default`, so it stays unmanaged rather than being
+  #     imported into state. ---
+  temporal_namespaces = {
+    "ci" = {
+      owner_email    = "alex.freidah@gmail.com"
+      description    = "Runner scaling and image reconciliation."
+      retention_days = 1 # the provider's floor, and more than anyone reads
+    }
+    "backup" = {
+      owner_email    = "alex.freidah@gmail.com"
+      description    = "Database and volume backups."
+      retention_days = 30
+    }
+    "maintenance" = {
+      owner_email    = "alex.freidah@gmail.com"
+      description    = "Cleanup, registry GC, aptly pruning, Postgres maintenance."
+      retention_days = 30
+    }
+    "security" = {
+      owner_email    = "alex.freidah@gmail.com"
+      description    = "Trivy image scanning."
+      retention_days = 30
+    }
+    "certs" = {
+      owner_email    = "alex.freidah@gmail.com"
+      description    = "Certificate acquisition and renewal."
+      retention_days = 90 # weekly cadence; 90d covers a dozen cycles
+    }
+    "tokens" = {
+      owner_email    = "alex.freidah@gmail.com"
+      description    = "GitHub App and SonarCloud token renewal."
+      retention_days = 30
+    }
+    "media" = {
+      owner_email    = "alex.freidah@gmail.com"
+      description    = "Media library reconciliation."
+      retention_days = 7
+    }
+  }
+
+  queue_namespaces = {
+    "backup-task-queue"               = "backup"
+    "trivy-task-queue"                = "security"
+    "cleanup-task-queue"              = "maintenance"
+    "cert-task-queue"                 = "certs"
+    "github-token-renewer-task-queue" = "tokens"
+    "ci-runner-scaler-task-queue"     = "ci"
+    "media-import-task-queue"         = "media"
+  }
+
   # --- map key = TF state key; input is the workflow argument object (json-
   #     encoded below, null = no argument). schedules use the calendar form
   #     (not a cron string): it is what the provider stores and reads back, so
@@ -155,8 +209,16 @@ inputs = {
   temporal_port     = local.temporal_port
   temporal_insecure = local.temporal_insecure
 
+  namespaces = local.temporal_namespaces
+
+  # Namespace is derived from the task queue rather than spelled out per
+  # schedule: one worker serves a queue and one namespace holds that worker, so
+  # naming it on each entry would only be a chance to get it wrong.
   schedules = {
     for k, s in local.temporal_schedules :
-    k => merge(s, { input = s.input == null ? null : jsonencode(s.input) })
+    k => merge(s, {
+      namespace = local.queue_namespaces[s.task_queue]
+      input     = s.input == null ? null : jsonencode(s.input)
+    })
   }
 }
