@@ -16,6 +16,9 @@ RSpec.describe 'cinc_server::bootstrap' do
       stub_command("chef-server-ctl user-show '#{user}'").and_return(false)
       stub_command("chef-server-ctl user-show '#{user}' --with-orgs | grep -E '^organizations:' | grep -wq 'munchbox'").and_return(false)
     end
+    # --- supplied-key users: our key absent, the server-minted one present ---
+    stub_command("chef-server-ctl list-user-keys 'forgejo-ci' | grep -q '^name: forgejo-ci$'").and_return(false)
+    stub_command("chef-server-ctl list-user-keys 'forgejo-ci' | grep -q '^name: default$'").and_return(true)
   end
 
   before do
@@ -123,10 +126,31 @@ RSpec.describe 'cinc_server::bootstrap' do
     expect(chef_run).to run_execute('chef-server-ctl org-user-add munchbox forgejo-ci --admin')
   end
 
-  # --- supplied key: the server mints nothing, so no pem lands on this host ---
-  it 'creates forgejo-ci from the supplied public key' do
-    expect(chef_run.execute('chef-server-ctl user-create forgejo-ci').command)
-      .to include('--user-key', '/etc/cinc-bootstrap/forgejo-ci.pub', '--prevent-keygen')
+  # --- user-create rejects both key flags, so neither is passed and the minted
+  #     private key is left on stdout rather than captured ---
+  it 'creates forgejo-ci without any key flags' do
+    command = chef_run.execute('chef-server-ctl user-create forgejo-ci').command
+    expect(command).not_to include('--user-key')
+    expect(command).not_to include('--prevent-keygen')
+    expect(command).not_to include('--filename')
+  end
+
+  it 'attaches the supplied public key under the user its own name' do
+    expect(chef_run).to run_execute('chef-server-ctl add-user-key forgejo-ci')
+      .with(command: ['chef-server-ctl', 'add-user-key', 'forgejo-ci',
+                      '-p', '/etc/cinc-bootstrap/forgejo-ci.pub',
+                      '-k', 'forgejo-ci'])
+  end
+
+  it 'drops the server-minted key once ours is attached' do
+    expect(chef_run).to run_execute('chef-server-ctl delete-user-key forgejo-ci default')
+  end
+
+  # --- the delete must not be able to run before the attach ---
+  it 'orders the key swap so the user is never left keyless' do
+    resources = chef_run.find_resources(:execute).map(&:name)
+    expect(resources.index('chef-server-ctl add-user-key forgejo-ci'))
+      .to be < resources.index('chef-server-ctl delete-user-key forgejo-ci default')
   end
 
   it 'does not write a forgejo-ci private key' do
