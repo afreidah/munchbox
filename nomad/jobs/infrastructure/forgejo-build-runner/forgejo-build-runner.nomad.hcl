@@ -127,9 +127,15 @@ job "forgejo-build-runner" {
         destination = "local/config.yaml"
       }
 
-      # Registered with the full label set rather than the dispatch's own
-      # meta.labels: a runs-on label arrives bare and carries no image, so the
-      # runner would otherwise fall back to its built-in default.
+      # Registered with `build` alone, spelled out here rather than taken from
+      # the dispatch's own meta.labels: a runs-on label arrives bare and carries
+      # no image, so the runner would otherwise fall back to its built-in
+      # default.
+      #
+      # Only `build`. one-job takes the oldest queued job matching any label the
+      # runner registered, so a second label lets unrelated work hijack a runner
+      # dispatched for an image build -- the mirrored .github workflows queue
+      # plenty of `ubuntu-latest` jobs, and those are forgejo-ci-runner's.
       env {
         FORGEJO_INSTANCE = "http://forgejo.service.consul:30028"
 
@@ -137,7 +143,7 @@ job "forgejo-build-runner" {
         RUNNER_NAME  = "forgejo-build-${NOMAD_ALLOC_ID}"
         REPO_URL     = "${NOMAD_META_repo_url}"
 
-        RUNNER_LABELS = "build:docker://registry.munchbox.cc/ops-build-image:latest,docker:docker://catthehacker/ubuntu:act-latest,ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+        RUNNER_LABELS = "build:docker://registry.munchbox.cc/ops-build-image:latest"
       }
 
       resources {
