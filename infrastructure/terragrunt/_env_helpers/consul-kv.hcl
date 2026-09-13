@@ -50,7 +50,7 @@ locals {
   #     carrying both `vm` and another label still lands on the KVM pool. Object
   #     literal (not tomap) so the app/vault entries keep their own shapes through
   #     jsonencode. ---
-  runner_scaler_config = {
+  runner_scaler_config = merge({
     "afreidah/munchbox"            = { mode = "app", maxConcurrent = 3 }
     "afreidah/nomad-temporal-jobs" = { mode = "app", maxConcurrent = 3 }
     # poll/register split: we're only write on moat, so poll with a low-priv PAT
@@ -86,6 +86,30 @@ locals {
         { label = "ubuntu-latest", job = "forgejo-ci-runner", maxConcurrent = 2 },
       ]
       maxConcurrent = 2
+    }
+  }, local.forgejo_image_config)
+
+  # --- The rest of the Forgejo mirrors. Each carries a .forgejo/workflows image
+  #     build and nothing else, so one `build` profile covers it, unlike
+  #     alex/munchbox above which also deploys Nomad jobs. One build at a time
+  #     per repo: forgejo-build-runner asks for 4 CPU and 4 GB, and several of
+  #     these can merge at once. ---
+  forgejo_image_repos = [
+    "s3-orchestrator",
+    "oracle-watchdog",
+    "nomad-temporal-jobs",
+    "cloudflare-log-collector",
+    "g3",
+    "flight-fetcher",
+  ]
+
+  forgejo_image_config = {
+    for repo in local.forgejo_image_repos : "alex/${repo}" => {
+      mode          = "forgejo"
+      forgejoUrl    = "http://forgejo.service.consul:30028"
+      vaultPath     = "forgejo/scaler"
+      profiles      = [{ label = "build", job = "forgejo-build-runner", maxConcurrent = 1 }]
+      maxConcurrent = 1
     }
   }
 
