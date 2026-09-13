@@ -154,7 +154,7 @@ job "forgejo-ci-runner" {
         #     The scaler still buckets dispatches by meta.labels, so a superset
         #     runner does not overshoot: one job is taken, then the process
         #     exits. ---
-        RUNNER_LABELS = "self-hosted:host,docker:docker://catthehacker/ubuntu:act-latest,ubuntu-latest:docker://catthehacker/ubuntu:act-latest,ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04,ops:docker://registry.munchbox.cc/ops-build-image:latest"
+        RUNNER_LABELS = "self-hosted:host,docker:docker://catthehacker/ubuntu:act-latest,ubuntu-latest:docker://catthehacker/ubuntu:act-latest,ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04,ops:docker://registry.munchbox.cc/ops-build-image:latest,cinc:docker://registry.munchbox.cc/cinc-runner:latest"
       }
 
       # --- Ephemeral one-shot, so a flat reservation carries no idle cost ---
