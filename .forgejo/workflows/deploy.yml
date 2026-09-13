@@ -67,16 +67,44 @@ jobs:
             exit 0
           fi
 
-          # A change anywhere under a job's directory redeploys that job, so
-          # edits to its files/ templates count too. Directory name is the job
-          # name by convention, and is what `make run JOB=` resolves.
+          # Job names come from the spec filenames, which is what `make run
+          # JOB=` resolves. The directory is not the job name: gh-token-renewer/
+          # holds github-token-renewer, and infrastructure/temporal/ and
+          # infrastructure/registry/ hold three and two specs each.
+          #
+          # A changed .hcl deploys that job alone. Anything else under the
+          # directory -- a files/ template, a script -- deploys every spec in
+          # the nearest ancestor directory holding one, because a shared
+          # template cannot be attributed to a single job.
           #
           # awk excludes deprecated/ rather than grep: grep exits 1 when it
           # matches nothing, so under pipefail a push touching no Nomad job --
           # the ordinary case -- would fail this step. awk exits 0 on empty
           # input.
           jobs=$(git diff --name-only "$base" "${{ github.sha }}" -- nomad/jobs/ \
-            | awk -F/ 'NF>=4 && $3 != "deprecated" {print $4}' \
+            | awk -F/ 'NF>=4 && $3 != "deprecated"' \
+            | while IFS= read -r path; do
+                case "$path" in
+                  *.hcl)
+                    name=$(basename "$path" .hcl)
+                    echo "${name%.nomad}"
+                    ;;
+                  *)
+                    dir=$(dirname "$path")
+                    while [ "$dir" != "nomad/jobs" ] && [ "$dir" != "." ]; do
+                      specs=$(find "$dir" -maxdepth 1 -name '*.hcl')
+                      if [ -n "$specs" ]; then
+                        for spec in $specs; do
+                          name=$(basename "$spec" .hcl)
+                          echo "${name%.nomad}"
+                        done
+                        break
+                      fi
+                      dir=$(dirname "$dir")
+                    done
+                    ;;
+                esac
+              done \
             | sort -u \
             | tr '\n' ' ')
 
