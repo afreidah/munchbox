@@ -78,7 +78,7 @@ default[cookbook]['bootstrap'] = {
       last_name: 'CI',
       email: 'forgejo-ci@munchbox.cc',
       password: nil,
-      key_path: '/etc/cinc-bootstrap/forgejo-ci.pem',
+      public_key_path: '/etc/cinc-bootstrap/forgejo-ci.pub',
     },
   ],
 }
@@ -98,13 +98,14 @@ default[cookbook]['vault_paths'] = {
     field: 'password',
   },
   # --- Keyed by username so a new extra_users entry needs one more path here
-  #     and nothing in the recipe. The secret must exist before the converge
-  #     that creates the user; the private key the server generates is written
-  #     to key_path, and uploading it back into Vault is what lets CI use it. ---
-  extra_user_passwords: {
+  #     and nothing in the recipe. terragrunt owns this secret: it generates the
+  #     password and the keypair, the server installs the public half at
+  #     user-create, and CI authenticates with the private half. ---
+  extra_user_credentials: {
     'forgejo-ci' => {
       path: 'secret/data/cinc-server/ci/forgejo',
-      field: 'password',
+      password_field: 'password',
+      public_key_field: 'public_key',
     },
   },
 }
