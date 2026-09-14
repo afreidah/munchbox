@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
-# Nomad Config - Scheduler and Node Pools
+# Nomad Config - Scheduler Algorithm, Preemption, Memory Oversubscription,
+# and Node Pools
 # -----------------------------------------------------------------------------
 
 include "root" {
