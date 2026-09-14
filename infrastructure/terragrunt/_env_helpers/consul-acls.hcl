@@ -154,15 +154,19 @@ locals {
       EOT
     }
 
-    # --- forgejo-ci-runner: the post-merge deploy records which commit it
-    #     deployed, and nothing else. It replaces the bootstrap token the
-    #     workflow read from Forgejo's secret store, so the whole point is the
-    #     narrowness: one key prefix, write, no ACLs, no services, no nodes. ---
+    # --- forgejo-ci-runner: records which commit it deployed, and reads and
+    #     writes terraform state, because the terragrunt workflow runs against
+    #     the Consul state backend. Sessions are what that backend takes its
+    #     state lock with. It replaces the bootstrap token the workflow read
+    #     from Forgejo's secret store, so the narrowness is the point: two key
+    #     prefixes, no ACLs, no services, no nodes. ---
     "forgejo-ci-runner" = {
-      description       = "Forgejo CI runner - record the deployed commit"
-      token_description = "Token for the Forgejo post-merge deploy"
+      description       = "Forgejo CI runner - record the deployed commit, read/write terraform state"
+      token_description = "Token for the Forgejo post-merge deploy and terragrunt runs"
       rules             = <<-EOT
         key_prefix "deploy/" { policy = "write" }
+        key_prefix "terraform/munchbox/" { policy = "write" }
+        session_prefix "" { policy = "write" }
       EOT
     }
 
