@@ -231,7 +231,7 @@ repos:
           env: FORGEJO_API_TOKEN
 
 daemon:
-  interval: 2m
+  interval: 30s
   log_file: /dev/stdout
   web:
     enabled: true
