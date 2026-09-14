@@ -13,6 +13,30 @@ terraform {
 }
 
 locals {
+  # --- the KV paths munchbox-env.sh reads, which the post-merge terragrunt
+  #     apply sources for its provider credentials. Keep in step with that
+  #     file: a path it reads and this list omits fails the run with an empty
+  #     variable rather than a permission error. ---
+  terragrunt_apply_secrets = [
+    "aptly-admin",
+    "consul/bootstrap-token",
+    "dns",
+    "forgejo",
+    "grafana",
+    "ibm-cloud",
+    "jellyfin",
+    "nomad/management-token",
+    "oauth2-proxy",
+    "oci/account",
+    "pihole/green",
+    "pihole/logan",
+    "postgres-shared/root",
+    "proxmox/api-token",
+    "s3-bucket/unified",
+    "s3-orchestrator",
+    "vaultwarden/master-password",
+  ]
+
   # --- shared base for the consul/nomad mTLS cert roles: allow_any_name, no domain restriction, ttl unset so the cert-manager's requested ttl governs ---
   cert_role_base = {
     allowed_domains             = []
@@ -347,6 +371,23 @@ inputs = {
         }
       EOT
     }
+
+    # --- terragrunt-apply: every path munchbox-env.sh reads, because the
+    #     post-merge apply sources that file to get its provider credentials.
+    #     Listed one by one rather than granted on secret/data/*, so the set is
+    #     reviewable and adding a path is a deliberate change. It is still broad
+    #     -- the consul bootstrap and nomad management tokens are in here -- so
+    #     the workflow's denylist, not this policy, is what keeps the runner
+    #     away from the leaves that would break it. ---
+    "terragrunt-apply" = {
+      policy = <<-EOT
+        %{~for path in local.terragrunt_apply_secrets~}
+        path "secret/data/${path}" {
+          capabilities = ["read"]
+        }
+        %{endfor~}
+      EOT
+    }
   }
 
   workload_extra_secrets = local.workload_extra_secrets
@@ -472,7 +513,7 @@ inputs = {
   # --- Service Tokens ---
   service_tokens = {
     "ci-runner" = {
-      policies   = ["image-signing", "cinc-upload"]
+      policies   = ["image-signing", "cinc-upload", "terragrunt-apply"]
       vault_path = "ci-runner"
       # --- vault_token stores the duration string as-given (unlike pki/ssh roles which store seconds) ---
       ttl = "8760h"

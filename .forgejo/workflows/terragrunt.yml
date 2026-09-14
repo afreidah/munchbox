@@ -1,0 +1,148 @@
+# -------------------------------------------------------------------------------
+# munchbox terragrunt plan / apply
+#
+# Separate from the post-merge deploy because applying infrastructure is gated on
+# a human reading the plan first. A push plans and stops there; applying is a
+# manual workflow_dispatch, which Forgejo surfaces as a Run workflow button.
+# Forgejo has no approval gates, so two runs is how that gate is expressed.
+#
+# Both modes resolve the same unit set from deploy/munchbox/terragrunt-last-sha,
+# so an apply runs exactly what its plan showed. That key advances only after a
+# successful apply, so merging several times and applying once misses nothing.
+#
+# Author: Alex Freidah / Project: Munchbox
+# -------------------------------------------------------------------------------
+
+name: Terragrunt
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type apply to run terragrunt apply against the planned units"
+        required: true
+        type: string
+
+env:
+  CONSUL_HTTP_ADDR: http://127.0.0.1:8500
+  # terragrunt defaults to tofu, and only `run` honours root.hcl's
+  # terraform_binary. A discovery command left on the default re-resolves
+  # providers against the OpenTofu registry and rewrites every lock file it
+  # touches.
+  TG_TF_PATH: terraform
+  TG_NON_INTERACTIVE: "true"
+
+jobs:
+  terragrunt:
+    name: Plan on push, apply on dispatch
+    runs-on: ops
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # --- a dispatch with anything other than `apply` stops here, so the
+      #     button cannot be hit by accident ---
+      - name: Require an explicit confirmation to apply
+        if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.confirm != 'apply' }}
+        run: |
+          echo "::error::confirm must be exactly 'apply'"
+          exit 1
+
+      - name: Resolve the unit set
+        id: units
+        env:
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          base=$(consul kv get deploy/munchbox/terragrunt-last-sha 2>/dev/null || true)
+
+          # No recorded base, or one this tree no longer contains (the mirror is
+          # force-pushed, so a recorded commit can vanish): seed the key and do
+          # nothing. Planning every unit instead would init 75 of them against
+          # every provider, and applying them is not what an empty baseline means.
+          if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "no usable base (got '${base:-<unset>}'); seeding baseline, nothing to do"
+            consul kv put deploy/munchbox/terragrunt-last-sha "${{ github.sha }}" >/dev/null
+            { echo "units="; echo "skipped="; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          cd infrastructure/terragrunt
+
+          # terragrunt's own selection: the units a git range affects plus the
+          # units downstream of them, in dependency order. Choosing changed
+          # directories by hand would miss the downstream half -- a changed
+          # generator whose consumer never re-applies writes nothing to Vault.
+          affected=$(terragrunt list --filter="[${base}...${{ github.sha }}]" --dag 2>/dev/null | awk 'NF' || true)
+
+          # Units that would break the run applying them: the first rewrites the
+          # VAULT_TOKEN this job is holding, the next three own its own policies
+          # and ACL tokens, and the last two can destroy machines.
+          deny='cluster/secrets/forgejo|cluster/vault-config|cluster/consul-acls|cluster/nomad-acls|proxmox/vms/|oci/vms/'
+
+          # grep exits 1 on no match, which under pipefail would fail the step on
+          # the ordinary case of a push touching no terragrunt unit.
+          units=$(printf '%s\n' "$affected" | awk 'NF' | grep -Ev "$deny" | tr '\n' ' ' || true)
+          skipped=$(printf '%s\n' "$affected" | awk 'NF' | grep -E "$deny" | tr '\n' ' ' || true)
+
+          echo "base:    $base"
+          echo "units:   ${units:-<none>}"
+          echo "by hand: ${skipped:-<none>}"
+
+          { echo "units=${units}"; echo "skipped=${skipped}"; } >> "$GITHUB_OUTPUT"
+
+      - name: Report units left for a human
+        if: ${{ steps.units.outputs.skipped != '' }}
+        run: |
+          for unit in ${{ steps.units.outputs.skipped }}; do
+            echo "::warning title=apply by hand::$unit changed but is denylisted"
+          done
+
+      - name: Plan or apply
+        if: ${{ steps.units.outputs.units != '' }}
+        env:
+          VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Provider credentials come from the committed env file, which reads
+          # every one of them out of Vault with the token above.
+          source ./munchbox-env.sh
+
+          cd infrastructure/terragrunt
+
+          filter=""
+          for unit in ${{ steps.units.outputs.units }}; do
+            filter="${filter} --filter=${unit#infrastructure/terragrunt/}"
+          done
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            terragrunt run --all apply ${filter}
+          else
+            terragrunt run --all plan ${filter}
+            echo "::notice title=plan only::run this workflow manually with confirm=apply to apply it"
+          fi
+
+      # --- only an apply advances the baseline, so a plan-only push leaves the
+      #     next run showing the same units ---
+      - name: Record the applied commit
+        if: ${{ github.event_name == 'workflow_dispatch' && steps.units.outputs.units != '' }}
+        env:
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          consul kv put deploy/munchbox/terragrunt-last-sha "${{ github.sha }}"
+
+          # Read back, so a silently-accepted write cannot pass as a success.
+          got=$(consul kv get deploy/munchbox/terragrunt-last-sha)
+          [ "$got" = "${{ github.sha }}" ] || {
+            echo "::error::readback mismatch: stored $got, expected ${{ github.sha }}"
+            exit 1
+          }
+          echo "recorded ${got}"
