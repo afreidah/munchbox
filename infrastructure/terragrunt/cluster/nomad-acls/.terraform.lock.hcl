@@ -6,6 +6,7 @@ provider "registry.terraform.io/hashicorp/nomad" {
   constraints = "~> 2.1"
   hashes = [
     "h1:WeUVRTFX4hjbndw+Iq/hx68Ka8YSvkqwQ5xeRbmZqwc=",
+    "h1:Zq3wICe1JldStd4DPpjihtTdKp7z5MSWdG1Jh3BVykA=",
     "zh:07444f16538eee2ae210020411f6e95f778b352800cf0398705659c0aa0a733f",
     "zh:11112cbfd762cb728d4d7d2e91c7abdaff0b5f0471dde923a3a742f28bb4ff9c",
     "zh:38eeb6d81fbd47a71ff3bf3c4db16dd86d4b20f5a1b80d0184b79e7ba07b4183",
@@ -26,6 +27,7 @@ provider "registry.terraform.io/hashicorp/vault" {
   constraints = "~> 5.0"
   hashes = [
     "h1:8wcXxEMo7XvCnrtZHSpAuWmRfYiZkWn2tssshB1BDzo=",
+    "h1:Hv644I6KtZ+2+13+bv+Ld5e/z5UmD6H7xQ2nSVl+enU=",
     "zh:16e23a37c0965938544af282a7bc13dabca445f462ab27829f98e936ace4d263",
     "zh:249fcf9da1a690fe9aa44a7421fad89a425afb0c2ce7eaf306d75daddd691af5",
     "zh:3d92af386049a229a428f21b938a22df61703447c8ceed65c73f111a64e627d2",

@@ -6,6 +6,7 @@ provider "registry.terraform.io/ibm-cloud/ibm" {
   constraints = "~> 2.0"
   hashes = [
     "h1:/t2QL3nEN4aEMr+/tTXHhzv6Ye0afCuOI8Fy+qGP374=",
+    "h1:t87QVSJ5kkcKfr7BhC0QDQMSzoksRvfU/3WbJwM66e0=",
     "zh:3c17ebc0ea9313a8d3c4cbcca2bc0a8984969c4fe1ac0eda5b8a58c304c6c220",
     "zh:65ac9d026d66ee3b4d31b9244fde9c2acaf3f6bab7368e338daab661e0868eb9",
     "zh:7428b099cd9eba2468dc0a55167bf1824fe7655b1f56392d4dfe31a46cf82f1c",

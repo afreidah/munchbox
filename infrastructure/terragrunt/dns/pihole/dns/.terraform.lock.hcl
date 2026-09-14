@@ -5,6 +5,7 @@ provider "registry.terraform.io/dklesev/pihole" {
   version     = "1.0.7"
   constraints = "~> 1.0"
   hashes = [
+    "h1:jEF7P8A2EU0isoiGkDL+ZNWdILFCmzhkOybjD8eM/mw=",
     "h1:yvrDuO2H9jKFn68jI2LOs8jWYjHSM9HVciC+264Oefo=",
     "zh:0a00a680ffe1cd2e59183df166d8b07e7107a33305ed603dfdb19f35b859b369",
     "zh:21951899f858e023f2d678a36378ad3bc9eef691d37da0edbf74b69364b549e0",

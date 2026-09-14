@@ -6,6 +6,7 @@ provider "registry.terraform.io/platacard/temporal" {
   constraints = "~> 0.19"
   hashes = [
     "h1:IetA/cJHmu7wfIYWBmIZkvZ1Gs+/CKWvy4zKw7dmtzE=",
+    "h1:SAbt9uE3hV+gw9rF/ZbtVXn3Nk0O8Ui7j6k6eqJUsps=",
     "zh:0a97602b4d9b4d930c17c338e1b2cc1a1a374be05328c2da311f1e29064e53cd",
     "zh:1cbead89c238b37f9697af5a814054ef77392c87c8ca2c9e64026cf2c6e26ca0",
     "zh:288bf77bb2e13aafd470e9bd1425f5e3af82926586ea7215d8543449fde95bf0",
