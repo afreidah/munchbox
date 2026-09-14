@@ -40,11 +40,20 @@ inputs = {
   }
 
   bot_management = {
-    # --- munchbox.cc: Free plan -> Bot Fight Mode (requires JS detections) + AI ---
+    # --- munchbox.cc: Free plan -> AI bot controls only.
+    #
+    # Bot Fight Mode is off. The free tier has no verified-bot allowance, so it
+    # challenges search engines alongside everything else: Google-Lens was taken
+    # from 192.178.13.165, a Google address, and a fetcher cannot solve a managed
+    # challenge. s3-orchestrator.munchbox.cc is a documentation site that exists
+    # to be indexed. JS detections go with it, since they only feed the scoring
+    # Bot Fight Mode acted on, and they inject a script into every page.
+    #
+    # AI bot blocking is unaffected and still turns away GPTBot and ClaudeBot. ---
     munchbox = {
       zone_id            = local.mz
-      fight_mode         = true
-      enable_js          = true
+      fight_mode         = false
+      enable_js          = false
       ai_bots_protection = "block"
       crawler_protection = "enabled"
     }
