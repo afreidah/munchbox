@@ -107,12 +107,26 @@ jobs:
         env:
           VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          # Set before sourcing, because the env file reads every credential out
+          # of Vault while it runs -- a CA it cannot open empties all of them.
+          # This is the chain the runner job mounts into each container.
+          VAULT_CACERT: /etc/ssl/certs/munchbox-ca.pem
         run: |
           set -euo pipefail
 
           # Provider credentials come from the committed env file, which reads
           # every one of them out of Vault with the token above.
           source ./munchbox-env.sh
+
+          # The env file describes a workstation: mTLS to Consul and Nomad with
+          # client certs under ~/.munchbox. The runner has neither and needs
+          # neither -- Consul answers plain HTTP on loopback because the runner
+          # shares the host network stack, and Nomad verifies with the mounted
+          # CA alone, exactly as the deploy workflow does.
+          unset CONSUL_CACERT CONSUL_CLIENT_CERT CONSUL_CLIENT_KEY
+          unset NOMAD_CLIENT_CERT NOMAD_CLIENT_KEY
+          export CONSUL_HTTP_ADDR=http://127.0.0.1:8500
+          export NOMAD_CACERT=/etc/ssl/certs/munchbox-ca.pem
 
           cd infrastructure/terragrunt
 

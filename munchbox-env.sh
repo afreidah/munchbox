@@ -14,24 +14,24 @@
 # -------------------------------------------------------------------------------
 
 # Vault
-export VAULT_ADDR=https://192.168.68.61:8200
-export VAULT_CACERT=~/.munchbox/vault/ca.crt
+export VAULT_ADDR="${VAULT_ADDR-https://192.168.68.61:8200}"
+export VAULT_CACERT="${VAULT_CACERT-$HOME/.munchbox/vault/ca.crt}"
 export VAULT_TOKEN=$(cat ~/.vault-token 2>/dev/null)
 
 # Bound the per-secret wait for a Vault that accepts the connection but stalls.
 export VAULT_CLIENT_TIMEOUT=5
 
 # Nomad
-export NOMAD_ADDR=https://192.168.68.61:4646
-export NOMAD_CACERT=~/.munchbox/nomad/ca.crt
-export NOMAD_CLIENT_CERT=~/.munchbox/nomad/client.crt
-export NOMAD_CLIENT_KEY=~/.munchbox/nomad/client.key
+export NOMAD_ADDR="${NOMAD_ADDR-https://192.168.68.61:4646}"
+export NOMAD_CACERT="${NOMAD_CACERT-$HOME/.munchbox/nomad/ca.crt}"
+export NOMAD_CLIENT_CERT="${NOMAD_CLIENT_CERT-$HOME/.munchbox/nomad/client.crt}"
+export NOMAD_CLIENT_KEY="${NOMAD_CLIENT_KEY-$HOME/.munchbox/nomad/client.key}"
 
 # Consul
-export CONSUL_HTTP_ADDR=https://192.168.68.61:8501
-export CONSUL_CACERT=~/.munchbox/consul/ca.crt
-export CONSUL_CLIENT_CERT=~/.munchbox/consul/client.crt
-export CONSUL_CLIENT_KEY=~/.munchbox/consul/client.key
+export CONSUL_HTTP_ADDR="${CONSUL_HTTP_ADDR-https://192.168.68.61:8501}"
+export CONSUL_CACERT="${CONSUL_CACERT-$HOME/.munchbox/consul/ca.crt}"
+export CONSUL_CLIENT_CERT="${CONSUL_CLIENT_CERT-$HOME/.munchbox/consul/client.crt}"
+export CONSUL_CLIENT_KEY="${CONSUL_CLIENT_KEY-$HOME/.munchbox/consul/client.key}"
 
 # Terragrunt
 export TG_STRICT_COMMANDS=false
