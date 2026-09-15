@@ -5,6 +5,7 @@ provider "registry.terraform.io/aminueza/minio" {
   version     = "3.38.0"
   constraints = "~> 3.0"
   hashes = [
+    "h1:gB9g7C3xMRBlQyZBEt0uaKLrF781IMhaKh1/1wXihLw=",
     "h1:pMAABHL33yuQ/h4wi8VjWAMC6MFKJ9rpTM8TiXeBiY0=",
     "zh:08e22db92ce25c4236b5deed5305362663e8b4ae93de3ae6e39af09331e960d9",
     "zh:3ec1f0b99302e77f7ad89d38c1c4b891988cc40082e19255f1fa9f9fda6b62e4",
@@ -27,6 +28,7 @@ provider "registry.terraform.io/hashicorp/vault" {
   constraints = ">= 4.0.0"
   hashes = [
     "h1:8wcXxEMo7XvCnrtZHSpAuWmRfYiZkWn2tssshB1BDzo=",
+    "h1:Hv644I6KtZ+2+13+bv+Ld5e/z5UmD6H7xQ2nSVl+enU=",
     "zh:16e23a37c0965938544af282a7bc13dabca445f462ab27829f98e936ace4d263",
     "zh:249fcf9da1a690fe9aa44a7421fad89a425afb0c2ce7eaf306d75daddd691af5",
     "zh:3d92af386049a229a428f21b938a22df61703447c8ceed65c73f111a64e627d2",

@@ -6,6 +6,7 @@ provider "registry.terraform.io/hashicorp/vault" {
   constraints = "~> 5.0"
   hashes = [
     "h1:8wcXxEMo7XvCnrtZHSpAuWmRfYiZkWn2tssshB1BDzo=",
+    "h1:Hv644I6KtZ+2+13+bv+Ld5e/z5UmD6H7xQ2nSVl+enU=",
     "zh:16e23a37c0965938544af282a7bc13dabca445f462ab27829f98e936ace4d263",
     "zh:249fcf9da1a690fe9aa44a7421fad89a425afb0c2ce7eaf306d75daddd691af5",
     "zh:3d92af386049a229a428f21b938a22df61703447c8ceed65c73f111a64e627d2",
@@ -26,6 +27,7 @@ provider "registry.terraform.io/maxlaverse/bitwarden" {
   constraints = "~> 0.12"
   hashes = [
     "h1:Rke+62Qj1g/4rR9HyyoR067z+dfPQaPTAgc7nZby+tI=",
+    "h1:ZpSkxez64F6+FGQTcexMwtnZFqsQfkVmMQcQQvgRYqY=",
     "zh:01acd6e3da51973cb1327859ba61282711af92d2efa51bf4613bcdb9a15f2443",
     "zh:375f1574dd11eca89e4ff9b99739af87b5f04d2cb6e99728c62c32ce24162556",
     "zh:5b176aa6e86a16010c60b6e4d0e0717b50a3ea0f935f6763f9fe392ec5290fc9",

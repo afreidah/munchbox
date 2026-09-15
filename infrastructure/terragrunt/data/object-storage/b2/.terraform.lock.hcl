@@ -3,8 +3,9 @@
 
 provider "registry.terraform.io/backblaze/b2" {
   version     = "0.12.1"
-  constraints = "0.12.1"
+  constraints = "~> 0.10"
   hashes = [
+    "h1:JuZ1L8O8rqjFjNttywUYMASnaFep1g3l95LB1jdvi+s=",
     "h1:Z+NjSzzoCP7A8p65qGab43e6fGQFsuoet2ghAPs4Emg=",
     "zh:4c7a3832f94bb2e46af0ce557bfee4227d4c94c7d626a243fdc58a48268b66ba",
     "zh:58279e49cb9d350b00670c16a7c15ee6f4c2b7b935f25240f490599da6ca674e",
@@ -16,9 +17,10 @@ provider "registry.terraform.io/backblaze/b2" {
 
 provider "registry.terraform.io/hashicorp/vault" {
   version     = "5.9.0"
-  constraints = "5.9.0"
+  constraints = ">= 4.0.0"
   hashes = [
     "h1:8wcXxEMo7XvCnrtZHSpAuWmRfYiZkWn2tssshB1BDzo=",
+    "h1:Hv644I6KtZ+2+13+bv+Ld5e/z5UmD6H7xQ2nSVl+enU=",
     "zh:16e23a37c0965938544af282a7bc13dabca445f462ab27829f98e936ace4d263",
     "zh:249fcf9da1a690fe9aa44a7421fad89a425afb0c2ce7eaf306d75daddd691af5",
     "zh:3d92af386049a229a428f21b938a22df61703447c8ceed65c73f111a64e627d2",

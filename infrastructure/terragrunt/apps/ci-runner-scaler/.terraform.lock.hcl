@@ -1,8 +1,11 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
 
 provider "registry.terraform.io/hashicorp/consul" {
   version     = "2.23.0"
-  constraints = "2.23.0"
+  constraints = "~> 2.20"
   hashes = [
+    "h1:ZJzXciFk6Ty9j+cJTu5sUTwIwLFwagl9R4+/1RR0Pt4=",
     "h1:qGbCkej2Co9H7Z8kTYxBcBN16oiUD0UxX0U506sve0U=",
     "zh:071c31abd9431488a2f9f0aae7f431aa209afc7396137db6d668bdc931122175",
     "zh:1782c35aa2b9fb4e0f2cfa2d087b63447f66b05541690072a2f0f3220bdb031f",

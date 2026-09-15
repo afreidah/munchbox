@@ -391,6 +391,12 @@ jobs:
         working-directory: infrastructure/terragrunt
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tfplugins
+          # --- placeholders for config-time requirements. validate runs with
+          #     -backend=false and never reaches either API, but terragrunt
+          #     resolves get_env before it parses and the telmate provider
+          #     rejects an empty pm_api_url during validate. ---
+          OCI_REGION: us-ashburn-1
+          PM_API_URL: https://proxmox.invalid:8006/api2/json
         run: |
           set -uo pipefail
           mkdir -p "$TF_PLUGIN_CACHE_DIR"

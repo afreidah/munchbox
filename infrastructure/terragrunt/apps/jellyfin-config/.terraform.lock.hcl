@@ -6,6 +6,7 @@ provider "registry.terraform.io/thephaseless/jellyfin" {
   constraints = "~> 0.1"
   hashes = [
     "h1:+hltAobwC2t8v6xYXsO4Lx1JvY02d+J/r9lmP/BWJsA=",
+    "h1:T9YbwZYzdsO4M811yeyMmO2TGJ84mqB4Ub9lttZ/VIA=",
     "zh:07da8e0ed645024368b84a07ca2992ff925d55bb42770bc214b6d31109125322",
     "zh:202c50fcaa403c42a8aad2db268b7757ccd6490ea6604df1daa2f5ef532d9c6d",
     "zh:3c058b5884e49ff7d83ddbac12835438b6f16da31c4b5b68bd7d16f86173037c",

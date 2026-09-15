@@ -6,6 +6,7 @@ provider "registry.terraform.io/hashicorp/nomad" {
   constraints = "~> 2.1"
   hashes = [
     "h1:WeUVRTFX4hjbndw+Iq/hx68Ka8YSvkqwQ5xeRbmZqwc=",
+    "h1:Zq3wICe1JldStd4DPpjihtTdKp7z5MSWdG1Jh3BVykA=",
     "zh:07444f16538eee2ae210020411f6e95f778b352800cf0398705659c0aa0a733f",
     "zh:11112cbfd762cb728d4d7d2e91c7abdaff0b5f0471dde923a3a742f28bb4ff9c",
     "zh:38eeb6d81fbd47a71ff3bf3c4db16dd86d4b20f5a1b80d0184b79e7ba07b4183",
