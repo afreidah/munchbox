@@ -54,6 +54,12 @@ berks-cookbooks
 *semgrep*
 *tfvars*
 
+# --- Terraform provider lock files ---
+# Versions are pinned in required_providers, which is what reproducibility
+# rests on. The lock file only adds per-platform hash verification, and on a
+# mixed amd64/arm64 runner that produces checksum failures instead of safety.
+.terraform.lock.hcl
+
 # --- Secrets & Credentials ---
 bootstrap-token.json
 .bitwarden/
