@@ -4,6 +4,7 @@
   "run_list": [
     "role[base]",
     "role[cinc_client]",
+    "recipe[munchbox_base::proxmox_vm]",
     "role[vault_agent]",
     "recipe[munchbox_base::sshd_ca]",
     "recipe[munchbox_base::vault_pki_trust]",

@@ -57,11 +57,11 @@ module "network" {
 # -----------------------------------------------------------------------------
 
 data "vault_generic_secret" "chef_validator" {
-  path = "${var.chef_validator_vault_mount}/data/${var.chef_validator_vault_name}"
+  path = "${var.chef_validator_vault_mount}/${var.chef_validator_vault_name}"
 }
 
 data "vault_generic_secret" "chef_data_bag_secret" {
-  path = "${var.chef_data_bag_secret_vault_mount}/data/${var.chef_data_bag_secret_vault_name}"
+  path = "${var.chef_data_bag_secret_vault_mount}/${var.chef_data_bag_secret_vault_name}"
 }
 
 locals {

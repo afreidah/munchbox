@@ -133,7 +133,10 @@ unset _mb_vault_target _mb_vault_host _mb_vault_port
 export NOMAD_TOKEN=$(vault kv get -field=token secret/nomad/management-token 2>/dev/null)
 
 # Consul
-export CONSUL_HTTP_TOKEN=$(vault kv get -field=token secret/consul/bootstrap-token 2>/dev/null)
+# A caller that already has a token keeps it, the way CONSUL_HTTP_ADDR works
+# above. The Vault read silences its own errors, so overwriting unconditionally
+# replaces a working token with an empty string the moment the read fails.
+export CONSUL_HTTP_TOKEN="${CONSUL_HTTP_TOKEN:-$(vault kv get -field=token secret/consul/bootstrap-token 2>/dev/null)}"
 # Terraform variable for consul-acls
 export TF_VAR_consul_bootstrap_token="$CONSUL_HTTP_TOKEN"
 
