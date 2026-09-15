@@ -107,6 +107,7 @@ jobs:
         env:
           VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
           VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
           # Set before sourcing, because the env file reads every credential out
           # of Vault while it runs -- a CA it cannot open empties all of them.
           # This is the chain the runner job mounts into each container.

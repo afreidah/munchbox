@@ -54,8 +54,8 @@ resource "proxmox_vm_qemu" "this" {
   }
 
   # Boot and agent
-  onboot = var.onboot
-  agent  = var.qemu_agent ? 1 : 0
+  start_at_node_boot = var.onboot
+  agent              = var.qemu_agent ? 1 : 0
 
   # GPU passthrough (optional)
   dynamic "hostpci" {

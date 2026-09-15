@@ -13,10 +13,9 @@
 # -----------------------------------------------------------------------------
 
 # --- adopt: read current creds from Vault (source of truth, no rotation) ---
-data "vault_kv_secret_v2" "existing" {
+data "vault_generic_secret" "existing" {
   count = var.manage_secret ? 0 : 1
-  mount = "secret"
-  name  = var.vault_kv_path
+  path  = "secret/data/${var.vault_kv_path}"
 }
 
 # --- new app: generate a password and seed Vault under the same path apps read ---
@@ -37,8 +36,8 @@ resource "vault_kv_secret_v2" "creds" {
 }
 
 locals {
-  role     = var.manage_secret ? var.app : data.vault_kv_secret_v2.existing[0].data[var.username_field]
-  password = var.manage_secret ? random_password.role[0].result : data.vault_kv_secret_v2.existing[0].data[var.password_field]
+  role     = var.manage_secret ? var.app : data.vault_generic_secret.existing[0].data[var.username_field]
+  password = var.manage_secret ? random_password.role[0].result : data.vault_generic_secret.existing[0].data[var.password_field]
 }
 
 resource "postgresql_role" "app" {

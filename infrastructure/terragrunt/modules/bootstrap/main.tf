@@ -56,14 +56,12 @@ module "network" {
 # modules/vaultwarden-secrets for prior art.
 # -----------------------------------------------------------------------------
 
-data "vault_kv_secret_v2" "chef_validator" {
-  mount = var.chef_validator_vault_mount
-  name  = var.chef_validator_vault_name
+data "vault_generic_secret" "chef_validator" {
+  path = "${var.chef_validator_vault_mount}/data/${var.chef_validator_vault_name}"
 }
 
-data "vault_kv_secret_v2" "chef_data_bag_secret" {
-  mount = var.chef_data_bag_secret_vault_mount
-  name  = var.chef_data_bag_secret_vault_name
+data "vault_generic_secret" "chef_data_bag_secret" {
+  path = "${var.chef_data_bag_secret_vault_mount}/data/${var.chef_data_bag_secret_vault_name}"
 }
 
 locals {
@@ -90,8 +88,8 @@ locals {
     chef_server_url                = var.chef_server_url
     chef_node_name                 = var.chef_node_name
     chef_validator_client_name     = var.chef_validator_client_name
-    chef_validator_key             = data.vault_kv_secret_v2.chef_validator.data[var.chef_validator_vault_field]
-    chef_encrypted_data_bag_secret = data.vault_kv_secret_v2.chef_data_bag_secret.data[var.chef_data_bag_secret_vault_field]
+    chef_validator_key             = data.vault_generic_secret.chef_validator.data[var.chef_validator_vault_field]
+    chef_encrypted_data_bag_secret = data.vault_generic_secret.chef_data_bag_secret.data[var.chef_data_bag_secret_vault_field]
     chef_run_list                  = var.chef_run_list
     cinc_version                   = var.cinc_version
 

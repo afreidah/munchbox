@@ -63,9 +63,9 @@ resource "proxmox_vm_qemu" "vm" {
   }
 
   # Boot and agent
-  onboot    = try(each.value.onboot, true)
-  agent     = try(each.value.qemu_agent, true) ? 1 : 0
-  skip_ipv6 = true
+  start_at_node_boot = try(each.value.onboot, true)
+  agent              = try(each.value.qemu_agent, true) ? 1 : 0
+  skip_ipv6          = true
 
   # --- telmate errors on reboot-needed changes when false; true lets apply reboot the VM itself. ---
   automatic_reboot = true

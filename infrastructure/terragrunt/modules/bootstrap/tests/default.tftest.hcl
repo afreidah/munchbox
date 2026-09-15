@@ -26,7 +26,7 @@ mock_provider "oci" {
 mock_provider "proxmox" {}
 
 mock_provider "vault" {
-  mock_data "vault_kv_secret_v2" {
+  mock_data "vault_generic_secret" {
     defaults = {
       data = {
         pem   = "-----BEGIN RSA PRIVATE KEY-----\nmock\n-----END RSA PRIVATE KEY-----"
@@ -230,15 +230,9 @@ run "chef_data_source_targets" {
     existing_security_group_id = "ocid1.securitylist.oc1..mock"
   }
 
-  # --- chef_validator data source reads from configured mount ---
+  # --- chef_validator reads the configured mount and name, as a KV v2 data path ---
   assert {
-    condition     = data.vault_kv_secret_v2.chef_validator.mount == "secret"
-    error_message = "chef_validator must be read from configured mount"
-  }
-
-  # --- chef_validator data source uses the configured secret name ---
-  assert {
-    condition     = data.vault_kv_secret_v2.chef_validator.name == "cinc/validator"
-    error_message = "chef_validator name must match var"
+    condition     = data.vault_generic_secret.chef_validator.path == "secret/data/cinc/validator"
+    error_message = "chef_validator must be read from the configured mount and name"
   }
 }

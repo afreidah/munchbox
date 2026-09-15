@@ -43,11 +43,10 @@ locals {
 # Resolved here rather than passed in, so a credential never travels through a
 # terragrunt input. It still lands in state, which is the real boundary.
 
-data "vault_kv_secret_v2" "bindings" {
+data "vault_generic_secret" "bindings" {
   for_each = local.vault_paths
 
-  mount = var.vault_mount
-  name  = each.key
+  path = "${var.vault_mount}/data/${each.key}"
 }
 
 locals {
@@ -58,7 +57,7 @@ locals {
       [for sb in w.secret_bindings : {
         name = sb.name
         type = "secret_text"
-        text = data.vault_kv_secret_v2.bindings[sb.vault_path].data[sb.vault_field]
+        text = data.vault_generic_secret.bindings[sb.vault_path].data[sb.vault_field]
       }]
     )
   }

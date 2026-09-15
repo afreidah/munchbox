@@ -168,8 +168,11 @@ export APTLY_PASS=$(vault kv get -field=password secret/aptly-admin 2>/dev/null)
 export IC_API_KEY=$(vault kv get -field=api_key secret/ibm-cloud 2>/dev/null)
 export IBMCLOUD_API_KEY="$IC_API_KEY"
 
-# s3-orchestrator admin CLI
-export S3O_ADMIN_TOKEN=$(vault kv get -field=ui_admin_key secret/s3-orchestrator 2>/dev/null)
+# s3-orchestrator admin CLI: requests are SigV4-signed as of v0.143.0, so the
+# root keypair replaces the admin token. Same Vault fields, which the config
+# now feeds to auth.root.
+export S3O_ACCESS_KEY_ID=$(vault kv get -field=ui_admin_key secret/s3-orchestrator 2>/dev/null)
+export S3O_SECRET_ACCESS_KEY=$(vault kv get -field=ui_admin_secret secret/s3-orchestrator 2>/dev/null)
 
 # PostgreSQL
 export PGUSER=$(vault kv get -field=username secret/postgres-shared/root 2>/dev/null)
