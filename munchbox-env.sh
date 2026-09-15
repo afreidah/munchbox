@@ -16,7 +16,9 @@
 # Vault
 export VAULT_ADDR="${VAULT_ADDR-https://192.168.68.61:8200}"
 export VAULT_CACERT="${VAULT_CACERT-$HOME/.munchbox/vault/ca.crt}"
-export VAULT_TOKEN=$(cat ~/.vault-token 2>/dev/null)
+# A caller that already has a token keeps it; the file is a login token, and
+# reading a missing one replaces the caller's with an empty string.
+export VAULT_TOKEN="${VAULT_TOKEN:-$(cat ~/.vault-token 2>/dev/null)}"
 
 # Bound the per-secret wait for a Vault that accepts the connection but stalls.
 export VAULT_CLIENT_TIMEOUT=5
