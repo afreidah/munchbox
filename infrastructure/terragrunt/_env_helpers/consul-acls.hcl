@@ -157,8 +157,9 @@ locals {
     # --- forgejo-ci-runner: records which commit it deployed, and reads and
     #     writes terraform state, because the terragrunt workflow runs against
     #     the Consul state backend. Sessions are what that backend takes its
-    #     state lock with. It replaces the bootstrap token the workflow read
-    #     from Forgejo's secret store, so the narrowness is the point: two key
+    #     state lock with. The remaining prefixes are the KV the planned units
+    #     manage. It replaces the bootstrap token the workflow read from
+    #     Forgejo's secret store, so the narrowness is the point: named key
     #     prefixes, no ACLs, no services, no nodes. ---
     "forgejo-ci-runner" = {
       description       = "Forgejo CI runner - record the deployed commit, read/write terraform state"
@@ -166,6 +167,9 @@ locals {
       rules             = <<-EOT
         key_prefix "deploy/" { policy = "write" }
         key_prefix "terraform/munchbox/" { policy = "write" }
+        key_prefix "github/token-renewer/" { policy = "write" }
+        key_prefix "prometheus/alerts/" { policy = "write" }
+        key_prefix "runners/config" { policy = "write" }
         session_prefix "" { policy = "write" }
       EOT
     }
