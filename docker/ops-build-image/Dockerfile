@@ -21,7 +21,8 @@ ENV ARCH_DL=${TARGETARCH}
 
 RUN set -eux; \
   apt-get update; \
-  apt-get -y install --no-install-recommends ca-certificates curl jq tar gzip unzip; \
+  apt-get -y install --no-install-recommends ca-certificates curl jq tar gzip unzip \
+    python3 python3-venv; \
   rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /tmp/bin
@@ -97,6 +98,14 @@ RUN --mount=type=cache,target=/go/pkg/mod \
   install -m0755 /go/bin/gotest /tmp/bin/gotest && \
   install -m0755 /go/bin/golangci-lint /tmp/bin/golangci-lint
 
+# --- checkov, in its own venv so the runtime image carries no pip. Pinned like
+#     every tool above: the terragrunt after_hook hard-fails on findings, so an
+#     unpinned version lands new rules as a surprise batch across every unit. ---
+ARG CHECKOV_VERSION="3.2.471"
+RUN set -eux; \
+  python3 -m venv /opt/checkov; \
+  /opt/checkov/bin/pip install --no-cache-dir "checkov==${CHECKOV_VERSION}"
+
 # ------------------------------------------------------------------------------
 # Stage 2: final - slim runtime image
 # ------------------------------------------------------------------------------
@@ -114,7 +123,7 @@ RUN set -eux; \
   apt-get update; \
   apt-get -y install --no-install-recommends \
     ca-certificates curl git jq make openssh-client \
-    nodejs npm; \
+    nodejs npm python3; \
   rm -rf /var/lib/apt/lists/*
 
 # --- Docker CLI (official static binary) ---
@@ -142,6 +151,11 @@ RUN set -eux; \
 # --- Copy all binaries from builder ---
 COPY --from=builder /tmp/bin/ /usr/local/bin/
 
+# --- checkov venv. Its shebang resolves to the system python3, which is why
+#     both stages sit on the same base image. ---
+COPY --from=builder /opt/checkov /opt/checkov
+RUN ln -s /opt/checkov/bin/checkov /usr/local/bin/checkov
+
 # --- Go runtime (needed for go test in CI) ---
 COPY --from=builder /usr/local/go /usr/local/go
 ENV PATH=/usr/local/go/bin:/usr/local/bin:$PATH GOPATH=/go
@@ -157,6 +171,7 @@ RUN set -eux; \
   tflint --version && \
   terragrunt --version && \
   trivy --version && \
+  checkov --version && \
   cosign version && \
   goreleaser --version && \
   docker --version && \
