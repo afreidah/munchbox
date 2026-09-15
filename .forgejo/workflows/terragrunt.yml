@@ -128,6 +128,13 @@ jobs:
           unset NOMAD_CLIENT_CERT NOMAD_CLIENT_KEY
           export CONSUL_HTTP_ADDR=http://127.0.0.1:8500
           export NOMAD_CACERT=/etc/ssl/certs/munchbox-ca.pem
+          export NOMAD_TOKEN='${{ secrets.NOMAD_TOKEN }}'
+
+          # A cross-platform lock file carries zh: for every platform but h1:
+          # only for the machine that generated it. The cache serves a
+          # pre-extracted package, which terraform can verify against h1: alone,
+          # so every install fails on a runner of a different architecture.
+          export TG_PROVIDER_CACHE=0
 
           cd infrastructure/terragrunt
 
