@@ -24,7 +24,7 @@
 data "vault_generic_secret" "user_password" {
   for_each = { for k, v in var.users : k => v if v.vault_path != null }
 
-  path = "${var.vault_mount}/data/${each.value.vault_path}"
+  path = "${var.vault_mount}/${each.value.vault_path}"
 }
 
 # -------------------------------------------------------------------------

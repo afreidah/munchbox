@@ -46,7 +46,7 @@ locals {
 data "vault_generic_secret" "bindings" {
   for_each = local.vault_paths
 
-  path = "${var.vault_mount}/data/${each.key}"
+  path = "${var.vault_mount}/${each.key}"
 }
 
 locals {

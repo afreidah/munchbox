@@ -232,7 +232,7 @@ run "chef_data_source_targets" {
 
   # --- chef_validator reads the configured mount and name, as a KV v2 data path ---
   assert {
-    condition     = data.vault_generic_secret.chef_validator.path == "secret/data/cinc/validator"
+    condition     = data.vault_generic_secret.chef_validator.path == "secret/cinc/validator"
     error_message = "chef_validator must be read from the configured mount and name"
   }
 }

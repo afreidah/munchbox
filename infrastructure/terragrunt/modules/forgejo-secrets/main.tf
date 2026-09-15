@@ -26,7 +26,7 @@ data "forgejo_repository" "repo" {
 data "vault_generic_secret" "secrets" {
   for_each = var.secrets
 
-  path = "${var.vault_mount}/data/${each.value.vault_path}"
+  path = "${var.vault_mount}/${each.value.vault_path}"
 }
 
 # -----------------------------------------------------------------------------

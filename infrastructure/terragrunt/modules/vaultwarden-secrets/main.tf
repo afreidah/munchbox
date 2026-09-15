@@ -25,7 +25,7 @@
 data "vault_generic_secret" "secrets" {
   for_each = var.login_items
 
-  path = "${var.vault_mount}/data/${each.value.vault_path}"
+  path = "${var.vault_mount}/${each.value.vault_path}"
 }
 
 # -----------------------------------------------------------------------------
@@ -64,7 +64,7 @@ resource "bitwarden_item_login" "logins" {
 data "vault_generic_secret" "secure_notes" {
   for_each = var.secure_note_items
 
-  path = "${var.vault_mount}/data/${each.value.vault_path}"
+  path = "${var.vault_mount}/${each.value.vault_path}"
 }
 
 resource "bitwarden_item_secure_note" "secure_notes" {

@@ -15,7 +15,7 @@
 # --- adopt: read current creds from Vault (source of truth, no rotation) ---
 data "vault_generic_secret" "existing" {
   count = var.manage_secret ? 0 : 1
-  path  = "secret/data/${var.vault_kv_path}"
+  path  = "secret/${var.vault_kv_path}"
 }
 
 # --- new app: generate a password and seed Vault under the same path apps read ---
