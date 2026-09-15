@@ -12,7 +12,7 @@ mock_provider "cloudflare" {}
 mock_provider "aws" {}
 
 mock_provider "vault" {
-  mock_data "vault_kv_secret_v2" {
+  mock_data "vault_generic_secret" {
     defaults = {
       data = { access_key = "MOCKKEY", secret_key = "mock-secret" }
     }
@@ -148,7 +148,7 @@ run "secret_bindings" {
 
   # --- two bindings drawing on one path is still one read ---
   assert {
-    condition     = length(data.vault_kv_secret_v2.bindings) == 1
+    condition     = length(data.vault_generic_secret.bindings) == 1
     error_message = "a path shared by several bindings must be read once"
   }
 }

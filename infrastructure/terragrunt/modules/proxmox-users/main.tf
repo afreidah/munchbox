@@ -21,11 +21,10 @@
 # VAULT SECRETS - Fetch passwords
 # -------------------------------------------------------------------------
 
-data "vault_kv_secret_v2" "user_password" {
+data "vault_generic_secret" "user_password" {
   for_each = { for k, v in var.users : k => v if v.vault_path != null }
 
-  mount = var.vault_mount
-  name  = each.value.vault_path
+  path = "${var.vault_mount}/data/${each.value.vault_path}"
 }
 
 # -------------------------------------------------------------------------
@@ -49,7 +48,7 @@ resource "proxmox_virtual_environment_user" "user" {
   user_id = each.value.user_id
   password = (
     each.value.vault_path != null
-    ? data.vault_kv_secret_v2.user_password[each.key].data[each.value.vault_password_key]
+    ? data.vault_generic_secret.user_password[each.key].data[each.value.vault_password_key]
     : each.value.password
   )
   comment = coalesce(each.value.comment, "Managed by Terraform")

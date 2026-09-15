@@ -11,7 +11,7 @@
 mock_provider "proxmox" {}
 
 mock_provider "vault" {
-  mock_data "vault_kv_secret_v2" {
+  mock_data "vault_generic_secret" {
     defaults = {
       data = { password = "mock-pw" }
     }
@@ -111,13 +111,13 @@ run "vault_lookup_filter" {
 
   # --- only the vault_path-having user appears in the data-source map ---
   assert {
-    condition     = length(data.vault_kv_secret_v2.user_password) == 1
+    condition     = length(data.vault_generic_secret.user_password) == 1
     error_message = "only the vault_path-having user triggers a vault lookup"
   }
 
   # --- prometheus user has vault_path so its data source exists ---
   assert {
-    condition     = contains(keys(data.vault_kv_secret_v2.user_password), "prometheus")
+    condition     = contains(keys(data.vault_generic_secret.user_password), "prometheus")
     error_message = "vault lookup must be for the 'prometheus' user"
   }
 }

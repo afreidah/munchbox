@@ -4,9 +4,11 @@
 #
 # Composition for the jellyfin-config module. The provider endpoint + api_key
 # come from Vault (secret/jellyfin) via TF_VAR_* exported by munchbox-env.sh;
-# the static settings live here and are json-encoded into the module inputs.
-# To codify new settings: pull current config from the jellyfin API, paste the
-# settings object below, then `terragrunt import` the singleton before applying.
+# the static settings live here. Attribute names are the provider's, which are
+# snake_case renderings of the Jellyfin API's PascalCase keys. An attribute
+# left out keeps whatever the server already has.
+# To codify new settings: pull current config from the jellyfin API, translate
+# the keys, then `terragrunt import` the singleton before applying.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -17,94 +19,98 @@ terraform {
 
 locals {
   encoding_configuration = {
-    EncodingThreadCount                                       = -1
-    EnableFallbackFont                                        = false
-    EnableAudioVbr                                            = false
-    DownMixAudioBoost                                         = 2
-    DownMixStereoAlgorithm                                    = "None"
-    MaxMuxingQueueSize                                        = 2048
-    EnableThrottling                                          = true
-    ThrottleDelaySeconds                                      = 180
-    EnableSegmentDeletion                                     = true
-    SegmentKeepSeconds                                        = 720
-    HardwareAccelerationType                                  = "nvenc"
-    EncoderAppPathDisplay                                     = "/usr/lib/jellyfin-ffmpeg/ffmpeg"
-    VaapiDevice                                               = "/dev/dri/renderD128"
-    QsvDevice                                                 = ""
-    EnableTonemapping                                         = false
-    EnableVppTonemapping                                      = false
-    EnableVideoToolboxTonemapping                             = false
-    TonemappingAlgorithm                                      = "bt2390"
-    TonemappingMode                                           = "auto"
-    TonemappingRange                                          = "auto"
-    TonemappingDesat                                          = 0
-    TonemappingPeak                                           = 100
-    TonemappingParam                                          = 0
-    VppTonemappingBrightness                                  = 16
-    VppTonemappingContrast                                    = 1
-    H264Crf                                                   = 23
-    H265Crf                                                   = 28
-    DeinterlaceDoubleRate                                     = false
-    DeinterlaceMethod                                         = "yadif"
-    EnableDecodingColorDepth10Hevc                            = true
-    EnableDecodingColorDepth10Vp9                             = true
-    EnableDecodingColorDepth10HevcRext                        = false
-    EnableDecodingColorDepth12HevcRext                        = false
-    EnableEnhancedNvdecDecoder                                = true
-    PreferSystemNativeHwDecoder                               = true
-    EnableIntelLowPowerH264HwEncoder                          = false
-    EnableIntelLowPowerHevcHwEncoder                          = false
-    EnableHardwareEncoding                                    = true
-    AllowHevcEncoding                                         = true
-    AllowAv1Encoding                                          = true
-    EnableSubtitleExtraction                                  = true
-    HardwareDecodingCodecs                                    = ["h264", "vc1", "hevc", "av1"]
-    AllowOnDemandMetadataBasedKeyframeExtractionForExtensions = ["mkv"]
+    encoding_thread_count                   = -1
+    enable_fallback_font                    = false
+    enable_audio_vbr                        = false
+    down_mix_audio_boost                    = 2
+    down_mix_stereo_algorithm               = "None"
+    max_muxing_queue_size                   = 2048
+    enable_throttling                       = true
+    throttle_delay_seconds                  = 180
+    enable_segment_deletion                 = true
+    segment_keep_seconds                    = 720
+    hardware_acceleration_type              = "nvenc"
+    encoder_app_path_display                = "/usr/lib/jellyfin-ffmpeg/ffmpeg"
+    vaapi_device                            = "/dev/dri/renderD128"
+    qsv_device                              = ""
+    enable_tonemapping                      = false
+    enable_vpp_tonemapping                  = false
+    enable_video_toolbox_tonemapping        = false
+    tonemapping_algorithm                   = "bt2390"
+    tonemapping_mode                        = "auto"
+    tonemapping_range                       = "auto"
+    tonemapping_desat                       = 0
+    tonemapping_peak                        = 100
+    tonemapping_param                       = 0
+    vpp_tonemapping_brightness              = 16
+    vpp_tonemapping_contrast                = 1
+    h264_crf                                = 23
+    h265_crf                                = 28
+    deinterlace_double_rate                 = false
+    deinterlace_method                      = "yadif"
+    enable_decoding_color_depth10_hevc      = true
+    enable_decoding_color_depth10_vp9       = true
+    enable_decoding_color_depth10_hevc_rext = false
+    enable_decoding_color_depth12_hevc_rext = false
+    enable_enhanced_nvdec_decoder           = true
+    prefer_system_native_hw_decoder         = true
+    enable_intel_low_power_h264_hw_encoder  = false
+    enable_intel_low_power_hevc_hw_encoder  = false
+    enable_hardware_encoding                = true
+    allow_hevc_encoding                     = true
+    allow_av1_encoding                      = true
+    enable_subtitle_extraction              = true
+    hardware_decoding_codecs                = ["h264", "vc1", "hevc", "av1"]
+
+    allow_on_demand_metadata_based_keyframe_extraction_for_extensions = ["mkv"]
   }
 
   livetv_configuration = {
-    EnableRecordingSubfolders                = false
-    EnableOriginalAudioWithEncodedRecordings = false
-    TunerHosts = [
+    enable_recording_subfolders                   = false
+    enable_original_audio_with_encoded_recordings = false
+
+    tuner_hosts = [
       {
-        Id                  = "1bdb95cd37bb4c4f879ff486cf3549d9"
-        Url                 = "http://ersatztv.service.consul:8409/iptv/channels.m3u"
-        Type                = "m3u"
-        ImportFavoritesOnly = false
-        AllowHWTranscoding  = false
+        id                    = "1bdb95cd37bb4c4f879ff486cf3549d9"
+        url                   = "http://ersatztv.service.consul:8409/iptv/channels.m3u"
+        type                  = "m3u"
+        import_favorites_only = false
+        allow_hw_transcoding  = false
         # true -> live-TV transcodes use the segmented fMP4/HLS container instead of a
-        # single continuous .ts, so EnableSegmentDeletion/SegmentKeepSeconds (720s) below
-        # actually bound them. A single-file .ts transcode is unbounded and once grew to
-        # 63G, filling nomad-client-04's root disk.
-        AllowFmp4TranscodingContainer = true
-        AllowStreamSharing            = true
-        FallbackMaxStreamingBitrate   = 30000000
-        EnableStreamLooping           = false
-        TunerCount                    = 0
-        IgnoreDts                     = true
-        ReadAtNativeFramerate         = true
+        # single continuous .ts, so enable_segment_deletion/segment_keep_seconds (720s)
+        # above actually bound them. A single-file .ts transcode is unbounded and once
+        # grew to 63G, filling nomad-client-04's root disk.
+        allow_fmp4_transcoding_container = true
+        allow_stream_sharing             = true
+        fallback_max_streaming_bitrate   = 30000000
+        enable_stream_looping            = false
+        tuner_count                      = 0
+        ignore_dts                       = true
+        read_at_native_framerate         = true
       },
     ]
-    ListingProviders = [
+
+    listing_providers = [
       {
-        Id               = "2dd2e37d7d82444cbb457977c197277f"
-        Type             = "xmltv"
-        Path             = "http://ersatztv.service.consul:8409/iptv/xmltv.xml"
-        EnabledTuners    = []
-        EnableAllTuners  = true
-        NewsCategories   = ["news", "journalism", "documentary", "current affairs"]
-        SportsCategories = ["sports", "basketball", "baseball", "football"]
-        KidsCategories   = ["kids", "family", "children", "childrens", "disney"]
-        MovieCategories  = ["movie"]
-        ChannelMappings  = []
+        id                = "2dd2e37d7d82444cbb457977c197277f"
+        type              = "xmltv"
+        path              = "http://ersatztv.service.consul:8409/iptv/xmltv.xml"
+        enabled_tuners    = []
+        enable_all_tuners = true
+        news_categories   = ["news", "journalism", "documentary", "current affairs"]
+        sports_categories = ["sports", "basketball", "baseball", "football"]
+        kids_categories   = ["kids", "family", "children", "childrens", "disney"]
+        movie_categories  = ["movie"]
+        channel_mappings  = []
       },
     ]
-    PrePaddingSeconds               = 0
-    PostPaddingSeconds              = 0
-    MediaLocationsCreated           = []
-    RecordingPostProcessorArguments = "\"{path}\""
-    SaveRecordingNFO                = true
-    SaveRecordingImages             = true
+
+    pre_padding_seconds                = 0
+    post_padding_seconds               = 0
+    media_locations_created            = []
+    recording_post_processor_arguments = "\"{path}\""
+    save_recording_nfo                 = true
+    save_recording_images              = true
   }
 
   system_configuration = null
@@ -112,7 +118,7 @@ locals {
   scheduled_tasks = {
     "guide-refresh" = {
       task_id  = "bea9b218c97bbf98c5dc1303bdb9a0ca"
-      triggers = [{ Type = "IntervalTrigger", IntervalTicks = 72000000000 }]
+      triggers = [{ type = "IntervalTrigger", interval_ticks = 72000000000 }]
     }
   }
 }
@@ -122,13 +128,8 @@ inputs = {
   jellyfin_endpoint = trimspace(split(" ", get_env("TF_VAR_jellyfin_endpoint", ""))[0])
   jellyfin_api_key  = get_env("TF_VAR_jellyfin_api_key", "")
 
-  # --- json-encode each settings object here; null passes through untouched ---
-  encoding_configuration_json = local.encoding_configuration == null ? null : jsonencode(local.encoding_configuration)
-  livetv_configuration_json   = local.livetv_configuration == null ? null : jsonencode(local.livetv_configuration)
-  system_configuration_json   = local.system_configuration == null ? null : jsonencode(local.system_configuration)
-
-  scheduled_tasks = {
-    for k, t in local.scheduled_tasks :
-    k => { task_id = t.task_id, triggers_json = jsonencode(t.triggers) }
-  }
+  encoding_configuration = local.encoding_configuration
+  livetv_configuration   = local.livetv_configuration
+  system_configuration   = local.system_configuration
+  scheduled_tasks        = local.scheduled_tasks
 }

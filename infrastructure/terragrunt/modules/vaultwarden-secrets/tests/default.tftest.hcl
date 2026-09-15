@@ -12,7 +12,7 @@
 mock_provider "bitwarden" {}
 
 mock_provider "vault" {
-  mock_data "vault_kv_secret_v2" {
+  mock_data "vault_generic_secret" {
     defaults = {
       data = {
         admin_password = "mock-pass"

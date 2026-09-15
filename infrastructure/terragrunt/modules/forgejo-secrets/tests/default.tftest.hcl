@@ -15,7 +15,7 @@ mock_provider "forgejo" {
 }
 
 mock_provider "vault" {
-  mock_data "vault_kv_secret_v2" {
+  mock_data "vault_generic_secret" {
     defaults = {
       data = { token = "mock-token-value", password = "mock-password" }
     }

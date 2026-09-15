@@ -22,11 +22,10 @@
 # VAULT SECRETS
 # -----------------------------------------------------------------------------
 
-data "vault_kv_secret_v2" "secrets" {
+data "vault_generic_secret" "secrets" {
   for_each = var.login_items
 
-  mount = var.vault_mount
-  name  = each.value.vault_path
+  path = "${var.vault_mount}/data/${each.value.vault_path}"
 }
 
 # -----------------------------------------------------------------------------
@@ -48,8 +47,8 @@ resource "bitwarden_item_login" "logins" {
 
   name      = each.value.name
   folder_id = each.value.folder_key != null ? bitwarden_folder.folders[each.value.folder_key].id : null
-  username  = each.value.username_field != null ? data.vault_kv_secret_v2.secrets[each.key].data[each.value.username_field] : null
-  password  = data.vault_kv_secret_v2.secrets[each.key].data[each.value.password_field]
+  username  = each.value.username_field != null ? data.vault_generic_secret.secrets[each.key].data[each.value.username_field] : null
+  password  = data.vault_generic_secret.secrets[each.key].data[each.value.password_field]
 
   uri {
     value = each.value.uri
@@ -62,11 +61,10 @@ resource "bitwarden_item_login" "logins" {
 # SECURE NOTE ITEMS
 # -----------------------------------------------------------------------------
 
-data "vault_kv_secret_v2" "secure_notes" {
+data "vault_generic_secret" "secure_notes" {
   for_each = var.secure_note_items
 
-  mount = var.vault_mount
-  name  = each.value.vault_path
+  path = "${var.vault_mount}/data/${each.value.vault_path}"
 }
 
 resource "bitwarden_item_secure_note" "secure_notes" {
@@ -76,6 +74,6 @@ resource "bitwarden_item_secure_note" "secure_notes" {
   folder_id = each.value.folder_key != null ? bitwarden_folder.folders[each.value.folder_key].id : null
   notes = join("\n\n", [
     lookup(each.value, "notes", "Synced from HashiCorp Vault"),
-    data.vault_kv_secret_v2.secure_notes[each.key].data[each.value.content_field],
+    data.vault_generic_secret.secure_notes[each.key].data[each.value.content_field],
   ])
 }

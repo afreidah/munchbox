@@ -23,11 +23,10 @@ data "forgejo_repository" "repo" {
 # -----------------------------------------------------------------------------
 # Read secrets from Vault KV to sync to Forgejo.
 
-data "vault_kv_secret_v2" "secrets" {
+data "vault_generic_secret" "secrets" {
   for_each = var.secrets
 
-  mount = var.vault_mount
-  name  = each.value.vault_path
+  path = "${var.vault_mount}/data/${each.value.vault_path}"
 }
 
 # -----------------------------------------------------------------------------
@@ -40,5 +39,5 @@ resource "forgejo_repository_action_secret" "secrets" {
 
   repository_id = data.forgejo_repository.repo.id
   name          = each.value.secret_name
-  data          = data.vault_kv_secret_v2.secrets[each.key].data[each.value.vault_field]
+  data          = data.vault_generic_secret.secrets[each.key].data[each.value.vault_field]
 }
