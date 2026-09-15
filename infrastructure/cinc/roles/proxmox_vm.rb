@@ -13,6 +13,8 @@ description 'Proxmox-hosted nomad-client VM; runs base + cinc_client'
 run_list(
   'role[base]',
   'role[cinc_client]',
+  # --- qemu-guest-agent; gives the hypervisor graceful shutdown, guest IP reporting, and fs-freeze on backup. ---
+  'recipe[munchbox_base::proxmox_vm]',
   'role[vault_agent]',
   # --- SSH CA wiring; AFTER vault_agent so /run/vault-agent/token exists when vault_fetch runs. Default principal (root => ['root']) is correct since these nodes SSH as root. ---
   'recipe[munchbox_base::sshd_ca]',

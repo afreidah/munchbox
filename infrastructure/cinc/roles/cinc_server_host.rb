@@ -16,6 +16,8 @@ description 'The cinc/chef server itself; runs base + cinc_server::* + cinc_clie
 run_list(
   'role[base]',
   'role[cinc_client]',
+  # --- qemu-guest-agent; gives the hypervisor graceful shutdown, guest IP reporting, and fs-freeze on backup. ---
+  'recipe[munchbox_base::proxmox_vm]',
   'role[vault_agent]',
   'recipe[munchbox_base::vault_pki_trust]',
   'role[vault_cert_manager]',
