@@ -143,7 +143,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.139.1"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.145.5"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -459,9 +459,6 @@ rate_limit:
     - "192.168.0.0/16"
     - "127.0.0.1/32"
 
-admin:
-  token: "{{ .Data.data.admin_token }}"
-
 cache:
   enabled: true
   max_size: "32MB"
@@ -511,10 +508,16 @@ replication:
   concurrency: 4
   unhealthy_threshold: "5m"
 
+# The keypair this deployment administers itself with: it signs admin API
+# requests, logs into the dashboard, and reaches every bucket. Reuses the
+# values the dashboard login used before v0.143.0, so no new secret is needed.
+auth:
+  root:
+    access_key_id: "{{ .Data.data.ui_admin_key }}"
+    secret_access_key: "{{ .Data.data.ui_admin_secret }}"
+
 ui:
   enabled: true
-  admin_key: "{{ .Data.data.ui_admin_key }}"
-  admin_secret: "{{ .Data.data.ui_admin_secret }}"
   session_secret: "{{ .Data.data.session_secret }}"
   force_secure_cookies: true
 

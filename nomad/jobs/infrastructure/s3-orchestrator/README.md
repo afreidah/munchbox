@@ -8,7 +8,7 @@ through here.
 
 ## Image
 
-`registry.munchbox.cc/s3-orchestrator:v0.139.1`
+`registry.munchbox.cc/s3-orchestrator:v0.145.5`
 
 ## Hostname / exposure
 
