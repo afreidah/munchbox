@@ -33,6 +33,10 @@ env:
   # touches.
   TG_TF_PATH: terraform
   TG_NON_INTERACTIVE: "true"
+  # Every unit unpacks its own provider binaries with the cache off, so all 55
+  # starting at once starves plugin startup and terraform gives up waiting on
+  # the handshake.
+  TG_PARALLELISM: "12"
 
 jobs:
   terragrunt:
