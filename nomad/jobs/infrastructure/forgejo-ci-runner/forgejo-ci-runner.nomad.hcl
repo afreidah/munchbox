@@ -30,7 +30,7 @@ job "forgejo-ci-runner" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "batch"
-  node_pool   = "oracle"
+  node_pool   = "all"
 
   # --- Dispatched per queued job; meta carries the target repo + minted token ---
   parameterized {
@@ -53,6 +53,13 @@ job "forgejo-ci-runner" {
       attribute = "${meta.tier}"
       operator  = "!="
       value     = "micro"
+    }
+
+    # --- A CI job must not be able to starve the ingress VIP ---
+    constraint {
+      attribute = "${meta.role}"
+      operator  = "!="
+      value     = "ingress"
     }
 
     # --- Host network so a workflow container reaches cluster services at their
