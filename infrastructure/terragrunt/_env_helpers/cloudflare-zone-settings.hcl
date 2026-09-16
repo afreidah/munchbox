@@ -109,6 +109,28 @@ locals {
     }
   }
 
+  # --- Redirect Rules. Hugo writes every page as <path>/index.html, and nginx
+  #     serves it at both /<path>/ and /<path>/index.html, so a crawler that
+  #     probes the second form finds a second URL with the same title. The
+  #     pages already carry a canonical tag and the sitemap lists only the
+  #     pretty form, so real search engines collapse them; this makes the
+  #     origin say so too, with a 301 instead of a 200.
+  #
+  # The target strips the trailing "index.html" - ten characters, keeping the
+  # slash before it - so /guides/x/index.html lands on /guides/x/ and the bare
+  # /index.html lands on /. ---
+  redirect_rulesets = {
+    munchbox = {
+      zone_id = local.zones.munchbox
+      name    = "default"
+      rules = [{
+        description       = "s3-orchestrator: strip index.html"
+        expression        = "(http.host eq \"s3-orchestrator.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
+        target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
+      }]
+    }
+  }
+
   dnssec_zones = {
     munchbox    = { zone_id = local.zones.munchbox }
     alexfreidah = { zone_id = local.zones.alexfreidah, multi_signer = true }
@@ -119,6 +141,7 @@ inputs = {
   zone_settings         = local.zone_settings
   zone_settings_numeric = local.zone_settings_numeric
   cache_rulesets        = local.cache_rulesets
+  redirect_rulesets     = local.redirect_rulesets
   dnssec_zones          = local.dnssec_zones
   cloudflare_api_token  = dependency.cloudflare_tokens.outputs.token_values["zonecfg"]
 }

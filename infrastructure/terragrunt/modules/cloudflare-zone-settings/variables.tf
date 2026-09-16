@@ -50,6 +50,33 @@ variable "cache_rulesets" {
   default = {}
 }
 
+variable "redirect_rulesets" {
+  description = "Map of http_request_dynamic_redirect rulesets, one per zone. Rules are evaluated in order and all use the redirect action; target_expression is a Cloudflare expression, not a literal URL."
+  type = map(object({
+    zone_id     = string
+    name        = string
+    description = optional(string, "")
+    rules = list(object({
+      expression            = string
+      target_expression     = string
+      description           = optional(string, "")
+      enabled               = optional(bool, true)
+      status_code           = optional(number, 301)
+      preserve_query_string = optional(bool, true)
+    }))
+  }))
+  default = {}
+
+  validation {
+    condition = alltrue(flatten([
+      for r in var.redirect_rulesets : [
+        for rule in r.rules : contains([301, 302, 303, 307, 308], rule.status_code)
+      ]
+    ]))
+    error_message = "Redirect status_code must be one of 301, 302, 303, 307 or 308."
+  }
+}
+
 variable "dnssec_zones" {
   description = "Map of logical zone name to DNSSEC config; status is forced active. multi_signer/presigned/use_nsec3 must mirror live or the zone re-signs (new DS record). Cloudflare Registrar submits the DS automatically; external registrars need the DS output registered by hand."
   type = map(object({
