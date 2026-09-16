@@ -81,7 +81,11 @@ jobs:
           # units downstream of them, in dependency order. Choosing changed
           # directories by hand would miss the downstream half -- a changed
           # generator whose consumer never re-applies writes nothing to Vault.
-          affected=$(terragrunt list --filter="[${base}...${{ github.sha }}]" --dag 2>/dev/null | awk 'NF' || true)
+          # list reports repo-relative paths, find reports them relative to the
+          # terragrunt root. Normalize here so the two agree: a mismatch makes
+          # the dependency lookup below silently find nothing.
+          affected=$(terragrunt list --filter="[${base}...${{ github.sha }}]" --dag 2>/dev/null \
+            | awk 'NF { sub(/^infrastructure\/terragrunt\//, "", $1); print $1 }' || true)
 
           # A dependency block is resolved by running `terraform output` inside
           # the dependency's directory, which only answers once that unit has
@@ -187,7 +191,7 @@ jobs:
 
           filter=""
           for unit in ${{ steps.units.outputs.units }}; do
-            filter="${filter} --filter=${unit#infrastructure/terragrunt/}"
+            filter="${filter} --filter=${unit}"
           done
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
