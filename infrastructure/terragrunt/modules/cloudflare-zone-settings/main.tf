@@ -63,6 +63,41 @@ resource "cloudflare_ruleset" "cache" {
 }
 
 # -----------------------------------------------------------------------------
+# REDIRECT RULESETS
+# -----------------------------------------------------------------------------
+
+# --- The target is an expression, not a literal, so a rule can rewrite the
+#     path it matched rather than sending every hit to one URL. ---
+resource "cloudflare_ruleset" "redirect" {
+  for_each = var.redirect_rulesets
+
+  zone_id     = each.value.zone_id
+  name        = each.value.name
+  description = each.value.description
+  kind        = "zone"
+  phase       = "http_request_dynamic_redirect"
+
+  rules = [
+    for rule in each.value.rules : {
+      action      = "redirect"
+      expression  = rule.expression
+      description = rule.description
+      enabled     = rule.enabled
+
+      action_parameters = {
+        from_value = {
+          status_code = rule.status_code
+          target_url = {
+            expression = rule.target_expression
+          }
+          preserve_query_string = rule.preserve_query_string
+        }
+      }
+    }
+  ]
+}
+
+# -----------------------------------------------------------------------------
 # DNSSEC
 # -----------------------------------------------------------------------------
 

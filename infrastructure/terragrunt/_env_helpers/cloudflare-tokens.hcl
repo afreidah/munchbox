@@ -62,10 +62,14 @@ locals {
     # (Cache Rules). Those outrank the browser_cache_ttl zone setting, so without
     # them the codified baseline can be silently overridden by a dashboard rule
     # that nothing here can even read. Zone-scoped, same two zones as the rest.
+    #
+    # Dynamic URL Redirects covers the http_request_dynamic_redirect ruleset
+    # (Single Redirects), which is a separate permission from Cache Settings:
+    # without it the provider's dry-run POST comes back 403 and the apply fails.
     zonecfg = {
       name = "munchbox-zone-settings-tls-dnssec"
       policies = [{
-        permission_groups = ["Zone Settings Read", "Zone Settings Write", "DNS Read", "DNS Write", "Cache Settings Read", "Cache Settings Write"]
+        permission_groups = ["Zone Settings Read", "Zone Settings Write", "DNS Read", "DNS Write", "Cache Settings Read", "Cache Settings Write", "Dynamic URL Redirects Read", "Dynamic URL Redirects Write"]
         resources = {
           "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_munchbox_zone_id}"    = "*"
           "com.cloudflare.api.account.zone.${local.root.locals.cloudflare_alexfreidah_zone_id}" = "*"

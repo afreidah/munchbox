@@ -34,6 +34,17 @@ variables {
       }]
     }
   }
+  redirect_rulesets = {
+    munchbox = {
+      zone_id = "0123456789abcdef0123456789abcdef"
+      name    = "default"
+      rules = [{
+        description       = "strip index.html"
+        expression        = "(http.host eq \"s3-orchestrator.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
+        target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
+      }]
+    }
+  }
   dnssec_zones = {
     munchbox    = { zone_id = "zone-mb" }
     alexfreidah = { zone_id = "zone-af", multi_signer = true }
@@ -87,6 +98,29 @@ run "fan_out_per_entry" {
     error_message = "cache rule must set_cache_settings with both TTL modes respect_origin"
   }
 
+  # --- redirect ruleset lands on the dynamic redirect phase ---
+  assert {
+    condition     = cloudflare_ruleset.redirect["munchbox"].phase == "http_request_dynamic_redirect"
+    error_message = "redirect rulesets must use the http_request_dynamic_redirect phase"
+  }
+
+  # --- 301 by default, and the target is an expression rather than a literal,
+  #     so the rule rewrites the path it matched ---
+  assert {
+    condition = alltrue([
+      cloudflare_ruleset.redirect["munchbox"].rules[0].action == "redirect",
+      cloudflare_ruleset.redirect["munchbox"].rules[0].action_parameters.from_value.status_code == 301,
+      cloudflare_ruleset.redirect["munchbox"].rules[0].action_parameters.from_value.target_url.expression != "",
+    ])
+    error_message = "redirect rule must be a 301 whose target is an expression"
+  }
+
+  # --- query strings survive the redirect by default ---
+  assert {
+    condition     = cloudflare_ruleset.redirect["munchbox"].rules[0].action_parameters.from_value.preserve_query_string
+    error_message = "a redirect must preserve the query string unless told otherwise"
+  }
+
   # --- one cloudflare_zone_dnssec per zone ---
   assert {
     condition     = length(cloudflare_zone_dnssec.this) == 2
@@ -117,6 +151,7 @@ run "empty_inputs_no_resources" {
     zone_settings         = {}
     zone_settings_numeric = {}
     cache_rulesets        = {}
+    redirect_rulesets     = {}
     dnssec_zones          = {}
   }
 
@@ -130,6 +165,12 @@ run "empty_inputs_no_resources" {
   assert {
     condition     = length(cloudflare_zone_setting.numeric) == 0
     error_message = "empty zone_settings_numeric -> no cloudflare_zone_setting resources"
+  }
+
+  # --- no rulesets of either phase when their maps are empty ---
+  assert {
+    condition     = length(cloudflare_ruleset.cache) == 0 && length(cloudflare_ruleset.redirect) == 0
+    error_message = "empty ruleset maps -> no cloudflare_ruleset resources"
   }
 
   # --- no dnssec when the map is empty ---
