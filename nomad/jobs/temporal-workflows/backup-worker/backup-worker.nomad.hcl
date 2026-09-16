@@ -149,7 +149,7 @@ job "backup-worker" {
         {{ with secret "secret/data/postgres-shared/root" }}
         PGPASSWORD={{ .Data.data.password }}
         {{ end }}
-        {{ with secret "secret/data/s3-bucket/unified" }}
+        {{ with secret "secret/data/s3-identity/temporal-backups-worker" }}
         S3_ACCESS_KEY={{ .Data.data.access_key }}
         S3_SECRET_KEY={{ .Data.data.secret_key }}
         {{ end }}

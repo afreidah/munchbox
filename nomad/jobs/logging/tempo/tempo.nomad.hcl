@@ -213,8 +213,8 @@ storage:
     s3:
       endpoint: s3.munchbox.cc
       bucket: tempo-traces
-      access_key: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.access_key }}{{ end }}"
-      secret_key: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.secret_key }}{{ end }}"
+      access_key: "{{ with secret "secret/data/s3-identity/tempo" }}{{ .Data.data.access_key }}{{ end }}"
+      secret_key: "{{ with secret "secret/data/s3-identity/tempo" }}{{ .Data.data.secret_key }}{{ end }}"
       insecure: false
       forcepathstyle: true
     wal:
