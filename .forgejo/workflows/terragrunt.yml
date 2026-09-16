@@ -83,6 +83,33 @@ jobs:
           # generator whose consumer never re-applies writes nothing to Vault.
           affected=$(terragrunt list --filter="[${base}...${{ github.sha }}]" --dag 2>/dev/null | awk 'NF' || true)
 
+          # A dependency block is resolved by running `terraform output` inside
+          # the dependency's directory, which only answers once that unit has
+          # been initialized. The selection above adds the units downstream of a
+          # change and never the upstream ones they read from, so a small set
+          # leaves those uninitialized and every dependent dies on "Required
+          # plugins are not installed". It went unnoticed while the recorded
+          # baseline was stale, because a run covering every unit initializes
+          # them all as a side effect. Walk the graph and pull the closure in.
+          deps_file=$(mktemp)
+          terragrunt find --dependencies --format=json \
+            | jq -r '.[] | select(.dependencies) | .path as $p | .dependencies[] | "\($p) \(.)"' > "$deps_file"
+
+          affected=$(printf '%s\n' "$affected" | awk '
+            NR==FNR { dep[$1] = dep[$1] " " $2; next }
+            NF      { queue[++n] = $1 }
+            END {
+              for (i = 1; i <= n; i++) {
+                u = queue[i]
+                if (u in seen) continue
+                seen[u] = 1
+                c = split(dep[u], d, " ")
+                for (j = 1; j <= c; j++) if (d[j] != "" && !(d[j] in seen)) queue[++n] = d[j]
+              }
+              for (u in seen) print u
+            }
+          ' "$deps_file" - | sort)
+
           # Units that would break the run applying them: the first rewrites the
           # VAULT_TOKEN this job is holding, the next three own its own policies
           # and ACL tokens, and the last two can destroy machines. The rest
