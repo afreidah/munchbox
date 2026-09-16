@@ -62,6 +62,25 @@ job "forgejo-ci-runner" {
       value     = "ingress"
     }
 
+    # --- On-prem only. The runner mounts /mnt/gdrive for its terragrunt cache
+    #     and that NFS is not exported to the cloud nodes, which reach the
+    #     homelab over WireGuard where NFS is both far too chatty and a hang
+    #     risk. Docker would create an empty directory for the bind rather than
+    #     fail, so a runner placed there would quietly get a cold cache.
+    #
+    #     It also keeps the pool one architecture. The oracle arm nodes would
+    #     otherwise share a cache with the amd64 ones, and a lock file carries
+    #     h1: only for the machine that generated it.
+    #
+    #     Its own constraint because the two above do not exclude oracle: those
+    #     nodes carry no tier or role meta at all, and a missing attribute
+    #     satisfies a != constraint. ---
+    constraint {
+      attribute = "${meta.cloud}"
+      operator  = "!="
+      value     = "oracle"
+    }
+
     # --- Host network so a workflow container reaches cluster services at their
     #     Consul addresses, matching how the daemon's jobs resolved them ---
     network {
@@ -139,10 +158,17 @@ job "forgejo-ci-runner" {
           # than fetched, because it cannot be fetched: Vault serves the chain
           # over a connection secured by that same CA, so a client that does not
           # already trust it is refused before it can download it.
-          options: "--dns=192.168.68.64 --dns=192.168.68.62 -v /opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/munchbox-ca.pem:ro"
+          # The terragrunt cache is mounted from the shared NFS rather than left
+          # in the job container: every workflow container is thrown away, so a
+          # cache inside one is cold on the next run and 55 units re-download
+          # every provider. That both wasted the download and filled the
+          # runner's root filesystem, which is what surfaced as "no space left
+          # on device" part-way through a plan.
+          options: "--dns=192.168.68.64 --dns=192.168.68.62 -v /opt/nomad/tls/vault-intermediate-ca.pem:/etc/ssl/certs/munchbox-ca.pem:ro -v /mnt/gdrive/ci-cache/terragrunt:/ci-cache/terragrunt"
           valid_volumes:
             - /var/run/docker.sock
             - /opt/nomad/tls/vault-intermediate-ca.pem
+            - /mnt/gdrive/ci-cache/terragrunt
           docker_host: unix:///var/run/docker.sock
         EOF
         destination = "local/config.yaml"
