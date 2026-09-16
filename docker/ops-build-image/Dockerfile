@@ -129,7 +129,7 @@ RUN set -eux; \
 # --- Bitwarden CLI, which the terragrunt bitwarden provider shells out to.
 #     From npm because upstream ships no arm64 release binary and this image
 #     is multi-arch; the CLI is JavaScript, so npm serves every platform. ---
-ARG BW_VERSION="2026.8.0"
+ARG BW_VERSION="2024.9.0"
 RUN set -eux; \
   npm install -g --no-fund --no-audit "@bitwarden/cli@${BW_VERSION}"; \
   npm cache clean --force
