@@ -69,7 +69,7 @@ locals {
   # --- The bundle is built in s3-orchestrator and published to the artifacts
   #     bucket under a versioned key. Pinned, never "latest", so republishing
   #     cannot change what is deployed during an unrelated apply. ---
-  edge_worker_version = "v0.139.1"
+  edge_worker_version = "v0.145.5"
 
   # --- Everything but the credentials, which can only be read from inputs. ---
   edge_artifact = {
