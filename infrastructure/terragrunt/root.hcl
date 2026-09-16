@@ -64,8 +64,15 @@ locals {
     spot_type          = "persistent"
   }
 
+  # --- OCIDs and the key fingerprint are identifiers, not credentials; only the
+  #     API private key is secret. The compartment is the tenancy root, so those
+  #     two OCIDs are the same value. ---
   oci_defaults = {
-    compartment_id = get_env("OCI_COMPARTMENT_ID", "")
+    compartment_id = "ocid1.tenancy.oc1..aaaaaaaaeyhaous2t76u676i73cr4wi2turtytmu2j2muyiyvrboqpsp5z7a"
+    tenancy_ocid   = "ocid1.tenancy.oc1..aaaaaaaaeyhaous2t76u676i73cr4wi2turtytmu2j2muyiyvrboqpsp5z7a"
+    user_ocid      = "ocid1.user.oc1..aaaaaaaavxaqr23tfhp2sv73yau5ha6vadqgaa7ihmbmozyuf2o26if7na2a"
+    fingerprint    = "12:b2:5c:ed:6b:e8:f5:6d:6a:d5:21:c9:4c:06:3a:6f"
+    region         = "us-phoenix-1"
   }
 
   proxmox_defaults = {

@@ -126,6 +126,14 @@ RUN set -eux; \
     nodejs npm python3; \
   rm -rf /var/lib/apt/lists/*
 
+# --- Bitwarden CLI, which the terragrunt bitwarden provider shells out to.
+#     From npm because upstream ships no arm64 release binary and this image
+#     is multi-arch; the CLI is JavaScript, so npm serves every platform. ---
+ARG BW_VERSION="2026.8.0"
+RUN set -eux; \
+  npm install -g --no-fund --no-audit "@bitwarden/cli@${BW_VERSION}"; \
+  npm cache clean --force
+
 # --- Docker CLI (official static binary) ---
 ARG DOCKER_VERSION="29.7.2"
 RUN set -eux; \
@@ -172,6 +180,7 @@ RUN set -eux; \
   terragrunt --version && \
   trivy --version && \
   checkov --version && \
+  bw --version && \
   cosign version && \
   goreleaser --version && \
   docker --version && \

@@ -18,9 +18,9 @@ locals {
 
 inputs = {
   compartment_id = local.root.locals.oci_defaults.compartment_id
-  # --- IAM users/groups must live in the tenancy root; falls back to compartment_id, which is the tenancy here ---
-  tenancy_ocid       = get_env("OCI_TENANCY_OCID", local.root.locals.oci_defaults.compartment_id)
-  region             = get_env("OCI_REGION")
+  # --- IAM users/groups must live in the tenancy root ---
+  tenancy_ocid       = local.root.locals.oci_defaults.tenancy_ocid
+  region             = local.root.locals.oci_defaults.region
   vault_display_name = "munchbox-vault-unseal"
   vault_type         = "DEFAULT"
   key_display_name   = "vault-auto-unseal-key"

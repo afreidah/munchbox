@@ -124,6 +124,9 @@ job "forgejo-ci-runner" {
         container:
           network: host
           privileged: true
+          # Every label in RUNNER_LABELS resolves to a :latest tag, so a layer
+          # cached on the host shadows a new push until it is pulled again.
+          force_pull: true
           # pki_int signs the Nomad and Vault server certs, so a workflow that
           # talks to either needs its chain. It is mounted from the host rather
           # than fetched, because it cannot be fetched: Vault serves the chain
