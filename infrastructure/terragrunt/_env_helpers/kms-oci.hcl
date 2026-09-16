@@ -21,6 +21,9 @@ inputs = {
   # --- IAM users/groups must live in the tenancy root ---
   tenancy_ocid       = local.root.locals.oci_defaults.tenancy_ocid
   region             = local.root.locals.oci_defaults.region
+  user_ocid          = local.root.locals.oci_defaults.user_ocid
+  fingerprint        = local.root.locals.oci_defaults.fingerprint
+  private_key        = get_env("OCI_PRIVATE_KEY", "")
   vault_display_name = "munchbox-vault-unseal"
   vault_type         = "DEFAULT"
   key_display_name   = "vault-auto-unseal-key"

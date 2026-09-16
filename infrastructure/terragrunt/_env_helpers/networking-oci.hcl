@@ -57,6 +57,14 @@ locals {
 }
 
 inputs = {
+  # --- OCI provider config; the empty provider block above reads these off the
+  #     environment, since a runner has no ~/.oci/config to fall back to ---
+  tenancy_ocid = local.root.locals.oci_defaults.tenancy_ocid
+  user_ocid    = local.root.locals.oci_defaults.user_ocid
+  fingerprint  = local.root.locals.oci_defaults.fingerprint
+  region       = local.root.locals.oci_defaults.region
+  private_key  = get_env("OCI_PRIVATE_KEY", "")
+
   provider_type = "oci"
   name          = "oracle-node-1"
   vpc_cidr      = local.root.locals.network_cidrs.oci

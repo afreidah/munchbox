@@ -22,6 +22,9 @@ locals {
       compartment_id     = local.root.locals.oci_defaults.compartment_id
       user_ocid          = local.root.locals.oci_defaults.user_ocid
       region             = local.root.locals.oci_defaults.region
+      tenancy_ocid       = local.root.locals.oci_defaults.tenancy_ocid
+      fingerprint        = local.root.locals.oci_defaults.fingerprint
+      private_key        = get_env("OCI_PRIVATE_KEY", "")
       bucket_name        = "munchbox-s3-orchestrator"
       storage_tier       = "Standard"
       versioning_enabled = false
