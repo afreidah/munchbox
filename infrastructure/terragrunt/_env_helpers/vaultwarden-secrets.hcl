@@ -11,6 +11,17 @@
 
 terraform {
   source = "${get_repo_root()}/infrastructure/terragrunt/modules/vaultwarden-secrets"
+
+  # --- The provider drives the Bitwarden CLI, which takes an exclusive lock on
+  #     .bitwarden/data.json for every call. Terraform refreshes this unit's
+  #     items concurrently by default, so the losers fail the plan with ELOCKED.
+  #     Six items serialised costs seconds; the alternative is the provider's
+  #     embedded client, which is a community reimplementation this unit's
+  #     master password does not belong behind. ---
+  extra_arguments "serial_bitwarden_cli" {
+    commands  = ["plan", "apply", "destroy", "refresh"]
+    arguments = ["-parallelism=1"]
+  }
 }
 
 inputs = {
