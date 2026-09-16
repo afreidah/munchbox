@@ -143,6 +143,19 @@ jobs:
           # so every install fails on a runner of a different architecture.
           export TG_PROVIDER_CACHE=0
 
+          # The job container's writable layer is capped well below what 55
+          # units of provider installs need, and both the unpacked modules and
+          # the checkout live in it, so a run dies part-way with ENOSPC while
+          # the host still has tens of gigabytes free. The runner mounts the
+          # shared disk for exactly this; point the cache at it.
+          #
+          # Set here rather than in the job's env: munchbox-env.sh exports this
+          # variable itself, and it is sourced above, so anything set earlier is
+          # overwritten before terragrunt ever sees it.
+          export TG_DOWNLOAD_DIR=/ci-cache/terragrunt/download
+          export TERRAGRUNT_DOWNLOAD="$TG_DOWNLOAD_DIR"
+          mkdir -p "$TG_DOWNLOAD_DIR"
+
           cd infrastructure/terragrunt
 
           filter=""
