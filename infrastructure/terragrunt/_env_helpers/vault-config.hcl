@@ -37,6 +37,26 @@ locals {
     "vaultwarden/master-password",
   ]
 
+  # --- the per-app KV paths the modules read directly, which munchbox-env.sh
+  #     never touches: postgres-database reads secret/<leaf> for an existing
+  #     credential, vaultwarden-secrets reads the items it syncs. A path the
+  #     policy omits reads back as "no secret found", not a permission error. ---
+  module_read_secrets = [
+    "aptly",
+    "deluge",
+    "flight-fetcher",
+    "g3",
+    "lidarr",
+    "prowlarr",
+    "radarr",
+    "readarr",
+    "sonarr",
+    "ssh/break-glass",
+    "temporal",
+    "trivy-dashboard",
+    "vaultwarden",
+  ]
+
   # --- shared base for the consul/nomad mTLS cert roles: allow_any_name, no domain restriction, ttl unset so the cert-manager's requested ttl governs ---
   cert_role_base = {
     allowed_domains             = []
@@ -381,7 +401,7 @@ inputs = {
     #     away from the leaves that would break it. ---
     "terragrunt-apply" = {
       policy = <<-EOT
-        %{~for path in local.terragrunt_apply_secrets~}
+        %{~for path in concat(local.terragrunt_apply_secrets, local.module_read_secrets)~}
         path "secret/data/${path}" {
           capabilities = ["read"]
         }
