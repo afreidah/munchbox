@@ -386,6 +386,13 @@ inputs = {
           capabilities = ["read"]
         }
         %{endfor~}
+        # --- the vault provider issues itself a short-TTL child token before
+        #     reading anything, which bounds the lease on every secret a plan
+        #     pulls into state. A child cannot exceed its parent's policies, so
+        #     this grants no path the list above withholds. ---
+        path "auth/token/create" {
+          capabilities = ["update"]
+        }
       EOT
     }
   }
