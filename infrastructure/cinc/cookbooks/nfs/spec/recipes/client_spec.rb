@@ -53,6 +53,57 @@ RSpec.describe 'nfs::client' do
     end
   end
 
+  it 'declares no nfs_shared_directory resources when shared_directories is empty (the default)' do
+    expect(chef_run.find_resources(:nfs_shared_directory)).to be_empty
+  end
+
+  context 'with a shared directory declared via attributes' do
+    cached(:shared_dir_run) do
+      allow(::File).to receive(:directory?).and_call_original
+      allow(::File).to receive(:directory?).with('/mnt/gdrive').and_return(false)
+      # --- only_if shell guard on the directory; stub positive so it fires ---
+      stub_command('mountpoint -q /mnt/gdrive').and_return(true)
+      ChefSpec::SoloRunner.new(step_into: %w(nfs_mount nfs_shared_directory)) do |node|
+        node.normal['nfs']['client']['mounts'] = [
+          { 'mount_point' => '/mnt/gdrive', 'device' => 'mccoy:/mnt/gdrive' },
+        ]
+        node.normal['nfs']['client']['shared_directories'] = [
+          { 'path' => '/mnt/gdrive/ci-cache/terragrunt', 'mount_point' => '/mnt/gdrive',
+            'mode' => '1777' },
+        ]
+      end.converge(described_recipe)
+    end
+
+    it 'declares the nfs_shared_directory keyed by path' do
+      expect(shared_dir_run).to create_nfs_shared_directory('/mnt/gdrive/ci-cache/terragrunt')
+        .with(mount_point: '/mnt/gdrive', mode: '1777')
+    end
+
+    it 'creates the directory recursively with the requested mode' do
+      expect(shared_dir_run).to create_directory('/mnt/gdrive/ci-cache/terragrunt')
+        .with(owner: 'root', group: 'root', mode: '1777', recursive: true)
+    end
+
+    # --- the guard is what keeps a create off the underlying filesystem when
+    #     the server is down, where the mount would then hide it ---
+    it 'gates the create on the share being mounted' do
+      expect(shared_dir_run.directory('/mnt/gdrive/ci-cache/terragrunt').only_if.first.command)
+        .to eq('mountpoint -q /mnt/gdrive')
+    end
+  end
+
+  context 'with a shared directory outside its declared mount' do
+    it 'refuses to create it' do
+      expect do
+        ChefSpec::SoloRunner.new(step_into: %w(nfs_shared_directory)) do |node|
+          node.normal['nfs']['client']['shared_directories'] = [
+            { 'path' => '/srv/elsewhere', 'mount_point' => '/mnt/gdrive' },
+          ]
+        end.converge(described_recipe)
+      end.to raise_error(Chef::Exceptions::ValidationFailed, /is not under/)
+    end
+  end
+
   context 'with both mounts + extra_mounts populated' do
     cached(:two_mounts_run) do
       allow(::File).to receive(:directory?).and_call_original

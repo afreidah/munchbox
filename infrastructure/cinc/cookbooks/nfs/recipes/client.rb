@@ -28,3 +28,12 @@ end
     options m['options'] if m['options']
   end
 end
+
+(client['shared_directories'] || []).each do |d|
+  nfs_shared_directory d['path'] do
+    mount_point d['mount_point']
+    owner       d['owner'] if d['owner']
+    group       d['group'] if d['group']
+    mode        d['mode']  if d['mode']
+  end
+end

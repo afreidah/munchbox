@@ -49,6 +49,10 @@ default_attributes(
         { mount_point: '/mnt/gdrive',           device: 'mccoy:/mnt/gdrive' },
         { mount_point: '/mnt/gdrive-secondary', device: 'mccoy:/mnt/gdrive-secondary' },
       ],
+      # --- Same structure the proxmox fleet asserts. One filesystem, so whichever node converges first creates it; declared here too so the share is whole even if that fleet is rebuilt. These nodes are ingress and never run CI themselves. ---
+      shared_directories: [
+        { path: '/mnt/gdrive/ci-cache/terragrunt', mount_point: '/mnt/gdrive', mode: '1777' },
+      ],
     },
   }
 )

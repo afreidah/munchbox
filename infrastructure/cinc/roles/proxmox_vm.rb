@@ -57,6 +57,14 @@ default_attributes(
         { mount_point: '/mnt/gdrive',           device: 'mccoy:/mnt/gdrive' },
         { mount_point: '/mnt/gdrive-secondary', device: 'mccoy:/mnt/gdrive-secondary' },
       ],
+      # --- Structure the share is expected to carry. One filesystem, so whichever node converges first creates it and the rest confirm it; declared by every role that mounts gdrive rather than only by the consumer, so it survives any one fleet being rebuilt. ---
+      shared_directories: [
+        # The forgejo CI runner binds this into every workflow container for the
+        # terragrunt cache. The job container's writable layer is far too small
+        # for 55 units of provider installs, so without somewhere durable a plan
+        # dies part-way with ENOSPC. 1777 until the container's uid is pinned.
+        { path: '/mnt/gdrive/ci-cache/terragrunt', mount_point: '/mnt/gdrive', mode: '1777' },
+      ],
     },
   }
 )
