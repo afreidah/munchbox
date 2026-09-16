@@ -153,10 +153,19 @@ job "cleanup-worker" {
       }
 
       # --- SSH CA - signed client certificate ---
+      # --- The cert is signed for 24h and the worker parses it once, at
+      #     startup, so a worker that outlives its cert authenticates with an
+      #     expired one and every node refuses it: "attempted methods [none
+      #     publickey], no supported methods remain", on all of them at once.
+      #     Restarting on re-render is what makes the new cert take effect.
+      #     Temporal retries whatever activity the restart interrupts.
+      #
+      #     Removable once the worker re-reads its credentials per connection
+      #     rather than caching them for the life of the process. ---
       template {
         destination = "secrets/ssh-client-cert.pub"
         perms       = "0644"
-        change_mode = "noop"
+        change_mode = "restart"
         data        = <<-EOF
 {{ with secret "secret/data/ssh/backup-worker" }}{{ $pub := .Data.data.public_key }}{{ with secret "ssh-client-signer/sign/client-service" (printf "public_key=%s" $pub) "valid_principals=root,ubuntu" }}
 {{ .Data.signed_key }}
