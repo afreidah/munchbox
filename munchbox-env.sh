@@ -61,19 +61,50 @@ export APTLY_PREFIX=s3:munchbox:
 # apt.munchbox.cc; this only affects publishing tooling that reads APTLY_ENDPOINT.
 export APTLY_ENDPOINT=http://aptly.service.consul:8089
 
+# -------------------------------------------------------------------------------
+# Secret lookups
+#
+# Every read below goes through _mb_secret, which records a failure instead of
+# exporting an empty string. An empty credential is not inert: it travels into
+# a provider and comes back as whatever that provider makes of it, three layers
+# from the cause. An unreadable secret/ibm-cloud surfaces as "token is
+# malformed: token contains an invalid number of segments"; an unreadable
+# secret/edge-proxy/b2 surfaces as "no secret found", which reads as missing
+# rather than forbidden. The read is the only place that still knows what
+# actually went wrong, so it is where the complaint belongs.
+# -------------------------------------------------------------------------------
+_mb_missing=()
+
+# _mb_secret VAR FIELD PATH - export VAR from a Vault field, or record why not.
+# stderr is captured rather than discarded, so the recorded reason is Vault's.
+_mb_secret() {
+  local var=$1 field=$2 path=$3 out rc
+  out=$(vault kv get -field="$field" "$path" 2>&1)
+  rc=$?
+  if ((rc != 0)); then
+    _mb_missing+=("${path}#${field}: ${out%%$'\n'*}")
+    return 0
+  fi
+  if [[ -z $out ]]; then
+    _mb_missing+=("${path}#${field}: read succeeded but the field is empty")
+    return 0
+  fi
+  export "${var}=${out}"
+}
+
 # Vaultwarden (for Terraform/Terragrunt bitwarden provider)
 # Set your personal Vaultwarden master password before running vaultwarden-secrets
-export VAULTWARDEN_MASTER_PASSWORD="$(vault kv get -field=password secret/vaultwarden/master-password)"
+_mb_secret VAULTWARDEN_MASTER_PASSWORD password secret/vaultwarden/master-password
 
 # Proxmox (for Terraform/Terragrunt)
 export PM_API_URL=https://192.168.68.65:8006/api2/json
-export PM_API_TOKEN_ID="$(vault kv get -field=id secret/proxmox/api-token)"
-export PM_API_TOKEN_SECRET="$(vault kv get -field=secret secret/proxmox/api-token)"
+_mb_secret PM_API_TOKEN_ID id secret/proxmox/api-token
+_mb_secret PM_API_TOKEN_SECRET secret secret/proxmox/api-token
 
 # Oracle Cloud (for Terraform/Terragrunt)
 # OCI provider uses ~/.oci/config for auth
-export OCI_COMPARTMENT_ID="$(vault kv get -field=compartment_id secret/oci/account)"
-export OCI_USER_OCID="$(vault kv get -field=user_ocid secret/oci/account)"
+_mb_secret OCI_COMPARTMENT_ID compartment_id secret/oci/account
+_mb_secret OCI_USER_OCID user_ocid secret/oci/account
 export OCI_REGION="us-phoenix-1"
 
 # IBM Cloud (for Terraform/Terragrunt)
@@ -127,62 +158,85 @@ _mb_vault_port="${_mb_vault_target##*:}"
 if ! timeout 2 bash -c "echo > /dev/tcp/${_mb_vault_host}/${_mb_vault_port}" 2>/dev/null; then
   [[ $- == *i* ]] && echo "munchbox-env: Vault unreachable at ${_mb_vault_host}:${_mb_vault_port}; skipping secret lookups." >&2
   unset _mb_vault_target _mb_vault_host _mb_vault_port
+  unset -f _mb_secret
+  unset _mb_missing
   return 0 2>/dev/null || exit 0
 fi
 unset _mb_vault_target _mb_vault_host _mb_vault_port
 
 # Nomad
-export NOMAD_TOKEN=$(vault kv get -field=token secret/nomad/management-token 2>/dev/null)
+_mb_secret NOMAD_TOKEN token secret/nomad/management-token
 
 # Consul
 # A caller that already has a token keeps it, the way CONSUL_HTTP_ADDR works
-# above. The Vault read silences its own errors, so overwriting unconditionally
-# replaces a working token with an empty string the moment the read fails.
-export CONSUL_HTTP_TOKEN="${CONSUL_HTTP_TOKEN:-$(vault kv get -field=token secret/consul/bootstrap-token 2>/dev/null)}"
+# above: overwriting unconditionally would replace a working token the moment
+# the read fails.
+[[ -n ${CONSUL_HTTP_TOKEN:-} ]] || _mb_secret CONSUL_HTTP_TOKEN token secret/consul/bootstrap-token
 # Terraform variable for consul-acls
-export TF_VAR_consul_bootstrap_token="$CONSUL_HTTP_TOKEN"
+export TF_VAR_consul_bootstrap_token="${CONSUL_HTTP_TOKEN:-}"
 
 # OAuth2-Proxy (for Terraform/Terragrunt)
-export OAUTH2_PROXY_CLIENT_ID=$(vault kv get -field=client_id secret/oauth2-proxy 2>/dev/null)
-export OAUTH2_PROXY_CLIENT_SECRET=$(vault kv get -field=client_secret secret/oauth2-proxy 2>/dev/null)
-export OAUTH2_PROXY_COOKIE_SECRET=$(vault kv get -field=cookie_secret secret/oauth2-proxy 2>/dev/null)
+_mb_secret OAUTH2_PROXY_CLIENT_ID client_id secret/oauth2-proxy
+_mb_secret OAUTH2_PROXY_CLIENT_SECRET client_secret secret/oauth2-proxy
+_mb_secret OAUTH2_PROXY_COOKIE_SECRET cookie_secret secret/oauth2-proxy
 
 # Cloudflare (for Terraform/Terragrunt)
-export CLOUDFLARE_API_TOKEN=$(vault kv get -field=cloudflare_api_token secret/dns 2>/dev/null)
+_mb_secret CLOUDFLARE_API_TOKEN cloudflare_api_token secret/dns
 
 # Pi-hole (for Terraform/Terragrunt)
 # NOTE: Using TF_VAR_ prefix to avoid conflict with pihole provider's PIHOLE_PASSWORD env var
-export TF_VAR_pihole_password_primary=$(vault kv get -field=password secret/pihole/green 2>/dev/null)
-export TF_VAR_pihole_password_secondary=$(vault kv get -field=password secret/pihole/logan 2>/dev/null)
+_mb_secret TF_VAR_pihole_password_primary password secret/pihole/green
+_mb_secret TF_VAR_pihole_password_secondary password secret/pihole/logan
 
 # Forgejo (for Terraform/Terragrunt)
-export FORGEJO_API_TOKEN=$(vault kv get -field=api_token secret/forgejo 2>/dev/null)
+_mb_secret FORGEJO_API_TOKEN api_token secret/forgejo
 
 # Grafana (for Terraform/Terragrunt dashboard provisioning)
-export TF_VAR_grafana_admin_user=$(vault kv get -field=admin_user secret/grafana 2>/dev/null)
-export TF_VAR_grafana_admin_password=$(vault kv get -field=admin_password secret/grafana 2>/dev/null)
+_mb_secret TF_VAR_grafana_admin_user admin_user secret/grafana
+_mb_secret TF_VAR_grafana_admin_password admin_password secret/grafana
 
 # Jellyfin (for Terraform/Terragrunt config provisioning)
-export TF_VAR_jellyfin_endpoint=$(vault kv get -field=endpoint secret/jellyfin 2>/dev/null)
-export TF_VAR_jellyfin_api_key=$(vault kv get -field=api_key secret/jellyfin 2>/dev/null)
+_mb_secret TF_VAR_jellyfin_endpoint endpoint secret/jellyfin
+_mb_secret TF_VAR_jellyfin_api_key api_key secret/jellyfin
 
 # Aptly
-export APTLY_PASS=$(vault kv get -field=password secret/aptly-admin 2>/dev/null)
+_mb_secret APTLY_PASS password secret/aptly-admin
 
 # IBM Cloud
-export IC_API_KEY=$(vault kv get -field=api_key secret/ibm-cloud 2>/dev/null)
-export IBMCLOUD_API_KEY="$IC_API_KEY"
+_mb_secret IC_API_KEY api_key secret/ibm-cloud
+export IBMCLOUD_API_KEY="${IC_API_KEY:-}"
 
 # s3-orchestrator admin CLI: requests are SigV4-signed as of v0.143.0, so the
 # root keypair replaces the admin token. Same Vault fields, which the config
 # now feeds to auth.root.
-export S3O_ACCESS_KEY_ID=$(vault kv get -field=ui_admin_key secret/s3-orchestrator 2>/dev/null)
-export S3O_SECRET_ACCESS_KEY=$(vault kv get -field=ui_admin_secret secret/s3-orchestrator 2>/dev/null)
+_mb_secret S3O_ACCESS_KEY_ID ui_admin_key secret/s3-orchestrator
+_mb_secret S3O_SECRET_ACCESS_KEY ui_admin_secret secret/s3-orchestrator
 
 # PostgreSQL
-export PGUSER=$(vault kv get -field=username secret/postgres-shared/root 2>/dev/null)
-export PGPASSWORD=$(vault kv get -field=password secret/postgres-shared/root 2>/dev/null)
+_mb_secret PGUSER username secret/postgres-shared/root
+_mb_secret PGPASSWORD password secret/postgres-shared/root
 
 # AWS CLI
-export AWS_ACCESS_KEY_ID=$(vault kv get -field=access_key secret/s3-bucket/unified 2>/dev/null)
-export AWS_SECRET_ACCESS_KEY=$(vault kv get -field=secret_key secret/s3-bucket/unified 2>/dev/null)
+_mb_secret AWS_ACCESS_KEY_ID access_key secret/s3-bucket/unified
+_mb_secret AWS_SECRET_ACCESS_KEY secret_key secret/s3-bucket/unified
+
+# -------------------------------------------------------------------------------
+# Report
+#
+# One legible failure at the top of the run, naming the path and the field and
+# Vault's own reason, instead of a different confusing provider error per unit
+# further down.
+# -------------------------------------------------------------------------------
+if ((${#_mb_missing[@]} > 0)); then
+  {
+    echo "munchbox-env: ${#_mb_missing[@]} secret lookup(s) failed:"
+    printf '  %s\n' "${_mb_missing[@]}"
+    echo "munchbox-env: those credentials are unset. Fix the grant or the field before running terragrunt."
+  } >&2
+  unset -f _mb_secret
+  unset _mb_missing
+  return 1 2>/dev/null || exit 1
+fi
+
+unset -f _mb_secret
+unset _mb_missing
