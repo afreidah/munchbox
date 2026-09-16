@@ -19,9 +19,9 @@ locals {
   # --- keyed by s3-orchestrator/<leaf> == provider ---
   s3_orchestrator_buckets = {
     oci = {
-      compartment_id     = get_env("OCI_COMPARTMENT_ID", "")
-      user_ocid          = get_env("OCI_USER_OCID", "")
-      region             = get_env("OCI_REGION", "us-ashburn-1")
+      compartment_id     = local.root.locals.oci_defaults.compartment_id
+      user_ocid          = local.root.locals.oci_defaults.user_ocid
+      region             = local.root.locals.oci_defaults.region
       bucket_name        = "munchbox-s3-orchestrator"
       storage_tier       = "Standard"
       versioning_enabled = false
