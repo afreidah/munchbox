@@ -17,6 +17,8 @@ default[cookbook]['client'] = {
   mounts: [],
   # --- Per-node additions appended at converge time so a single node can add a mount without redefining the shared list (chef merges hashes deep but replaces arrays). ---
   extra_mounts: [],
+  # --- Directories to assert on the shares themselves, as opposed to the mount points. Each hash drives one nfs_shared_directory call. Keys: path (required), mount_point (required, the share the path lives on and the one its creation is gated on), owner, group, mode. ---
+  shared_directories: [],
 }
 
 # --- Server side. exports = list of hashes {path:, clients:, options:}; empty = recipe is a no-op. mccoy + rubirosa are the only consumers today. ---
