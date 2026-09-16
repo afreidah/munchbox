@@ -61,6 +61,11 @@ locals {
     "vaultwarden",
   ]
 
+  # --- where the s3-orchestrator leaf writes the keypairs it mints. Matches
+  #     that module's vault_prefix; the two have to agree or the apply writes
+  #     somewhere the policy does not cover. ---
+  s3_identity_prefix = "s3-identity"
+
   # --- shared base for the consul/nomad mTLS cert roles: allow_any_name, no domain restriction, ttl unset so the cert-manager's requested ttl governs ---
   cert_role_base = {
     allowed_domains             = []
@@ -410,6 +415,18 @@ inputs = {
           capabilities = ["read"]
         }
         %{endfor~}
+        # --- the s3-orchestrator leaf mints a keypair per identity and writes
+        #     it here. The only path this policy creates rather than reads, and
+        #     scoped to the one prefix nothing else writes, because a write
+        #     grant is not a read grant. Metadata carries the version history
+        #     the KV v2 resource reads back and prunes. ---
+        path "secret/data/${local.s3_identity_prefix}/*" {
+          capabilities = ["create", "read", "update", "delete"]
+        }
+
+        path "secret/metadata/${local.s3_identity_prefix}/*" {
+          capabilities = ["read", "list", "delete"]
+        }
         # --- the vault provider issues itself a short-TTL child token before
         #     reading anything, which bounds the lease on every secret a plan
         #     pulls into state. A child cannot exceed its parent's policies, so
