@@ -81,10 +81,11 @@ jobs:
 
           # Units that would break the run applying them: the first rewrites the
           # VAULT_TOKEN this job is holding, the next three own its own policies
-          # and ACL tokens, and the last two can destroy machines. The two
-          # secret-writing units follow the same rule -- minting a secret needs
-          # write on paths this token only reads.
-          deny='cluster/secrets/forgejo|cluster/vault-config|cluster/consul-acls|cluster/nomad-acls|cluster/vault-secrets|cluster/secrets/oauth2-proxy|proxmox/vms/|oci/vms/'
+          # and ACL tokens, and the last two can destroy machines. The rest
+          # follow the same rule: minting a secret needs write on paths this
+          # token only reads, and cluster-wide Nomad config needs operator
+          # write, which is the whole point of the scoped token.
+          deny='cluster/secrets/forgejo|cluster/vault-config|cluster/consul-acls|cluster/nomad-acls|cluster/nomad-config|cluster/vault-secrets|cluster/secrets/oauth2-proxy|proxmox/vms/|oci/vms/'
 
           # grep exits 1 on no match, which under pipefail would fail the step on
           # the ordinary case of a push touching no terragrunt unit.

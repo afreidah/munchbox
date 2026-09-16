@@ -142,6 +142,23 @@ export CONSUL_HTTP_TOKEN="${CONSUL_HTTP_TOKEN:-$(vault kv get -field=token secre
 # Terraform variable for consul-acls
 export TF_VAR_consul_bootstrap_token="$CONSUL_HTTP_TOKEN"
 
+# OCI API signing key. The provider reads ~/.oci/config on a workstation; a CI
+# runner has no such file, so the key is passed as provider config instead.
+export OCI_PRIVATE_KEY=$(vault kv get -field=private_key secret/oci/account 2>/dev/null)
+
+# GCP. The google provider's `credentials` argument takes a service account
+# key, which an authorized_user token is not, so the ADC is written to disk and
+# found by path -- the only form the SDK accepts for this credential type.
+_mb_gcp_adc="${XDG_RUNTIME_DIR:-/tmp}/munchbox-gcp-adc.json"
+if vault kv get -field=credentials secret/gcp/adc 2>/dev/null >"${_mb_gcp_adc}.tmp"; then
+  chmod 600 "${_mb_gcp_adc}.tmp"
+  mv "${_mb_gcp_adc}.tmp" "$_mb_gcp_adc"
+  export GOOGLE_APPLICATION_CREDENTIALS="$_mb_gcp_adc"
+else
+  rm -f "${_mb_gcp_adc}.tmp"
+fi
+unset _mb_gcp_adc
+
 # OAuth2-Proxy (for Terraform/Terragrunt)
 export OAUTH2_PROXY_CLIENT_ID=$(vault kv get -field=client_id secret/oauth2-proxy 2>/dev/null)
 export OAUTH2_PROXY_CLIENT_SECRET=$(vault kv get -field=client_secret secret/oauth2-proxy 2>/dev/null)

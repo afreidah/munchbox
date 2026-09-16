@@ -22,6 +22,7 @@ locals {
     "consul/bootstrap-token",
     "dns",
     "forgejo",
+    "gcp/adc",
     "grafana",
     "ibm-cloud",
     "jellyfin",
