@@ -94,6 +94,23 @@ locals {
   cloudflare_tunnel_cname        = "7030f58c-6e0b-4161-8ae3-b7b96f56ffb7.cfargotunnel.com"
 
   # ---------------------------------------------------------------------------
+  # S3-ORCHESTRATOR ARTIFACTS
+  #
+  # A release publishes the edge worker bundle and the grafana dashboard to the
+  # artifact bucket under a key carrying this version. Pinned, never "latest",
+  # so republishing cannot change what is deployed during an unrelated apply.
+  # Consumed by _env_helpers/cloudflare-worker-routes.hcl (worker bundle) and
+  # _env_helpers/grafana-dashboards.hcl (dashboard).
+  # ---------------------------------------------------------------------------
+
+  s3_orchestrator_version = "v0.146.1"
+
+  s3_orchestrator_artifacts = {
+    bucket   = "artifacts"
+    endpoint = "http://s3-orchestrator.service.consul:9000"
+  }
+
+  # ---------------------------------------------------------------------------
   # PI-HOLE  (shared provider URLs; record maps live in pihole-dns/pihole-config)
   # ---------------------------------------------------------------------------
 
