@@ -36,6 +36,20 @@ locals {
       vault_field = "password"
       secret_name = "APTLY_PASS"
     }
+    # --- Publishes build artifacts to the orchestrator's S3 surface on a
+    #     release. The identity is granted list, read and write on the one
+    #     bucket, so a runner holding it reaches no other. Every repository in
+    #     this set gets it, which is wider than the one that publishes needs. ---
+    "artifacts-access-key" = {
+      vault_path  = "s3-identity/artifacts_s3o_writer"
+      vault_field = "access_key"
+      secret_name = "AWS_ACCESS_KEY_ID"
+    }
+    "artifacts-secret-key" = {
+      vault_path  = "s3-identity/artifacts_s3o_writer"
+      vault_field = "secret_key"
+      secret_name = "AWS_SECRET_ACCESS_KEY"
+    }
   }
 
   munchbox_secrets = {
