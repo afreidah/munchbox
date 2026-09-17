@@ -33,7 +33,7 @@ locals {
     "pihole/logan",
     "postgres-shared/root",
     "proxmox/api-token",
-    "s3-bucket/unified",
+    "s3-identity/admin",
     "s3-orchestrator",
     "vaultwarden/master-password",
   ]
@@ -94,9 +94,9 @@ locals {
   #     that name it. Jobs absent from this map read nothing but their own
   #     prefix, via the templated nomad-workload-self policy. ---
   workload_extra_secrets = {
-    "aptly"                    = { secrets = ["aptly-admin", "s3-bucket/aptly", "s3-identity/aptly"] }
+    "aptly"                    = { secrets = ["aptly-admin", "s3-identity/aptly"] }
     "aptly-s3-gateway"         = { secrets = ["aptly"] }
-    "backup-worker"            = { secrets = ["consul/backup-worker-token", "postgres-shared/root", "s3-bucket/unified", "s3-identity/temporal-backups-worker"] }
+    "backup-worker"            = { secrets = ["consul/backup-worker-token", "postgres-shared/root", "s3-identity/temporal-backups-worker"] }
     "cloudflare-log-collector" = { secrets = ["cloudflare-logcollector"] }
     "deluge"                   = { secrets = ["mullvad"] }
     "forgejo"                  = { secrets = ["redis-shared"] }
@@ -110,7 +110,7 @@ locals {
     "prometheus"               = { secrets = ["aptly-admin", "dnsdist", "prometheus-nomad"] }
     "pve-exporter"             = { secrets = ["proxmox"] }
     "redis-sentinel"           = { secrets = ["redis-shared"] }
-    "tempo"                    = { secrets = ["s3-bucket/tempo-traces", "s3-identity/tempo"] }
+    "tempo"                    = { secrets = ["s3-identity/tempo"] }
     "temporal-schema"          = { secrets = ["temporal"] }
     "temporal-server"          = { secrets = ["temporal"] }
     "traefik-log-dashboard"    = { secrets = ["maxmind"] }

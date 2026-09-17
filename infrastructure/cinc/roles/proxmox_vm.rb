@@ -62,8 +62,9 @@ default_attributes(
         # The forgejo CI runner binds this into every workflow container for the
         # terragrunt cache. The job container's writable layer is far too small
         # for 55 units of provider installs, so without somewhere durable a plan
-        # dies part-way with ENOSPC. 1777 until the container's uid is pinned.
-        { path: '/mnt/gdrive/ci-cache/terragrunt', mount_point: '/mnt/gdrive', mode: '1777' },
+        # dies part-way with ENOSPC. The runner and its job containers are root
+        # and the export is no_root_squash, so root owns what they write.
+        { path: '/mnt/gdrive/ci-cache/terragrunt', mount_point: '/mnt/gdrive' },
       ],
     },
   }

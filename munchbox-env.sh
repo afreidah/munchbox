@@ -223,19 +223,18 @@ _mb_secret APTLY_PASS password secret/aptly-admin
 _mb_secret IC_API_KEY api_key secret/ibm-cloud
 export IBMCLOUD_API_KEY="${IC_API_KEY:-}"
 
-# s3-orchestrator admin CLI: requests are SigV4-signed as of v0.143.0, so the
-# root keypair replaces the admin token. Same Vault fields, which the config
-# now feeds to auth.root.
-_mb_secret S3O_ACCESS_KEY_ID ui_admin_key secret/s3-orchestrator
-_mb_secret S3O_SECRET_ACCESS_KEY ui_admin_secret secret/s3-orchestrator
+# s3-orchestrator admin CLI. The admin identity is a store row carrying root's
+# grants, so it can be narrowed or revoked without redeploying the orchestrator.
+_mb_secret S3O_ACCESS_KEY_ID access_key secret/s3-identity/admin
+_mb_secret S3O_SECRET_ACCESS_KEY secret_key secret/s3-identity/admin
 
 # PostgreSQL
 _mb_secret PGUSER username secret/postgres-shared/root
 _mb_secret PGPASSWORD password secret/postgres-shared/root
 
-# AWS CLI
-_mb_secret AWS_ACCESS_KEY_ID access_key secret/s3-bucket/unified
-_mb_secret AWS_SECRET_ACCESS_KEY secret_key secret/s3-bucket/unified
+# AWS CLI, against s3-orchestrator's S3 surface.
+_mb_secret AWS_ACCESS_KEY_ID access_key secret/s3-identity/admin
+_mb_secret AWS_SECRET_ACCESS_KEY secret_key secret/s3-identity/admin
 
 # -------------------------------------------------------------------------------
 # Report
