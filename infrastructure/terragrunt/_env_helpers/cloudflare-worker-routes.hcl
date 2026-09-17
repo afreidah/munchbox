@@ -29,17 +29,22 @@ dependency "cloudflare_tokens" {
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
 }
 
-# --- Supplies the artifact bucket credentials a worker fetches its script
-#     with. Only the edge-proxy leaf reads this. ---
-dependency "access_keys" {
-  config_path = "${get_repo_root()}/infrastructure/terragrunt/cluster/secrets/access-keys"
+# --- Supplies the keypair a worker fetches its script with: an identity granted
+#     list and read on the artifact bucket and nothing else. Only the edge-proxy
+#     leaf reads this. ---
+dependency "s3_identities" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/apps/s3-orchestrator"
 
   mock_outputs = {
-    vault_data = {
-      "s3-bucket/artifacts" = { access_key = "MOCKARTIFACTSACCESSKEY", secret_key = "mock-artifacts-secret-key" }
+    credentials = {
+      "artifacts_terragrunt_reader" = { access_key = "MOCKARTIFACTSACCESSKEY", secret_key = "mock-artifacts-secret-key" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
+
+  # --- The leaf has state, so a mock is only reached per-output: a key the
+  #     state does not carry yet resolves to the mock rather than failing. ---
+  mock_outputs_merge_strategy_with_state = "shallow"
 }
 
 locals {
@@ -141,8 +146,8 @@ inputs = {
       for name, w in local.edge_selected :
       name => merge(w, {
         content_s3 = merge(local.edge_artifact, {
-          access_key = dependency.access_keys.outputs.vault_data["s3-bucket/artifacts"].access_key
-          secret_key = dependency.access_keys.outputs.vault_data["s3-bucket/artifacts"].secret_key
+          access_key = dependency.s3_identities.outputs.credentials["artifacts_terragrunt_reader"].access_key
+          secret_key = dependency.s3_identities.outputs.credentials["artifacts_terragrunt_reader"].secret_key
         })
       })
     },
