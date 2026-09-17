@@ -46,7 +46,14 @@ job "s3-orchestrator" {
   # ---------------------------------------------------------------------------
 
   group "s3-orchestrator" {
-    count = 1
+    # Background passes are advisory-locked, so only one instance runs each.
+    count = 2
+
+    # The static port allows one allocation per node.
+    constraint {
+      operator = "distinct_hosts"
+      value    = "true"
+    }
 
     # --- Network Configuration ---
     network {
@@ -199,9 +206,16 @@ database:
   user: "{{ .Data.data.db_username }}"
   password: "{{ .Data.data.db_password }}"
   ssl_mode: "require"
-  max_conns: 10
-  min_conns: 5
+  max_conns: 6
+  min_conns: 3
   max_conn_lifetime: "5m"
+
+redis:
+  # Shared usage counters. Quota enforcement reads DB baseline + unflushed
+  # counters, and without this each instance only sees its own.
+  address: "haproxy-redis.service.consul:6380"
+  password: "{{ with secret "secret/data/redis-shared" }}{{ .Data.data.password }}{{ end }}"
+  key_prefix: "s3orch"
 
 backends:
   # Reached through its Cloudflare edge proxy; see the b2 backend for why the
@@ -450,9 +464,10 @@ compression:
   min_ratio: 0.95
 
 rate_limit:
+  # Enforced per instance; a client's effective rate is this times the count.
   enabled: true
-  requests_per_sec: 1500
-  burst: 2000
+  requests_per_sec: 750
+  burst: 1000
   trusted_proxies:
     - "10.0.0.0/8"
     - "172.16.0.0/12"
@@ -460,10 +475,12 @@ rate_limit:
     - "127.0.0.1/32"
 
 cache:
+  # Per instance and not invalidated by a write on another, so the TTL bounds
+  # how long a stale copy can be served.
   enabled: true
   max_size: "32MB"
   max_object_size: "5MB"
-  ttl: "15m"
+  ttl: "60s"
 
 reconcile:
   enabled: true
