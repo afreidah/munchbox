@@ -35,8 +35,10 @@
         summary: "S3 Orchestrator backend failures"
         description: "Backend {{ $labels.backend }} is seeing {{ $value | printf \"%.1f\" }} failed {{ $labels.operation }} operations/sec."
 
+    # A quota belongs to the backend, and every instance reports the same
+    # figure, so the series are collapsed to one alert per backend.
     - alert: S3OrchestratorQuotaHigh
-      expr: s3o_quota_bytes_used / s3o_quota_bytes_limit * 100 > 90
+      expr: max by (backend) (s3o_quota_bytes_used) / max by (backend) (s3o_quota_bytes_limit) * 100 > 90
       for: 10m
       labels:
         severity: warning
@@ -45,7 +47,7 @@
         description: "Backend {{ $labels.backend }} is at {{ $value | printf \"%.1f\" }}% quota usage."
 
     - alert: S3OrchestratorQuotaCritical
-      expr: s3o_quota_bytes_used / s3o_quota_bytes_limit * 100 > 98
+      expr: max by (backend) (s3o_quota_bytes_used) / max by (backend) (s3o_quota_bytes_limit) * 100 > 98
       for: 5m
       labels:
         severity: critical
