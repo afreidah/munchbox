@@ -137,6 +137,7 @@ locals {
     "s3-orchestrator" = {
       secrets = [
         "edge-proxy/b2", "edge-proxy/ibm", "edge-proxy/oci",
+        "redis-shared",
         "s3-bucket/aptly", "s3-bucket/artifacts", "s3-bucket/tempo-traces", "s3-bucket/unified",
       ]
     }
