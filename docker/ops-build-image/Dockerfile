@@ -123,7 +123,7 @@ RUN set -eux; \
   apt-get update; \
   apt-get -y install --no-install-recommends \
     ca-certificates curl git jq make openssh-client \
-    nodejs npm python3; \
+    nodejs npm python3 unzip; \
   rm -rf /var/lib/apt/lists/*
 
 # --- Bitwarden CLI, which the terragrunt bitwarden provider shells out to.
@@ -133,6 +133,16 @@ ARG BW_VERSION="2024.9.0"
 RUN set -eux; \
   npm install -g --no-fund --no-audit "@bitwarden/cli@${BW_VERSION}"; \
   npm cache clean --force
+
+# --- AWS CLI, which the release publishes build artifacts to the orchestrator's
+#     S3 surface with. The installer names the architecture the way uname does,
+#     unlike the TARGETARCH the other downloads here use. ---
+ARG AWSCLI_VERSION="2.36.47"
+RUN set -eux; \
+  curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-${AWSCLI_VERSION}.zip" -o /tmp/awscli.zip; \
+  unzip -q /tmp/awscli.zip -d /tmp; \
+  /tmp/aws/install; \
+  rm -rf /tmp/aws /tmp/awscli.zip
 
 # --- Docker CLI (official static binary) ---
 ARG DOCKER_VERSION="29.7.2"
@@ -188,6 +198,7 @@ RUN set -eux; \
   golangci-lint version --format short && \
   go version && \
   node --version && \
+  aws --version && \
   echo "==================="
 
 # --- Non-root user ---
