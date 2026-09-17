@@ -71,16 +71,11 @@ locals {
     oci = { host = "axlubepkixee.compat.objectstorage.us-phoenix-1.oraclecloud.com", region = "us-phoenix-1" }
   }
 
-  # --- The bundle is built in s3-orchestrator and published to the artifacts
-  #     bucket under a versioned key. Pinned, never "latest", so republishing
-  #     cannot change what is deployed during an unrelated apply. ---
-  edge_worker_version = "v0.145.5"
-
   # --- Everything but the credentials, which can only be read from inputs. ---
   edge_artifact = {
-    bucket   = "artifacts"
-    key      = "s3-orchestrator/cloudflare-worker/${local.edge_worker_version}/worker.js"
-    endpoint = "http://s3-orchestrator.service.consul:9000"
+    bucket   = local.root.locals.s3_orchestrator_artifacts.bucket
+    key      = "s3-orchestrator/cloudflare-worker/${local.root.locals.s3_orchestrator_version}/worker.js"
+    endpoint = local.root.locals.s3_orchestrator_artifacts.endpoint
   }
 
   edge_workers = {
