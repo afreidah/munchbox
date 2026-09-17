@@ -26,31 +26,39 @@ locals {
   # compactor removes the blocks it has merged.
   identities = {
     "temporal-backups-worker" = {
-      bucket      = "unified"
-      permissions = ["list", "read", "write", "delete"]
-      label       = "temporal backup worker"
+      label  = "temporal backup worker"
+      grants = [{ name = "unified", permissions = ["list", "read", "write", "delete"] }]
     }
     "aptly" = {
-      bucket      = "aptly"
-      permissions = ["list", "read", "write", "delete"]
-      label       = "aptly debian repositories"
+      label  = "aptly debian repositories"
+      grants = [{ name = "aptly", permissions = ["list", "read", "write", "delete"] }]
     }
     "tempo" = {
-      bucket      = "tempo-traces"
-      permissions = ["list", "read", "write", "delete"]
-      label       = "tempo trace storage"
+      label  = "tempo trace storage"
+      grants = [{ name = "tempo-traces", permissions = ["list", "read", "write", "delete"] }]
     }
     # --- artifacts has one writer and one reader today; anything else that
     #     writes there gets its own named identity rather than sharing ---
     "artifacts_s3o_writer" = {
-      bucket      = "artifacts"
-      permissions = ["list", "read", "write"]
-      label       = "s3-orchestrator release artifacts"
+      label  = "s3-orchestrator release artifacts"
+      grants = [{ name = "artifacts", permissions = ["list", "read", "write"] }]
     }
     "artifacts_terragrunt_reader" = {
-      bucket      = "artifacts"
-      permissions = ["list", "read"]
-      label       = "terragrunt artifact consumer"
+      label  = "terragrunt artifact consumer"
+      grants = [{ name = "artifacts", permissions = ["list", "read"] }]
+    }
+
+    # --- a human's credential, and what munchbox-env.sh exports. Carries root's
+    #     grant set so it can do everything root can, but as a store row that
+    #     can be revoked or narrowed. Root stays: it is templated from config
+    #     rather than stored, so it survives a database this one does not. ---
+    "admin" = {
+      label = "interactive and env-file admin"
+      grants = [
+        { kind = "bucket", name = "*", permissions = ["all"] },
+        { kind = "backend", name = "*", permissions = ["admin-all"] },
+        { kind = "orchestrator", permissions = ["admin-all"] },
+      ]
     }
   }
 }

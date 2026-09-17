@@ -52,12 +52,30 @@ resource "s3orchestrator_credential" "this" {
   label   = each.value.label
 }
 
-# --- one bucket per identity, so the grant needs no flattening ---
-resource "s3orchestrator_grant" "this" {
-  for_each = var.identities
+# An identity may hold more than one grant, and the orchestrator keys a grant by
+# user, kind and name rather than by an id of its own, so that triple is what
+# for_each has to be keyed on too.
+locals {
+  grants = {
+    for g in flatten([
+      for identity, i in var.identities : [
+        for grant in i.grants : {
+          identity    = identity
+          kind        = grant.kind == null ? "bucket" : grant.kind
+          name        = grant.name
+          permissions = grant.permissions
+        }
+      ]
+    ]) : "${g.identity}/${g.kind}/${g.name == null ? "" : g.name}" => g
+  }
+}
 
-  user_id     = s3orchestrator_user.this[each.key].id
-  name        = each.value.bucket
+resource "s3orchestrator_grant" "this" {
+  for_each = local.grants
+
+  user_id     = s3orchestrator_user.this[each.value.identity].id
+  kind        = each.value.kind
+  name        = each.value.name
   permissions = each.value.permissions
 }
 
