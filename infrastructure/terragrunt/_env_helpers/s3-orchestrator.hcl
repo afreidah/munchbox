@@ -43,12 +43,11 @@ locals {
       label  = "s3-orchestrator release artifacts"
       grants = [{ name = "artifacts", permissions = ["list", "read", "write"] }]
     }
-    # tags is carried because terraform's aws_s3_object data source fetches an
-    # object's tags whenever it reads one, and the orchestrator authorizes all
-    # three tagging verbs under the one permission.
+    # terraform's aws_s3_object data source fetches an object's tags whenever it
+    # reads one, which read covers; tags is the right to change them.
     "artifacts_terragrunt_reader" = {
       label  = "terragrunt artifact consumer"
-      grants = [{ name = "artifacts", permissions = ["list", "read", "tags"] }]
+      grants = [{ name = "artifacts", permissions = ["list", "read"] }]
     }
 
     # --- a human's credential, and what munchbox-env.sh exports. Carries root's
