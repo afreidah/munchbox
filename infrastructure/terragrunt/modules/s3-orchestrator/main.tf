@@ -12,8 +12,10 @@
 # self-contained and the supply-chain checks refuse a remote source. The version
 # boundary is the provider pin in versions.tf, which is the one that matters.
 #
-# Buckets stay out: the ones a deployment serves are declared in its config file
-# and the admin API refuses to change them.
+# A bucket the config file declares can be declared here too. The orchestrator
+# gives config precedence, so the row created here does nothing until that entry
+# is removed, which is how a bucket moves into the store without a moment where
+# neither source declares it.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -32,6 +34,29 @@ provider "s3orchestrator" {
   address           = var.address
   access_key_id     = data.vault_kv_secret_v2.root.data[var.root_key_field]
   secret_access_key = data.vault_kv_secret_v2.root.data[var.root_secret_field]
+}
+
+# -----------------------------------------------------------------------------
+# BUCKETS
+# -----------------------------------------------------------------------------
+
+resource "s3orchestrator_bucket" "this" {
+  for_each = var.buckets
+
+  name                  = each.key
+  max_multipart_uploads = each.value.max_multipart_uploads
+
+  dynamic "cors_rule" {
+    for_each = each.value.cors
+
+    content {
+      allowed_origins = cors_rule.value.allowed_origins
+      allowed_methods = cors_rule.value.allowed_methods
+      allowed_headers = cors_rule.value.allowed_headers
+      expose_headers  = cors_rule.value.expose_headers
+      max_age         = cors_rule.value.max_age
+    }
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -77,6 +102,10 @@ resource "s3orchestrator_grant" "this" {
   kind        = each.value.kind
   name        = each.value.name
   permissions = each.value.permissions
+
+  # A grant naming a bucket nothing declares is refused, and the name here is a
+  # literal rather than a reference, so nothing else orders these two.
+  depends_on = [s3orchestrator_bucket.this]
 }
 
 # -----------------------------------------------------------------------------

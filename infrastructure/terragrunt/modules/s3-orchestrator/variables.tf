@@ -82,6 +82,65 @@ variable "vault_prefix" {
   }
 }
 
+variable "buckets" {
+  description = "Map of bucket name to what it carries; each becomes a virtual bucket the orchestrator accepts writes under. A name the config file declares is allowed: the row lands dormant behind it and takes over when the config entry goes"
+
+  type = map(object({
+    max_multipart_uploads = optional(number)
+    cors = optional(list(object({
+      allowed_origins = list(string)
+      allowed_methods = list(string)
+      allowed_headers = optional(list(string))
+      expose_headers  = optional(list(string))
+      max_age         = optional(number)
+    })), [])
+  }))
+
+  default = {}
+
+  # --- the name is the bucket and the prefix every object under it carries ---
+  validation {
+    condition     = alltrue([for name, _ in var.buckets : can(regex("^[a-z0-9][a-z0-9.-]*$", name))])
+    error_message = "Bucket names are lowercase alphanumeric with . - and cannot start with a separator."
+  }
+
+  validation {
+    condition     = alltrue([for b in var.buckets : b.max_multipart_uploads == null || b.max_multipart_uploads >= 0])
+    error_message = "A negative multipart limit is not a limit; omit it or use 0 for unlimited."
+  }
+
+  # --- a rule matching no origin grants access nobody gets, and the
+  #     orchestrator refuses one rather than storing it ---
+  validation {
+    condition = alltrue(flatten([
+      for b in var.buckets : [for r in b.cors : length(r.allowed_origins) > 0 && length(r.allowed_methods) > 0]
+    ]))
+    error_message = "A CORS rule names at least one origin and one method."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for b in var.buckets : [
+        for r in b.cors : [
+          for m in r.allowed_methods :
+          contains(["GET", "PUT", "POST", "DELETE", "HEAD"], upper(m))
+        ]
+      ]
+    ]))
+    error_message = "CORS methods are GET, PUT, POST, DELETE and HEAD."
+  }
+
+  # --- one wildcard matches; two is a pattern the matcher cannot read ---
+  validation {
+    condition = alltrue(flatten([
+      for b in var.buckets : [
+        for r in b.cors : [for o in r.allowed_origins : length(regexall("\\*", o)) <= 1]
+      ]
+    ]))
+    error_message = "A CORS origin carries at most one wildcard."
+  }
+}
+
 # The grant vocabulary is two disjoint sets. Data-plane verbs answer what a
 # request may do to objects in a bucket; the admin- ones answer what it may do
 # to the deployment, and the orchestrator stores them in one field precisely
