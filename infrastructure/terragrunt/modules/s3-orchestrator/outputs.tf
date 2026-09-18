@@ -2,6 +2,11 @@
 # S3-ORCHESTRATOR Module Outputs
 # -----------------------------------------------------------------------------
 
+output "buckets" {
+  description = "Names of the virtual buckets this leaf declares. A name also present in the orchestrator's config file is served from there until that entry is removed."
+  value       = sort(keys(s3orchestrator_bucket.this))
+}
+
 output "user_ids" {
   description = "Map of identity name to the generated user id its credential and grant reference; a rename does not move it."
   value       = { for k, u in s3orchestrator_user.this : k => u.id }

@@ -63,9 +63,27 @@ locals {
       ]
     }
   }
+
+  # --- buckets declared here rather than in the orchestrator's job file ---
+  #
+  # All four are still declared in that job file too, and while they are, the
+  # rows below do nothing: the orchestrator serves the config entry and reports
+  # the row as shadowed. Each one takes over when its entry is removed, so a
+  # bucket moves across without a moment where neither source declares it.
+  #
+  # None of them carry a multipart limit or CORS rules, matching the entries
+  # they are taking over from. A difference here would change how the bucket
+  # behaves at the handover rather than at a time anyone chose.
+  buckets = {
+    "unified"      = {}
+    "aptly"        = {}
+    "tempo-traces" = {}
+    "artifacts"    = {}
+  }
 }
 
 inputs = {
   address    = "https://s3.munchbox.cc"
   identities = local.identities
+  buckets    = local.buckets
 }
