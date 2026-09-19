@@ -14,10 +14,11 @@
 
 name: CI
 
+# Pull requests only. A merge mirrors to Forgejo, which runs terragrunt and the
+# Nomad deploy against the cluster; re-running lint and plan here after the PR
+# already passed them occupies the self-hosted runners for no new signal.
 on:
   pull_request:
-  push:
-    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -221,7 +222,7 @@ jobs:
   # ---------------------------------------------------------------------------
   nomad:
     needs: changes
-    if: ${{ needs.changes.outputs.nomad == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ needs.changes.outputs.nomad == 'true' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: [self-hosted]
     timeout-minutes: 15
     permissions:
@@ -291,7 +292,6 @@ jobs:
       # this step never fails the job -- errors are surfaced in the comment. PR events
       # only (a plan comment needs a PR); the job is already fork-gated above.
       - name: nomad job plan (changed jobs)
-        if: ${{ github.event_name == 'pull_request' }}
         working-directory: nomad
         env:
           BODY: ${{ runner.temp }}/nomad-plan.md
@@ -345,7 +345,6 @@ jobs:
           fi
 
       - name: Find existing plan comment
-        if: ${{ github.event_name == 'pull_request' }}
         uses: peter-evans/find-comment@v3
         id: nomad_plan_comment
         with:
@@ -354,7 +353,6 @@ jobs:
           body-includes: '<!-- nomad-plan -->'
 
       - name: Post/update plan comment
-        if: ${{ github.event_name == 'pull_request' }}
         uses: peter-evans/create-or-update-comment@v4
         with:
           comment-id: ${{ steps.nomad_plan_comment.outputs.comment-id }}
@@ -372,7 +370,7 @@ jobs:
   # ---------------------------------------------------------------------------
   terragrunt:
     needs: changes
-    if: ${{ needs.changes.outputs.terragrunt == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ needs.changes.outputs.terragrunt == 'true' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: [self-hosted]
     timeout-minutes: 15
     steps:

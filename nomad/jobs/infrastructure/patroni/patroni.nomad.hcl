@@ -281,7 +281,7 @@ job "patroni" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/patroni:115bb0f6"
+        image              = "registry.munchbox.cc/patroni:c8c2ca7c"
         image_pull_timeout = "10m"
         network_mode       = "host"
 
@@ -361,6 +361,35 @@ job "patroni" {
         EOF
       }
 
+      # --- wal-g credentials and endpoint, read by archive_command and by the
+      # wal-backup task. A file rather than task env: an env template can only
+      # deliver a rotated keypair by restarting the task, and a patroni restart
+      # fails the primary over. Every wal-g invocation re-reads this, so a
+      # rotation costs nothing. Upload concurrency is held down because an
+      # s3/retention storm has wedged a node before. ---
+      template {
+        destination = "secrets/walg.json"
+        change_mode = "noop"
+        perms       = "0600"
+        uid         = 999
+        gid         = 999
+        data        = <<-EOF
+{{ with secret "secret/data/s3-identity/postgres-wal" }}
+{
+  "AWS_ACCESS_KEY_ID": "{{ .Data.data.access_key }}",
+  "AWS_SECRET_ACCESS_KEY": "{{ .Data.data.secret_key }}",
+  "AWS_ENDPOINT": "http://s3-orchestrator.service.consul:9000",
+  "AWS_S3_FORCE_PATH_STYLE": "true",
+  "AWS_REGION": "us-east-1",
+  "WALG_S3_PREFIX": "s3://postgres-wal/munchbox-postgres",
+  "WALG_COMPRESSION_METHOD": "lz4",
+  "WALG_UPLOAD_CONCURRENCY": "2",
+  "WALG_UPLOAD_DISK_CONCURRENCY": "1"
+}
+{{ end }}
+        EOF
+      }
+
       # --- Patroni Configuration ---
       template {
         destination = "local/patroni.yml"
@@ -415,6 +444,16 @@ postgresql:
     max_replication_slots: 5
     wal_keep_size: 256MB
 
+    # --- WAL archiving to s3-orchestrator ---
+    # archive_mode "on" archives from the leader only, so a replica needs no
+    # special case. The timeout wrapper matters: without it a wedged backend
+    # hangs the archiver indefinitely, pg_wal grows, and nothing reaches the
+    # log. archive_timeout bounds RPO at 5 minutes, which at the measured
+    # 52 KB/s costs almost nothing -- a segment fills naturally in ~322s.
+    archive_mode: "on"
+    archive_command: 'timeout 60 /usr/local/bin/wal-g --config /secrets/walg.json wal-push %p'
+    archive_timeout: 300
+
     # --- Replication ---
     hot_standby: "on"
     hot_standby_feedback: "on"
@@ -460,6 +499,9 @@ bootstrap:
       parameters:
         max_connections: 100
         shared_buffers: 256MB
+        archive_mode: "on"
+        archive_command: 'timeout 60 /usr/local/bin/wal-g --config /secrets/walg.json wal-push %p'
+        archive_timeout: 300
 
   # --- Initial database setup ---
   initdb:
@@ -540,6 +582,140 @@ PG_EXPORTER_DISABLE_SETTINGS_METRICS=false
       resources {
         cpu    = 250
         memory = 64
+      }
+    }
+
+    # -------------------------------------------------------------------------
+    # Task: wal-backup (physical base backups)
+    #
+    # Archived WAL restores nothing without a base backup to replay onto. Runs
+    # on every node but acts only on the leader, and only when the newest full
+    # backup has aged out, so a failover neither skips a day nor takes two
+    # backups of the same one.
+    # -------------------------------------------------------------------------
+
+    task "wal-backup" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "poststart"
+        sidecar = true
+      }
+
+      vault {
+        role        = "patroni"
+        change_mode = "noop"
+      }
+
+      identity {
+        env  = true
+        file = true
+        aud  = ["vault.io"]
+      }
+
+      config {
+        image              = "registry.munchbox.cc/patroni:c8c2ca7c"
+        image_pull_timeout = "10m"
+        network_mode       = "host"
+        entrypoint         = ["/bin/sh", "/local/backup.sh"]
+
+        volumes = [
+          # wal-g reads the data directory directly, so it needs the same bind
+          # the patroni task has.
+          "/opt/nomad/data/patroni-${NOMAD_ALLOC_INDEX}:/home/postgres/data",
+        ]
+      }
+
+      template {
+        destination = "secrets/walg.json"
+        change_mode = "noop"
+        perms       = "0600"
+        uid         = 999
+        gid         = 999
+        data        = <<-EOF
+{{ with secret "secret/data/s3-identity/postgres-wal" }}
+{
+  "AWS_ACCESS_KEY_ID": "{{ .Data.data.access_key }}",
+  "AWS_SECRET_ACCESS_KEY": "{{ .Data.data.secret_key }}",
+  "AWS_ENDPOINT": "http://s3-orchestrator.service.consul:9000",
+  "AWS_S3_FORCE_PATH_STYLE": "true",
+  "AWS_REGION": "us-east-1",
+  "WALG_S3_PREFIX": "s3://postgres-wal/munchbox-postgres",
+  "WALG_COMPRESSION_METHOD": "lz4",
+  "WALG_UPLOAD_CONCURRENCY": "2",
+  "WALG_UPLOAD_DISK_CONCURRENCY": "1"
+}
+{{ end }}
+        EOF
+      }
+
+      # --- backup-push opens a normal connection to run pg_backup_start and
+      # pg_backup_stop; pg_hba allows scram without TLS on loopback. ---
+      template {
+        destination = "secrets/backup.env"
+        env         = true
+        change_mode = "noop"
+        data        = <<-EOF
+{{ with secret "secret/data/postgres-shared/root" }}
+PGUSER={{ .Data.data.username }}
+PGPASSWORD={{ .Data.data.password }}
+{{ end }}
+PGHOST=127.0.0.1
+PGPORT={{ env "NOMAD_PORT_postgres" }}
+PGDATABASE=postgres
+PATRONI_API=http://127.0.0.1:{{ env "NOMAD_PORT_patroni" }}
+        EOF
+      }
+
+      template {
+        destination = "local/backup.sh"
+        change_mode = "noop"
+        perms       = "0755"
+        data        = <<-EOF
+#!/bin/sh
+# Base backup driver. Sleeps first so a deploy does not have every replacement
+# alloc reach for the data directory while Patroni is still settling.
+set -u
+
+WALG="/usr/local/bin/wal-g --config /secrets/walg.json"
+PGDATA_DIR="/home/postgres/data/pgdata"
+POLL=900
+MAX_AGE=86400
+RETAIN=7
+
+while true; do
+  sleep "$POLL"
+
+  # Only the leader holds the data directory Postgres is writing.
+  curl -sf "$PATRONI_API/primary" >/dev/null 2>&1 || continue
+
+  # An unparseable or absent timestamp yields age 0 below, which takes a
+  # backup rather than silently skipping one.
+  newest=$($WALG backup-list --json 2>/dev/null | jq -r 'map(.time) | max // empty' 2>/dev/null)
+  if [ -n "$newest" ]; then
+    then_s=$(date -u -d "$newest" +%s 2>/dev/null || echo 0)
+    age=$(( $(date -u +%s) - then_s ))
+    if [ "$then_s" -ne 0 ] && [ "$age" -lt "$MAX_AGE" ]; then
+      continue
+    fi
+  fi
+
+  echo "wal-backup: pushing base backup"
+  if $WALG backup-push "$PGDATA_DIR"; then
+    # delete retain drops superseded backups and the WAL segments older than
+    # the oldest one kept, so retention covers both halves.
+    $WALG delete retain FULL "$RETAIN" --confirm || echo "wal-backup: retention failed"
+  else
+    echo "wal-backup: base backup failed"
+  fi
+done
+        EOF
+      }
+
+      # --- compressing 4.4GB of heap is the one CPU-hungry moment here ---
+      resources {
+        cpu    = 500
+        memory = 256
       }
     }
   }
