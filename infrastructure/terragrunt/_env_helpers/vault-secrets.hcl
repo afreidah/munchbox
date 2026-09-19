@@ -78,14 +78,10 @@ dependency "access_keys" {
 
   mock_outputs = {
     vault_data = {
-      "s3-bucket/unified"      = { access_key = "MOCKUNIFIEDACCESSKEY", secret_key = "mock-unified-secret-key" }
-      "s3-bucket/aptly"        = { access_key = "MOCKAPTLYACCESSKEY", secret_key = "mock-aptly-secret-key" }
-      "s3-bucket/tempo-traces" = { access_key = "MOCKTEMPOTRACESACCESSKEY", secret_key = "mock-tempo-traces-secret-key" }
-      "s3-bucket/artifacts"    = { access_key = "MOCKARTIFACTSACCESSKEY", secret_key = "mock-artifacts-secret-key" }
-      "edge-proxy/b2"          = { access_key = "MOCKEDGEPROXYB2KEY", secret_key = "mock-edge-proxy-b2-secret" }
-      "edge-proxy/ibm"         = { access_key = "MOCKEDGEPROXYIBMKEY", secret_key = "mock-edge-proxy-ibm-secret" }
-      "edge-proxy/oci"         = { access_key = "MOCKEDGEPROXYOCIKEY", secret_key = "mock-edge-proxy-oci-secret" }
-      "dnsdist"                = { access_key = "MOCKDNSDISTACCESSKEY", secret_key = "mock-dnsdist-secret-key" }
+      "edge-proxy/b2"  = { access_key = "MOCKEDGEPROXYB2KEY", secret_key = "mock-edge-proxy-b2-secret" }
+      "edge-proxy/ibm" = { access_key = "MOCKEDGEPROXYIBMKEY", secret_key = "mock-edge-proxy-ibm-secret" }
+      "edge-proxy/oci" = { access_key = "MOCKEDGEPROXYOCIKEY", secret_key = "mock-edge-proxy-oci-secret" }
+      "dnsdist"        = { access_key = "MOCKDNSDISTACCESSKEY", secret_key = "mock-dnsdist-secret-key" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
@@ -133,22 +129,6 @@ locals {
     "cloudflare-dnsedge" = {
       source = "cloudflare_tokens"
       key    = "dnsedge"
-    }
-    "s3-bucket/unified" = {
-      source = "access_keys"
-      key    = "s3-bucket/unified"
-    }
-    "s3-bucket/aptly" = {
-      source = "access_keys"
-      key    = "s3-bucket/aptly"
-    }
-    "s3-bucket/tempo-traces" = {
-      source = "access_keys"
-      key    = "s3-bucket/tempo-traces"
-    }
-    "s3-bucket/artifacts" = {
-      source = "access_keys"
-      key    = "s3-bucket/artifacts"
     }
     "edge-proxy/b2" = {
       source = "access_keys"

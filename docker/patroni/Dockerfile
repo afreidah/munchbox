@@ -65,6 +65,28 @@ RUN set -eux; \
     ; \
     rm -rf /var/lib/apt/lists/*
 
+# --- wal-g, for physical base backups and WAL archiving to s3-orchestrator.
+#     The 20.04 build links an older glibc than trixie ships, which is the
+#     direction that stays portable; a newer-glibc build would not run here. ---
+ARG WALG_VERSION=v3.0.9
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH}" in \
+      amd64) walg_arch=amd64 ;; \
+      arm64) walg_arch=aarch64 ;; \
+      *) echo "unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    name="wal-g-pg-20.04-${walg_arch}"; \
+    url="https://github.com/wal-g/wal-g/releases/download/${WALG_VERSION}"; \
+    curl -fsSL "${url}/${name}.tar.gz" -o /tmp/walg.tgz; \
+    curl -fsSL "${url}/${name}.tar.gz.sha256" -o /tmp/walg.sha256; \
+    printf '%s  %s\n' "$(cut -d' ' -f1 /tmp/walg.sha256)" /tmp/walg.tgz >/tmp/walg.check; \
+    sha256sum -c /tmp/walg.check; \
+    tar -xzf /tmp/walg.tgz -C /tmp; \
+    install -m0755 "/tmp/${name}" /usr/local/bin/wal-g; \
+    rm -f /tmp/walg.tgz /tmp/walg.sha256 /tmp/walg.check "/tmp/${name}"; \
+    wal-g --version
+
 # --- Bring in the prebuilt Patroni virtualenv ---
 ENV VIRTUAL_ENV=/opt/patroni
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
