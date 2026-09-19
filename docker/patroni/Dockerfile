@@ -55,6 +55,7 @@ RUN set -eux; \
     apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
         python3 \
+        ca-certificates \
         curl \
         jq \
         netcat-openbsd \
