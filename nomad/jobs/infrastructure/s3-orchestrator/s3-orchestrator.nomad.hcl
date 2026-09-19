@@ -150,7 +150,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.147.0"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.148.0"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -179,11 +179,8 @@ server:
 
 routing_strategy: "spread"
 
-buckets:
-  - name: "unified"
-    credentials:
-      - access_key_id: "{{ with secret "secret/data/s3-bucket/unified" }}{{ .Data.data.access_key }}{{ end }}"
-        secret_access_key: "{{ with secret "secret/data/s3-bucket/unified" }}{{ .Data.data.secret_key }}{{ end }}"
+# Buckets are declared in terragrunt, not here. From v0.148.0 this file may
+# declare none, and one declared here would be read-only to the admin API.
 
 database:
   host: "haproxy-postgres.service.consul"
