@@ -124,9 +124,10 @@ locals {
     }
 
     # --- patroni self-issues the Postgres server cert on top of the shared
-    #     superuser and replication credentials. ---
+    #     superuser and replication credentials, and archives WAL to the
+    #     orchestrator under its own identity. ---
     "patroni" = {
-      secrets     = ["postgres-shared/replication", "postgres-shared/root"]
+      secrets     = ["postgres-shared/replication", "postgres-shared/root", "s3-identity/postgres-wal"]
       extra_paths = { "pki_int/issue/postgres" = ["create", "update", "read"] }
     }
 
