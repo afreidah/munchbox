@@ -1,6 +1,6 @@
 # postgresql-health alert group
 # Patroni-managed PostgreSQL: liveness, connection pressure, deadlocks,
-# replication lag, long transactions, rollback rate.
+# replication lag, long transactions, rollback rate, WAL archiving.
 
 - name: postgresql-health
   interval: 30s
@@ -68,6 +68,29 @@
       annotations:
         summary: "Long-running PostgreSQL transaction"
         description: "A transaction on {{ $labels.datname }} has been running for {{ $value | printf \"%.0f\" }} seconds."
+
+    - alert: PostgresWALArchiveFailing
+      expr: increase(pg_stat_archiver_failed_count[15m]) > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "PostgreSQL WAL archiving is failing"
+        description: "{{ $value | printf \"%.0f\" }} archive_command failures in the last 15 minutes on {{ $labels.instance }}. WAL accumulates in pg_wal until this clears."
+
+    - alert: PostgresWALArchiveStalled
+      # Scoped to the primary: a replica with archive_mode "on" does not
+      # archive, and an ex-leader keeps the last_archived_time it held when it
+      # was demoted, so its age climbs with nothing wrong.
+      # archive_timeout is 300s and a segment fills naturally in ~320s, so 30
+      # minutes is six missed intervals rather than one slow one.
+      expr: pg_stat_archiver_last_archive_age > 1800 and on (instance) pg_replication_is_replica == 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "PostgreSQL WAL archiving has stalled"
+        description: "No WAL segment archived on {{ $labels.instance }} for {{ $value | printf \"%.0f\" }} seconds. Point-in-time recovery is falling behind."
 
     - alert: PostgresHighRollbackRate
       expr: rate(pg_stat_database_xact_rollback[5m]) / (rate(pg_stat_database_xact_commit[5m]) + rate(pg_stat_database_xact_rollback[5m])) * 100 > 10
