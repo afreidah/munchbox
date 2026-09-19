@@ -15,14 +15,8 @@ terraform {
 
 locals {
   # --- key = Vault secret name a consumer reads; value = generation options
-  #     (lengths default to S3-style). s3-bucket/* authenticate the
-  #     s3-orchestrator virtual buckets of the matching name. ---
+  #     (lengths default to S3-style). ---
   access_key_requests = {
-    "s3-bucket/unified"      = {}
-    "s3-bucket/aptly"        = { id_length = 32, secret_length = 64 }
-    "s3-bucket/tempo-traces" = {}
-    "s3-bucket/artifacts"    = {}
-
     # --- edge-proxy/*: the keypair s3-orchestrator signs with when it reaches a
     #     backend through its Cloudflare worker. The worker verifies this
     #     signature, then re-signs to the origin with the backend's own

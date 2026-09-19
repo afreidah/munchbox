@@ -76,12 +76,10 @@ they were: only egress is waived.
 
 ## Notable configuration
 
-- Vault role `s3-orchestrator`: its own prefix plus the four
-  `s3-bucket/*` keys the config block declares, the three `edge-proxy/*`
-  keypairs, `redis-shared`, and transit
+- Vault role `s3-orchestrator`: its own prefix plus the three
+  `edge-proxy/*` keypairs, `redis-shared`, and transit
 - Clients authenticate as store identities under `secret/s3-identity/*`,
-  which carry only the permissions each one uses; the `s3-bucket/*` keys
-  remain because a config-declared bucket must name a credential
+  which carry only the permissions each one uses
 - Routing strategy `spread`; replication factor 2
 - Per-backend `disable_checksum` / `unsigned_payload` /
   `strip_sdk_headers` flags for GCS and e2 compatibility
