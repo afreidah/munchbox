@@ -50,6 +50,13 @@ locals {
       grants = [{ name = "artifacts", permissions = ["list", "read"] }]
     }
 
+    # wal-g enforces its own retention, so the archive identity deletes as well
+    # as writes.
+    "postgres-wal" = {
+      label  = "patroni wal archive"
+      grants = [{ name = "postgres-wal", permissions = ["list", "read", "write", "delete"] }]
+    }
+
     # --- a human's credential, and what munchbox-env.sh exports. Carries root's
     #     grant set so it can do everything root can, but as a store row that
     #     can be revoked or narrowed. Root stays: it is templated from config
@@ -66,10 +73,10 @@ locals {
 
   # --- buckets declared here rather than in the orchestrator's job file ---
   #
-  # All four are still declared in that job file too, and while they are, the
-  # rows below do nothing: the orchestrator serves the config entry and reports
-  # the row as shadowed. Each one takes over when its entry is removed, so a
-  # bucket moves across without a moment where neither source declares it.
+  # A bucket the job file also declares is served from there, and the row here
+  # stays shadowed until that entry is removed, so a bucket moves across without
+  # a moment where neither source declares it. That covers every one below
+  # except postgres-wal, which this is the only declaration of.
   #
   # None of them carry a multipart limit or CORS rules, matching the entries
   # they are taking over from. A difference here would change how the bucket
@@ -79,6 +86,7 @@ locals {
     "aptly"        = {}
     "tempo-traces" = {}
     "artifacts"    = {}
+    "postgres-wal" = {}
   }
 }
 
