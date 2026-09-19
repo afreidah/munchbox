@@ -643,7 +643,8 @@ PG_EXPORTER_DISABLE_SETTINGS_METRICS=false
   "WALG_S3_PREFIX": "s3://postgres-wal/munchbox-postgres",
   "WALG_COMPRESSION_METHOD": "lz4",
   "WALG_UPLOAD_CONCURRENCY": "2",
-  "WALG_UPLOAD_DISK_CONCURRENCY": "1"
+  "WALG_UPLOAD_DISK_CONCURRENCY": "1",
+  "WALG_TAR_SIZE_THRESHOLD": "268435456"
 }
 {{ end }}
         EOF
@@ -712,10 +713,14 @@ done
         EOF
       }
 
-      # --- compressing 4.4GB of heap is the one CPU-hungry moment here ---
+      # --- wal-g holds a tar part in memory while it uploads it, so the ceiling
+      #     tracks WALG_TAR_SIZE_THRESHOLD times the upload concurrency rather
+      #     than the size of the database. memory_max absorbs the peak without
+      #     reserving it against every other job on the node. ---
       resources {
-        cpu    = 500
-        memory = 256
+        cpu        = 500
+        memory     = 768
+        memory_max = 2048
       }
     }
   }
