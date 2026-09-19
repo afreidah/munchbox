@@ -58,9 +58,11 @@ locals {
     enable_intel_low_power_hevc_hw_encoder  = false
     enable_hardware_encoding                = true
     allow_hevc_encoding                     = true
-    allow_av1_encoding                      = true
-    enable_subtitle_extraction              = true
-    hardware_decoding_codecs                = ["h264", "vc1", "hevc", "av1"]
+    # --- the A1000 is Ampere: it decodes AV1 but has no AV1 encoder, so asking
+    #     for one only buys a silent fallback to software ---
+    allow_av1_encoding         = false
+    enable_subtitle_extraction = true
+    hardware_decoding_codecs   = ["h264", "vc1", "hevc", "av1"]
 
     allow_on_demand_metadata_based_keyframe_extraction_for_extensions = ["mkv"]
   }
