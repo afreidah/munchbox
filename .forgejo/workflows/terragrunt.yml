@@ -187,6 +187,13 @@ jobs:
           export TERRAGRUNT_DOWNLOAD="$TG_DOWNLOAD_DIR"
           mkdir -p "$TG_DOWNLOAD_DIR"
 
+          # The env file bounds a person's wait on a stalled Vault at five
+          # seconds, which is far too short here: every unit's vault provider
+          # looks its token up as it configures, and they all do it at once, so
+          # a busy moment fails whichever units happen to be in it. Overridden
+          # after the source for the same reason TG_DOWNLOAD_DIR is.
+          export VAULT_CLIENT_TIMEOUT=60
+
           cd infrastructure/terragrunt
 
           filter=""
@@ -194,10 +201,14 @@ jobs:
             filter="${filter} --filter=${unit}"
           done
 
+          # Without a bound, every unit in the set starts terraform at once and
+          # the shared Vault and Patroni see the whole run arrive together.
+          parallelism="--parallelism 12"
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            terragrunt run --all apply ${filter}
+            terragrunt run --all apply ${parallelism} ${filter}
           else
-            terragrunt run --all plan ${filter}
+            terragrunt run --all plan ${parallelism} ${filter}
             echo "::notice title=plan only::run this workflow manually with confirm=apply to apply it"
           fi
 
