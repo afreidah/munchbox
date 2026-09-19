@@ -184,14 +184,6 @@ buckets:
     credentials:
       - access_key_id: "{{ with secret "secret/data/s3-bucket/unified" }}{{ .Data.data.access_key }}{{ end }}"
         secret_access_key: "{{ with secret "secret/data/s3-bucket/unified" }}{{ .Data.data.secret_key }}{{ end }}"
-  - name: "aptly"
-    credentials:
-      - access_key_id: "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.access_key }}{{ end }}"
-        secret_access_key: "{{ with secret "secret/data/s3-bucket/aptly" }}{{ .Data.data.secret_key }}{{ end }}"
-  - name: "tempo-traces"
-    credentials:
-      - access_key_id: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.access_key }}{{ end }}"
-        secret_access_key: "{{ with secret "secret/data/s3-bucket/tempo-traces" }}{{ .Data.data.secret_key }}{{ end }}"
 
 database:
   host: "haproxy-postgres.service.consul"
