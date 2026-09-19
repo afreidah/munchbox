@@ -12,7 +12,7 @@ job "patroni" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
-  node_pool   = "all"
+  node_pool   = "default"
   priority    = 80
 
   # ---------------------------------------------------------------------------
@@ -31,11 +31,14 @@ job "patroni" {
   update {
     max_parallel = 1
     # --- gate on the /health check (node rejoined as a Patroni member), not just
-    #     container start; primary/replica routing checks are on_update=ignore ---
+    #     container start; primary/replica routing checks are on_update=ignore.
+    #     A replacement alloc starts on an empty data dir and clones ~4.4GB from
+    #     the leader before Patroni answers, so the deadlines cover a basebackup
+    #     rather than a container start. ---
     health_check      = "checks"
     min_healthy_time  = "60s"
-    healthy_deadline  = "10m"
-    progress_deadline = "15m"
+    healthy_deadline  = "20m"
+    progress_deadline = "25m"
     auto_revert       = true
   }
 
@@ -61,11 +64,37 @@ job "patroni" {
       value    = "true"
     }
 
-    # --- Run on ingress nodes only (meta.role=ingress), paired with haproxy ---
+    # --- Off the ingress pair: the database competes with traefik and
+    #     keepalived for I/O, and goren boots off an SD card. ---
     constraint {
       attribute = "${meta.role}"
-      operator  = "="
+      operator  = "!="
       value     = "ingress"
+    }
+
+    # --- x86 only. The Pi5s are arm64 on SD cards, and the node_pool above
+    #     already holds the oracle nodes out; a member behind WireGuard would
+    #     put leader election on the link that needed ttl/suspicion tuning to
+    #     stop false failovers. ---
+    constraint {
+      attribute = "${attr.cpu.arch}"
+      value     = "amd64"
+    }
+
+    # --- Off the GPU node: jellyfin transcodes there, and a hung /tank NFS
+    #     mount has driven it to load 40+ with zero throughput. ---
+    constraint {
+      attribute = "${meta.gpu}"
+      operator  = "!="
+      value     = "true"
+    }
+
+    # --- 10GB floor. The task reserves 1GB, but Postgres wants the rest of the
+    #     node's RAM for page cache, and client-03 has half what the others do. ---
+    constraint {
+      attribute = "${attr.memory.totalbytes}"
+      operator  = ">="
+      value     = "10000000000"
     }
 
     # --- Network Configuration ---
