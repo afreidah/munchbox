@@ -75,6 +75,15 @@ locals {
     region         = "us-phoenix-1"
   }
 
+  # --- the project id is an identifier, not a credential; the ADC in
+  #     vault:secret/gcp/adc is an authorized_user grant and carries no project,
+  #     so anything creating project-scoped resources has to be told which one.
+  #     Buckets are exempt only because their names are globally unique. ---
+  gcp_defaults = {
+    project = "munchbox-66afc"
+    region  = "us-central1"
+  }
+
   proxmox_defaults = {
     target_node    = "pve"
     disk_storage   = "local-lvm"
