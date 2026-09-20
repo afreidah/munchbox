@@ -87,6 +87,22 @@ dependency "access_keys" {
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
+dependency "code_engine" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/ibm/code-engine"
+
+  mock_outputs = {
+    vault_data = {
+      vagabond = {
+        api_key    = "mock-code-engine-api-key"
+        project_id = "00000000-0000-0000-0000-000000000000"
+        region     = "us-south"
+        endpoint   = "https://api.us-south.codeengine.cloud.ibm.com/v2"
+      }
+    }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+}
+
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
@@ -146,6 +162,13 @@ locals {
       source = "access_keys"
       key    = "dnsdist"
     }
+    # --- the api_key is the only secret here; project_id, region and endpoint
+    #     travel with it because a key without its coordinates reaches nothing,
+    #     and vagabond's provider block names one path rather than four. ---
+    "vagabond/code-engine" = {
+      source = "code_engine"
+      key    = "vagabond"
+    }
   }
 }
 
@@ -164,6 +187,7 @@ inputs = {
           gossip_keys       = dependency.gossip_keys.outputs.vault_data
           cinc_server_keys  = dependency.cinc_server_keys.outputs.vault_data
           passwords         = dependency.passwords.outputs.vault_data
+          code_engine       = dependency.code_engine.outputs.vault_data
         }[s.source][s.key],
       )
     }
