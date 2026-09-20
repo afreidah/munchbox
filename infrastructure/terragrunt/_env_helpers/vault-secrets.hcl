@@ -103,6 +103,23 @@ dependency "code_engine" {
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
+dependency "cloud_run_jobs" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/gcp/cloud-run-jobs"
+
+  mock_outputs = {
+    vault_data = {
+      vagabond = {
+        credentials_json      = "{\"type\":\"service_account\"}"
+        project               = "mock-project"
+        region                = "us-central1"
+        dispatcher_email      = "vagabond-dispatch@mock-project.iam.gserviceaccount.com"
+        runtime_account_email = "vagabond-run@mock-project.iam.gserviceaccount.com"
+      }
+    }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+}
+
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
@@ -169,6 +186,12 @@ locals {
       source = "code_engine"
       key    = "vagabond"
     }
+    # --- the dispatcher key, plus the project, region and runtime identity a
+    #     job submission needs alongside it. ---
+    "vagabond/cloud-run" = {
+      source = "cloud_run_jobs"
+      key    = "vagabond"
+    }
   }
 }
 
@@ -188,6 +211,7 @@ inputs = {
           cinc_server_keys  = dependency.cinc_server_keys.outputs.vault_data
           passwords         = dependency.passwords.outputs.vault_data
           code_engine       = dependency.code_engine.outputs.vault_data
+          cloud_run_jobs    = dependency.cloud_run_jobs.outputs.vault_data
         }[s.source][s.key],
       )
     }
