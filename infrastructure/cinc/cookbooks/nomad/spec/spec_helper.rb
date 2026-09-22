@@ -11,6 +11,9 @@ require 'chefspec'
 # --- Load vault_fetch lib so MunchboxLibVaultFetch exists for the stub below ---
 require File.expand_path('../../munchbox_lib/libraries/vault_fetch.rb', __dir__)
 
+# --- Same for pinned_version, which install.rb calls for the binary version ---
+require File.expand_path('../../munchbox_lib/libraries/pinned_version.rb', __dir__)
+
 Dir[File.expand_path('support/**/*.rb', __dir__)].each { |f| require f }
 
 ChefSpec::Coverage.start! { add_filter 'munchbox_lib' }
@@ -21,6 +24,9 @@ RSpec.configure do |c|
   c.before(:each) do
     MunchboxLibVaultFetch.module_eval do
       define_method(:vault_fetch) { |_path, _field| 'fake-vault-value' }
+    end
+    MunchboxLibPinnedVersion.module_eval do
+      define_method(:pinned_version) { |_tool| '2.0.5' }
     end
   end
 end

@@ -8,12 +8,12 @@
 # -------------------------------------------------------------------------------
 # Binary install
 #
-# Pinned to the version currently running in the munchbox cluster.
+# The version lives in the `versions/nomad` data bag, not here. See
+# munchbox_lib's pinned_version library.
 # -------------------------------------------------------------------------------
 
 # --- user/group default to root for parity with ansible (state trees under /var/lib/nomad are root-owned). ---
 default[cookbook]['install'] = {
-  version: '2.0.5',
   bin_path: '/usr/local/bin/nomad',
   user: 'root',
   group: 'root',

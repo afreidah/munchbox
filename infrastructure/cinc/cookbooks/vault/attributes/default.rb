@@ -20,14 +20,15 @@
 # -------------------------------------------------------------------------------
 # Binary install
 #
-# Pinned to the version currently running in the munchbox cluster.
-# Bumping = re-upload + converge; the install notifies a restart and the OCI KMS
-# seal brings the node back unsealed on its own. Converge one node at a time and
-# step the active node down before promoting it.
+# The version lives in the `versions/vault` data bag, not here. See
+# munchbox_lib's pinned_version library.
+#
+# The install notifies a restart and the OCI KMS seal brings the node back
+# unsealed on its own. Converge one node at a time and step the active node
+# down before promoting it.
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  version: '2.0.4',
   bin_path: '/usr/local/bin/vault',
   user: 'vault',
   group: 'vault',

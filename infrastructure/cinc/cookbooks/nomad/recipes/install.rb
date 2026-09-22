@@ -6,7 +6,7 @@
 # -------------------------------------------------------------------------------
 
 nomad_install 'nomad' do
-  version    node[cookbook]['install']['version']
+  version    pinned_version(cookbook)
   bin_path   node[cookbook]['install']['bin_path']
   user       node[cookbook]['install']['user']
   group      node[cookbook]['install']['group']
