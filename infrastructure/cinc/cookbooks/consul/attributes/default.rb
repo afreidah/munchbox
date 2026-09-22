@@ -8,12 +8,11 @@
 # -------------------------------------------------------------------------------
 # Binary install
 #
-# Pinned to the version currently running in the munchbox cluster. Bumping
-# = re-upload the cookbook + every node re-converges to fetch + restart.
+# The version lives in the `versions/consul` data bag, not here. See
+# munchbox_lib's pinned_version library.
 # -------------------------------------------------------------------------------
 
 default[cookbook]['install'] = {
-  version: '2.0.3',
   bin_path: '/usr/local/bin/consul',
   user: 'consul',
   group: 'consul',
