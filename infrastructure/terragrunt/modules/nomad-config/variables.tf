@@ -6,6 +6,7 @@
 # Variable Categories:
 #   - Scheduler: Algorithm, preemption, and memory oversubscription settings
 #   - Node Pools: Logical pool definitions for workload placement
+#   - Variables: Cluster-wide key/value stored in Raft
 # -----------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
@@ -49,6 +50,19 @@ variable "node_pools" {
   type = map(object({
     description         = optional(string, "")
     scheduler_algorithm = optional(string, null)
+  }))
+  default = {}
+}
+
+# -------------------------------------------------------------------------
+# VARIABLES
+# -------------------------------------------------------------------------
+
+variable "nomad_variables" {
+  description = "Nomad variables to manage, keyed by path. Items are stored in Terraform state, so secrets belong in Vault rather than here"
+  type = map(object({
+    namespace = optional(string, "default")
+    items     = map(string)
   }))
   default = {}
 }

@@ -11,6 +11,7 @@
 # Components:
 #   - Scheduler Config: Algorithm (binpack/spread), preemption, oversubscription
 #   - Node Pools: Logical groupings for workload placement constraints
+#   - Variables: Cluster-wide key/value any client with the ACL can read
 # -----------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------
@@ -45,4 +46,17 @@ resource "nomad_node_pool" "pool" {
       scheduler_algorithm = scheduler_config.value
     }
   }
+}
+
+# -------------------------------------------------------------------------
+# VARIABLES
+# -------------------------------------------------------------------------
+
+# --- items land in state, so anything secret belongs in Vault instead ---
+resource "nomad_variable" "this" {
+  for_each = var.nomad_variables
+
+  path      = each.key
+  namespace = each.value.namespace
+  items     = each.value.items
 }
