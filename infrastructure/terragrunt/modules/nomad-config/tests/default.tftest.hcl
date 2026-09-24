@@ -5,8 +5,8 @@
 #
 # Asserts the scheduler config flows through, preemption flags map 1:1 from
 # the input shape to the nomad attribute names, node_pools for_each fans out
-# correctly, and the dynamic scheduler_config block only renders when a
-# per-pool algorithm is set.
+# correctly, the dynamic scheduler_config block only renders when a per-pool
+# algorithm is set, and nomad_variables fan out one resource per path.
 # -----------------------------------------------------------------------------
 
 mock_provider "nomad" {}
@@ -23,6 +23,10 @@ variables {
   node_pools = {
     "oracle" = { description = "Oracle Cloud nodes", scheduler_algorithm = null }
     "edge"   = { description = "edge nodes", scheduler_algorithm = "binpack" }
+  }
+  nomad_variables = {
+    "cluster/identity" = { items = { name = "example" } }
+    "tooling/settings" = { namespace = "tooling", items = { enabled = "true", mode = "fast" } }
   }
 }
 
@@ -139,5 +143,79 @@ run "empty_node_pools" {
   assert {
     condition     = length(nomad_node_pool.pool) == 0
     error_message = "empty node_pools should produce zero resources"
+  }
+}
+
+# -------------------------------------------------------------------------
+# nomad_variables for_each: the map key is the variable path
+# -------------------------------------------------------------------------
+
+run "nomad_variables_for_each" {
+  command = plan
+
+  # --- two paths input -> two resources ---
+  assert {
+    condition     = length(nomad_variable.this) == 2
+    error_message = "two nomad_variables input -> two resources"
+  }
+
+  # --- the map key is the path, not a separate attribute to keep in step ---
+  assert {
+    condition     = nomad_variable.this["cluster/identity"].path == "cluster/identity"
+    error_message = "variable path must come from the map key"
+  }
+
+  # --- items propagate verbatim ---
+  assert {
+    condition     = nomad_variable.this["cluster/identity"].items["name"] == "example"
+    error_message = "items must come from var.nomad_variables[key].items"
+  }
+
+  # --- a path carrying several items keeps all of them ---
+  assert {
+    condition     = length(nomad_variable.this["tooling/settings"].items) == 2
+    error_message = "all items for a path must be set"
+  }
+
+  # --- namespace defaults to default when the caller omits it ---
+  assert {
+    condition     = nomad_variable.this["cluster/identity"].namespace == "default"
+    error_message = "namespace must default to 'default'"
+  }
+
+  # --- an explicit namespace overrides the default ---
+  assert {
+    condition     = nomad_variable.this["tooling/settings"].namespace == "tooling"
+    error_message = "explicit namespace must be honoured"
+  }
+
+  # --- OUTPUT: paths are reported, items are not ---
+  assert {
+    condition     = output.nomad_variable_paths == tolist(["cluster/identity", "tooling/settings"])
+    error_message = "output.nomad_variable_paths must list every managed path, sorted"
+  }
+}
+
+# -------------------------------------------------------------------------
+# Empty nomad_variables edge case: zero resources
+# -------------------------------------------------------------------------
+
+run "empty_nomad_variables" {
+  command = plan
+
+  variables {
+    nomad_variables = {}
+  }
+
+  # --- a module that manages no variables creates none ---
+  assert {
+    condition     = length(nomad_variable.this) == 0
+    error_message = "empty nomad_variables should produce zero resources"
+  }
+
+  # --- and reports an empty path list rather than null ---
+  assert {
+    condition     = length(output.nomad_variable_paths) == 0
+    error_message = "output.nomad_variable_paths must be empty, not null"
   }
 }

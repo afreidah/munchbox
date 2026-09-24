@@ -36,4 +36,15 @@ inputs = {
       description = "Oracle Cloud nodes connected via WireGuard tunnel for remote/edge workloads"
     }
   }
+
+  # --- Cluster-wide values in Raft. Readable by anything holding the ACL, and
+  #     unlike node meta they cover server-only hosts, which have no node
+  #     object to carry meta on. Nothing secret: items land in state. ---
+  nomad_variables = {
+    "cluster/identity" = {
+      items = {
+        name = "munchbox"
+      }
+    }
+  }
 }
