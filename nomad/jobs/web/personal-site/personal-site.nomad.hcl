@@ -3,9 +3,13 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Serves alexfreidah.com (and www) from a static container. Public over HTTP
-# via the Cloudflare tunnel (router alex-web, resume-sec middleware); TLS
-# terminates at Cloudflare, so Traefik only sees :80. No Vault.
+# Serves alexfreidah.com from a static container: home page, resume, and posts.
+# Public over HTTP via the Cloudflare tunnel; TLS terminates at Cloudflare, so
+# Traefik only sees :80. No Vault.
+#
+# www.alexfreidah.com redirects to the apex, and resume.alexfreidah.com (and
+# www) redirects to /resume/. Both redirects are defined in this job's service
+# tags.
 # -------------------------------------------------------------------------------
 
 job "personal-site" {
@@ -48,7 +52,7 @@ job "personal-site" {
   # ---------------------------------------------------------------------------
 
   group "personal-site" {
-    count = 3
+    count = 4
 
     network {
       mode = "bridge"
@@ -96,8 +100,23 @@ job "personal-site" {
         "traefik.http.routers.alex-web.rule=Host(`alexfreidah.com`) || Host(`www.alexfreidah.com`)",
         "traefik.http.routers.alex-web.entrypoints=web",
         "traefik.http.routers.alex-web.service=personal-site",
-        "traefik.http.routers.alex-web.middlewares=resume-sec@file",
+        "traefik.http.routers.alex-web.middlewares=alex-www-redirect,resume-sec@file,resume-ratelimit@file",
         "traefik.http.routers.alex-web.priority=101",
+
+        # --- www to apex ---
+        "traefik.http.middlewares.alex-www-redirect.redirectregex.regex=^https?://www\\.alexfreidah\\.com/(.*)",
+        "traefik.http.middlewares.alex-www-redirect.redirectregex.replacement=https://alexfreidah.com/$${1}",
+        "traefik.http.middlewares.alex-www-redirect.redirectregex.permanent=true",
+
+        # --- Old resume hostname to /resume/ ---
+        "traefik.http.routers.alex-resume.rule=Host(`resume.alexfreidah.com`) || Host(`www.resume.alexfreidah.com`)",
+        "traefik.http.routers.alex-resume.entrypoints=web",
+        "traefik.http.routers.alex-resume.service=personal-site",
+        "traefik.http.routers.alex-resume.middlewares=alex-resume-redirect",
+        "traefik.http.routers.alex-resume.priority=100",
+        "traefik.http.middlewares.alex-resume-redirect.redirectregex.regex=^https?://(www\\.)?resume\\.alexfreidah\\.com/.*",
+        "traefik.http.middlewares.alex-resume-redirect.redirectregex.replacement=https://alexfreidah.com/resume/",
+        "traefik.http.middlewares.alex-resume-redirect.redirectregex.permanent=true",
       ]
 
       check {
@@ -119,7 +138,7 @@ job "personal-site" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/personal-site:v0.0.5"
+        image              = "registry.munchbox.cc/personal-site:v0.1.1"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }
