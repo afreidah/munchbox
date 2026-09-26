@@ -12,6 +12,11 @@ output "site_tokens" {
   value       = { for k, s in cloudflare_web_analytics_site.this : k => s.site_token }
 }
 
+output "rum_enabled" {
+  description = "Whether each zone's RUM ruleset is live, as the API reports it. The enabled input is write-only and reads back null, so this is the only field that says whether collection is actually on."
+  value       = { for k, s in cloudflare_web_analytics_site.this : k => try(s.ruleset.enabled, null) }
+}
+
 output "snippets" {
   description = "Encoded JS beacon snippet per zone, for gray-clouded sites that must embed the beacon manually."
   value       = { for k, s in cloudflare_web_analytics_site.this : k => s.snippet }

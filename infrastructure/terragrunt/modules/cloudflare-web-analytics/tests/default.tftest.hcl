@@ -67,6 +67,12 @@ run "fan_out_per_site" {
     condition     = toset(keys(output.snippets)) == toset(["munchbox", "alexfreidah"])
     error_message = "snippets must be keyed by every site"
   }
+
+  # --- rum_enabled keyed by every site (ruleset computed) ---
+  assert {
+    condition     = toset(keys(output.rum_enabled)) == toset(["munchbox", "alexfreidah"])
+    error_message = "rum_enabled must be keyed by every site"
+  }
 }
 
 # -------------------------------------------------------------------------
