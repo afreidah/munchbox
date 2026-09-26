@@ -81,7 +81,11 @@ jobs:
           # matches nothing, so under pipefail a push touching no Nomad job --
           # the ordinary case -- would fail this step. awk exits 0 on empty
           # input.
-          jobs=$(git diff --name-only "$base" "${{ github.sha }}" -- nomad/jobs/ \
+          #
+          # diff-filter=d drops deletions. A removed spec is still a changed
+          # path, and deploying the job it named asks make to run a file that is
+          # no longer there, so the push that retires a job would fail on it.
+          jobs=$(git diff --diff-filter=d --name-only "$base" "${{ github.sha }}" -- nomad/jobs/ \
             | awk -F/ 'NF>=4 && $3 != "deprecated"' \
             | while IFS= read -r path; do
                 case "$path" in
