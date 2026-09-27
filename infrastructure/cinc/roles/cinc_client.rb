@@ -19,6 +19,7 @@ run_list(
   'recipe[cinc_client::install]',
   'recipe[cinc_client::configure]',
   'recipe[cinc_client::data_bag_secret]',
+  'recipe[cinc_client::handler]',
   'recipe[cinc_client::service]'
 )
 
@@ -26,6 +27,9 @@ override_attributes(
   cinc_client: {
     service: {
       timer_enabled: true,
+    },
+    handler: {
+      enabled: true,
     },
   }
 )

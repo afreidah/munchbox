@@ -78,3 +78,26 @@ default[cookbook]['service'] = {
   # --- Each node picks a random offset within this window so the fleet doesn't thundering-herd cinc-server / Vault every hour ---
   randomized_delay_sec: '30m',
 }
+
+# -------------------------------------------------------------------------------
+# Failed-run alerting
+#
+# A failed converge posts itself to Alertmanager, so a node that stops
+# converging is reported by the node rather than inferred from its silence.
+# Off by default for the same reason the timer is: kitchen and first-run
+# provisioning have no cluster to report to. Roles that enable the timer
+# enable this with it.
+#
+# The window has to outlast the longest gap between runs -- on_calendar plus
+# randomized_delay_sec -- or a node that keeps failing lets the alert expire
+# and re-fire between converges instead of staying up.
+# -------------------------------------------------------------------------------
+
+default[cookbook]['handler'] = {
+  enabled: false,
+  endpoint: 'http://alertmanager.service.consul:9093',
+  window: 7200,
+  severity: 'warning',
+  timeout: 5,
+  path: '/var/cinc/handlers',
+}
