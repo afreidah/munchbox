@@ -143,15 +143,17 @@ proxy_cache_bypass $apt_no_cache;
         EOF
       }
 
-      # --- AWS credentials from Vault (env-injected) ---
+      # --- AWS credentials from Vault (env-injected). The keypair is the one
+      #     s3-orchestrator mints for the aptly identity; anything else signs a
+      #     request the backend denies, which nginx-s3-gateway reports as 404. ---
       template {
         destination = "secrets/aws.env"
         perms       = "0600"
         env         = true
         data        = <<-EOF
-{{ with secret "secret/data/aptly" -}}
-AWS_ACCESS_KEY_ID={{ .Data.data.s3_access_key }}
-AWS_SECRET_ACCESS_KEY={{ .Data.data.s3_secret_key }}
+{{ with secret "secret/data/s3-identity/aptly" -}}
+AWS_ACCESS_KEY_ID={{ .Data.data.access_key }}
+AWS_SECRET_ACCESS_KEY={{ .Data.data.secret_key }}
 {{- end }}
         EOF
       }
