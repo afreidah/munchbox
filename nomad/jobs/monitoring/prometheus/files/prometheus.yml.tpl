@@ -272,7 +272,6 @@ scrape_configs:
           # External sites
           - "https://alexfreidah.com"
           - "https://resume.alexfreidah.com/"
-          - "https://k3s-status.alexfreidah.com/"
           # Public munchbox.cc services (via Cloudflare tunnel, no Authentik)
           - "https://jellyfin.munchbox.cc/web/"
     relabel_configs:

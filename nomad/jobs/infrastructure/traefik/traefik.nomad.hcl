@@ -529,18 +529,6 @@ EOH
     referrerPolicy          = "no-referrer"
     contentSecurityPolicy   = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' https://analytics.alexfreidah.com; connect-src 'self' https://analytics.alexfreidah.com; frame-ancestors 'self'"
 
-  # --- k3s-status security headers ---
-  [http.middlewares.k3s-status-sec.headers]
-    stsSeconds              = 31536000
-    stsIncludeSubdomains    = true
-    forceSTSHeader          = true
-    contentTypeNosniff      = true
-    customFrameOptionsValue = "SAMEORIGIN"
-    referrerPolicy          = "no-referrer"
-    contentSecurityPolicy   = "default-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https:; connect-src 'self' https: ws: wss:; worker-src 'self' blob:; frame-ancestors 'self'"
-    [http.middlewares.k3s-status-sec.headers.customResponseHeaders]
-      Cache-Control = "no-store, no-cache, must-revalidate"
-
   # --- Default security headers (for services without custom CSP) ---
   [http.middlewares.default-sec.headers]
     stsSeconds              = 31536000

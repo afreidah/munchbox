@@ -215,7 +215,6 @@ inputs = {
       { hostname = "alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "alexfreidah.com" }) },
       { hostname = "www.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "www.alexfreidah.com" }) },
       { hostname = "resume.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "resume.alexfreidah.com" }) },
-      { hostname = "k3s-status.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "k3s-status.alexfreidah.com" }) },
       { hostname = "analytics.alexfreidah.com", service = "http://127.0.0.1:80", origin_request = merge(local.af_origin, { http_host_header = "analytics.alexfreidah.com" }) },
       { hostname = "*.munchbox.cc", service = "http://127.0.0.1:80" },
       { service = "http_status:404" },
