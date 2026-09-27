@@ -95,7 +95,7 @@ locals {
   #     prefix, via the templated nomad-workload-self policy. ---
   workload_extra_secrets = {
     "aptly"                    = { secrets = ["aptly-admin", "s3-identity/aptly"] }
-    "aptly-s3-gateway"         = { secrets = ["aptly"] }
+    "aptly-s3-gateway"         = { secrets = ["aptly", "s3-identity/aptly"] }
     "backup-worker"            = { secrets = ["consul/backup-worker-token", "postgres-shared/root", "s3-identity/temporal-backups-worker"] }
     "cloudflare-log-collector" = { secrets = ["cloudflare-logcollector"] }
     "deluge"                   = { secrets = ["mullvad"] }
