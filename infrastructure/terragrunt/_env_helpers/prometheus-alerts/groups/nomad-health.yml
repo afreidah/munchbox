@@ -1,5 +1,6 @@
 # nomad-health alert group
-# Cluster-level Nomad health: leader election churn.
+# Cluster-level Nomad health: leader election churn, and jobs that stopped
+# without failing.
 # Per-server scrape liveness is covered by the generic ServiceDown rule;
 # per-job sadness is covered by NomadAllocationPending + NomadJobRestartLoop
 # in the nomad-container-health group.
@@ -15,3 +16,21 @@
       annotations:
         summary: "Nomad leader election occurred"
         description: "Nomad cluster experienced a leader election in the last 5 minutes."
+
+    # A job scaled to zero reports nothing failed, so the allocation and restart
+    # rules stay quiet: registrygc stops the registry to collect it and a run
+    # that dies before restoring it leaves the registry down with a clean
+    # summary. Comparing against the last day finds a job that was running and
+    # is not, without naming any job here. Parameterized dispatches are excluded
+    # because reaching zero is how they finish.
+    - alert: NomadJobStopped
+      expr: |
+        max by (exported_job) (nomad_nomad_job_summary_running{exported_job!~".+/dispatch-.+"}) == 0
+        and
+        max by (exported_job) (max_over_time(nomad_nomad_job_summary_running{exported_job!~".+/dispatch-.+"}[24h])) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Nomad job {{ $labels.exported_job }} has no running allocations"
+        description: "{{ $labels.exported_job }} ran within the last day and has had no running allocation for 15 minutes. Nothing failed, so it was stopped or scaled to zero and not restored."
