@@ -1,0 +1,18 @@
+<%#
+  Cookbook:: cinc_client
+  Template:: handler.rb.erb
+
+  Rendered at /etc/cinc/client.d/alertmanager.rb. client.d is loaded after
+  client.rb, so registration lives here and the configure recipe keeps sole
+  ownership of client.rb.
+%>
+# Managed by chef (cinc_client::handler) -- do not edit by hand.
+
+require '<%= @handler_path %>'
+
+exception_handlers << Munchbox::AlertmanagerHandler.new(
+  'endpoint' => '<%= @endpoint %>',
+  'window' => <%= @window %>,
+  'severity' => '<%= @severity %>',
+  'timeout' => <%= @timeout %>
+)
