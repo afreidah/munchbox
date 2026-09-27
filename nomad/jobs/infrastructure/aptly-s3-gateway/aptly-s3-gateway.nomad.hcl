@@ -10,13 +10,17 @@
 # Lives in its own Nomad job (separate from aptly itself) so nginx-s3-gateway
 # and aptly's bundled nginx don't fight over port 80 inside a shared alloc
 # network namespace.
+#
+# Runs in the default node pool. Resolving s3-orchestrator through Consul DNS is
+# the whole of the upstream, so a node whose containers cannot reach their
+# resolver serves 404 for every path and apt-get update exits 100 fleet-wide.
 # -------------------------------------------------------------------------------
 
 job "aptly-s3-gateway" {
   region      = "global"
   datacenters = ["munchbox"]
   type        = "service"
-  node_pool   = "all"
+  node_pool   = "default"
   priority    = 40
 
   meta {
