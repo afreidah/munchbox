@@ -151,8 +151,7 @@ locals {
     # --- public (alexfreidah.com zone). personal-site carries the resume hosts:
     #     its alex-resume router 301s them to the apex /resume/, which it can
     #     only do while they still resolve. ---
-    "personal-site"  = { public = true, zone = "alexfreidah", hosts = ["@", "www", "resume", "www.resume"] }
-    "health-checker" = { public = true, zone = "alexfreidah", hosts = ["k3s-status"] }
+    "personal-site" = { public = true, zone = "alexfreidah", hosts = ["@", "www", "resume", "www.resume"] }
 
     # --- internal only (munchbox.cc, LAN by name) ---
     "alertmanager"    = {}

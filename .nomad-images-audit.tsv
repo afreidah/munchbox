@@ -28,7 +28,6 @@ github-runner-moat	runner	runner	registry.munchbox.cc/moat-runner-standard:1.0.3
 github-runner-moat-vm	runner	runner	registry.munchbox.cc/moat-runner-vm:1.0.3
 grafana	grafana	grafana	grafana/grafana:12.4.1
 haproxy	haproxy	haproxy	haproxy:3.1-alpine
-health-checker	health-checker	health-checker	registry.munchbox.cc/health-checker:latest
 jellyfin	jellyfin	jellyfin	jellyfin/jellyfin:10.11.6
 keepalived	keepalived	keepalived	alpine:3.21
 lidarr	lidarr	init-storage	busybox:latest
