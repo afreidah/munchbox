@@ -38,7 +38,6 @@ minio	minio	minio	minio/minio:latest
 nextcloud	nextcloud	nextcloud	nextcloud:33.0-apache
 nextcloud	nextcloud	cron	nextcloud:33.0-apache
 nextcloud-exporter	nextcloud-exporter	nextcloud-exporter	xperimental/nextcloud-exporter:0.9.0
-nginx-resume	nginx-resume	nginx-resume	registry.munchbox.cc/alex-resume:v0.0.1
 nomad-temporal-jobs-webpage	nomad-temporal-jobs-webpage	nomad-temporal-jobs-webpage	registry.munchbox.cc/temporal-workers-web:v0.2.2
 oauth2-proxy	oauth2-proxy	oauth2-proxy	quay.io/oauth2-proxy/oauth2-proxy:v7.14.2
 oracle-watchdog	agent	oracle-watchdog	registry.munchbox.cc/oracle-watchdog:v0.0.9

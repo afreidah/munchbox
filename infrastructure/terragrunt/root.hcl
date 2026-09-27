@@ -148,9 +148,10 @@ locals {
     "oracle-watchdog"          = { public = true }
     "flights"                  = { public = true }
 
-    # --- public (alexfreidah.com zone) ---
-    "personal-site"  = { public = true, zone = "alexfreidah", hosts = ["@", "www"] }
-    "nginx-resume"   = { public = true, zone = "alexfreidah", hosts = ["resume", "www.resume"] }
+    # --- public (alexfreidah.com zone). personal-site carries the resume hosts:
+    #     its alex-resume router 301s them to the apex /resume/, which it can
+    #     only do while they still resolve. ---
+    "personal-site"  = { public = true, zone = "alexfreidah", hosts = ["@", "www", "resume", "www.resume"] }
     "health-checker" = { public = true, zone = "alexfreidah", hosts = ["k3s-status"] }
 
     # --- internal only (munchbox.cc, LAN by name) ---

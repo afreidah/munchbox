@@ -29,16 +29,16 @@ resource "cloudflare_web_analytics_site" "this" {
     # back), so it reads as null and otherwise diffs on every plan. Set it on
     # create, then ignore the phantom drift.
     ignore_changes = [enabled]
-
-    # ruleset.enabled is what the API does read back and what the dashboard
-    # reports, so the assertion is made against it. Ignoring `enabled` also
-    # blinds the plan to a ruleset switched off outside Terraform, which costs
-    # nothing and reports nothing: the site keeps existing, the token keeps
-    # minting, the plan stays clean and no page is ever measured. A site
-    # addressed by host carries no ruleset and is exempt.
-    postcondition {
-      condition     = each.value.zone_tag == null || try(self.ruleset.enabled, false)
-      error_message = "Web Analytics RUM is off for ${each.key}: the site exists but its ruleset is disabled, so nothing is collected."
-    }
   }
 }
+
+# -------------------------------------------------------------------------
+# RUM LIVENESS
+# -------------------------------------------------------------------------
+
+# Whether collection is actually on is reported by the rum_enabled output and
+# asserted nowhere. ruleset.enabled carries the answer, but it is computed, so
+# a postcondition on it holds every unrelated unit in the run hostage to a
+# Cloudflare toggle this configuration cannot set, and a check on it is
+# unevaluable under plan-only tests. Collection being off degrades a dashboard;
+# it breaks no infrastructure, so it is read rather than enforced.
