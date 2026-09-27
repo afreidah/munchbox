@@ -172,6 +172,7 @@ endif
 		fi; \
 	else \
 		nomad-pack plan \
+			--name="$(JOB)" \
 			--var-file="$(JOB_FILE)" \
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
 			"./$(PACK_REGISTRY)/$(PACK)"; \
@@ -199,6 +200,7 @@ endif
 		fi; \
 	else \
 		nomad-pack run \
+			--name="$(JOB)" \
 			--var-file="$(JOB_FILE)" \
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
 			"./$(PACK_REGISTRY)/$(PACK)"; \
