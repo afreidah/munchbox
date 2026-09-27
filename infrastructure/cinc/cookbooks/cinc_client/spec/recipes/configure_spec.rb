@@ -27,9 +27,13 @@ RSpec.describe 'cinc_client::configure' do
       .with(owner: 'root', group: 'root', mode: '0755')
   end
 
-  it 'creates the cinc log dir' do
-    expect(chef_run).to create_directory('/var/log/cinc')
-      .with(owner: 'root', group: 'root', mode: '0755')
+  # --- STDOUT reaches the journal, so no log dir is created for it ---
+  it 'creates no log directory when logging to STDOUT' do
+    expect(chef_run).to_not create_directory('/var/log/cinc')
+  end
+
+  it 'renders log_location as the STDOUT constant, not a quoted path' do
+    expect(chef_run.template('/etc/cinc/client.rb').variables[:log_location]).to eq('STDOUT')
   end
 
   # --- client.rb is templated with the cinc-server FQDN URL ---

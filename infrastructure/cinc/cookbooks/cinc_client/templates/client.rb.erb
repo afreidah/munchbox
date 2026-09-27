@@ -17,4 +17,8 @@ client_key             '/etc/cinc/client.pem'
 trusted_certs_dir      '/etc/cinc/trusted_certs'
 
 log_level    :<%= @log_level %>
+<% if @log_location == 'STDOUT' -%>
+log_location STDOUT
+<% else -%>
 log_location '<%= @log_location %>'
+<% end -%>

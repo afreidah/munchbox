@@ -1,0 +1,86 @@
+
+  # ---------------------------------------------------------------------------
+  # Security and ACL Monitoring
+  # ---------------------------------------------------------------------------
+  - name: log-security-acl
+    interval: 1m
+    rules:
+      - alert: ConsulACLDenied
+        expr: |
+          count_over_time({unit="consul.service"} |~ "(?i)(permission denied|ACL not found|ACL token not found|anonymous token)"[5m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consul ACL denials detected"
+          description: "{{ $value }} Consul ACL denials in the last 5 minutes. Possible misconfiguration or unauthorized access attempt."
+
+      - alert: ConsulACLBruteForce
+        expr: |
+          count_over_time({unit="consul.service"} |~ "(?i)(permission denied|ACL not found)"[5m]) > 20
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Possible Consul ACL brute force attack"
+          description: "{{ $value }} Consul ACL denials in 5 minutes. Investigate immediately for potential attack."
+
+      - alert: NomadACLDenied
+        expr: |
+          count_over_time({unit=~"nomad.*"} |~ "(?i)(permission denied|ACL token not found|missing ACL token)"[5m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nomad ACL denials detected"
+          description: "{{ $value }} Nomad ACL denials in the last 5 minutes. Check for misconfigured tokens or unauthorized access."
+
+      - alert: VaultAuthFailures
+        expr: |
+          count_over_time({unit="vault.service"} |~ "(?i)(permission denied|invalid token|authentication failed|403)"[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vault authentication failures detected"
+          description: "{{ $value }} Vault auth failures in the last 5 minutes. Possible credential issues or attack."
+
+      - alert: VaultAuthBruteForce
+        expr: |
+          count_over_time({unit="vault.service"} |~ "(?i)(permission denied|invalid token|authentication failed)"[5m]) > 30
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Possible Vault authentication brute force"
+          description: "{{ $value }} Vault auth failures in 5 minutes. Investigate immediately."
+
+      - alert: SSHAuthFailures
+        expr: |
+          count_over_time({unit="sshd.service"} |~ "(?i)(failed password|invalid user|authentication failure)"[10m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "SSH authentication failures on {{ $labels.host }}"
+          description: "{{ $value }} SSH authentication failures in the last 10 minutes."
+
+      - alert: SSHBruteForceDetected
+        expr: |
+          count_over_time({unit="sshd.service"} |~ "(?i)(failed password|invalid user)"[5m]) > 30
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SSH brute force attack on {{ $labels.host }}"
+          description: "{{ $value }} failed SSH attempts in 5 minutes. Consider blocking the source IP."
+
+      - alert: TLSHandshakeErrors
+        expr: |
+          count_over_time({job_name=~"traefik|consul|nomad|vault"} |~ "(?i)(tls handshake|certificate verify failed|x509)"[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS handshake errors detected"
+          description: "{{ $value }} TLS errors in {{ $labels.job_name }}. Check certificate validity."

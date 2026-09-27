@@ -40,9 +40,11 @@ env = {
 args = ["-config.file=/etc/loki/config.yaml"]
 
 # --- Configuration templates ---
+# --- The rules render from Consul KV and the ruler re-reads them on its poll
+#     interval, so a rule change rewrites the file and nothing restarts. ---
 templates = [
   { src = "config.yaml", dest = "/etc/loki/config.yaml" },
-  { src = "alert_rules.yaml", dest = "/loki/rules/fake/alert_rules.yaml" }
+  { src = "alert_rules.yaml", dest = "/loki/rules/fake/alert_rules.yaml", change_mode = "noop" }
 ]
 
 # --- Service tags ---

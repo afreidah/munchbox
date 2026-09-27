@@ -169,6 +169,7 @@ locals {
         key_prefix "terraform/munchbox/" { policy = "write" }
         key_prefix "github/token-renewer/" { policy = "write" }
         key_prefix "prometheus/alerts/" { policy = "write" }
+        key_prefix "loki/alerts/" { policy = "write" }
         key_prefix "runners/config" { policy = "write" }
         session_prefix "" { policy = "write" }
       EOT

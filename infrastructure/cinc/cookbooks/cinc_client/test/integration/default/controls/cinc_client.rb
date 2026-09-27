@@ -43,14 +43,10 @@ control 'configure' do
     its('mode') { should cmp '0755' }
   end
 
-  describe directory('/var/log/cinc') do
-    it { should exist }
-    its('mode') { should cmp '0755' }
-  end
-
   describe file('/etc/cinc/client.rb') do
     it { should exist }
     its('mode') { should cmp '0644' }
+    its('content') { should match(/^log_location STDOUT$/) }
     its('content') { should match(%r{^chef_server_url\s+'https://cinc-server\.test/organizations/munchbox'$}) }
     its('content') { should match(/^validation_client_name\s+'munchbox-validator'$/) }
     its('content') { should match(%r{^client_key\s+'/etc/cinc/client\.pem'$}) }
