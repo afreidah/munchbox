@@ -9,13 +9,14 @@
 #   - /etc/cinc/trusted_certs/cinc-server.crt (if trusted_cert provided)
 #   - /etc/cinc/validation.pem (if validator_pem provided; consumed + can be
 #     hand-deleted after a successful first run)
-#   - /var/log/cinc/ (log_location parent)
+#   - the log_location parent, when logging to a file
 #
 # Properties:
 # - `chef_server_url` (required): Full HTTPS endpoint including /organizations/<org>.
 # - `node_name`: Override the chef node identifier; nil lets cinc-client use the system hostname.
 # - `log_level`: cinc log level symbol name (default 'info').
-# - `log_location`: Path for cinc-client.log (default /var/log/cinc/client.log).
+# - `log_location`: STDOUT, so the run lands in the journal and ships with every
+#                   other unit; a path here writes a file nothing collects.
 # - `validator_client_name` (required): Org-level validator client name.
 # - `trusted_cert`: PEM content of the cinc-server CA cert (nil ok).
 # - `validator_pem`: PEM content of the org validator key (nil ok).
@@ -28,7 +29,7 @@ provides :cinc_client_configure
 property :chef_server_url,       String, required: true
 property :node_name,             [String, nil]
 property :log_level,             String,         default: 'info'
-property :log_location,          String,         default: '/var/log/cinc/client.log'
+property :log_location,          String,         default: 'STDOUT'
 property :validator_client_name, String,         required: true
 property :trusted_cert,          [String, nil],  sensitive: true
 property :validator_pem,         [String, nil],  sensitive: true
@@ -52,11 +53,14 @@ action :configure do
     mode  '0755'
   end
 
-  directory ::File.dirname(new_resource.log_location) do
-    owner 'root'
-    group 'root'
-    mode  '0755'
-    recursive true
+  # --- STDOUT goes to the journal and needs no directory ---
+  unless new_resource.log_location == 'STDOUT'
+    directory ::File.dirname(new_resource.log_location) do
+      owner 'root'
+      group 'root'
+      mode  '0755'
+      recursive true
+    end
   end
 
   if new_resource.trusted_cert

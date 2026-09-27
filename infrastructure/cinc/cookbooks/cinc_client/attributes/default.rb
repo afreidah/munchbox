@@ -57,7 +57,8 @@ default[cookbook]['config'] = {
   chef_server_url: 'https://cinc-server.munchbox.cc/organizations/munchbox',
   node_name: nil,
   log_level: 'info',
-  log_location: '/var/log/cinc/client.log',
+  # --- STDOUT so the run lands in the journal, which alloy already ships ---
+  log_location: 'STDOUT',
   validator_client_name: 'munchbox-validator',
   trusted_cert: nil,
   validator_pem: nil,

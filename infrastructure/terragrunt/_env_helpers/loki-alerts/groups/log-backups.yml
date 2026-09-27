@@ -1,0 +1,26 @@
+
+  # ---------------------------------------------------------------------------
+  # Backup and Workflow Failures
+  # ---------------------------------------------------------------------------
+  - name: log-backups
+    interval: 2m
+    rules:
+      - alert: BackupFailed
+        expr: |
+          count_over_time({task_name="backup-worker"} |~ "(?i)(backup failed|upload failed|error|workflow failed)"[15m]) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backup workflow failed"
+          description: "Temporal backup worker reported a failure."
+
+      - alert: BackupNoActivity
+        expr: |
+          count_over_time({task_name="backup-worker"}[24h]) == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "No backup activity in 24 hours"
+          description: "No logs from temporal-backup-worker in the last 24 hours."

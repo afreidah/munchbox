@@ -85,6 +85,9 @@ ruler:
     local:
       directory: /loki/rules
   rule_path: /loki/rules-temp
+  # Rules arrive by consul-template rewriting the file underneath the ruler,
+  # so the poll is what picks a change up and is declared rather than defaulted.
+  poll_interval: 1m
   alertmanager_url: http://alertmanager.service.consul:9093
   ring:
     kvstore:

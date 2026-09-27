@@ -1,0 +1,26 @@
+
+  # ---------------------------------------------------------------------------
+  # Container/Job Crash Detection
+  # ---------------------------------------------------------------------------
+  - name: log-crashes
+    interval: 1m
+    rules:
+      - alert: OOMKilled
+        expr: |
+          count_over_time({source="stderr"} |~ "(?i)(out of memory|oom|killed process|memory allocation failed)"[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "OOM kill detected"
+          description: "A process was killed due to out of memory in {{ $labels.job_name }}."
+
+      - alert: SegfaultDetected
+        expr: |
+          count_over_time({source="stderr"} |~ "(?i)(segfault|segmentation fault|sigsegv)"[10m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Segmentation fault detected"
+          description: "A segmentation fault was detected in {{ $labels.job_name }}."

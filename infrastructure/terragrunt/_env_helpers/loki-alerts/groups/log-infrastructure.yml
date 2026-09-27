@@ -1,0 +1,65 @@
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure Component Errors
+  # ---------------------------------------------------------------------------
+  - name: log-infrastructure
+    interval: 1m
+    rules:
+      # Matching the log level rather than the words in the line: consul gossip
+      # reports a peer as "Suspect <node> has failed" at INFO and refutes it a
+      # moment later, which is enough on its own to hold this alert firing
+      # across the fleet forever.
+      - alert: ConsulLogErrors
+        expr: |
+          count_over_time({unit="consul.service"} |~ "\\[ERROR\\]"[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consul errors in logs"
+          description: "Consul has logged {{ $value }} errors in the last 5 minutes."
+
+      - alert: NomadLogErrors
+        expr: |
+          count_over_time({unit=~"nomad.*"} |~ "\\[ERROR\\]"[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Nomad errors in logs"
+          description: "Nomad has logged {{ $value }} errors in the last 5 minutes."
+
+      # A failed converge ends in FATAL, and the window spans the gap between
+      # runs so a node failing every hour stays firing rather than clearing
+      # between attempts. This is the path that survives a node too broken to
+      # install the handler that reports itself.
+      - alert: CincRunFailedInLogs
+        expr: |
+          count_over_time({unit="cinc-client.service"} |~ "FATAL:"[90m]) > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "cinc-client run failed on {{ $labels.node }}"
+          description: "cinc-client logged {{ $value }} FATAL lines in the last 90 minutes."
+
+      - alert: VaultLogErrors
+        expr: |
+          count_over_time({unit="vault.service"} |~ "\\[ERROR\\]"[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Vault errors in logs"
+          description: "Vault has logged {{ $value }} errors in the last 5 minutes."
+
+      # dockerd tags its own level, and a registry collection emits a burst of
+      # "level=warning failed to prune image" that says nothing about the daemon.
+      - alert: DockerDaemonErrors
+        expr: |
+          count_over_time({unit="docker.service"} |~ "level=error"[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Docker daemon errors"
+          description: "Docker daemon has logged {{ $value }} errors in the last 5 minutes."

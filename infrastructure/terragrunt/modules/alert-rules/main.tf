@@ -1,13 +1,15 @@
 # -----------------------------------------------------------------------------
-# PROMETHEUS-ALERTS MODULE
+# ALERT-RULES MODULE
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Writes one Consul KV entry per alert-group YAML. The prometheus job's
-# consul-template watches the `prometheus/alerts/` prefix, concatenates the
-# group bodies into /etc/prometheus/config/alert_rules.yml on disk, and
-# SIGHUPs prom. Editing a YAML file + `terragrunt apply` propagates without
-# a nomad redeploy.
+# Writes one Consul KV entry per alert-group YAML. The consuming job's
+# consul-template watches its own `<system>/alerts/` prefix and concatenates the
+# group bodies into the rule file that job reads, so editing a YAML file and
+# running `terragrunt apply` propagates without a nomad redeploy.
+#
+# Serves every alerting system that reads rules this way; the prefix in each
+# key decides which job picks a group up.
 # -----------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------

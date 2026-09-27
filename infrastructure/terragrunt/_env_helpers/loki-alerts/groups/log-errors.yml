@@ -1,0 +1,47 @@
+  # ---------------------------------------------------------------------------
+  # Application Error Detection
+  # ---------------------------------------------------------------------------
+  - name: log-errors
+    interval: 1m
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum by (job_name) (
+            count_over_time({level="error"}[5m])
+          ) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate in {{ $labels.job_name }}"
+          description: "{{ $labels.job_name }} has logged {{ $value }} errors in the last 5 minutes."
+
+      - alert: CriticalLogPattern
+        expr: |
+          count_over_time({level=~"fatal|panic|critical"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical log entry detected"
+          description: "A fatal/panic/critical log entry was detected in {{ $labels.job_name }}."
+
+      - alert: PostgresLogError
+        expr: |
+          count_over_time({job_name="postgres-shared"} |~ "(?i)(error|fatal|panic)"[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL errors in logs"
+          description: "PostgreSQL has logged {{ $value }} errors in the last 5 minutes."
+
+      - alert: AuthentikAuthFailures
+        expr: |
+          count_over_time({job_name="authentik"} |~ "(?i)(authentication failed|invalid credentials|login failed)"[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentik has {{ $value }} authentication failures in the last 5 minutes. Possible brute force attack."

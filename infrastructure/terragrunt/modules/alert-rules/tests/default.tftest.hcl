@@ -1,11 +1,11 @@
 # -----------------------------------------------------------------------------
-# prometheus-alerts module tests (plan-only)
+# alert-rules module tests (plan-only)
 #
 # Project: Munchbox / Author: Alex Freidah
 #
 # Asserts the for_each fans out 1:1 over the input groups map, that empty
-# input produces zero resources, and that the path-prefix validation rejects
-# keys not under prometheus/alerts/.
+# input produces zero resources, and that one module serves several alerting
+# systems by carrying their prefixes side by side.
 # -----------------------------------------------------------------------------
 
 mock_provider "consul" {}
@@ -13,7 +13,7 @@ mock_provider "consul" {}
 variables {
   groups = {
     "prometheus/alerts/infrastructure-health" = "groups:\n  - name: infrastructure-health\n    rules: []\n"
-    "prometheus/alerts/postgresql-health"     = "groups:\n  - name: postgresql-health\n    rules: []\n"
+    "loki/alerts/log-infrastructure"          = "  - name: log-infrastructure\n    rules: []\n"
   }
 }
 
@@ -38,7 +38,7 @@ run "groups_for_each" {
 
   # --- group_paths output is the sorted set of KV paths ---
   assert {
-    condition     = toset(output.group_paths) == toset(["prometheus/alerts/infrastructure-health", "prometheus/alerts/postgresql-health"])
+    condition     = toset(output.group_paths) == toset(["prometheus/alerts/infrastructure-health", "loki/alerts/log-infrastructure"])
     error_message = "group_paths output must list every managed KV path"
   }
 }
