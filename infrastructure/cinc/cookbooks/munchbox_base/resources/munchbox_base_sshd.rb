@@ -18,7 +18,9 @@
 #                     per-user authorized_principals files, the
 #                     HostCertificate / TrustedUserCAKeys /
 #                     AuthorizedPrincipalsFile directives as a sshd_config.d
-#                     drop-in, and a break-glass pubkey in authorized_keys.
+#                     drop-in, a break-glass pubkey in authorized_keys, and
+#                     removal of authorized_keys lines that would be accepted
+#                     ahead of a CA certificate.
 #                     Must run AFTER vault_agent::configure (needs the
 #                     /run/vault-agent/token sink).
 #
@@ -28,7 +30,8 @@
 #                  template (e.g. permit_root_login -> PermitRootLogin).
 #                  Required by :configure.
 #   ca_settings -- Hash of SSH-CA knobs (paths, principals, break-glass
-#                  config). Consumed by :configure_ca.
+#                  config, authorized_keys pruning). Consumed by
+#                  :configure_ca.
 # -------------------------------------------------------------------------------
 
 unified_mode true
@@ -141,6 +144,32 @@ action :configure_ca do
       AuthorizedPrincipalsFile #{principals_dir}/%u
     CONF
     notifies :restart, 'service[ssh]', :delayed
+  end
+
+  # --- Drop authorized_keys entries that shadow the CA. sshd takes the first
+  #     line whose key matches, so a restricted entry for a key the client also
+  #     holds a certificate for wins before the certificate is offered. ---
+  prune_users    = ca['prune_key_users']    || []
+  prune_patterns = ca['prune_key_patterns'] || []
+
+  prune_users.each do |user|
+    next if prune_patterns.empty?
+
+    home = user == 'root' ? '/root' : "/home/#{user}"
+    path = "#{home}/.ssh/authorized_keys"
+
+    ruby_block "prune shadowing keys from #{user} authorized_keys" do
+      block do
+        kept = ::File.readlines(path).reject do |line|
+          prune_patterns.any? { |pattern| line.include?(pattern) }
+        end
+        next if kept.length == ::File.readlines(path).length
+
+        ::File.write(path, kept.join)
+        ::File.chmod(0o600, path)
+      end
+      only_if { ::File.exist?(path) }
+    end
   end
 
   next unless ca['manage_break_glass']

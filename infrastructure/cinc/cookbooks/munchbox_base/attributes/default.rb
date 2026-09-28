@@ -266,4 +266,11 @@ default[cookbook]['ssh_ca'] = {
   break_glass_vault_path: 'secret/data/ssh/break-glass',
   break_glass_vault_field: 'public_key',
   break_glass_users: ['root'],
+  # --- Cloud images install the instance key into root's authorized_keys behind a
+  # forced command that prints a notice instead of opening a shell. sshd accepts
+  # that line before a client gets to offer its CA certificate, so root logins
+  # land on the notice and the CA is never consulted. Lines matching these
+  # substrings are dropped so certificate auth is what answers.
+  prune_key_users: ['root'],
+  prune_key_patterns: ['Please login as the user'],
 }
