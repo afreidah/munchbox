@@ -73,6 +73,37 @@ RSpec.describe 'munchbox_base::sshd_ca' do
   end
 
   # -------------------------------------------------------------------------------
+  # Pruning authorized_keys entries that shadow the CA
+  # -------------------------------------------------------------------------------
+  context 'with an authorized_keys entry that shadows the CA' do
+    cached(:chef_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(munchbox_base_sshd)).converge('munchbox_base::sshd_ca')
+    end
+
+    # Guarded by only_if on the file existing, so what is asserted here is that
+    # the block is declared; the pruning itself is exercised below.
+    it 'declares a prune block for each managed user' do
+      expect(chef_run.ruby_block('prune shadowing keys from root authorized_keys')).to_not be_nil
+    end
+
+    it 'keeps every line that carries no pruned pattern' do
+      kept = "ssh-ed25519 AAAA-break-glass-key break-glass@munchbox\n"
+      shadow = %(no-port-forwarding,command="echo 'Please login as the user \\"ubuntu\\"'" ssh-ed25519 AAAA\n)
+
+      allow(::File).to receive(:exist?).and_call_original
+      allow(::File).to receive(:exist?).with('/root/.ssh/authorized_keys').and_return(true)
+      allow(::File).to receive(:readlines).and_call_original
+      allow(::File).to receive(:readlines).with('/root/.ssh/authorized_keys').and_return([shadow, kept])
+      allow(::File).to receive(:chmod).and_call_original
+      allow(::File).to receive(:chmod).with(0o600, '/root/.ssh/authorized_keys').and_return(1)
+
+      expect(::File).to receive(:write).with('/root/.ssh/authorized_keys', kept)
+
+      chef_run.ruby_block('prune shadowing keys from root authorized_keys').block.call
+    end
+  end
+
+  # -------------------------------------------------------------------------------
   # Extra principals (e.g. ubuntu on oracle nodes)
   # -------------------------------------------------------------------------------
   context 'with extra principals (e.g. ubuntu on oracle nodes)' do
