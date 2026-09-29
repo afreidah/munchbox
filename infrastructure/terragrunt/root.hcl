@@ -143,6 +143,7 @@ locals {
     "jellyfin"                 = { public = true }
     "g3"                       = { public = true }
     "s3-orchestrator"          = { public = true }
+    "vagabond"                 = { public = true }
     "cloudflare-log-collector" = { public = true }
     "nomad-temporal-jobs"      = { public = true }
     "oracle-watchdog"          = { public = true }
