@@ -99,13 +99,23 @@ locals {
     munchbox = {
       zone_id = local.zones.munchbox
       name    = "default"
-      rules = [{
-        description = "s3-orchestrator"
-        expression  = "(http.request.full_uri contains \"s3-orchestrator.munchbox.cc\")"
-        cache       = true
-        browser_ttl = { mode = "respect_origin" }
-        edge_ttl    = { mode = "respect_origin" }
-      }]
+      rules = [
+        {
+          description = "s3-orchestrator"
+          expression  = "(http.request.full_uri contains \"s3-orchestrator.munchbox.cc\")"
+          cache       = true
+          browser_ttl = { mode = "respect_origin" }
+          edge_ttl    = { mode = "respect_origin" }
+        },
+        # --- vagabond's docs site: the same nginx cache headers. ---
+        {
+          description = "vagabond"
+          expression  = "(http.request.full_uri contains \"vagabond.munchbox.cc\")"
+          cache       = true
+          browser_ttl = { mode = "respect_origin" }
+          edge_ttl    = { mode = "respect_origin" }
+        },
+      ]
     }
   }
 
@@ -123,11 +133,19 @@ locals {
     munchbox = {
       zone_id = local.zones.munchbox
       name    = "default"
-      rules = [{
-        description       = "s3-orchestrator: strip index.html"
-        expression        = "(http.host eq \"s3-orchestrator.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
-        target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
-      }]
+      rules = [
+        {
+          description       = "s3-orchestrator: strip index.html"
+          expression        = "(http.host eq \"s3-orchestrator.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
+          target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
+        },
+        # --- vagabond's docs site is Hugo too. ---
+        {
+          description       = "vagabond: strip index.html"
+          expression        = "(http.host eq \"vagabond.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
+          target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
+        },
+      ]
     }
   }
 
