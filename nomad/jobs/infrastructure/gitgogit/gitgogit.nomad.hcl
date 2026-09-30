@@ -229,6 +229,16 @@ repos:
         auth:
           type: token
           env: FORGEJO_API_TOKEN
+  - name: vagabond
+    source:
+      url: https://github.com/afreidah/vagabond.git
+    mirrors:
+      - url: http://forgejo.service.consul:30028/alex/vagabond.git
+        push_strategy: branches+tags
+        force: true
+        auth:
+          type: token
+          env: FORGEJO_API_TOKEN
 
 daemon:
   interval: 2m
