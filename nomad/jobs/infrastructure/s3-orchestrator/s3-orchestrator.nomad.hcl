@@ -318,6 +318,9 @@ backends:
     # so the edge cannot reproduce the signature. Stripping the SDK's own
     # headers before signing leaves only what survives the hop.
     strip_sdk_headers: true
+    # Signed payloads buffer the body so the SDK can resend it when B2 answers
+    # a transient 503; an unsigned stream cannot be rewound for that retry.
+    unsigned_payload: false
     # Class A/B/C transactions are free, so no request budget. The 3x-stored-
     # bytes egress allowance no longer binds either: reads leave through
     # Cloudflare, which Backblaze does not bill for. Storage is what is left.
