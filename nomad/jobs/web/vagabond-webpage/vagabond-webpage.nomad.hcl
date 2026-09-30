@@ -126,7 +126,7 @@ job "vagabond-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/vagabond-web:dev"
+        image              = "registry.munchbox.cc/vagabond-web:0.1.0"
         image_pull_timeout = "10m"
         ports              = ["http"]
         force_pull         = true
