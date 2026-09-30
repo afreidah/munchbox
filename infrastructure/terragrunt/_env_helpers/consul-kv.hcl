@@ -36,6 +36,7 @@ locals {
     "afreidah/cloudflare-log-collector",
     "afreidah/oracle-watchdog",
     "afreidah/flight-fetcher",
+    "afreidah/vagabond",
   ]
 
   # --- ci-runner-scaler: per-repo provisioning config. app-mode repos are polled
@@ -104,6 +105,7 @@ locals {
     "cloudflare-log-collector",
     "g3",
     "flight-fetcher",
+    "vagabond",
   ]
 
   forgejo_image_config = {
