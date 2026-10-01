@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/munchbox.png" alt="munchbox" width="400">
+<img src="assets/munchbox.png" alt="munchbox" width="160">
 
 # Munchbox Cloud - Homelab Infrastructure Platform
 
