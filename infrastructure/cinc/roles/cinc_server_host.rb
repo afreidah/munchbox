@@ -18,6 +18,8 @@ run_list(
   'role[cinc_client]',
   # --- qemu-guest-agent; gives the hypervisor graceful shutdown, guest IP reporting, and fs-freeze on backup. ---
   'recipe[munchbox_base::proxmox_vm]',
+  # --- HostCertificate + TrustedUserCAKeys + authorized_principals. Every other node role carries this; without it sshd presents a bare host key and anything verifying against the CA refuses the host. ---
+  'recipe[munchbox_base::sshd_ca]',
   'role[vault_agent]',
   'recipe[munchbox_base::vault_pki_trust]',
   'role[vault_cert_manager]',
