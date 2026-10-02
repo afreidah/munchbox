@@ -79,7 +79,7 @@ property :ports,                      Hash,   default: {
 property :ui_enabled,                 [true, false], default: true
 property :connect_enabled,            [true, false], default: true
 property :raft_multiplier,            Integer, default: 1
-property :rpc_handshake_timeout,      [String, nil], default: '30s'
+property :rpc_handshake_timeout,      [String, nil], default: '0s'
 property :acl_enabled,                [true, false], default: true
 property :acl_default_policy,         String, default: 'deny'
 property :acl_down_policy,            String, default: 'extend-cache'
