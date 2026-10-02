@@ -112,7 +112,7 @@ RSpec.describe 'consul::configure' do
 
     it 'renders the limits block' do
       expect(chef_run).to render_file('/etc/consul.d/consul.hcl')
-        .with_content(/limits \{\s*rpc_handshake_timeout = "30s"\s*\}/m)
+        .with_content(/limits \{\s*rpc_handshake_timeout = "0s"\s*\}/m)
     end
   end
 

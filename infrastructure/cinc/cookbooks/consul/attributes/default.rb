@@ -55,9 +55,10 @@ default[cookbook]['config'] = {
   #     stream, not just the handshake, so an idle stream is closed and the next
   #     call fails. The default 5s floods the servers with "cannot decode
   #     request: i/o deadline reached" and the clients with Coordinate.Update
-  #     EOF. 30s is the lowest value reporters found clear of it; 27s is not.
+  #     EOF. 0s disables the deadline, which is what this fleet needs: 30s only
+  #     cut the rate by about 7x, so an idle stream still outlives it here.
   #     hashicorp/consul#23923. nil leaves the limits block out entirely. ---
-  rpc_handshake_timeout: '30s',
+  rpc_handshake_timeout: '0s',
 
   bind_addr: nil, # required, set per-node
   advertise_addr: nil, # LAN advertise; set when bind_addr is 0.0.0.0 (multi-homed)
