@@ -77,6 +77,20 @@ ui_config {
 performance {
   raft_multiplier = <%= @raft_multiplier %>
 }
+<% if @rpc_handshake_timeout -%>
+
+# -------------------------------------------------------------------------------
+# Limits
+#
+# Consul 2.0.4 re-arms this deadline before every request on a pooled RPC
+# stream rather than only at the handshake, so an idle stream is torn down and
+# the next call fails. hashicorp/consul#23923.
+# -------------------------------------------------------------------------------
+
+limits {
+  rpc_handshake_timeout = "<%= @rpc_handshake_timeout %>"
+}
+<% end -%>
 
 # -------------------------------------------------------------------------------
 # Connect / Service Mesh
