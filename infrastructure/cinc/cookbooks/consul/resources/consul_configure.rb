@@ -34,6 +34,7 @@
 #   ui_enabled       - default true.
 #   connect_enabled  - default true.
 #   raft_multiplier  - default 1.
+#   rpc_handshake_timeout - emitted into limits {}; nil leaves the block out.
 #   acl_agent_token  - sensitive; emitted into acl.tokens.agent (used by
 #                      the consul agent for its OWN ops: gossip, anti-entropy,
 #                      self-registration).
@@ -78,6 +79,7 @@ property :ports,                      Hash,   default: {
 property :ui_enabled,                 [true, false], default: true
 property :connect_enabled,            [true, false], default: true
 property :raft_multiplier,            Integer, default: 1
+property :rpc_handshake_timeout,      [String, nil], default: '30s'
 property :acl_enabled,                [true, false], default: true
 property :acl_default_policy,         String, default: 'deny'
 property :acl_down_policy,            String, default: 'extend-cache'
@@ -144,6 +146,7 @@ action :configure do
       ui_enabled: new_resource.ui_enabled,
       connect_enabled: new_resource.connect_enabled,
       raft_multiplier: new_resource.raft_multiplier,
+      rpc_handshake_timeout: new_resource.rpc_handshake_timeout,
       acl_enabled: new_resource.acl_enabled,
       acl_default_policy: new_resource.acl_default_policy,
       acl_down_policy: new_resource.acl_down_policy,

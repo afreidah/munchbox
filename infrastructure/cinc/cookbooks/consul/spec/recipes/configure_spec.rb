@@ -99,6 +99,40 @@ RSpec.describe 'consul::configure' do
     end
   end
 
+  # --- Consul 2.0.4 re-arms the handshake deadline before every request on a
+  #     pooled RPC stream, so the default 5s tears down idle streams.
+  #     hashicorp/consul#23923. ---
+  context 'rpc handshake timeout' do
+    cached(:chef_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(consul_configure)) do |node|
+        node.override[:consul][:config][:bind_addr]  = '10.200.0.14'
+        node.override[:consul][:config][:retry_join] = ['192.168.68.60']
+      end.converge('consul::configure')
+    end
+
+    it 'renders the limits block' do
+      expect(chef_run).to render_file('/etc/consul.d/consul.hcl')
+        .with_content(/limits \{\s*rpc_handshake_timeout = "30s"\s*\}/m)
+    end
+  end
+
+  context 'with the rpc handshake timeout unset' do
+    cached(:chef_run) do
+      ChefSpec::SoloRunner.new(step_into: %w(consul_configure)) do |node|
+        node.override[:consul][:config][:bind_addr]             = '10.200.0.14'
+        node.override[:consul][:config][:retry_join]            = ['192.168.68.60']
+        node.override[:consul][:config][:rpc_handshake_timeout] = nil
+      end.converge('consul::configure')
+    end
+
+    # --- nil leaves the block out rather than emitting an empty one, so the
+    #     agent falls back to its own default. ---
+    it 'omits the limits block' do
+      expect(chef_run).to_not render_file('/etc/consul.d/consul.hcl')
+        .with_content(/limits \{/)
+    end
+  end
+
   context 'as a server' do
     cached(:chef_run) do
       ChefSpec::SoloRunner.new(step_into: %w(consul_configure)) do |node|

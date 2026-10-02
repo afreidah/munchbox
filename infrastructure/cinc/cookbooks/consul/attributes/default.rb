@@ -51,6 +51,14 @@ default[cookbook]['config'] = {
   connect_enabled: true,
   raft_multiplier: 1,
 
+  # --- Consul 2.0.4 re-arms this deadline before every request on a pooled RPC
+  #     stream, not just the handshake, so an idle stream is closed and the next
+  #     call fails. The default 5s floods the servers with "cannot decode
+  #     request: i/o deadline reached" and the clients with Coordinate.Update
+  #     EOF. 30s is the lowest value reporters found clear of it; 27s is not.
+  #     hashicorp/consul#23923. nil leaves the limits block out entirely. ---
+  rpc_handshake_timeout: '30s',
+
   bind_addr: nil, # required, set per-node
   advertise_addr: nil, # LAN advertise; set when bind_addr is 0.0.0.0 (multi-homed)
   server: false,

@@ -32,6 +32,7 @@ consul_configure 'consul' do
   ui_enabled                          node[cookbook]['config']['ui_enabled']
   connect_enabled                     node[cookbook]['config']['connect_enabled']
   raft_multiplier                     node[cookbook]['config']['raft_multiplier']
+  rpc_handshake_timeout               node[cookbook]['config']['rpc_handshake_timeout']
   acl_enabled                         node[cookbook]['config']['acl_enabled']
   acl_default_policy                  node[cookbook]['config']['acl_default_policy']
   acl_down_policy                     node[cookbook]['config']['acl_down_policy']
