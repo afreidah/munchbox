@@ -121,6 +121,16 @@ job "s3-orchestrator" {
         "traefik.http.routers.s3o-tempo.service=s3-orchestrator",
         "traefik.http.routers.s3o-tempo.middlewares=dashboard-allowlan@file",
         "traefik.http.routers.s3o-tempo.priority=100",
+
+        # alex-debian-thinkpad bucket (/alex-debian-thinkpad): restic backups of
+        # the laptop. LAN-only via dashboard-allowlan, no oauth2-proxy, which a
+        # CLI client cannot get past.
+        "traefik.http.routers.s3o-thinkpad.rule=Host(`s3.munchbox.cc`) && PathPrefix(`/alex-debian-thinkpad`)",
+        "traefik.http.routers.s3o-thinkpad.entrypoints=websecure",
+        "traefik.http.routers.s3o-thinkpad.tls=true",
+        "traefik.http.routers.s3o-thinkpad.service=s3-orchestrator",
+        "traefik.http.routers.s3o-thinkpad.middlewares=dashboard-allowlan@file",
+        "traefik.http.routers.s3o-thinkpad.priority=100",
       ]
       check {
         name      = "s3-orchestrator-health"
