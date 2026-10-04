@@ -161,7 +161,7 @@ job "s3-orchestrator" {
       env {
         TZ         = "America/Los_Angeles"
         GOMAXPROCS = "2"
-        GOMEMLIMIT = "400MiB"
+        GOMEMLIMIT = "870MiB"
       }
       template {
         data        = <<EOH
@@ -557,7 +557,7 @@ EOH
       # --- Resources ---
       resources {
         cpu    = 1500
-        memory = 400
+        memory = 1024
       }
 
       # --- Termination ---
