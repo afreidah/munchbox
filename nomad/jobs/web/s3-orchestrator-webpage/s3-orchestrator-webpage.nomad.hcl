@@ -126,7 +126,7 @@ job "s3-orchestrator-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator-web:v0.149.11"
+        image              = "registry.munchbox.cc/s3-orchestrator-web:v0.150.0"
         image_pull_timeout = "10m"
         ports              = ["http"]
         force_pull         = true

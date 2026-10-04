@@ -57,6 +57,12 @@ locals {
       grants = [{ name = "postgres-wal", permissions = ["list", "read", "write", "delete"] }]
     }
 
+    # restic deletes during prune and when it removes its lock files.
+    "alex-debian-thinkpad" = {
+      label  = "restic backups of the debian thinkpad"
+      grants = [{ name = "alex-debian-thinkpad", permissions = ["list", "read", "write", "delete"] }]
+    }
+
     # --- a human's credential, and what munchbox-env.sh exports. Carries root's
     #     grant set so it can do everything root can, but as a store row that
     #     can be revoked or narrowed. Root stays: it is templated from config
@@ -76,17 +82,19 @@ locals {
   # A bucket the job file also declares is served from there, and the row here
   # stays shadowed until that entry is removed, so a bucket moves across without
   # a moment where neither source declares it. That covers every one below
-  # except postgres-wal, which this is the only declaration of.
+  # except postgres-wal and alex-debian-thinkpad, which this is the only
+  # declaration of.
   #
   # None of them carry a multipart limit or CORS rules, matching the entries
   # they are taking over from. A difference here would change how the bucket
   # behaves at the handover rather than at a time anyone chose.
   buckets = {
-    "unified"      = {}
-    "aptly"        = {}
-    "tempo-traces" = {}
-    "artifacts"    = {}
-    "postgres-wal" = {}
+    "unified"              = {}
+    "aptly"                = {}
+    "tempo-traces"         = {}
+    "artifacts"            = {}
+    "postgres-wal"         = {}
+    "alex-debian-thinkpad" = {}
   }
 }
 
