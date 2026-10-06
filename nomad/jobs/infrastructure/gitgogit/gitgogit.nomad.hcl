@@ -45,6 +45,12 @@ job "gitgogit" {
       value     = "oraclenode2"
     }
 
+    # --- The image is amd64 only; on an arm64 node the binary fails to exec. ---
+    constraint {
+      attribute = "${attr.cpu.arch}"
+      value     = "amd64"
+    }
+
     # --- Static, because CI triggers a mirror by name over Consul DNS, which
     #     resolves a host but carries no port. ---
     network {
