@@ -52,9 +52,12 @@ locals {
   #     literal (not tomap) so the app/vault entries keep their own shapes through
   #     jsonencode. ---
   runner_scaler_config = merge({
-    "afreidah/munchbox"            = { mode = "app", maxConcurrent = 3 }
-    "afreidah/nomad-temporal-jobs" = { mode = "app", maxConcurrent = 3 }
-    "afreidah/s3-orchestrator"     = { mode = "app", maxConcurrent = 1 }
+    "afreidah/munchbox"                 = { mode = "app", maxConcurrent = 3 }
+    "afreidah/nomad-temporal-jobs"      = { mode = "app", maxConcurrent = 3 }
+    "afreidah/s3-orchestrator"          = { mode = "app", maxConcurrent = 1 }
+    "afreidah/g3"                       = { mode = "app", maxConcurrent = 1 }
+    "afreidah/cloudflare-log-collector" = { mode = "app", maxConcurrent = 1 }
+    "afreidah/oracle-watchdog"          = { mode = "app", maxConcurrent = 1 }
     # poll/register split: we're only write on moat, so poll with a low-priv PAT
     # and register with the owner's admin PAT.
     "ev-the-dev/moat" = {
