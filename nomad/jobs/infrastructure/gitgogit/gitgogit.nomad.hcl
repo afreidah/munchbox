@@ -45,9 +45,12 @@ job "gitgogit" {
       value     = "oraclenode2"
     }
 
+    # --- Static, because CI triggers a mirror by name over Consul DNS, which
+    #     resolves a host but carries no port. ---
     network {
       port "http" {
-        to = 8080
+        static = 8080
+        to     = 8080
       }
     }
 
@@ -241,7 +244,7 @@ repos:
           env: FORGEJO_API_TOKEN
 
 daemon:
-  interval: 2m
+  interval: 30m
   log_file: /dev/stdout
   web:
     enabled: true
