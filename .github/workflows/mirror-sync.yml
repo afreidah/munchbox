@@ -30,4 +30,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Request a mirror of this repo
-        run: curl -fsS --max-time 30 -X POST "http://gitgogit.service.consul:8080/sync/${{ github.event.repository.name }}"
+        env:
+          REPO: ${{ github.event.repository.name }}
+        # Plain HTTP on purpose: cluster-internal traffic to a Consul DNS name.
+        run: curl -fsS --max-time 30 -X POST "http://gitgogit.service.consul:8080/sync/$REPO" # NOSONAR
