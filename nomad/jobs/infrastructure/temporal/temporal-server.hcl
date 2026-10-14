@@ -75,4 +75,4 @@ tags = [
 
 # --- Resources override ---
 cpu    = 500
-memory = 512
+memory = 1024
