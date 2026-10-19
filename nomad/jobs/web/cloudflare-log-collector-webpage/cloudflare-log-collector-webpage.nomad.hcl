@@ -130,6 +130,7 @@ job "cloudflare-log-collector-webpage" {
         image              = "registry.munchbox.cc/cloudflare-log-collector-web:latest"
         image_pull_timeout = "10m"
         ports              = ["http"]
+        force_pull         = true
       }
 
       resources {
