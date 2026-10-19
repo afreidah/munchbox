@@ -104,8 +104,8 @@ job "cert-acquirer-worker" {
       driver = "docker"
 
       # --- WI: job_id "cert-acquirer-worker" matches bound_claims on this role,
-      #     granting nomad-workloads (read, incl. cloudflare-wandns) plus
-      #     cert-acquirer-worker (write wildcard/staging/acme-account). ---
+      #     granting cert-acquirer-worker (read cloudflare-wandns, write
+      #     wildcard/staging/acme-account). ---
       vault {
         role        = "cert-acquirer-worker"
         change_mode = "noop"

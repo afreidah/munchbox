@@ -55,3 +55,14 @@
       annotations:
         summary: "No pollers on {{ $labels.task_queue }}"
         description: "A Temporal worker is running but not polling {{ $labels.task_queue }}; scheduled work on that queue will not execute."
+
+    # A worker can hold a healthy allocation and keep polling while every run
+    # it executes fails. The 24h window keeps a weekly schedule's failure
+    # firing long enough to be seen.
+    - alert: TemporalWorkflowFailed
+      expr: sum by (namespace, workflowType) (increase({__name__=~"workflow_failed|workflow_timeout", job="temporal-server"}[24h])) > 0
+      labels:
+        severity: warning
+      annotations:
+        summary: "Temporal workflow {{ $labels.namespace }}/{{ $labels.workflowType }} failing"
+        description: "{{ $value | humanize }} {{ $labels.workflowType }} run(s) in namespace {{ $labels.namespace }} failed or timed out in the last 24h."
