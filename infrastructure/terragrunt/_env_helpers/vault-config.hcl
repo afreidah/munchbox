@@ -312,11 +312,14 @@ inputs = {
     }
 
     # --- cert-acquirer-worker: the Temporal worker that issues the wildcard.
-    #     Writes the published cert, the pre-publish staging copy, and the
-    #     persisted ACME account; the Cloudflare token read comes from
-    #     nomad-workloads (cloudflare-wandns is in workload_secrets). ---
+    #     Reads the Cloudflare token for the DNS-01 challenge; writes the
+    #     published cert, the pre-publish staging copy, and the persisted ACME
+    #     account. ---
     "cert-acquirer-worker" = {
       policy = <<-EOT
+        path "secret/data/cloudflare-wandns" {
+          capabilities = ["read"]
+        }
         path "secret/data/traefik/wildcard" {
           capabilities = ["create", "update", "read"]
         }
