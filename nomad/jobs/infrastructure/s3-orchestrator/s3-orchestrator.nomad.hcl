@@ -438,6 +438,8 @@ integrity:
   verify_on_replicate: false
   scrubber_interval: "2h"
   scrubber_batch_size: 400
+  # A week between re-reads keeps scrubbing from exhausting e2's egress budget.
+  scrubber_min_age: "168h"
 
 encryption:
   enabled: true
