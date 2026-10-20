@@ -112,7 +112,7 @@ locals {
   # _env_helpers/grafana-dashboards.hcl (dashboard).
   # ---------------------------------------------------------------------------
 
-  s3_orchestrator_version = "v0.162.0"
+  s3_orchestrator_version = "v0.162.17"
 
   s3_orchestrator_artifacts = {
     bucket   = "artifacts"

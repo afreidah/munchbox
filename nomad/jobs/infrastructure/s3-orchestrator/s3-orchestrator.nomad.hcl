@@ -160,7 +160,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.162.0"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.162.21"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
