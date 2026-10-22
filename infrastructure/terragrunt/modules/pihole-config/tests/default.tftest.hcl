@@ -3,8 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Asserts the dual-provider fan-out: each settings resource renders once on
-# primary and once on secondary, and inputs propagate through.
+# Asserts the dual-provider fan-out: each settings resource and allowlist
+# entry renders once on primary and once on secondary, and inputs propagate.
 # -----------------------------------------------------------------------------
 
 mock_provider "pihole" {
@@ -119,6 +119,33 @@ run "upstream_dual_render" {
   assert {
     condition     = pihole_dns_upstream.secondary.upstream == "127.0.0.1#5335"
     error_message = "secondary upstream must propagate"
+  }
+}
+
+# -------------------------------------------------------------------------
+# allowlist renders one exact allow entry per domain on both
+# -------------------------------------------------------------------------
+
+run "allowlist_dual_render" {
+  command = plan
+
+  variables {
+    allowed_domains = ["static.cloudflareinsights.com", "cloudflareinsights.com"]
+  }
+
+  # --- primary gets every domain as an exact allow ---
+  assert {
+    condition = alltrue([
+      for d in ["static.cloudflareinsights.com", "cloudflareinsights.com"] :
+      pihole_domain.allow_primary[d].type == "allow" && pihole_domain.allow_primary[d].kind == "exact"
+    ])
+    error_message = "primary must allow each domain exactly"
+  }
+
+  # --- secondary mirrors primary ---
+  assert {
+    condition     = length(pihole_domain.allow_secondary) == 2 && pihole_domain.allow_secondary["cloudflareinsights.com"].domain == "cloudflareinsights.com"
+    error_message = "secondary must mirror the allowlist"
   }
 }
 

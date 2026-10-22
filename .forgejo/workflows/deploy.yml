@@ -27,6 +27,8 @@ env:
   # The runner shares the host network stack, so the node's own Consul agent
   # answers plain HTTP on loopback and needs no CA.
   CONSUL_HTTP_ADDR: http://127.0.0.1:8500
+  # The Makefiles default REGISTRY to a placeholder so a fork never publishes here.
+  DOCKER_REGISTRY: registry.munchbox.cc
 
 jobs:
   # ---------------------------------------------------------------------------
