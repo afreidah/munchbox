@@ -88,3 +88,9 @@ variable "upstream" {
   description = "Single upstream DNS the pihole forwards to."
   type        = string
 }
+
+variable "allowed_domains" {
+  description = "Exact domains allowed on both Pi-holes despite the blocklists."
+  type        = list(string)
+  default     = []
+}

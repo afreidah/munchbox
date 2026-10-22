@@ -138,7 +138,7 @@ job "personal-site" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/personal-site:v0.1.6"
+        image              = "registry.munchbox.cc/personal-site:v0.1.7"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

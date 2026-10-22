@@ -74,3 +74,21 @@ resource "pihole_dns_upstream" "secondary" {
   provider = pihole.secondary
   upstream = var.upstream
 }
+
+# --- allowlist: exact domains exempt from the blocklists ---
+
+resource "pihole_domain" "allow_primary" {
+  for_each = toset(var.allowed_domains)
+  provider = pihole.primary
+  domain   = each.value
+  type     = "allow"
+  kind     = "exact"
+}
+
+resource "pihole_domain" "allow_secondary" {
+  for_each = toset(var.allowed_domains)
+  provider = pihole.secondary
+  domain   = each.value
+  type     = "allow"
+  kind     = "exact"
+}

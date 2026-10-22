@@ -38,4 +38,10 @@ inputs = {
   expand_hosts  = false
   interface     = ""
   domain_name   = "lan"
+
+  # --- allowlist: Cloudflare Web Analytics beacon, blocked as a tracker ---
+  allowed_domains = [
+    "static.cloudflareinsights.com",
+    "cloudflareinsights.com",
+  ]
 }
