@@ -77,11 +77,11 @@ _mb_missing=()
 
 # _mb_secret VAR FIELD PATH - export VAR from a Vault field, or record why not.
 # stderr is captured rather than discarded, so the recorded reason is Vault's.
+# The read is guarded by `if` so a caller under `set -e` (CI) records a failure
+# instead of exiting on the assignment, silently, with vault's status.
 _mb_secret() {
-  local var=$1 field=$2 path=$3 out rc
-  out=$(vault kv get -field="$field" "$path" 2>&1)
-  rc=$?
-  if ((rc != 0)); then
+  local var=$1 field=$2 path=$3 out
+  if ! out=$(vault kv get -field="$field" "$path" 2>&1); then
     _mb_missing+=("${path}#${field}: ${out%%$'\n'*}")
     return 0
   fi
@@ -92,9 +92,11 @@ _mb_secret() {
   export "${var}=${out}"
 }
 
-# Vaultwarden (for Terraform/Terragrunt bitwarden provider)
-# Set your personal Vaultwarden master password before running vaultwarden-secrets
-_mb_secret VAULTWARDEN_MASTER_PASSWORD password secret/vaultwarden/master-password
+# Vaultwarden (for Terraform/Terragrunt bitwarden provider). Optional: it is a
+# personal password the CI token cannot read, and only the vaultwarden units,
+# which CI leaves to a human, need it.
+VAULTWARDEN_MASTER_PASSWORD=$(vault kv get -field=password secret/vaultwarden/master-password 2>/dev/null) &&
+  export VAULTWARDEN_MASTER_PASSWORD || unset VAULTWARDEN_MASTER_PASSWORD
 
 # Proxmox (for Terraform/Terragrunt)
 export PM_API_URL=https://192.168.68.65:8006/api2/json
