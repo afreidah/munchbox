@@ -160,7 +160,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.165.1"
+        image              = "registry.munchbox.cc/s3-orchestrator:v0.169.2"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]
@@ -365,6 +365,7 @@ backends:
     force_path_style: true
     quota_bytes: 15000000000       # 15 GB storage
     egress_byte_limit: 15000000000 # 15 GB/month egress
+    usage_reset_day: 15
   - name: "tigris"
     endpoint: "{{ .Data.data.tigris_s3_endpoint }}"
     region: "{{ .Data.data.tigris_s3_region }}"
