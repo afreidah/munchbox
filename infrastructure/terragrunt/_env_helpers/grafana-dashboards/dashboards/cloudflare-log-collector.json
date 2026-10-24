@@ -1249,9 +1249,196 @@
     },
     {
       "type": "row",
+      "id": 68,
+      "title": "DNS and Visitors (from Cloudflare)",
+      "gridPos": { "x": 0, "y": 100, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "id": 69,
+      "title": "DNS Queries by Type",
+      "description": "Authoritative DNS query rate by record type",
+      "gridPos": { "x": 0, "y": 101, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (query_type) (rate(cflog_dns_queries_total{zone=~\"$zone\"}[$__rate_interval]))",
+          "legendFormat": "{{query_type}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 70,
+      "title": "DNS Responses by Code",
+      "description": "Authoritative DNS response rate by response code - a rising NXDOMAIN line is lookups for names that do not exist (scans, stale records, internal names queried publicly)",
+      "gridPos": { "x": 12, "y": 101, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (response_code) (rate(cflog_dns_queries_total{zone=~\"$zone\"}[$__rate_interval]))",
+          "legendFormat": "{{response_code}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 71,
+      "title": "DNS Processing Time",
+      "description": "How long Cloudflare took to answer authoritative DNS queries (p50/p95/p99 over the trailing latency window)",
+      "gridPos": { "x": 0, "y": 109, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "cflog_dns_processing_seconds{zone=~\"$zone\"}",
+          "legendFormat": "{{zone}} p{{quantile}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 }
+        }
+      }
+    },
+    {
+      "type": "table",
+      "id": 72,
+      "title": "Top NXDOMAIN Names (selected range)",
+      "description": "Names queried most often that do not exist, from the DNS rows in Loki",
+      "gridPos": { "x": 12, "y": 109, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (dimensions_queryName) (sum_over_time({job=\"cloudflare\", type=\"dns\", zone=~\"$zone\"} | json | dimensions_responseCode=\"NXDOMAIN\" | unwrap count [$__range])))",
+          "legendFormat": "",
+          "instant": true,
+          "queryType": "instant"
+        }
+      ],
+      "transformations": [
+        { "id": "reduce", "options": { "reducers": ["lastNotNull"] } },
+        {
+          "id": "organize",
+          "options": { "renameByName": { "Field": "Name", "Last *": "Queries" } }
+        },
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Queries", "desc": true }] } }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "id": 73,
+      "title": "Unique IPs vs Visits (daily)",
+      "description": "Distinct client IPs per complete UTC day against server-side visits and RUM visits. Unique IPs count IPs, not people - bots, scanners, and monitors are included and NAT merges visitors - so it is an upper bound on real visitors.",
+      "gridPos": { "x": 0, "y": 117, "w": 24, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "max by (zone) (cflog_http_unique_ips{zone=~\"$zone\", window=\"1d\"})",
+          "legendFormat": "unique IPs {{zone}}"
+        },
+        {
+          "expr": "sum by (zone) (increase(cflog_http_visits_total{zone=~\"$zone\"}[1d]))",
+          "legendFormat": "visits {{zone}}"
+        },
+        {
+          "expr": "sum by (site) (increase(cflog_rum_sessions_total{site=~\"$site\"}[1d]))",
+          "legendFormat": "RUM visits {{site}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 10 }
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "id": 74,
+      "title": "Visits by Host",
+      "description": "Server-side visits from Cloudflare HTTP analytics: page views that start at the site, from real clients, with the configured user agents (bots, monitors) excluded. Needs no browser beacon.",
+      "gridPos": { "x": 0, "y": 125, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (host) (increase(cflog_http_visits_total{zone=~\"$zone\", host=~\"$host\"}[$__interval]))",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } }
+        }
+      }
+    },
+    {
+      "type": "table",
+      "id": 75,
+      "title": "Visits by Host (selected range)",
+      "description": "Total server-side visits per host over the selected time range",
+      "gridPos": { "x": 12, "y": 125, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (host) (increase(cflog_http_visits_total{zone=~\"$zone\", host=~\"$host\"}[$__range]))",
+          "legendFormat": "",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true },
+            "renameByName": { "host": "Host", "Value": "Visits" },
+            "indexByName": { "host": 0, "Value": 1 }
+          }
+        },
+        { "id": "sortBy", "options": { "fields": {}, "sort": [{ "field": "Visits", "desc": true }] } }
+      ],
+      "fieldConfig": { "defaults": { "decimals": 0 } }
+    },
+    {
+      "type": "row",
       "id": 40,
       "title": "Collector Logs",
-      "gridPos": { "x": 0, "y": 100, "w": 24, "h": 1 },
+      "gridPos": { "x": 0, "y": 133, "w": 24, "h": 1 },
       "collapsed": false
     },
     {
@@ -1259,7 +1446,7 @@
       "id": 41,
       "title": "Service Logs (collector process)",
       "description": "Stdout from the collector itself - poll results, errors, startup info. Click trace IDs to jump to Tempo.",
-      "gridPos": { "x": 0, "y": 101, "w": 24, "h": 10 },
+      "gridPos": { "x": 0, "y": 134, "w": 24, "h": 10 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
@@ -1283,7 +1470,7 @@
       "id": 42,
       "title": "HTTP Traffic Logs (raw Cloudflare data in Loki)",
       "description": "The raw HTTP traffic data points that the collector shipped to Loki from Cloudflare analytics",
-      "gridPos": { "x": 0, "y": 111, "w": 24, "h": 8 },
+      "gridPos": { "x": 0, "y": 144, "w": 24, "h": 8 },
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {

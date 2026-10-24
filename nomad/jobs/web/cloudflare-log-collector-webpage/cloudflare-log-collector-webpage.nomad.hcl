@@ -127,7 +127,7 @@ job "cloudflare-log-collector-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector-web:latest"
+        image              = "registry.munchbox.cc/cloudflare-log-collector-web:v0.1.26"
         image_pull_timeout = "10m"
         ports              = ["http"]
         force_pull         = true

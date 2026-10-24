@@ -117,7 +117,7 @@ job "cloudflare-log-collector" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector:latest"
+        image              = "registry.munchbox.cc/cloudflare-log-collector:v0.1.26"
         image_pull_timeout = "5m"
         force_pull         = true
         network_mode       = "host"
@@ -152,6 +152,13 @@ cloudflare:
         name: "munchbox.cc"
       - site_tag: "ca9fdc0e18dd40a2b74f3f6b795033be"
         name: "alexfreidah.com"
+  http_visits:
+    exclude_user_agents:
+      - "%bot%"
+      - "%Bot%"
+      - "%crawler%"
+      - "%spider%"
+      - "Blackbox-Exporter%"
   poll_interval: 1m
   backfill_window: 1h
 
