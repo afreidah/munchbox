@@ -59,7 +59,9 @@ args = [
   "--storage.tsdb.retention.time=14d",
   "--storage.tsdb.wal-compression",
   "--web.page-title=Munchbox Prometheus",
-  "--enable-feature=exemplar-storage"
+  # created-timestamp-zero-ingestion records a 0 at each counter's start time,
+  # so increase() counts a new series' first value instead of losing it.
+  "--enable-feature=exemplar-storage,created-timestamp-zero-ingestion"
 ]
 
 # --- Configuration templates ---
