@@ -3,9 +3,8 @@
 # -----------------------------------------------------------------------------
 #
 # Composition for the cloudflare-waf module. Deploys the Cloudflare Managed WAF
-# ruleset on the Pro zone (alexfreidah.com) and per-zone bot management:
-# munchbox.cc (free) gets Bot Fight Mode + AI bot controls; alexfreidah.com (Pro)
-# gets Super Bot Fight Mode + AI bot controls. Provider auth is the scoped
+# ruleset and Super Bot Fight Mode + AI bot controls on both Pro zones
+# (munchbox.cc and alexfreidah.com). Provider auth is the scoped
 # "wafbot" token pulled from the cloudflare-tokens leaf via dependency; apply
 # that leaf first. dependency outputs are referenced from inputs only.
 #
@@ -34,28 +33,28 @@ locals {
 inputs = {
   cloudflare_api_token = dependency.cloudflare_tokens.outputs.token_values["wafbot"]
 
-  # --- managed WAF ruleset: Pro zone only (free can't deploy the full ruleset) ---
+  # --- managed WAF ruleset: both zones are Pro ---
   managed_rules_zones = {
     alexfreidah = local.az
+    munchbox    = local.mz
   }
 
   bot_management = {
-    # --- munchbox.cc: Free plan -> AI bot controls only.
+    # --- munchbox.cc: Pro plan -> Super Bot Fight Mode + AI bot controls.
     #
-    # Bot Fight Mode is off. The free tier has no verified-bot allowance, so it
-    # challenges search engines alongside everything else: Google-Lens was taken
-    # from 192.178.13.165, a Google address, and a fetcher cannot solve a managed
-    # challenge. s3-orchestrator.munchbox.cc is a documentation site that exists
-    # to be indexed. JS detections go with it, since they only feed the scoring
-    # Bot Fight Mode acted on, and they inject a script into every page.
-    #
-    # AI bot blocking is unaffected and still turns away GPTBot and ClaudeBot. ---
+    # The docs sites here exist to be indexed, so verified bots are pinned to
+    # allow rather than left to the dashboard default; Googlebot takes that
+    # path. definitely_automated is a challenge for the same reason as
+    # alexfreidah.com below. ---
     munchbox = {
-      zone_id            = local.mz
-      fight_mode         = false
-      enable_js          = false
-      ai_bots_protection = "block"
-      crawler_protection = "enabled"
+      zone_id                         = local.mz
+      sbfm_definitely_automated       = "managed_challenge"
+      sbfm_verified_bots              = "allow"
+      sbfm_static_resource_protection = false
+      optimize_wordpress              = false
+      enable_js                       = true
+      ai_bots_protection              = "block"
+      crawler_protection              = "enabled"
     }
     # --- alexfreidah.com: Pro plan -> Super Bot Fight Mode + AI bot controls.
     #     "likely automated" tier is Business+ only, so it's intentionally unset.
