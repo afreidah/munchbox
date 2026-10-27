@@ -238,6 +238,28 @@ _mb_secret PGPASSWORD password secret/postgres-shared/root
 _mb_secret AWS_ACCESS_KEY_ID access_key secret/s3-identity/admin
 _mb_secret AWS_SECRET_ACCESS_KEY secret_key secret/s3-identity/admin
 
+# SSH user cert. The client-user role signs for 24h, so a cert left alone goes
+# stale within a day and every root login fails as "no supported methods
+# remain", which says nothing about expiry. Re-signed whenever it is missing or
+# has under an hour left. Signed to a temp file first: redirecting straight
+# onto the cert would truncate a still-valid one when the sign fails.
+_mb_ssh_key="$HOME/.ssh/id_ed25519"
+_mb_ssh_cert="${_mb_ssh_key}-cert.pub"
+if [[ -f "${_mb_ssh_key}.pub" ]]; then
+  _mb_ssh_until=$(ssh-keygen -L -f "$_mb_ssh_cert" 2>/dev/null | sed -nE 's/.*Valid: from .* to (.*)/\1/p')
+  if [[ -z $_mb_ssh_until ]] ||
+    (($(date -d "$_mb_ssh_until" +%s 2>/dev/null || echo 0) - $(date +%s) < 3600)); then
+    if _mb_ssh_out=$(vault write -field=signed_key ssh-client-signer/sign/client-user \
+      public_key=@"${_mb_ssh_key}.pub" valid_principals=root ttl=24h 2>&1); then
+      printf '%s\n' "$_mb_ssh_out" >"${_mb_ssh_cert}.tmp"
+      mv "${_mb_ssh_cert}.tmp" "$_mb_ssh_cert"
+    else
+      _mb_missing+=("ssh-client-signer/sign/client-user: ${_mb_ssh_out%%$'\n'*}")
+    fi
+  fi
+fi
+unset _mb_ssh_key _mb_ssh_cert _mb_ssh_until _mb_ssh_out
+
 # -------------------------------------------------------------------------------
 # Report
 #
