@@ -44,11 +44,13 @@ locals {
   #     policy omits reads back as "no secret found", not a permission error. ---
   module_read_secrets = [
     "aptly",
+    "consul/release-publisher-token",
     "deluge",
     "edge-proxy/b2",
     "edge-proxy/ibm",
     "edge-proxy/oci",
     "flight-fetcher",
+    "forgejo/scaler",
     "g3",
     "lidarr",
     "prowlarr",
