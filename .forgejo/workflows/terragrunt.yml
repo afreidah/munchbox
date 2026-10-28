@@ -206,10 +206,13 @@ jobs:
           # the shared Vault and Patroni see the whole run arrive together.
           parallelism="--parallelism 12"
 
+          # A push plan answers what the commit changes, so it refreshes only
+          # the resources it would modify; drift elsewhere does not show here.
+          # The apply keeps a full refresh, so it never acts on stale state.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             terragrunt run --all apply ${parallelism} ${filter}
           else
-            terragrunt run --all plan ${parallelism} ${filter}
+            terragrunt run --all ${parallelism} ${filter} -- plan -minimal-refresh
             echo "::notice title=plan only::run this workflow manually with confirm=apply to apply it"
           fi
 

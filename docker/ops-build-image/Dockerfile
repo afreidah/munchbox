@@ -44,8 +44,8 @@ ENV PATH=/usr/local/go/bin:$PATH GOPATH=/go
 #
 #     HashiCorp CLIs track the running cluster, not just latest. ---
 RUN set -eux; \
-  TF_VERSION="1.16.2"; \
-  TG_VERSION="1.1.4"; \
+  TF_VERSION="1.17.0"; \
+  TG_VERSION="1.2.1"; \
   NOMAD_VERSION="2.0.5"; \
   PACK_VERSION="0.4.2"; \
   CONSUL_VERSION="2.0.3"; \

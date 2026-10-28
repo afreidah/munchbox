@@ -169,7 +169,7 @@ jobs:
       # version nothing applies with.
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "1.16.2"
+          terraform_version: "1.17.0"
           terraform_wrapper: false
       - uses: terraform-linters/setup-tflint@v4
 

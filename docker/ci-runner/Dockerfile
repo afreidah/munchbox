@@ -20,8 +20,8 @@ FROM myoung34/github-runner:2.337.0-ubuntu-jammy
 # Do NOT give it a default -- a default overrides the per-platform value and every
 # arch ends up with amd64 binaries.
 ARG TARGETARCH
-ARG TERRAFORM_VERSION=1.16.2
-ARG TERRAGRUNT_VERSION=1.1.4
+ARG TERRAFORM_VERSION=1.17.0
+ARG TERRAGRUNT_VERSION=1.2.1
 ARG NOMAD_VERSION=2.0.5
 ARG NOMAD_PACK_VERSION=0.4.2
 ARG CONSUL_VERSION=2.0.3
