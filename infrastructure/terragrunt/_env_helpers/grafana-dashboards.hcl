@@ -17,7 +17,7 @@
 #
 # The s3-orchestrator dashboard is not on disk here. It ships with the code it
 # graphs, and a release publishes it to the artifact bucket, so this leaf reads
-# it back at the pinned version rather than holding a second copy that drifts.
+# it back at the released version rather than holding a second copy that drifts.
 #
 # Author: Alex Freidah / Project: Munchbox
 # -----------------------------------------------------------------------------
@@ -46,6 +46,9 @@ dependency "s3_identities" {
 locals {
   root      = read_terragrunt_config(find_in_parent_folders("root.hcl"))
   artifacts = local.root.locals.s3_orchestrator_artifacts
+
+  # --- written by the s3-orchestrator release workflow ---
+  s3_orchestrator_version = run_cmd("--terragrunt-quiet", "consul", "kv", "get", "deploy/versions/s3-orchestrator")
 }
 
 inputs = {
@@ -57,7 +60,7 @@ inputs = {
   remote_dashboards = {
     "s3-orchestrator" = {
       bucket = local.artifacts.bucket
-      key    = "s3-orchestrator/grafana/${local.root.locals.s3_orchestrator_version}/s3-orchestrator.json"
+      key    = "s3-orchestrator/grafana/${local.s3_orchestrator_version}/s3-orchestrator.json"
     }
   }
 

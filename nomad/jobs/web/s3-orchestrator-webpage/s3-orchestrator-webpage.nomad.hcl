@@ -9,6 +9,11 @@
 # No Vault.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "s3_orchestrator_version" {
+  type = string
+}
+
 job "s3-orchestrator-webpage" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -126,7 +131,7 @@ job "s3-orchestrator-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator-web:v0.176.0"
+        image              = "registry.munchbox.cc/s3-orchestrator-web:${var.s3_orchestrator_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
         force_pull         = true

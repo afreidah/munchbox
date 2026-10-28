@@ -24,13 +24,12 @@ locals {
   repository = lookup({ "forgejo" = "munchbox" }, local.leaf, local.leaf)
 
   # --- The app repositories publish .deb packages to aptly on a release tag.
-  #     Publishing is HTTP against aptly's API, so the runner needs the password
-  #     and nothing else -- these repositories get no cluster credentials.
+  #     Publishing is HTTP against aptly's API, so the runner needs the password.
   #
   #     aptly-admin, not aptly: aptly-secrets.hcl generates the API password and
   #     its bcrypt htpasswd into aptly-admin, and that is what the API's nginx
   #     validates against. secret/aptly belongs to the s3 gateway. ---
-  aptly_secrets = {
+  app_secrets = {
     "aptly-pass" = {
       vault_path  = "aptly-admin"
       vault_field = "password"
@@ -49,6 +48,20 @@ locals {
       vault_path  = "s3-identity/artifacts_s3o_writer"
       vault_field = "secret_key"
       secret_name = "AWS_SECRET_ACCESS_KEY"
+    }
+    # --- A release records its version under deploy/versions/ and starts
+    #     munchbox's deploy-version workflow. The Consul token reaches that
+    #     prefix only; the dispatch token is the runner scaler's, which already
+    #     carries write:repository for minting runner registrations. ---
+    "release-consul-token" = {
+      vault_path  = "consul/release-publisher-token"
+      vault_field = "token"
+      secret_name = "CONSUL_HTTP_TOKEN"
+    }
+    "release-dispatch-token" = {
+      vault_path  = "forgejo/scaler"
+      vault_field = "token"
+      secret_name = "RELEASE_DISPATCH_TOKEN"
     }
   }
 
@@ -97,5 +110,5 @@ inputs = {
   repository_owner = "alex"
   repository_name  = local.repository
 
-  secrets = local.repository == "munchbox" ? local.munchbox_secrets : local.aptly_secrets
+  secrets = local.repository == "munchbox" ? local.munchbox_secrets : local.app_secrets
 }

@@ -71,10 +71,13 @@ locals {
     oci = { host = "axlubepkixee.compat.objectstorage.us-phoenix-1.oraclecloud.com", region = "us-phoenix-1" }
   }
 
+  # --- written by the s3-orchestrator release workflow ---
+  s3_orchestrator_version = run_cmd("--terragrunt-quiet", "consul", "kv", "get", "deploy/versions/s3-orchestrator")
+
   # --- Everything but the credentials, which can only be read from inputs. ---
   edge_artifact = {
     bucket   = local.root.locals.s3_orchestrator_artifacts.bucket
-    key      = "s3-orchestrator/cloudflare-worker/${local.root.locals.s3_orchestrator_version}/worker.js"
+    key      = "s3-orchestrator/cloudflare-worker/${local.s3_orchestrator_version}/worker.js"
     endpoint = local.root.locals.s3_orchestrator_artifacts.endpoint
   }
 

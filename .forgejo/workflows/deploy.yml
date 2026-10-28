@@ -122,6 +122,8 @@ jobs:
         if: ${{ steps.range.outputs.jobs != '' }}
         env:
           NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+          # make run reads image versions from deploy/versions/ in Consul KV.
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
           # pki_int signs the Nomad server cert, and the runner mounts its chain
           # into every job container. It cannot be fetched from Vault instead:
           # Vault serves the chain over a connection secured by that same CA, so

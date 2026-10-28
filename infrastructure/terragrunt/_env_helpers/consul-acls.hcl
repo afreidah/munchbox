@@ -175,6 +175,17 @@ locals {
       EOT
     }
 
+    # --- app repositories' release workflows: record the version they just
+    #     published, which munchbox deploys from. Shared across those repos, so
+    #     one can write another's version; the prefix is all it reaches. ---
+    "release-publisher" = {
+      description       = "Release publisher - record released app versions"
+      token_description = "Token for app release workflows writing deploy/versions/"
+      rules             = <<-EOT
+        key_prefix "deploy/versions/" { policy = "write" }
+      EOT
+    }
+
     "backup-worker" = {
       description       = "Backup worker - Consul snapshot access"
       token_description = "Token for backup worker Consul snapshots"
