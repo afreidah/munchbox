@@ -1,0 +1,89 @@
+# -------------------------------------------------------------------------------
+# munchbox release deploy
+#
+# Started by an app repository's release workflow once its images are pushed and
+# its version is recorded in Consul KV deploy/versions/<app>. Redeploys every
+# Nomad job that declares the matching <app>_version variable; `make run` reads
+# the version back from Consul, so this passes only the app name.
+#
+# A job opts in by declaring the variable, so a new app needs no change here.
+#
+# Author: Alex Freidah / Project: Munchbox
+# -------------------------------------------------------------------------------
+
+name: Deploy release
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: "App whose release to deploy, as named in deploy/versions/"
+        required: true
+        type: string
+
+# --- two releases of one app must not roll its jobs at the same time ---
+concurrency:
+  group: deploy-version-${{ github.event.inputs.app }}
+
+env:
+  NOMAD_ADDR: https://192.168.68.61:4646
+  NOMAD_TLS_SERVER_NAME: server.global.nomad
+  CONSUL_HTTP_ADDR: http://127.0.0.1:8500
+
+jobs:
+  deploy:
+    name: Deploy the jobs that run this app
+    runs-on: ops
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve the jobs
+        id: jobs
+        env:
+          APP: ${{ github.event.inputs.app }}
+        run: |
+          set -euo pipefail
+
+          # The name reaches a grep pattern and a Consul key, so only the
+          # characters an app name uses get through.
+          if ! printf '%s' "$APP" | grep -qE '^[a-z0-9][a-z0-9-]*$'; then
+            echo "::error::app must be lowercase letters, digits and dashes (got '$APP')"
+            exit 1
+          fi
+
+          var="$(printf '%s' "$APP" | tr - _)_version"
+
+          # Job names come from the spec filenames, which is what `make run
+          # JOB=` resolves. Only raw specs are searched: the version lookup in
+          # the Makefile covers raw jobs alone.
+          jobs=$(grep -rlE "^variable \"${var}\"" nomad/jobs --include='*.nomad.hcl' \
+            | awk -F/ '$3 != "deprecated"' \
+            | xargs -r -n1 basename \
+            | sed 's/\.nomad\.hcl$//' \
+            | sort -u \
+            | tr '\n' ' ')
+
+          if [ -z "$jobs" ]; then
+            echo "::error::no job declares variable \"${var}\""
+            exit 1
+          fi
+
+          echo "variable: ${var}"
+          echo "jobs: ${jobs}"
+          echo "jobs=${jobs}" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy
+        env:
+          NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN }}
+          # Same chain the post-merge deploy trusts; see deploy.yml.
+          NOMAD_CACERT: /etc/ssl/certs/munchbox-ca.pem
+        run: |
+          set -euo pipefail
+
+          rc=0
+          for job in ${{ steps.jobs.outputs.jobs }}; do
+            echo "=== $job ==="
+            ( cd nomad && make run JOB="$job" ) || { echo "::error title=deploy::$job failed"; rc=1; }
+          done
+          exit $rc

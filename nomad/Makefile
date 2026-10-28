@@ -117,6 +117,28 @@ $(shell vars=$$(grep -oE '^[a-z][a-z_0-9]*' "$(SHARED_VARS)" 2>/dev/null | tr '\
 	fi)
 endef
 
+# --- Resolve <app>_version vars from Consul KV deploy/versions/<app> ---
+define lookup_versions
+$(shell for v in $$(grep -oE '^variable "[a-z0-9_]+_version"' "$(1)" 2>/dev/null | cut -d'"' -f2); do \
+	key="deploy/versions/$$(echo "$${v%_version}" | tr _ -)"; \
+	if val=$$(consul kv get "$$key" 2>/dev/null) && [ -n "$$val" ]; then \
+		echo "-var=$$v=$$val"; \
+	else \
+		echo "MISSING:$$key"; \
+	fi; \
+done)
+endef
+
+# --- Fail rather than deploy without a version Consul lacks ---
+define version_var_flags
+$(if $(filter MISSING:%,$(1)),$(error Consul KV has no value for: $(patsubst MISSING:%,%,$(filter MISSING:%,$(1)))),$(1))
+endef
+
+# --- nomad job args for a raw spec: version vars, shared vars, file ---
+define raw_job_args
+$(call version_var_flags,$(call lookup_versions,$(1))) $(if $(filter yes,$(call uses_shared_vars,$(1))),-var-file="$(SHARED_VARS)") "$(1)"
+endef
+
 # -------------------------------------------------------------------------------
 # Commands
 # -------------------------------------------------------------------------------
@@ -162,14 +184,9 @@ endif
 	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
 	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
-	$(eval HAS_SHARED := $(call uses_shared_vars,$(JOB_FILE)))
 	@echo "=== Planning $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		if [ "$(HAS_SHARED)" = "yes" ]; then \
-			nomad job plan -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
-		else \
-			nomad job plan "$(JOB_FILE)"; \
-		fi; \
+		nomad job plan $(call raw_job_args,$(JOB_FILE)); \
 	else \
 		nomad-pack plan \
 			--name="$(JOB)" \
@@ -190,14 +207,9 @@ endif
 	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
 	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
-	$(eval HAS_SHARED := $(call uses_shared_vars,$(JOB_FILE)))
 	@echo "=== Deploying $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		if [ "$(HAS_SHARED)" = "yes" ]; then \
-			nomad job run -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
-		else \
-			nomad job run "$(JOB_FILE)"; \
-		fi; \
+		nomad job run $(call raw_job_args,$(JOB_FILE)); \
 	else \
 		nomad-pack run \
 			--name="$(JOB)" \
@@ -218,14 +230,9 @@ endif
 	$(eval JOB_DIR := $(call get_job_dir,$(JOB_FILE)))
 	$(eval IS_RAW := $(call is_raw_hcl,$(JOB_FILE)))
 	$(eval PACK := $(call get_pack,$(JOB_FILE)))
-	$(eval HAS_SHARED := $(call uses_shared_vars,$(JOB_FILE)))
 	@echo "=== Validating $(JOB) ==="
 	@if [ "$(IS_RAW)" = "yes" ]; then \
-		if [ "$(HAS_SHARED)" = "yes" ]; then \
-			nomad job validate -var-file="$(SHARED_VARS)" "$(JOB_FILE)"; \
-		else \
-			nomad job validate "$(JOB_FILE)"; \
-		fi; \
+		nomad job validate $(call raw_job_args,$(JOB_FILE)); \
 	else \
 		nomad-pack render \
 			--var-file="$(JOB_FILE)" \

@@ -4,6 +4,11 @@
 # Project: Munchbox / Author: Alex Freidah
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "s3_orchestrator_version" {
+  type = string
+}
+
 job "s3-orchestrator" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -160,7 +165,7 @@ job "s3-orchestrator" {
         aud  = ["vault.io"]
       }
       config {
-        image              = "registry.munchbox.cc/s3-orchestrator:v0.176.0"
+        image              = "registry.munchbox.cc/s3-orchestrator:${var.s3_orchestrator_version}"
         image_pull_timeout = "10m"
         force_pull         = true
         ports              = ["http"]

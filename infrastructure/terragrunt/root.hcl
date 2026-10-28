@@ -106,13 +106,11 @@ locals {
   # S3-ORCHESTRATOR ARTIFACTS
   #
   # A release publishes the edge worker bundle and the grafana dashboard to the
-  # artifact bucket under a key carrying this version. Pinned, never "latest",
-  # so republishing cannot change what is deployed during an unrelated apply.
-  # Consumed by _env_helpers/cloudflare-worker-routes.hcl (worker bundle) and
+  # artifact bucket under a key carrying its version, then records that version
+  # in Consul KV deploy/versions/s3-orchestrator. The consumers read it there:
+  # _env_helpers/cloudflare-worker-routes.hcl (worker bundle) and
   # _env_helpers/grafana-dashboards.hcl (dashboard).
   # ---------------------------------------------------------------------------
-
-  s3_orchestrator_version = "v0.176.0"
 
   s3_orchestrator_artifacts = {
     bucket   = "artifacts"
