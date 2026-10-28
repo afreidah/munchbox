@@ -11,6 +11,11 @@
 # OpenTelemetry for Tempo correlation.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "cloudflare_log_collector_version" {
+  type = string
+}
+
 job "cloudflare-log-collector" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -117,7 +122,7 @@ job "cloudflare-log-collector" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector:v0.1.26"
+        image              = "registry.munchbox.cc/cloudflare-log-collector:${var.cloudflare_log_collector_version}"
         image_pull_timeout = "5m"
         force_pull         = true
         network_mode       = "host"

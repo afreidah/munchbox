@@ -8,6 +8,11 @@
 # and history in Postgres. Dashboard available on port 8080.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "flight_fetcher_version" {
+  type = string
+}
+
 job "flight-fetcher" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -109,7 +114,7 @@ job "flight-fetcher" {
       }
 
       config {
-        image              = "registry.munchbox.cc/flight-fetcher:v0.9.25"
+        image              = "registry.munchbox.cc/flight-fetcher:${var.flight_fetcher_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"

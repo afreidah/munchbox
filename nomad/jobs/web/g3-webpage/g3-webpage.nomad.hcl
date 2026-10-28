@@ -8,6 +8,11 @@
 # LAN-restricted by the dashboard-allowlan middleware. No Vault.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "g3_version" {
+  type = string
+}
+
 job "g3-webpage" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -137,7 +142,7 @@ job "g3-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/g3-web:v0.5.9"
+        image              = "registry.munchbox.cc/g3-web:${var.g3_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

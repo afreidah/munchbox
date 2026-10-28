@@ -9,6 +9,11 @@
 # middleware. No Vault.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "cloudflare_log_collector_version" {
+  type = string
+}
+
 job "cloudflare-log-collector-webpage" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -127,7 +132,7 @@ job "cloudflare-log-collector-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/cloudflare-log-collector-web:v0.1.26"
+        image              = "registry.munchbox.cc/cloudflare-log-collector-web:${var.cloudflare_log_collector_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
         force_pull         = true

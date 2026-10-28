@@ -7,6 +7,11 @@
 # cycles when nodes become unresponsive. Runs on homelab infrastructure only.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "oracle_watchdog_version" {
+  type = string
+}
+
 job "oracle-watchdog" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -120,7 +125,7 @@ job "oracle-watchdog" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/oracle-watchdog:v1.4.9"
+        image              = "registry.munchbox.cc/oracle-watchdog:${var.oracle_watchdog_version}"
         image_pull_timeout = "5m"
         ports              = ["metrics"]
 
