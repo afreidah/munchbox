@@ -379,12 +379,16 @@ inputs = {
       EOT
     }
 
-    # --- ci-runner: the ephemeral CI runner reads only its scoped Nomad ACL
-    #     token (minted by nomad-acls -> secret/ci-runner-nomad) to run
-    #     `nomad job validate`/`plan`. terragrunt validate needs no secrets. ---
+    # --- ci-runner: the ephemeral CI runner reads its scoped Nomad ACL token
+    #     (minted by nomad-acls -> secret/ci-runner-nomad) and the Consul token
+    #     that reads deploy/versions/, to run `nomad job validate`/`plan`.
+    #     terragrunt validate needs no secrets. ---
     "ci-runner" = {
       policy = <<-EOT
         path "secret/data/ci-runner-nomad" {
+          capabilities = ["read"]
+        }
+        path "secret/data/consul/deploy-versions-reader-token" {
           capabilities = ["read"]
         }
       EOT

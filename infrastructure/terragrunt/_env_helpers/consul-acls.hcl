@@ -186,6 +186,16 @@ locals {
       EOT
     }
 
+    # --- GitHub CI runner: reads the released versions so `nomad job
+    #     validate`/`plan` fill a job's <app>_version vars as a deploy does. ---
+    "deploy-versions-reader" = {
+      description       = "Deploy versions reader - read released app versions"
+      token_description = "Token for the GitHub CI runner reading deploy/versions/"
+      rules             = <<-EOT
+        key_prefix "deploy/versions/" { policy = "read" }
+      EOT
+    }
+
     "backup-worker" = {
       description       = "Backup worker - Consul snapshot access"
       token_description = "Token for backup worker Consul snapshots"

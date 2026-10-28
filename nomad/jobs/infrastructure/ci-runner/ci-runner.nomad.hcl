@@ -19,10 +19,11 @@
 #
 # Cluster creds: the task carries a Workload Identity, exchanged via vault{} for a
 # Vault token, which the template below uses to read a scoped Nomad ACL token
-# (submit-job) as NOMAD_TOKEN — enough for `nomad job validate`/`plan`. terragrunt
-# validate needs no secrets. Role + policy + token live in infrastructure/terragrunt
-# (_env_helpers/vault-config.hcl + nomad-acls.hcl); apply those before registering
-# this job so the WI role and secret/ci-runner-nomad exist.
+# (submit-job) as NOMAD_TOKEN and a Consul token reading deploy/versions/ as
+# CONSUL_HTTP_TOKEN — enough for `nomad job validate`/`plan`. terragrunt validate
+# needs no secrets. Role + policy + tokens live in infrastructure/terragrunt
+# (_env_helpers/vault-config.hcl + nomad-acls.hcl + consul-acls.hcl); apply those
+# before registering this job so the WI role and both secrets exist.
 # -------------------------------------------------------------------------------
 
 job "ci-runner" {
@@ -97,12 +98,16 @@ job "ci-runner" {
         ]
       }
 
-      # --- Scoped Nomad ACL token (submit-job) for `nomad job validate`/`plan`.
-      #     Minted by terragrunt nomad-acls -> secret/ci-runner-nomad. ---
+      # --- Scoped Nomad ACL token (submit-job) for `nomad job validate`/`plan`,
+      #     minted by terragrunt nomad-acls -> secret/ci-runner-nomad, and the
+      #     consul-acls token that reads deploy/versions/. ---
       template {
         data        = <<-EOF
         {{ with secret "secret/data/ci-runner-nomad" }}
         NOMAD_TOKEN={{ .Data.data.nomad_token }}
+        {{ end }}
+        {{ with secret "secret/data/consul/deploy-versions-reader-token" }}
+        CONSUL_HTTP_TOKEN={{ .Data.data.token }}
         {{ end }}
         EOF
         destination = "secrets/nomad.env"
@@ -124,6 +129,9 @@ job "ci-runner" {
         NOMAD_ADDR            = "https://192.168.68.61:4646"
         NOMAD_TLS_SERVER_NAME = "server.global.nomad"
         NOMAD_CACERT          = "/etc/ssl/certs/munchbox-ca.pem"
+
+        # --- Consul KV deploy/versions/ for jobs' <app>_version vars ---
+        CONSUL_HTTP_ADDR = "http://${attr.unique.network.ip-address}:8500"
       }
 
       # --- Ephemeral one-shot, so a flat reservation has no idle cost (no need
