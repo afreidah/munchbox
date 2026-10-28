@@ -9,6 +9,11 @@
 # No Vault.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "oracle_watchdog_version" {
+  type = string
+}
+
 job "oracle-watchdog-webpage" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -131,7 +136,7 @@ job "oracle-watchdog-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/oracle-watchdog-web:v1.4.10"
+        image              = "registry.munchbox.cc/oracle-watchdog-web:${var.oracle_watchdog_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

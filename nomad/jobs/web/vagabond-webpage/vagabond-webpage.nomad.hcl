@@ -9,6 +9,11 @@
 # No Vault.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "vagabond_version" {
+  type = string
+}
+
 job "vagabond-webpage" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -126,7 +131,7 @@ job "vagabond-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/vagabond-web:v0.1.6"
+        image              = "registry.munchbox.cc/vagabond-web:${var.vagabond_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
         force_pull         = true

@@ -8,6 +8,11 @@
 # shared Patroni cluster. Credentials are injected from Vault.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "g3_version" {
+  type = string
+}
+
 job "g3-proxy" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -133,7 +138,7 @@ job "g3-proxy" {
 
       # --- Docker Configuration ---
       config {
-        image              = "registry.munchbox.cc/g3:v0.5.6"
+        image              = "registry.munchbox.cc/g3:${var.g3_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
         network_mode       = "host"
