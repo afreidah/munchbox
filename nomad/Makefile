@@ -13,7 +13,7 @@
 #   make list                   # Show all available jobs
 # -------------------------------------------------------------------------------
 
-.PHONY: help list render plan run stop purge validate
+.PHONY: help list render plan run stop purge validate job-args
 
 SHELL := /bin/bash
 
@@ -41,6 +41,7 @@ help:
 	@echo "  make stop JOB=<name>      Stop running job"
 	@echo "  make purge JOB=<name>     Stop and purge job"
 	@echo "  make validate JOB=<name>  Validate job syntax"
+	@echo "  make job-args JOB=<name>  Print a raw job's nomad args"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make run JOB=grafana"
@@ -136,7 +137,7 @@ endef
 
 # --- nomad job args for a raw spec: version vars, shared vars, file ---
 define raw_job_args
-$(call version_var_flags,$(call lookup_versions,$(1))) $(if $(filter yes,$(call uses_shared_vars,$(1))),-var-file="$(SHARED_VARS)") "$(1)"
+$(call version_var_flags,$(call lookup_versions,$(1))) $(if $(filter yes,$(call uses_shared_vars,$(1))),-var-file=$(SHARED_VARS)) $(1)
 endef
 
 # -------------------------------------------------------------------------------
@@ -239,6 +240,18 @@ endif
 			--var="job_dir=$(shell pwd)/$(JOB_DIR)" \
 			"./$(PACK_REGISTRY)/$(PACK)" | sed '1,/^$$/d' | nomad job validate -; \
 	fi
+
+# --- Print a raw job's nomad args, for callers that need nomad's exit code ---
+job-args:
+ifndef JOB
+	$(error JOB not specified. Usage: make job-args JOB=<name>)
+endif
+	$(eval JOB_FILE := $(call find_job,$(JOB)))
+	@if [ -z "$(JOB_FILE)" ]; then \
+		echo "Error: Job '$(JOB)' not found" >&2; \
+		exit 1; \
+	fi
+	@echo $(call raw_job_args,$(JOB_FILE))
 
 stop:
 ifndef JOB

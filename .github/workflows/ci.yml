@@ -259,19 +259,16 @@ jobs:
 
       - name: nomad job validate (server-side)
         working-directory: nomad
-        # NOMAD_ADDR / NOMAD_TOKEN / NOMAD_CACERT come from the ci-runner job env.
+        # NOMAD_ADDR / NOMAD_TOKEN / NOMAD_CACERT and CONSUL_HTTP_ADDR /
+        # CONSUL_HTTP_TOKEN come from the ci-runner job env.
         run: |
           set -uo pipefail
           fail=0
           while IFS= read -r jf; do
             echo "::group::validate $jf"
-            # Validate bare; jobs that declare shared vars need -var-file (like
-            # `make validate`), but passing it to jobs that don't declare them
-            # errors, so only retry with it on an "Unset variable" failure.
-            if out=$(nomad job validate "$jf" 2>&1); then
-              ok=1
-            elif printf '%s' "$out" | grep -q 'Unset variable' \
-                 && out=$(nomad job validate -var-file=shared.vars.hcl "$jf" 2>&1); then
+            # `make validate` passes the shared vars and the <app>_version vars
+            # from Consul exactly as a deploy does.
+            if out=$(make -s validate JOB="$(basename "$jf" .nomad.hcl)" 2>&1); then
               ok=1
             else
               ok=0
@@ -318,11 +315,14 @@ jobs:
               while IFS= read -r jf; do
                 [ -n "$jf" ] || continue
                 echo "::group::plan $jf"
-                # Retry with the shared var-file only on an "Unset variable" error,
-                # mirroring the validate step above.
-                rc=0; out=$(nomad job plan "$jf" 2>&1) || rc=$?
-                if [ "$rc" -ge 2 ] && printf '%s' "$out" | grep -q 'Unset variable'; then
-                  rc=0; out=$(nomad job plan -var-file=shared.vars.hcl "$jf" 2>&1) || rc=$?
+                # Args come from make so the vars match a deploy; nomad runs here
+                # directly because its exit 1 means "has changes", which make
+                # would report as a failure.
+                rc=0
+                if args=$(make -s job-args JOB="$(basename "$jf" .nomad.hcl)" 2>&1); then
+                  out=$(nomad job plan $args 2>&1) || rc=$?
+                else
+                  rc=2; out=$args
                 fi
                 case "$rc" in
                   0) badge='no alloc changes' ;;
