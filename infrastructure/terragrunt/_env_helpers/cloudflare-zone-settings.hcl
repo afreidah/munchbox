@@ -145,6 +145,12 @@ locals {
           expression        = "(http.host eq \"vagabond.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
           target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
         },
+        # --- the apex has no site of its own; send it to the personal site ---
+        {
+          description = "munchbox.cc apex -> alexfreidah.com"
+          expression  = "(http.host eq \"munchbox.cc\")"
+          target_url  = "https://alexfreidah.com/"
+        },
       ]
     }
   }

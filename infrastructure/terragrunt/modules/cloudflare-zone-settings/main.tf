@@ -66,8 +66,9 @@ resource "cloudflare_ruleset" "cache" {
 # REDIRECT RULESETS
 # -----------------------------------------------------------------------------
 
-# --- The target is an expression, not a literal, so a rule can rewrite the
-#     path it matched rather than sending every hit to one URL. ---
+# --- A rule targets either a fixed URL (value) or an expression that can
+#     rewrite the path it matched; the API rejects a quoted literal as an
+#     expression. ---
 resource "cloudflare_ruleset" "redirect" {
   for_each = var.redirect_rulesets
 
@@ -88,6 +89,7 @@ resource "cloudflare_ruleset" "redirect" {
         from_value = {
           status_code = rule.status_code
           target_url = {
+            value      = rule.target_url
             expression = rule.target_expression
           }
           preserve_query_string = rule.preserve_query_string

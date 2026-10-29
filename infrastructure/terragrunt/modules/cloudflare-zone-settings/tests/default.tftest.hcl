@@ -38,11 +38,18 @@ variables {
     munchbox = {
       zone_id = "0123456789abcdef0123456789abcdef"
       name    = "default"
-      rules = [{
-        description       = "strip index.html"
-        expression        = "(http.host eq \"s3-orchestrator.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
-        target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
-      }]
+      rules = [
+        {
+          description       = "strip index.html"
+          expression        = "(http.host eq \"s3-orchestrator.munchbox.cc\" and ends_with(http.request.uri.path, \"/index.html\"))"
+          target_expression = "concat(\"https://\", http.host, substring(http.request.uri.path, 0, -10))"
+        },
+        {
+          description = "apex"
+          expression  = "(http.host eq \"munchbox.cc\")"
+          target_url  = "https://alexfreidah.com/"
+        },
+      ]
     }
   }
   dnssec_zones = {
@@ -115,6 +122,15 @@ run "fan_out_per_entry" {
     error_message = "redirect rule must be a 301 whose target is an expression"
   }
 
+  # --- a fixed target lands in value and leaves expression unset ---
+  assert {
+    condition = alltrue([
+      cloudflare_ruleset.redirect["munchbox"].rules[1].action_parameters.from_value.target_url.value == "https://alexfreidah.com/",
+      cloudflare_ruleset.redirect["munchbox"].rules[1].action_parameters.from_value.target_url.expression == null,
+    ])
+    error_message = "a target_url rule must set target_url.value and no expression"
+  }
+
   # --- query strings survive the redirect by default ---
   assert {
     condition     = cloudflare_ruleset.redirect["munchbox"].rules[0].action_parameters.from_value.preserve_query_string
@@ -138,6 +154,30 @@ run "fan_out_per_entry" {
     condition     = toset(keys(output.dnssec_ds_records)) == toset(["munchbox", "alexfreidah"])
     error_message = "dnssec_ds_records must be keyed by every dnssec zone"
   }
+}
+
+# -------------------------------------------------------------------------
+# a redirect rule with both targets set is rejected
+# -------------------------------------------------------------------------
+
+run "redirect_rejects_both_targets" {
+  command = plan
+
+  variables {
+    redirect_rulesets = {
+      munchbox = {
+        zone_id = "0123456789abcdef0123456789abcdef"
+        name    = "default"
+        rules = [{
+          expression        = "(http.host eq \"munchbox.cc\")"
+          target_url        = "https://alexfreidah.com/"
+          target_expression = "concat(\"https://\", http.host)"
+        }]
+      }
+    }
+  }
+
+  expect_failures = [var.redirect_rulesets]
 }
 
 # -------------------------------------------------------------------------

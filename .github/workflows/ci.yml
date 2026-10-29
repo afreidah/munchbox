@@ -395,6 +395,10 @@ jobs:
           #     rejects an empty pm_api_url during validate. ---
           OCI_REGION: us-ashburn-1
           PM_API_URL: https://proxmox.invalid:8006/api2/json
+          # --- the runner's token is scoped to deploy/versions/ and is denied
+          #     dependency state, which fails output resolution instead of
+          #     falling back to mock_outputs; validate uses the agent default. ---
+          CONSUL_HTTP_TOKEN: ""
         run: |
           set -uo pipefail
           mkdir -p "$TF_PLUGIN_CACHE_DIR"
