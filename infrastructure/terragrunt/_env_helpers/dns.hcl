@@ -147,6 +147,19 @@ locals {
       external_content = true
     }
 
+    # --- munchbox.cc itself. Exists only so Cloudflare answers for the apex
+    #     and the redirect rule in cloudflare-zone-settings can send it to
+    #     alexfreidah.com; the address is never connected to. ---
+    "munchbox-apex" = {
+      zone_id          = local.munchbox_zone_id
+      name             = "@"
+      type             = "A"
+      content          = "192.0.2.1"
+      proxied          = true
+      ttl              = 1
+      external_content = true
+    }
+
     # --- resume.alexfreidah.com, other zone, same shape ---
     "alexfreidah-bing-verify-resume" = {
       zone_id = local.alexfreidah_zone_id

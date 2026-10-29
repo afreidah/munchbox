@@ -51,14 +51,15 @@ variable "cache_rulesets" {
 }
 
 variable "redirect_rulesets" {
-  description = "Map of http_request_dynamic_redirect rulesets, one per zone. Rules are evaluated in order and all use the redirect action; target_expression is a Cloudflare expression, not a literal URL."
+  description = "Map of http_request_dynamic_redirect rulesets, one per zone. Rules are evaluated in order and all use the redirect action. Each rule sets exactly one target: target_url (a fixed URL) or target_expression (a Cloudflare expression that can rewrite the matched path)."
   type = map(object({
     zone_id     = string
     name        = string
     description = optional(string, "")
     rules = list(object({
       expression            = string
-      target_expression     = string
+      target_url            = optional(string)
+      target_expression     = optional(string)
       description           = optional(string, "")
       enabled               = optional(bool, true)
       status_code           = optional(number, 301)
@@ -74,6 +75,15 @@ variable "redirect_rulesets" {
       ]
     ]))
     error_message = "Redirect status_code must be one of 301, 302, 303, 307 or 308."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for r in var.redirect_rulesets : [
+        for rule in r.rules : (rule.target_url == null) != (rule.target_expression == null)
+      ]
+    ]))
+    error_message = "Each redirect rule must set exactly one of target_url or target_expression."
   }
 }
 
