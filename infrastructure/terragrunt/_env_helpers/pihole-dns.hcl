@@ -54,6 +54,9 @@ locals {
     "b2-proxy"  = { domain = "b2-proxy.munchbox.cc", ip = "104.21.21.42" }
     "ibm-proxy" = { domain = "ibm-proxy.munchbox.cc", ip = "104.21.21.42" }
     "oci-proxy" = { domain = "oci-proxy.munchbox.cc", ip = "104.21.21.42" }
+
+    # --- the apex is a Cloudflare redirect with no LAN origin; same reason ---
+    "munchbox-apex" = { domain = "munchbox.cc", ip = "104.21.21.42" }
   }
 
   # --- munchbox.cc services from the shared catalog (root.locals.web_services)
