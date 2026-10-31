@@ -34,7 +34,7 @@ resource "vault_approle_auth_backend_role" "chef_node" {
   bind_secret_id = true
 }
 
-# --- chef-managed-node policy: read access to the paths cookbooks need ---
+# --- chef-managed-node policy: access to the paths cookbooks need ---
 resource "vault_policy" "chef_managed_node" {
   count = var.approle_auth_enabled && (length(var.chef_managed_node_secrets) > 0 || length(var.chef_managed_node_extra_paths) > 0) ? 1 : 0
   name  = "chef-managed-node"
@@ -47,7 +47,7 @@ path "secret/data/${secret}" {
 }
 %{endfor~}
 
-# --- Non-KV reads (SSH signer config/ca, etc) ---
+# --- Extra paths (SSH signer config/ca, node-written KV, etc) ---
 %{for path in var.chef_managed_node_extra_paths~}
 path "${path.path}" {
   capabilities = ${jsonencode(path.capabilities)}

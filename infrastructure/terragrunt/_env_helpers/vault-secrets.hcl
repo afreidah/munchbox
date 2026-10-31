@@ -53,9 +53,14 @@ dependency "passwords" {
     vault_data = {
       "proxmox/api-token"           = { id = "mock-token-id", secret = "mock-token-secret" }
       "vaultwarden/master-password" = { password = "mock-master-password" }
+      "cinc-console"                = { session_secret = "mock-session-secret" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+
+  # --- vault_data is in state, so a new entry is a missing nested key, not a
+  #     missing output: deep-merge so it resolves to the mock until applied. ---
+  mock_outputs_merge_strategy_with_state = "deep_map_only"
 }
 
 dependency "cinc_server_keys" {
@@ -148,6 +153,10 @@ locals {
     "cinc-server/ci/forgejo" = {
       source = "cinc_server_keys"
       key    = "forgejo-ci"
+    }
+    "cinc-console" = {
+      source = "passwords"
+      key    = "cinc-console"
     }
     # --- the credentials terraform authenticates to Proxmox and Vaultwarden
     #     with; their own paths, since the parent secrets hold other fields. ---

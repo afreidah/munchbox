@@ -99,6 +99,7 @@ locals {
     "aptly"                    = { secrets = ["aptly-admin", "s3-identity/aptly"] }
     "aptly-s3-gateway"         = { secrets = ["aptly", "s3-identity/aptly"] }
     "backup-worker"            = { secrets = ["consul/backup-worker-token", "postgres-shared/root", "s3-identity/temporal-backups-worker"] }
+    "cinc-console"             = { secrets = ["cinc-server/trusted-cert", "cinc-server/webui"] }
     "cloudflare-log-collector" = { secrets = ["cloudflare-logcollector"] }
     "deluge"                   = { secrets = ["mullvad"] }
     "forgejo"                  = { secrets = ["redis-shared"] }
@@ -488,8 +489,15 @@ inputs = {
     "proxmox/zfswatcher-proxy",
   ]
 
-  # --- Non-KV Vault reads chef-managed nodes need (SSH signer CA pubkeys). ---
+  # --- Non-KV Vault reads chef-managed nodes need (SSH signer CA pubkeys), and
+  #     the one KV path they write: cinc_server::publish copies the server's
+  #     own webui keypair there for cinc-console. The AppRole is shared, so
+  #     every node holds this grant; read is needed to skip unchanged writes. ---
   chef_managed_node_extra_paths = [
+    {
+      path         = "secret/data/cinc-server/webui"
+      capabilities = ["create", "update", "read"]
+    },
     {
       path         = "ssh-client-signer/config/ca"
       capabilities = ["read"]

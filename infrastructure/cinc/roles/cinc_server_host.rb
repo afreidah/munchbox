@@ -28,4 +28,5 @@ run_list(
   'recipe[cinc_server::configure]',
   'recipe[cinc_server::bootstrap]',
   'recipe[cinc_server::register]',
+  'recipe[cinc_server::publish]',
 )

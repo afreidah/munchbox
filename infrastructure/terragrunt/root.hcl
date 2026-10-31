@@ -155,6 +155,7 @@ locals {
     # --- internal only (munchbox.cc, LAN by name) ---
     "alertmanager"    = {}
     "apt"             = {}
+    "cinc-console"    = {}
     "consul"          = {}
     "dashboard"       = {}
     "deluge"          = {}
