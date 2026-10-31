@@ -109,3 +109,21 @@ default[cookbook]['vault_paths'] = {
     },
   },
 }
+
+# -------------------------------------------------------------------------------
+# Published secrets (cinc_server::publish)
+#
+# Server-generated material copied to Vault for consumers off this host. The
+# write grant on vault_path lives in the chef-managed-node policy
+# (terragrunt vault-config).
+# -------------------------------------------------------------------------------
+
+default[cookbook]['publish'] = {
+  webui: {
+    vault_path: 'secret/data/cinc-server/webui',
+    files: {
+      'private_key' => '/etc/cinc-project/webui_priv.pem',
+      'public_key' => '/etc/cinc-project/webui_pub.pem',
+    },
+  },
+}

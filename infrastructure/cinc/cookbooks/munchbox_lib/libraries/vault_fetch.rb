@@ -21,6 +21,10 @@
 #
 # KV v2 wrapping ({ data: { ...fields... }, metadata: {...} }) is unwrapped
 # transparently; the field lookup also tolerates either string or symbol keys.
+#
+# `vault_kv_read(path)` / `vault_kv_write(path, data)` read and replace a whole
+# KV v2 secret with the same token, for the few nodes that publish what they
+# generate. Writes need a policy grant beyond the read-only KV list.
 # -------------------------------------------------------------------------------
 
 module MunchboxLibVaultFetch
@@ -73,16 +77,30 @@ module MunchboxLibVaultFetch
 
   # --- Internal: read a cert/* path from a Vault PKI mount. ---
   def vault_pki_cert(mount, leaf)
-    wait_for_token_sink
-    token = ::File.read(VAULT_TOKEN_SINK).strip
-    require 'vault'
-    Vault.ssl_ca_cert = VAULT_CA_CERT
-    Vault.address     = ENV['VAULT_ADDR'] || VAULT_ADDR_DEFAULT
-    Vault.token       = token
-    result = Vault.logical.read("#{mount}/cert/#{leaf}")
+    result = vault_client.logical.read("#{mount}/cert/#{leaf}")
     raise "vault: no certificate at #{mount}/cert/#{leaf}" unless result&.data&.dig(:certificate)
 
     result.data[:certificate]
+  end
+
+  # --- Data hash at KV v2 path `path` (secret/data/...), string-keyed; nil when nothing is stored there ---
+  def vault_kv_read(path)
+    vault_client.logical.read(path)&.data&.dig(:data)&.transform_keys(&:to_s)
+  end
+
+  # --- Replace the secret at KV v2 path `path` with `data`; every call is a new version ---
+  def vault_kv_write(path, data)
+    vault_client.logical.write(path, data:)
+  end
+
+  # --- Internal: the Vault singleton, pointed at the agent token and the system CA bundle ---
+  def vault_client
+    wait_for_token_sink
+    require 'vault'
+    Vault.ssl_ca_cert = VAULT_CA_CERT
+    Vault.address     = ENV['VAULT_ADDR'] || VAULT_ADDR_DEFAULT
+    Vault.token       = ::File.read(VAULT_TOKEN_SINK).strip
+    Vault
   end
 
   # --- Block until /run/vault-agent/token exists (or timeout). Tolerates the brief gap during vault-agent restarts when systemd has wiped RuntimeDirectory but the daemon hasn't yet rewritten the sink. ---

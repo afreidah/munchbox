@@ -24,10 +24,10 @@ require 'net/http'
 module Chef::Exceptions; end unless defined?(Chef::Exceptions)
 class Chef::Exceptions::InvalidDataBagPath < StandardError; end unless defined?(Chef::Exceptions::InvalidDataBagPath)
 
-# --- vault gem ships with cinc-client but isn't on the rspec load path; stub a class with the one attribute the helper writes to ---
+# --- vault gem ships with cinc-client but isn't on the rspec load path; stub a class with the attributes vault_client writes to ---
 class Vault
   class << self
-    attr_accessor :ssl_ca_cert
+    attr_accessor :ssl_ca_cert, :address, :token
   end
 end unless defined?(Vault)
 $LOADED_FEATURES << 'vault' unless $LOADED_FEATURES.include?('vault')

@@ -27,6 +27,10 @@ locals {
     "vaultwarden/master-password" = {
       password = { length = 15 }
     }
+    # --- encrypts cinc-console's session cookie; 32+ characters required ---
+    "cinc-console" = {
+      session_secret = { length = 48, special = false }
+    }
   }
 }
 

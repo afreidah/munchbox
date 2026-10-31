@@ -87,4 +87,38 @@ RSpec.describe MunchboxLibVaultFetch do
     expect { host.vault_fetch('secret/data/wireguard-v2/x', 'private_key') }
       .to raise_error(%r{vault: no field 'private_key' at secret/data/wireguard-v2/x})
   end
+
+  # -------------------------------------------------------------------------------
+  # vault_kv_read / vault_kv_write -- whole-secret KV v2 access via vault_client
+  # -------------------------------------------------------------------------------
+
+  context 'with a stubbed vault client' do
+    let(:logical) { double('logical') }
+
+    before do
+      allow(host).to receive(:vault_client).and_return(double('vault', logical:))
+    end
+
+    it 'returns the KV v2 data hash string-keyed' do
+      allow(logical).to receive(:read).with('secret/data/cinc-server/webui')
+                                      .and_return(double('secret', data: { data: { private_key: 'PRIV' }, metadata: {} }))
+      expect(host.vault_kv_read('secret/data/cinc-server/webui')).to eq('private_key' => 'PRIV')
+    end
+
+    it 'returns nil when nothing is stored at the path' do
+      allow(logical).to receive(:read).with('secret/data/cinc-server/webui').and_return(nil)
+      expect(host.vault_kv_read('secret/data/cinc-server/webui')).to be_nil
+    end
+
+    it 'writes the data hash wrapped for KV v2' do
+      expect(logical).to receive(:write).with('secret/data/cinc-server/webui', data: { 'private_key' => 'PRIV' })
+      host.vault_kv_write('secret/data/cinc-server/webui', 'private_key' => 'PRIV')
+    end
+  end
+
+  it 'points the vault client at the agent token and the default address' do
+    client = host.vault_client
+    expect(client.token).to eq('hvs.testtoken')
+    expect(client.address).to eq(described_class::VAULT_ADDR_DEFAULT)
+  end
 end

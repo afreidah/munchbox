@@ -196,7 +196,7 @@ variable "chef_managed_node_secrets" {
 }
 
 variable "chef_managed_node_extra_paths" {
-  description = "Non-KV Vault paths chef-managed nodes can hit (e.g. ssh-client-signer/config/ca). Each entry takes a `path` (literal Vault path) + `capabilities` list. Use this for SSH signer pubkeys, transit reads, or any backend that doesn't live under `secret/data/`."
+  description = "Vault paths chef-managed nodes can hit beyond the read-only KV list (e.g. ssh-client-signer/config/ca). Each entry takes a `path` (literal Vault path) + `capabilities` list. Use this for SSH signer pubkeys, transit reads, non-KV backends, or a KV path a node writes."
   type = list(object({
     path         = string
     capabilities = list(string)
