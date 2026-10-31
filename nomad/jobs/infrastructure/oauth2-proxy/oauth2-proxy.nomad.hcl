@@ -140,7 +140,6 @@ job "oauth2-proxy" {
       env {
         OAUTH2_PROXY_HTTP_ADDRESS              = "0.0.0.0:4180"
         OAUTH2_PROXY_PROVIDER                  = "google"
-        OAUTH2_PROXY_EMAIL_DOMAINS             = "*"
         OAUTH2_PROXY_COOKIE_DOMAINS            = ".munchbox.cc"
         OAUTH2_PROXY_WHITELIST_DOMAINS         = ".munchbox.cc"
         OAUTH2_PROXY_COOKIE_SECURE             = "true"
