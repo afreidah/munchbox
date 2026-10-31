@@ -120,22 +120,26 @@ job "cinc-console" {
         ports              = ["http"]
       }
 
-      # --- Published by cinc_server::publish from the server's own key ---
-      secret "webui" {
-        provider = "vault"
-        path     = "secret/data/cinc-server/webui"
-        config {
-          engine = "kv_v2"
-        }
+      # --- webui key, owned by the image's app user (100:101) ---
+      template {
+        destination = "secrets/webui_priv.pem"
+        perms       = "0400"
+        uid         = 100
+        gid         = 101
+        change_mode = "restart"
+        data        = <<-EOF
+{{ with secret "secret/data/cinc-server/webui" }}{{ .Data.data.private_key }}{{ end }}
+        EOF
       }
 
       # --- The server's self-signed cert ---
-      secret "server_cert" {
-        provider = "vault"
-        path     = "secret/data/cinc-server/trusted-cert"
-        config {
-          engine = "kv_v2"
-        }
+      template {
+        destination = "secrets/cinc-server.crt"
+        perms       = "0644"
+        change_mode = "restart"
+        data        = <<-EOF
+{{ with secret "secret/data/cinc-server/trusted-cert" }}{{ .Data.data.cert }}{{ end }}
+        EOF
       }
 
       secret "console" {
@@ -146,13 +150,13 @@ job "cinc-console" {
         }
       }
 
-      # --- Environment ---
+      # --- Environment (PEMs as files: secret is env-format) ---
       env {
-        CINC_SERVER_URL = "https://cinc-server.munchbox.cc"
-        CINC_WEBUI_KEY  = "${secret.webui.private_key}"
-        CINC_CA_CERT    = "${secret.server_cert.cert}"
-        SESSION_SECRET  = "${secret.console.session_secret}"
-        CINC_AUTH_ACTOR = "pivotal"
+        CINC_SERVER_URL     = "https://cinc-server.munchbox.cc"
+        CINC_WEBUI_KEY_FILE = "/secrets/webui_priv.pem"
+        CINC_CA_CERT_FILE   = "/secrets/cinc-server.crt"
+        SESSION_SECRET      = "${secret.console.session_secret}"
+        CINC_AUTH_ACTOR     = "pivotal"
       }
 
       # --- Resources ---
