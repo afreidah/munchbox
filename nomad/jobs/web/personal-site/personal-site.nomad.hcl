@@ -12,6 +12,11 @@
 # tags.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "personal_site_version" {
+  type = string
+}
+
 job "personal-site" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -138,7 +143,7 @@ job "personal-site" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/personal-site:v0.1.7"
+        image              = "registry.munchbox.cc/personal-site:${var.personal_site_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

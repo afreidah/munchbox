@@ -248,6 +248,16 @@ repos:
         auth:
           type: token
           env: FORGEJO_API_TOKEN
+  - name: personal-site
+    source:
+      url: https://github.com/afreidah/personal-site.git
+    mirrors:
+      - url: http://forgejo.service.consul:30028/alex/personal-site.git
+        push_strategy: branches+tags
+        force: true
+        auth:
+          type: token
+          env: FORGEJO_API_TOKEN
 
 daemon:
   interval: 30m
