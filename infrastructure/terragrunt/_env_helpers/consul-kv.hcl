@@ -110,6 +110,7 @@ locals {
     "g3",
     "flight-fetcher",
     "vagabond",
+    "personal-site",
   ]
 
   forgejo_image_config = {
