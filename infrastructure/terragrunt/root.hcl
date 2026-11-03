@@ -183,7 +183,6 @@ locals {
     "temporal"        = {}
     "themes"          = {}
     "traefik"         = {}
-    "traefik-logs"    = {}
     "trivy-dashboard" = {}
     "vault"           = {}
     "vault-ui"        = {}

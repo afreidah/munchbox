@@ -8,18 +8,14 @@ service in the cluster routes through here.
 
 ## Image
 
-- traefik: `traefik:v3.7.5`
-- geoip-updater: `maxmindinc/geoipupdate:v7`
-- traefik-log-filter: `busybox:1.38.0`
-- traefik-log-agent: `hhftechnology/traefik-log-dashboard-agent:3.1.1`
-- traefik-log-dashboard: `hhftechnology/traefik-log-dashboard:3.1.1`
+- traefik: `traefik:v3.7.14`
+- access-log-trim: `busybox:1.38.0`
 - cloudflared-tunnel: `cloudflare/cloudflared:2026.7.1`
 
 ## Hostname / exposure
 
 - Multiple Consul-tagged routers per upstream; file-provider routers for
   Consul, Nomad, Vault, Proxmox, ZFS Watcher
-- `traefik-logs.munchbox.cc` -- log-dashboard UI
 - ACME wildcard for `munchbox.cc` and `*.munchbox.cc`
 
 ## Placement
@@ -38,16 +34,16 @@ service in the cluster routes through here.
 
 ## Notable configuration
 
-- Six tasks in one group:
-  - `geoip-updater` (prestart) -- pulls MaxMind GeoLite2 into the alloc dir
+- Three tasks in one group:
   - `traefik` (main)
-  - `traefik-log-filter` (poststart sidecar) -- strips Nomad long-poll noise
-  - `traefik-log-agent` (poststart sidecar) -- parses access logs, exposes
-    metrics API
-  - `traefik-log-dashboard` (poststart sidecar) -- analytics UI
+  - `access-log-trim` (poststart sidecar) -- truncates the access log past
+    100 MiB; Alloy ships it to Loki, where the "Origin Traffic" Grafana
+    dashboard reads it
   - `cloudflared-tunnel` (poststart sidecar) -- Cloudflare tunnel connector
     runs alongside Traefik so its lifecycle tracks ingress, not a separate
     job
+- Access log is JSON at `/alloc/data/access.log` and keeps `User-Agent`,
+  `CF-Connecting-IP` and `CF-IPCountry` from the request headers
 - `cf-tunnel-https` middleware sets `X-Forwarded-Proto: https` on tunnel
   traffic so services behave as if the connection is TLS end-to-end
 - `rewritebody` plugin injects Vault CSS theme + Umami analytics into HTML

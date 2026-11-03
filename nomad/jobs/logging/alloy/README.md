@@ -1,8 +1,8 @@
 # alloy
 
 Grafana Alloy as the cluster's unified telemetry agent, replacing
-promtail. Ships systemd journal entries and Nomad allocation logs to
-Loki, and also runs the node_exporter Unix collector and remote-writes
+promtail. Ships systemd journal entries, Nomad allocation logs and
+Traefik access logs to Loki, and also runs the node_exporter Unix collector and remote-writes
 host metrics to Prometheus. Runs on every node.
 
 ## Image
@@ -36,6 +36,9 @@ host metrics to Prometheus. Runs on every node.
   process table
 - JSON pipeline pulls `level` to a label and promotes `trace_id` /
   `span_id` to structured metadata for trace-to-log correlation
+- Traefik access logs (`alloc/data/access.log` on the ingress nodes) ship
+  as `{job="traefik", source="access"}` with `host` and `node` labels,
+  timestamped from `StartUTC`; tailing starts at the end of the file
 - Node-metrics scrape preserves `job_name = "node-exporter"` so
   existing Prometheus rules and dashboards keep matching
 - `instance` label rewritten to `node.unique.name` so metrics line up

@@ -1,0 +1,283 @@
+{
+  "uid": "origin-traffic",
+  "title": "Origin Traffic",
+  "description": "Requests that reached Traefik on the ingress nodes, from the access log in Loki",
+  "tags": ["traefik", "ingress", "loki"],
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "query": { "label": "host", "stream": "{job=\"traefik\", source=\"access\"}", "type": 1, "refId": "LokiVariableQueryEditor-VariableQuery" },
+        "refresh": 2,
+        "sort": 1,
+        "includeAll": true,
+        "allValue": ".+",
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "origin",
+        "label": "Origin",
+        "type": "custom",
+        "query": "Internet : request_Cf_Connecting_Ip != \"\",LAN : request_Cf_Connecting_Ip = \"\",All : request_Cf_Connecting_Ip =~ \".*\"",
+        "current": { "text": "Internet", "value": "request_Cf_Connecting_Ip != \"\"" },
+        "options": [
+          { "text": "Internet", "value": "request_Cf_Connecting_Ip != \"\"", "selected": true },
+          { "text": "LAN", "value": "request_Cf_Connecting_Ip = \"\"", "selected": false },
+          { "text": "All", "value": "request_Cf_Connecting_Ip =~ \".*\"", "selected": false }
+        ]
+      },
+      {
+        "name": "ua_exclude",
+        "label": "Exclude agents (regex)",
+        "type": "textbox",
+        "query": "Blackbox-Exporter.*",
+        "current": { "text": "Blackbox-Exporter.*", "value": "Blackbox-Exporter.*" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "id": 1,
+      "title": "Overview",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "id": 2,
+      "title": "Requests",
+      "gridPos": { "x": 0, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "sum(count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__range])) or vector(0)"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } }
+    },
+    {
+      "type": "stat",
+      "id": 3,
+      "title": "Client IPs",
+      "gridPos": { "x": 6, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "count(sum by (client) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__range]))) or vector(0)"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } }
+    },
+    {
+      "type": "stat",
+      "id": 4,
+      "title": "Countries",
+      "gridPos": { "x": 12, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "count(sum by (country) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__range]))) or vector(0)"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } }
+    },
+    {
+      "type": "stat",
+      "id": 5,
+      "title": "5xx Responses",
+      "gridPos": { "x": 18, "y": 1, "w": 6, "h": 4 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "sum(count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" | DownstreamStatus >= 500 [$__range])) or vector(0)"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } }
+    },
+    {
+      "type": "timeseries",
+      "id": 6,
+      "title": "Requests by Host",
+      "gridPos": { "x": 0, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "range",
+          "expr": "sum by (host) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__auto]))",
+          "legendFormat": "{{host}}"
+        }
+      ],
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"], "sortBy": "Total", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" }, "fillOpacity": 80, "lineWidth": 1 } } }
+    },
+    {
+      "type": "timeseries",
+      "id": 7,
+      "title": "Requests by Status",
+      "gridPos": { "x": 12, "y": 5, "w": 12, "h": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "range",
+          "expr": "sum by (DownstreamStatus) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__auto]))",
+          "legendFormat": "{{DownstreamStatus}}"
+        }
+      ],
+      "options": { "legend": { "displayMode": "table", "placement": "right", "calcs": ["sum"], "sortBy": "Total", "sortDesc": true }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "stacking": { "mode": "normal" }, "fillOpacity": 80, "lineWidth": 1 } } }
+    },
+    {
+      "type": "row",
+      "id": 8,
+      "title": "Who",
+      "gridPos": { "x": 0, "y": 13, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "table",
+      "id": 9,
+      "title": "Top Clients",
+      "gridPos": { "x": 0, "y": 14, "w": 8, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(25, sum by (client, country) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__range])))"
+        }
+      ],
+      "transformations": [
+        { "id": "reduce", "options": { "mode": "seriesToRows", "reducers": ["lastNotNull"], "labelsToFields": true, "includeTimeField": false } },
+        { "id": "organize", "options": { "excludeByName": { "Field": true }, "renameByName": { "client": "Client IP", "country": "Country", "Last *": "Requests" }, "indexByName": { "client": 0, "country": 1, "Last *": 2 } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Requests", "desc": true }] } }
+      ]
+    },
+    {
+      "type": "table",
+      "id": 10,
+      "title": "Countries",
+      "gridPos": { "x": 8, "y": 14, "w": 5, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "sum by (country) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__range]))"
+        }
+      ],
+      "transformations": [
+        { "id": "reduce", "options": { "mode": "seriesToRows", "reducers": ["lastNotNull"], "labelsToFields": true, "includeTimeField": false } },
+        { "id": "organize", "options": { "excludeByName": { "Field": true }, "renameByName": { "country": "Country", "Last *": "Requests" }, "indexByName": { "country": 0, "Last *": 1 } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Requests", "desc": true }] } }
+      ]
+    },
+    {
+      "type": "table",
+      "id": 11,
+      "title": "Top User Agents",
+      "gridPos": { "x": 13, "y": 14, "w": 11, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(25, sum by (request_User_Agent) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__range])))"
+        }
+      ],
+      "transformations": [
+        { "id": "reduce", "options": { "mode": "seriesToRows", "reducers": ["lastNotNull"], "labelsToFields": true, "includeTimeField": false } },
+        { "id": "organize", "options": { "excludeByName": { "Field": true }, "renameByName": { "request_User_Agent": "User Agent", "Last *": "Requests" }, "indexByName": { "request_User_Agent": 0, "Last *": 1 } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Requests", "desc": true }] } }
+      ]
+    },
+    {
+      "type": "row",
+      "id": 12,
+      "title": "What",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "table",
+      "id": 13,
+      "title": "Top Paths",
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(25, sum by (host, RequestPath) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" [$__range])))"
+        }
+      ],
+      "transformations": [
+        { "id": "reduce", "options": { "mode": "seriesToRows", "reducers": ["lastNotNull"], "labelsToFields": true, "includeTimeField": false } },
+        { "id": "organize", "options": { "excludeByName": { "Field": true }, "renameByName": { "host": "Host", "RequestPath": "Path", "Last *": "Requests" }, "indexByName": { "host": 0, "RequestPath": 1, "Last *": 2 } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Requests", "desc": true }] } }
+      ]
+    },
+    {
+      "type": "table",
+      "id": 14,
+      "title": "Top 4xx Paths",
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 10 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "instant",
+          "expr": "topk(25, sum by (host, RequestPath, DownstreamStatus) (count_over_time({job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" | DownstreamStatus >= 400 | DownstreamStatus < 500 [$__range])))"
+        }
+      ],
+      "transformations": [
+        { "id": "reduce", "options": { "mode": "seriesToRows", "reducers": ["lastNotNull"], "labelsToFields": true, "includeTimeField": false } },
+        { "id": "organize", "options": { "excludeByName": { "Field": true }, "renameByName": { "host": "Host", "RequestPath": "Path", "DownstreamStatus": "Status", "Last *": "Requests" }, "indexByName": { "host": 0, "RequestPath": 1, "DownstreamStatus": 2, "Last *": 3 } } },
+        { "id": "sortBy", "options": { "sort": [{ "field": "Requests", "desc": true }] } }
+      ]
+    },
+    {
+      "type": "row",
+      "id": 15,
+      "title": "Requests",
+      "gridPos": { "x": 0, "y": 35, "w": 24, "h": 1 },
+      "collapsed": false
+    },
+    {
+      "type": "logs",
+      "id": 16,
+      "title": "Recent Requests",
+      "gridPos": { "x": 0, "y": 36, "w": 24, "h": 12 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "range",
+          "expr": "{job=\"traefik\", source=\"access\", host=~\"$host\"} | json | label_format client=`{{ or .request_Cf_Connecting_Ip .ClientHost }}`, country=`{{ if .request_Cf_Connecting_Ip }}{{ or .request_Cf_Ipcountry \"??\" }}{{ else }}LAN{{ end }}` | $origin | request_User_Agent !~ \"$ua_exclude\" | line_format `{{ .country }} {{ .client }} {{ .DownstreamStatus }} {{ .RequestMethod }} {{ .host }}{{ .RequestPath }} {{ .request_User_Agent }}`"
+        }
+      ],
+      "options": { "showTime": true, "showLabels": false, "showCommonLabels": false, "wrapLogMessage": false, "prettifyLogMessage": false, "enableLogDetails": true, "sortOrder": "Descending", "dedupStrategy": "none" }
+    }
+  ]
+}

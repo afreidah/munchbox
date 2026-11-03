@@ -44,18 +44,6 @@ services:
         tag: media
         icon: sonarr.png
 
-      - name: Lidarr
-        subtitle: Music management
-        url: https://lidarr.munchbox.cc
-        tag: media
-        icon: lidarr.png
-
-      - name: Readarr
-        subtitle: Book management
-        url: https://readarr.munchbox.cc
-        tag: media
-        icon: readarr.png
-
       - name: Prowlarr
         subtitle: Indexer management
         url: https://prowlarr.munchbox.cc
@@ -187,12 +175,6 @@ services:
         url: https://alertmanager.munchbox.cc
         tag: alerts
         icon: alertmanager.png
-
-      - name: Traefik Log Dashboard
-        subtitle: Traefik Traffic Dashboard
-        url: https://traefik-logs.munchbox.cc/dashboard
-        tag: infra
-        icon: traefik-log-dashboard.png
 
       - name: S3 Orchestrator
         subtitle: Unified S3 storage endpoint

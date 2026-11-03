@@ -82,10 +82,6 @@ job "traefik" {
         static = 2222
       }
 
-      port "log-agent" {
-        static = 5000
-      }
-
       port "cloudflared-metrics" {
         static = 2000
       }
@@ -233,9 +229,8 @@ EOH
 [accessLog]
   filePath = "/alloc/data/access.log"
   format = "json"
-  # Lines held in memory before the file is written. At 100 the backup ingress
-  # node, which serves almost nothing, took minutes to flush a line and its
-  # log-agent looked stalled.
+  # Lines held in memory before the file is written. Kept small so the backup
+  # ingress node, which serves almost nothing, still flushes within seconds.
   bufferingSize = 10
   [accessLog.filters]
     statusCodes = ["200-599"]
@@ -262,6 +257,7 @@ EOH
         User-Agent       = "keep"
         X-Forwarded-For  = "keep"
         CF-Connecting-IP = "keep"
+        CF-IPCountry     = "keep"
 
 [log]
   level = "INFO"
@@ -654,12 +650,6 @@ EOH
       idleConnTimeout = "90s"
   [http.serversTransports.insecure]
     insecureSkipVerify = true
-  [http.serversTransports.streaming]
-    # No idle reap for long-lived SSE/websocket streams (traefik-log-dashboard)
-    [http.serversTransports.streaming.forwardingTimeouts]
-      dialTimeout = "30s"
-      responseHeaderTimeout = "0s"
-      idleConnTimeout = "0s"
 EOH
       }
 
@@ -717,11 +707,11 @@ EOH
     }
 
     # -----------------------------------------------------------------------
-    # Task: traefik-log-filter
-    # Filters out Nomad blocking queries (index=) from access logs
+    # Task: access-log-trim
     # -----------------------------------------------------------------------
 
-    task "traefik-log-filter" {
+    # --- Alloy ships access.log to Loki; truncate it past 100 MiB ---
+    task "access-log-trim" {
       driver = "docker"
 
       lifecycle {
@@ -730,91 +720,13 @@ EOH
       }
 
       config {
-        image        = "busybox:1.38.0"
-        network_mode = "host"
-        # Filter out long-poll/websocket connections that skew response time metrics:
-        # - Nomad blocking queries (index=)
-        # - SignalR real-time connections (signalr)
-        args = ["sh", "-c", "tail -F /alloc/data/access.log | grep -vE 'index=|signalr' > /alloc/data/access-filtered.log"]
+        image = "busybox:1.38.0"
+        args  = ["sh", "-c", "while sleep 300; do [ \"$(stat -c %s /alloc/data/access.log 2>/dev/null || echo 0)\" -gt 104857600 ] && : > /alloc/data/access.log; done"]
       }
 
       resources {
-        cpu    = 50
-        memory = 32
-      }
-    }
-
-    # -----------------------------------------------------------------------
-    # Task: traefik-log-agent
-    # Parses Traefik access logs and exposes metrics API for dashboard
-    # -----------------------------------------------------------------------
-
-    task "traefik-log-agent" {
-      driver = "docker"
-
-      lifecycle {
-        hook    = "poststart"
-        sidecar = true
-      }
-
-      vault {
-        role        = "traefik"
-        change_mode = "noop"
-      }
-
-      identity {
-        env  = true
-        file = true
-        aud  = ["vault.io"]
-      }
-
-      config {
-        image        = "hhftechnology/traefik-log-dashboard-agent:3.1.1"
-        network_mode = "host"
-        ports        = ["log-agent"]
-      }
-
-      template {
-        destination = "secrets/agent.env"
-        env         = true
-        data        = <<EOH
-{{ with secret "secret/data/traefik-log-dashboard" }}
-TRAEFIK_LOG_DASHBOARD_AUTH_TOKEN={{ .Data.data.auth_token }}
-{{ end }}
-TRAEFIK_LOG_DASHBOARD_ACCESS_PATH=/alloc/data/access-filtered.log
-EOH
-      }
-
-      resources {
-        cpu    = 100
-        memory = 128
-      }
-    }
-
-    # -----------------------------------------------------------------------
-    # Service: traefik-log-agent
-    #
-    # Not routed through Traefik -- only the traefik-log-dashboard job calls
-    # it, over the LAN. Registered so its health is visible and the dashboard's
-    # two targets can be found without reading this file.
-    # -----------------------------------------------------------------------
-
-    service {
-      name     = "traefik-log-agent"
-      port     = "log-agent"
-      provider = "consul"
-
-      tags = [
-        "traefik.enable=false",
-        "ingress",
-      ]
-
-      check {
-        name     = "traefik-log-agent-health"
-        type     = "http"
-        path     = "/api/logs/status"
-        interval = "30s"
-        timeout  = "5s"
+        cpu    = 20
+        memory = 16
       }
     }
 

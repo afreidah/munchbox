@@ -6,7 +6,7 @@
 # Grafana Alloy replaces Promtail as the log collection agent, providing
 # unified log shipping to Loki with trace-to-log correlation via structured
 # metadata. Collects systemd journal entries and Nomad allocation logs from
-# every client node.
+# every client node, plus Traefik access logs on the ingress nodes.
 # -------------------------------------------------------------------------------
 
 job "alloy" {
@@ -202,6 +202,53 @@ loki.source.file "nomad_stdout" {
 loki.source.file "nomad_stderr" {
   targets    = local.file_match.nomad_stderr.targets
   forward_to = [loki.relabel.nomad_alloc.receiver]
+}
+
+// -------------------------------------------------------------------------
+// TRAEFIK ACCESS LOGS
+// -------------------------------------------------------------------------
+
+// Only the traefik job writes alloc/data/access.log, so this matches on the
+// ingress nodes and nowhere else
+local.file_match "traefik_access" {
+  path_targets = [{
+    __path__ = "/var/lib/nomad/alloc/*/alloc/data/access.log",
+    job      = "traefik",
+    source   = "access",
+    node     = constants.hostname,
+  }]
+  sync_period = "10s"
+}
+
+// Start at the end of a file with no stored position, rather than replaying
+// whatever history it already holds
+loki.source.file "traefik_access" {
+  targets       = local.file_match.traefik_access.targets
+  forward_to    = [loki.process.traefik_access.receiver]
+  tail_from_end = true
+}
+
+// Request host is the only label; IP, path, agent and status stay in the line
+loki.process "traefik_access" {
+  forward_to = [loki.write.loki.receiver]
+
+  stage.json {
+    expressions = {
+      host  = "RequestHost",
+      start = "StartUTC",
+    }
+  }
+
+  stage.timestamp {
+    source = "start"
+    format = "RFC3339Nano"
+  }
+
+  stage.labels {
+    values = {
+      host = "",
+    }
+  }
 }
 
 // -------------------------------------------------------------------------
