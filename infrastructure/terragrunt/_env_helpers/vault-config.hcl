@@ -116,14 +116,13 @@ locals {
     "tempo"                    = { secrets = ["s3-identity/tempo"] }
     "temporal-schema"          = { secrets = ["temporal"] }
     "temporal-server"          = { secrets = ["temporal"] }
-    "traefik-log-dashboard"    = { secrets = ["maxmind"] }
     "trivy-scan-worker"        = { secrets = ["backup-worker", "trivy-dashboard"] }
     "trivy-server"             = { secrets = ["redis-shared"] }
 
     # --- traefik proxies these services and injects their credentials as
     #     basic-auth headers, so it reads secrets it does not own. ---
     "traefik" = {
-      secrets = ["cloudflared", "dnsdist", "nomad-ui", "traefik-log-dashboard", "zfswatcher"]
+      secrets = ["cloudflared", "dnsdist", "nomad-ui", "zfswatcher"]
     }
 
     # --- patroni self-issues the Postgres server cert on top of the shared
