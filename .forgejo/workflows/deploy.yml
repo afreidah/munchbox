@@ -32,7 +32,8 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Deploy the Nomad jobs this push changed.
+  # Deploy the Nomad jobs this push changed, and purge the jobs it moved into
+  # deprecated/.
   #
   # Scope comes from diffing against the last commit this workflow deployed,
   # recorded in Consul KV by the job below. A push event's own base SHA is not
@@ -42,6 +43,12 @@ jobs:
   nomad:
     name: Deploy changed Nomad jobs
     runs-on: ops
+    env:
+      # Jobs that must never be deployed or purged from here: the first two
+      # would tear down the run acting on them, and the rest move the cluster
+      # out from under it -- patroni rolls the Postgres primary, traefik and
+      # keepalived carry the ingress VIP. Those stay manual.
+      HAND_ONLY: forgejo forgejo-ci-runner patroni traefik keepalived
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,7 +72,7 @@ jobs:
           # everything instead would redeploy the whole cluster.
           if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
             echo "no usable base (got '${base:-<unset>}'); skipping deploys this run"
-            echo "jobs=" >> "$GITHUB_OUTPUT"
+            { echo "jobs="; echo "purge="; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -114,9 +121,21 @@ jobs:
             | sort -u \
             | tr '\n' ' ')
 
+          # A spec added or moved into deprecated/<job>/ retires that job.
+          # Specs already there, and edits to them, are not included.
+          purge=$(git diff --diff-filter=AR --name-only "$base" "${{ github.sha }}" -- nomad/jobs/deprecated/ \
+            | awk -F/ 'NF==5 && /\.hcl$/' \
+            | while IFS= read -r path; do
+                name=$(basename "$path" .hcl)
+                echo "${name%.nomad}"
+              done \
+            | sort -u \
+            | tr '\n' ' ')
+
           echo "base: $base"
           echo "changed jobs: ${jobs:-<none>}"
-          echo "jobs=${jobs}" >> "$GITHUB_OUTPUT"
+          echo "retired jobs: ${purge:-<none>}"
+          { echo "jobs=${jobs}"; echo "purge=${purge}"; } >> "$GITHUB_OUTPUT"
 
       - name: Deploy
         if: ${{ steps.range.outputs.jobs != '' }}
@@ -133,20 +152,47 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Jobs that must never deploy from here: the first two would tear down
-          # the run that is deploying them, and the rest move the cluster out
-          # from under it -- patroni rolls the Postgres primary, traefik and
-          # keepalived carry the ingress VIP. Those stay manual.
-          never="forgejo forgejo-ci-runner patroni traefik keepalived"
-
           rc=0
           for job in ${{ steps.range.outputs.jobs }}; do
-            if echo " $never " | grep -q " $job "; then
+            if echo " $HAND_ONLY " | grep -q " $job "; then
               echo "::warning title=skipped::$job changed but is deploy-by-hand only"
               continue
             fi
             echo "=== $job ==="
             ( cd nomad && make run JOB="$job" ) || { echo "::error title=deploy::$job failed"; rc=1; }
+          done
+          exit $rc
+
+      - name: Purge retired jobs
+        if: ${{ steps.range.outputs.purge != '' }}
+        env:
+          NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN }}
+          NOMAD_CACERT: /etc/ssl/certs/munchbox-ca.pem
+        run: |
+          set -euo pipefail
+
+          rc=0
+          for job in ${{ steps.range.outputs.purge }}; do
+            if echo " $HAND_ONLY " | grep -q " $job "; then
+              echo "::warning title=skipped::$job retired but is purge-by-hand only"
+              continue
+            fi
+
+            # Exact ID only: job stop falls back to a prefix match, which can
+            # select a different job. The list endpoint is read rather than
+            # /v1/job/<id> because operator api exits 0 on a 404; an ACL denial
+            # is not JSON, so it fails jq instead of reading as absent.
+            found=$(nomad operator api "/v1/jobs?prefix=${job}" \
+              | jq -er --arg id "$job" 'map(select(.ID == $id)) | length') \
+              || { echo "::error title=purge::$job lookup failed"; rc=1; continue; }
+
+            if [ "$found" = 0 ]; then
+              echo "::notice title=purge::$job is not registered"
+              continue
+            fi
+
+            echo "=== $job ==="
+            nomad job stop -purge "$job" || { echo "::error title=purge::$job failed"; rc=1; }
           done
           exit $rc
 
