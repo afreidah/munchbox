@@ -60,6 +60,7 @@ locals {
     "ssh/break-glass",
     "temporal",
     "trivy-dashboard",
+    "vagabond/postgres",
     "vaultwarden",
   ]
 

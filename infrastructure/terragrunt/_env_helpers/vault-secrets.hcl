@@ -54,6 +54,7 @@ dependency "passwords" {
       "proxmox/api-token"           = { id = "mock-token-id", secret = "mock-token-secret" }
       "vaultwarden/master-password" = { password = "mock-master-password" }
       "cinc-console"                = { session_secret = "mock-session-secret" }
+      "vagabond/postgres"           = { db_password = "mock-db-password" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
@@ -200,6 +201,12 @@ locals {
     "vagabond/cloud-run" = {
       source = "cloud_run_jobs"
       key    = "vagabond"
+    }
+    # --- read by data/postgres/vagabond, which creates the role from it ---
+    "vagabond/postgres" = {
+      source = "passwords"
+      key    = "vagabond/postgres"
+      static = { db_username = "vagabond" }
     }
   }
 }
