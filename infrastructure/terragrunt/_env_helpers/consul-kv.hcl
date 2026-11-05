@@ -59,6 +59,7 @@ locals {
     "afreidah/cloudflare-log-collector" = { mode = "app", maxConcurrent = 1 }
     "afreidah/oracle-watchdog"          = { mode = "app", maxConcurrent = 1 }
     "afreidah/personal-site"            = { mode = "app", maxConcurrent = 1 }
+    "afreidah/vagabond"                 = { mode = "app", maxConcurrent = 1 }
     # poll/register split: we're only write on moat, so poll with a low-priv PAT
     # and register with the owner's admin PAT.
     "ev-the-dev/moat" = {
