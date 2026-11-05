@@ -31,6 +31,10 @@ locals {
     "cinc-console" = {
       session_secret = { length = 48, special = false }
     }
+    # --- vagabond's Postgres login; no specials because it lands in a DSN ---
+    "vagabond/postgres" = {
+      db_password = { length = 32, special = false }
+    }
   }
 }
 

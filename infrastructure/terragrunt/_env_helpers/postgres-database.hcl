@@ -31,6 +31,7 @@ locals {
     lidarr            = { vault_kv_path = "lidarr", databases = ["lidarr_main", "lidarr_log"] }
     readarr           = { vault_kv_path = "readarr", databases = ["readarr_main", "readarr_log", "readarr-cache"] }
     prowlarr          = { vault_kv_path = "prowlarr", databases = ["prowlarr_main", "prowlarr_log"] }
+    vagabond          = { vault_kv_path = "vagabond/postgres", databases = ["vagabond"] }
   }
 }
 
