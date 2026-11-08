@@ -144,9 +144,26 @@ variable "pki_backend_path" {
   default     = "pki_int"
 }
 
+variable "pki_root_path" {
+  description = "Path to the root PKI secrets engine that signs pki_intermediates"
+  type        = string
+  default     = "pki"
+}
+
+variable "pki_intermediates" {
+  description = "Mount path -> an intermediate CA created there and signed by the root at pki_root_path. Its key is generated inside Vault and never leaves it. ttl is in seconds and also caps every certificate the mount issues."
+  type = map(object({
+    common_name = string
+    ttl         = optional(number, 43800 * 3600)
+  }))
+  default = {}
+}
+
 variable "pki_roles" {
   description = "Map of PKI roles to create"
   type = map(object({
+    # --- the mount the role lives on; null means pki_backend_path ---
+    backend                     = optional(string)
     allowed_domains             = list(string)
     allow_any_name              = optional(bool, false)
     allow_subdomains            = optional(bool, true)

@@ -134,6 +134,17 @@ locals {
       extra_paths = { "pki_int/issue/postgres" = ["create", "update", "read"] }
     }
 
+    # --- vagabond and its agents mutually authenticate with certs from their
+    #     own intermediate, each side issuing only its own role. The issue
+    #     response carries the CA, so neither reads cert/ca. ---
+    "vagabond" = {
+      extra_paths = { "pki_vagabond/issue/vagabond-server" = ["create", "update"] }
+    }
+
+    "vagabond-agent" = {
+      extra_paths = { "pki_vagabond/issue/vagabond-agent" = ["create", "update"] }
+    }
+
     # --- The edge-proxy keypairs are what s3-orchestrator signs with when it
     #     reaches an alliance backend through that backend's Cloudflare worker;
     #     the backend's own credentials stay at the edge. ---
@@ -165,6 +176,12 @@ inputs = {
   # --- JWT auth for Nomad workload identity ---
   nomad_jwks_url = "https://192.168.68.61:4646/.well-known/jwks.json"
 
+  # --- Intermediate CAs beside pki_int. Vagabond's server trusts every cert
+  #     its CA signs, so its agents get a CA that signs nothing else. ---
+  pki_intermediates = {
+    "pki_vagabond" = { common_name = "Munchbox Vagabond Intermediate CA" }
+  }
+
   # --- PKI Roles ---
   pki_roles = {
     "traefik" = {
@@ -187,6 +204,41 @@ inputs = {
       ttl       = tostring(72 * 3600)
       key_bits  = 2048
       issued_by = ["nomad"]
+    }
+
+    # --- vagabond-server: the agent listener's name only, server auth only ---
+    "vagabond-server" = {
+      backend                     = "pki_vagabond"
+      allowed_domains             = ["vagabond.service.consul"]
+      allow_subdomains            = false
+      allow_bare_domains          = true
+      allow_localhost             = false
+      allow_ip_sans               = false
+      allow_wildcard_certificates = false
+      client_flag                 = false
+      server_flag                 = true
+      require_cn                  = true
+      key_bits                    = 2048
+      max_ttl                     = tostring(2160 * 3600)
+      ttl                         = tostring(2160 * 3600)
+    }
+
+    # --- vagabond-agent: the cert's name is the agent's node name, so only
+    #     the nodes listed here can join a pool. Client auth only. ---
+    "vagabond-agent" = {
+      backend                     = "pki_vagabond"
+      allowed_domains             = ["nomad-client-04"]
+      allow_subdomains            = false
+      allow_bare_domains          = true
+      allow_localhost             = false
+      allow_ip_sans               = false
+      allow_wildcard_certificates = false
+      client_flag                 = true
+      server_flag                 = false
+      require_cn                  = true
+      key_bits                    = 2048
+      max_ttl                     = tostring(2160 * 3600)
+      ttl                         = tostring(2160 * 3600)
     }
 
     # --- consul/nomad mTLS roles (adopted from the live unmanaged Vault roles) ---

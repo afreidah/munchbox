@@ -409,6 +409,97 @@ run "disable_pki_roles" {
 }
 
 # -------------------------------------------------------------------------
+# pki_intermediates: one entry mounts, requests, signs and installs a CA
+# -------------------------------------------------------------------------
+
+run "pki_intermediate_created" {
+  command = plan
+
+  variables {
+    pki_intermediates = {
+      pki_vagabond = { common_name = "Vagabond Intermediate CA", ttl = 3600 }
+    }
+  }
+
+  # --- one entry -> one of each resource in the chain ---
+  assert {
+    condition = alltrue([
+      length(vault_mount.intermediate) == 1,
+      length(vault_pki_secret_backend_intermediate_cert_request.intermediate) == 1,
+      length(vault_pki_secret_backend_root_sign_intermediate.intermediate) == 1,
+      length(vault_pki_secret_backend_intermediate_set_signed.intermediate) == 1,
+    ])
+    error_message = "a pki_intermediates entry should create its mount, CSR, signature and signed cert"
+  }
+
+  # --- mounted at the map key as a pki engine, capped at the CA's lifetime ---
+  assert {
+    condition = alltrue([
+      vault_mount.intermediate["pki_vagabond"].path == "pki_vagabond",
+      vault_mount.intermediate["pki_vagabond"].type == "pki",
+      vault_mount.intermediate["pki_vagabond"].max_lease_ttl_seconds == 3600,
+    ])
+    error_message = "the mount should sit at the key, be a pki engine, and cap leases at the CA ttl"
+  }
+
+  # --- the key is generated inside Vault, never exported ---
+  assert {
+    condition     = vault_pki_secret_backend_intermediate_cert_request.intermediate["pki_vagabond"].type == "internal"
+    error_message = "the intermediate key must be internal so it never leaves Vault"
+  }
+
+  # --- signed by the root, for the CA's lifetime ---
+  assert {
+    condition = alltrue([
+      vault_pki_secret_backend_root_sign_intermediate.intermediate["pki_vagabond"].backend == "pki",
+      vault_pki_secret_backend_root_sign_intermediate.intermediate["pki_vagabond"].ttl == "3600",
+    ])
+    error_message = "the root at pki_root_path should sign the intermediate for its ttl"
+  }
+}
+
+# -------------------------------------------------------------------------
+# A role's backend picks its mount; without one it stays on pki_int
+# -------------------------------------------------------------------------
+
+run "pki_role_backend" {
+  command = plan
+
+  variables {
+    pki_roles = {
+      postgres = {
+        allowed_domains = ["postgres.consul"]
+        issued_by       = ["cert-manager"]
+      }
+      vagabond-agent = {
+        backend         = "pki_vagabond"
+        allowed_domains = ["nomad-client-04"]
+        issued_by       = ["cert-manager"]
+      }
+    }
+  }
+
+  # --- an explicit backend wins; an unset one falls back to pki_backend_path ---
+  assert {
+    condition = alltrue([
+      vault_pki_secret_backend_role.role["vagabond-agent"].backend == "pki_vagabond",
+      vault_pki_secret_backend_role.role["postgres"].backend == "pki_int",
+    ])
+    error_message = "roles should land on their own backend, or pki_backend_path when unset"
+  }
+
+  # --- generated issue paths follow each role's backend ---
+  assert {
+    condition = alltrue([
+      strcontains(vault_policy.cert_manager[0].policy, "path \"pki_vagabond/issue/vagabond-agent\""),
+      strcontains(vault_policy.cert_manager[0].policy, "path \"pki_int/issue/postgres\""),
+      !strcontains(vault_policy.cert_manager[0].policy, "pki_int/issue/vagabond-agent"),
+    ])
+    error_message = "cert-manager issue paths must use each role's own backend"
+  }
+}
+
+# -------------------------------------------------------------------------
 # disable_policies: for_each map empty + named nomad_workloads off
 # -------------------------------------------------------------------------
 

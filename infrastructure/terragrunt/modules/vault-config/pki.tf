@@ -3,10 +3,52 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Certificate roles for the intermediate CA. Services request certificates via
-# these roles using Nomad workload identity or vault-cert-manager. Roles are
-# defined via the pki_roles input variable from root.hcl.
+# Intermediate CAs signed by the root, and the certificate roles on them.
+# Services request certificates via these roles using Nomad workload identity
+# or vault-cert-manager. pki and pki_int predate this module and are not
+# managed here; pki_intermediates adds CAs beside pki_int, each trusted only
+# for what it issues.
 # -------------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
+# INTERMEDIATE CAS
+# -------------------------------------------------------------------------
+
+# --- The mount's max lease is the CA's lifetime, so no leaf outlives it ---
+resource "vault_mount" "intermediate" {
+  for_each = var.pki_intermediates
+
+  path                  = each.key
+  type                  = "pki"
+  description           = "Intermediate CA: ${each.value.common_name}"
+  max_lease_ttl_seconds = each.value.ttl
+}
+
+# --- internal: Vault generates the key and keeps it; only the CSR leaves ---
+resource "vault_pki_secret_backend_intermediate_cert_request" "intermediate" {
+  for_each = var.pki_intermediates
+
+  backend     = vault_mount.intermediate[each.key].path
+  type        = "internal"
+  common_name = each.value.common_name
+}
+
+resource "vault_pki_secret_backend_root_sign_intermediate" "intermediate" {
+  for_each = var.pki_intermediates
+
+  backend     = var.pki_root_path
+  csr         = vault_pki_secret_backend_intermediate_cert_request.intermediate[each.key].csr
+  common_name = each.value.common_name
+  ttl         = tostring(each.value.ttl)
+}
+
+# --- The bundle carries the root too, so ca_chain resolves as it does on pki_int ---
+resource "vault_pki_secret_backend_intermediate_set_signed" "intermediate" {
+  for_each = var.pki_intermediates
+
+  backend     = vault_mount.intermediate[each.key].path
+  certificate = vault_pki_secret_backend_root_sign_intermediate.intermediate[each.key].certificate_bundle
+}
 
 # -------------------------------------------------------------------------
 # PKI ROLES
@@ -15,8 +57,11 @@
 resource "vault_pki_secret_backend_role" "role" {
   for_each = var.pki_roles_enabled ? var.pki_roles : {}
 
-  backend = var.pki_backend_path
+  backend = coalesce(each.value.backend, var.pki_backend_path)
   name    = each.key
+
+  # --- A role on a new intermediate must wait for its mount to hold a CA ---
+  depends_on = [vault_pki_secret_backend_intermediate_set_signed.intermediate]
 
   allowed_domains             = each.value.allowed_domains
   allow_any_name              = each.value.allow_any_name
