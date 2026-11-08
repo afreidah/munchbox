@@ -3,8 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Runs on Cloud Run, so the repository must be public on GitHub: Cloud Run cannot
-# reach Forgejo, and Vagabond has no way to hand a job a token.
+# Runs on Cloud Run, and on the homelab pool once Cloud Run's free quota runs
+# out. The repository must be public on GitHub, since Cloud Run cannot reach
+# Forgejo.
 #
 #   vagabond job register vagabond/parameterized/static-analysis.vagabond.hcl
 #   vagabond job dispatch -meta repo=afreidah/vagabond -meta commit=<sha> \
@@ -17,7 +18,7 @@ job "static-analysis" {
   }
 
   routing {
-    providers    = ["gcp-cloud-run"]
+    providers    = ["gcp-cloud-run", "homelab"]
     max_cost_usd = 0
   }
 
