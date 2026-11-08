@@ -108,7 +108,7 @@ path "sys/metrics" {
 
 # --- PKI Certificate Issuance (only roles Nomad workloads self-issue) ---
 %{for role, cfg in var.pki_roles~}%{if contains(cfg.issued_by, "nomad")~}
-path "${var.pki_backend_path}/issue/${role}" {
+path "${coalesce(cfg.backend, var.pki_backend_path)}/issue/${role}" {
   capabilities = ["create", "update", "read"]
 }
 %{endif~}%{endfor~}
@@ -159,7 +159,7 @@ resource "vault_policy" "cert_manager" {
   policy = <<EOT
 # --- PKI Certificate Issuance (roles the cert-manager daemon issues) ---
 %{for role, cfg in var.pki_roles~}%{if contains(cfg.issued_by, "cert-manager")~}
-path "${var.pki_backend_path}/issue/${role}" {
+path "${coalesce(cfg.backend, var.pki_backend_path)}/issue/${role}" {
   capabilities = ["create", "update"]
 }
 %{endif~}%{endfor~}
