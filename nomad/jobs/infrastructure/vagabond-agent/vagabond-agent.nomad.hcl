@@ -100,7 +100,9 @@ job "vagabond-agent" {
       #     workloads' cgroups under its own; cpu_hard_limit turns the cpu
       #     reservation into the cpu.max the agent reads as capacity. The data
       #     dir has the same path inside and out, because containerd resolves
-      #     the log mounts on the host. ---
+      #     the log mounts on the host. containerd's client mounts each image's
+      #     rootfs in the agent to read its /etc/group, so the snapshot layers
+      #     it names must be visible here too. ---
       config {
         image              = "registry.munchbox.cc/vagabond:${var.vagabond_agent_version}"
         image_pull_timeout = "10m"
@@ -121,6 +123,7 @@ job "vagabond-agent" {
         volumes = [
           "/run/containerd/containerd.sock:/run/containerd/containerd.sock",
           "/var/lib/vagabond:/var/lib/vagabond",
+          "/var/lib/containerd:/var/lib/containerd:ro",
         ]
       }
 
