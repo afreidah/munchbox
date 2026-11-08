@@ -4,9 +4,10 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Joins the server's homelab pool and runs its workloads on the host's
-# containerd, inside this task's cgroup, so Nomad's reservation is what the pool
-# offers. Dials vagabond.service.consul:4748 over mutual TLS with a cert from
-# pki_vagabond; the cert's common name is the node name, and the
+# containerd. Its capacity is this task's reservation, but workloads run under
+# /vagabond, outside the task's cgroup, so stopping or redeploying the agent
+# leaves them running. Dials vagabond.service.consul:4748 over mutual TLS with
+# a cert from pki_vagabond; the cert's common name is the node name, and the
 # vagabond-agent role only issues the names it lists.
 #
 # Workloads run as root on the host network, so it stays off ingress nodes.
@@ -76,6 +77,44 @@ job "vagabond-agent" {
     }
 
     # -------------------------------------------------------------------------
+    # Task: cgroup (prestart)
+    # -------------------------------------------------------------------------
+
+    # --- Prepares /vagabond, the cgroup workloads run under: cpu and memory
+    #     on for its children, and its total capped at one static-analysis
+    #     slot, so the kernel still holds the workloads' sum. No .slice
+    #     suffix, so systemd leaves it alone. Safe to rerun with workloads
+    #     already inside. ---
+    task "cgroup" {
+      driver = "docker"
+
+      lifecycle {
+        hook    = "prestart"
+        sidecar = false
+      }
+
+      config {
+        image      = "busybox:1.38.0"
+        privileged = true
+        cgroupns   = "host"
+        command    = "sh"
+        args = ["-ec", <<-EOT
+          cg=/sys/fs/cgroup/vagabond
+          mkdir -p "$cg"
+          echo "+cpu +memory" > "$cg/cgroup.subtree_control"
+          echo "200000 100000" > "$cg/cpu.max"
+          echo $((4608 * 1024 * 1024)) > "$cg/memory.max"
+        EOT
+        ]
+      }
+
+      resources {
+        cpu    = 50
+        memory = 32
+      }
+    }
+
+    # -------------------------------------------------------------------------
     # Task: agent
     # -------------------------------------------------------------------------
 
@@ -96,9 +135,9 @@ job "vagabond-agent" {
         aud  = ["vault.io"]
       }
 
-      # --- privileged and the host cgroup namespace let the agent create its
-      #     workloads' cgroups under its own; cpu_hard_limit turns the cpu
-      #     reservation into the cpu.max the agent reads as capacity. The data
+      # --- The host cgroup namespace lets the agent read its real cgroup, and
+      #     cpu_hard_limit turns the cpu reservation into the cpu.max it reads
+      #     as capacity. privileged lets it mount image rootfs. The data
       #     dir has the same path inside and out, because containerd resolves
       #     the log mounts on the host. containerd's client mounts each image's
       #     rootfs in the agent to read its /etc/group, so the snapshot layers
@@ -118,6 +157,7 @@ job "vagabond-agent" {
           "-tls-ca", "/secrets/ca.pem",
           "-tls-cert", "/secrets/agent.pem",
           "-tls-key", "/secrets/agent-key.pem",
+          "-cgroup-parent", "/vagabond",
         ]
 
         volumes = [
