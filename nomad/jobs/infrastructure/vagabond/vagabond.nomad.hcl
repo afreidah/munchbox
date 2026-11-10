@@ -3,8 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Dispatches stateless CI jobs to Cloud Run first and the homelab agent pool
-# after it. State lives in Postgres. The API has no authentication, so it stays
+# Dispatches stateless CI jobs to Cloud Run and Code Engine first and the
+# homelab agent pool after them. State lives in Postgres. The API has no authentication, so it stays
 # on the LAN: no Traefik route. Agents dial 4748 over mutual TLS, with certs
 # from pki_vagabond, which signs nothing else.
 #
@@ -128,7 +128,7 @@ server {
   }
 }
 
-# Tier 1: Cloud Run's free quota goes first, and the homelab takes what it can't.
+# Tier 1: the clouds' free quota goes first, and the homelab takes what it can't.
 provider "homelab" {
   type = "pool"
   tier = 1
@@ -168,6 +168,35 @@ provider "gcp-cloud-run" {
   }
 }
 {{ end }}
+
+{{ with secret "secret/data/vagabond/code-engine" }}
+provider "ibm-code-engine" {
+  type = "code-engine"
+
+  config {
+    region     = "{{ .Data.data.region }}"
+    project_id = "{{ .Data.data.project_id }}"
+  }
+
+  credentials {
+    file = "/secrets/ibm-api-key"
+  }
+
+  # 80% of the free tier: 100,000 vCPU-seconds and 200,000 GB-seconds, which is
+  # 186,264 in gb_seconds, since Vagabond counts GiB and IBM bills decimal GB.
+  pool "cpu" {
+    meter  = "cpu_seconds"
+    limit  = 80000
+    period = "monthly"
+  }
+
+  pool "memory" {
+    meter  = "gb_seconds"
+    limit  = 149011
+    period = "monthly"
+  }
+}
+{{ end }}
 EOH
         destination = "secrets/config.hcl"
         change_mode = "restart"
@@ -182,6 +211,18 @@ EOH
 {{ with secret "secret/data/vagabond/cloud-run" }}{{ .Data.data.credentials_json }}{{ end }}
 EOH
         destination = "secrets/gcp-dispatcher.json"
+        change_mode = "restart"
+        uid         = 10001
+        gid         = 10001
+        perms       = "0400"
+      }
+
+      # --- The Code Engine API key, as a file for the same reason ---
+      template {
+        data        = <<EOH
+{{ with secret "secret/data/vagabond/code-engine" }}{{ .Data.data.api_key }}{{ end }}
+EOH
+        destination = "secrets/ibm-api-key"
         change_mode = "restart"
         uid         = 10001
         gid         = 10001
