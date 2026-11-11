@@ -129,6 +129,10 @@ export TEMPORAL_NAMESPACE="default"
 # running cluster instance without a server config (flag -> env -> config).
 export S3O_ADMIN_ADDR=https://s3.munchbox.cc
 
+# Vagabond CLI: the API is plain HTTP on the LAN with no Traefik route, so no
+# VAGABOND_TLS_* is needed. Jobs live in the default namespace, the CLI's default.
+export VAGABOND_ADDR="${VAGABOND_ADDR-http://vagabond.service.consul:4747}"
+
 # PostgreSQL: point psql at the Patroni primary via haproxy-postgres, with the
 # admin/superuser creds from Vault. Lets `psql` run with no flags. TLS is
 # required by the server (sslmode=require; no client cert).
