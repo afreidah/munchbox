@@ -25,18 +25,14 @@ job "static-analysis" {
   task "make" {
     driver = "container"
 
-    # --- Shallow-fetches the commit, since clone cannot name an arbitrary SHA ---
+    # --- Shallow-fetches the commit, since clone cannot name an arbitrary SHA.
+    #     One line: Code Engine refuses an argument containing a newline. ---
     config {
       image   = "golang:1.27"
       command = "sh"
-      args = ["-ec", <<-EOT
-        git init -q /src
-        cd /src
-        git remote add origin "https://github.com/$VAGABOND_META_REPO.git"
-        git fetch -q --depth 1 origin "$VAGABOND_META_COMMIT"
-        git checkout -q FETCH_HEAD
-        make $VAGABOND_META_TARGETS
-      EOT
+      args = [
+        "-ec",
+        "git init -q /src; cd /src; git remote add origin \"https://github.com/$VAGABOND_META_REPO.git\"; git fetch -q --depth 1 origin \"$VAGABOND_META_COMMIT\"; git checkout -q FETCH_HEAD; make $VAGABOND_META_TARGETS",
       ]
     }
 
