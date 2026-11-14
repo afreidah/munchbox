@@ -130,7 +130,7 @@ server {
 
 # Tier 1: the clouds' free quota goes first, and the homelab takes what it can't.
 provider "homelab" {
-  type = "pool"
+  type = "containerd"
   tier = 1
 }
 
