@@ -55,6 +55,7 @@ dependency "passwords" {
       "vaultwarden/master-password" = { password = "mock-master-password" }
       "cinc-console"                = { session_secret = "mock-session-secret" }
       "vagabond/postgres"           = { db_password = "mock-db-password" }
+      "blackbox-exporter-external"  = { probe_token = "mock-probe-token" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
@@ -207,6 +208,12 @@ locals {
       source = "passwords"
       key    = "vagabond/postgres"
       static = { db_username = "vagabond" }
+    }
+    # --- the job's own prefix, so blackbox-exporter-external reads it with no
+    #     extra grant; cloudflare-waf matches it in its probe skip rule ---
+    "blackbox-exporter-external" = {
+      source = "passwords"
+      key    = "blackbox-exporter-external"
     }
   }
 }

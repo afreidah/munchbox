@@ -37,7 +37,7 @@ args = [
 
 # --- Configuration templates ---
 templates = [
-  { src = "blackbox.yml", dest = "/etc/blackbox/config/blackbox.yml" }
+  { src = "blackbox.yml.tpl", dest = "/etc/blackbox/config/blackbox.yml", vault = true }
 ]
 
 # --- Service tags ---
