@@ -35,6 +35,12 @@ locals {
     "vagabond/postgres" = {
       db_password = { length = 32, special = false }
     }
+    # --- blackbox-exporter-external sends it as a header that Cloudflare's WAF
+    #     skips bot challenges for; no specials because it lands in a header and
+    #     a rule expression ---
+    "blackbox-exporter-external" = {
+      probe_token = { length = 48, special = false }
+    }
   }
 }
 

@@ -41,3 +41,24 @@ variable "bot_management" {
   }))
   default = {}
 }
+
+# -----------------------------------------------------------------------------
+# CUSTOM RULES
+# -----------------------------------------------------------------------------
+# Per-zone http_request_firewall_custom rules, in evaluation order. The zone's
+# entrypoint holds exactly these: one that already exists (made in the
+# dashboard) is imported, so any rule it carries must be listed to be kept.
+
+variable "custom_rules" {
+  description = "Per-zone custom firewall rules, keyed by logical zone name."
+  type = map(object({
+    zone_id = string
+    rules = list(object({
+      description = string
+      expression  = string
+      action      = string                 # skip | managed_challenge | block | ...
+      skip_phases = optional(list(string)) # skip: the phases a match bypasses
+    }))
+  }))
+  default = {}
+}
