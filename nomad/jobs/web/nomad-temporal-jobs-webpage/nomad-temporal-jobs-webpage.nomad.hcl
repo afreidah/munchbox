@@ -9,6 +9,11 @@
 # Kept off the oracle nodes. No Vault.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "nomad_temporal_jobs_version" {
+  type = string
+}
+
 job "nomad-temporal-jobs-webpage" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -136,8 +141,7 @@ job "nomad-temporal-jobs-webpage" {
       driver = "docker"
 
       config {
-        image              = "registry.munchbox.cc/temporal-workers-web:latest"
-        force_pull         = true
+        image              = "registry.munchbox.cc/temporal-workers-web:${var.nomad_temporal_jobs_version}"
         image_pull_timeout = "10m"
         ports              = ["http"]
       }

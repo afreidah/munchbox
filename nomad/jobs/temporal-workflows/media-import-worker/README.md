@@ -9,7 +9,8 @@ workflow is started on schedule by a Temporal Schedule.
 
 ## Image
 
-`registry.munchbox.cc/media-import-worker:latest`
+`registry.munchbox.cc/media-import-worker`, tagged with the version in Consul
+KV `deploy/versions/nomad-temporal-jobs`
 
 ## Hostname / exposure
 

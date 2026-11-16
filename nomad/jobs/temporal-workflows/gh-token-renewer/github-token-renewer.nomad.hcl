@@ -27,6 +27,11 @@
 #   * consul-kv:     "github/token-renewer/repos" = newline-separated owner/repo list
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "nomad_temporal_jobs_version" {
+  type = string
+}
+
 job "github-token-renewer" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -132,8 +137,7 @@ job "github-token-renewer" {
       }
 
       config {
-        image              = "registry.munchbox.cc/github-token-renewer:latest"
-        force_pull         = true
+        image              = "registry.munchbox.cc/github-token-renewer:${var.nomad_temporal_jobs_version}"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]

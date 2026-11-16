@@ -10,6 +10,11 @@
 # Vault via its Nomad Workload Identity -- no static secrets in the job.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "nomad_temporal_jobs_version" {
+  type = string
+}
+
 job "media-import-worker" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -113,8 +118,7 @@ job "media-import-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/media-import-worker:latest"
-        force_pull         = true
+        image              = "registry.munchbox.cc/media-import-worker:${var.nomad_temporal_jobs_version}"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]
