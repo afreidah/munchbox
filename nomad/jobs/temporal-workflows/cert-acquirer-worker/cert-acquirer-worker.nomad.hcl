@@ -14,6 +14,11 @@
 # no secrets are templated into the job.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "nomad_temporal_jobs_version" {
+  type = string
+}
+
 job "cert-acquirer-worker" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -118,8 +123,7 @@ job "cert-acquirer-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/cert-acquirer-worker:latest"
-        force_pull         = true
+        image              = "registry.munchbox.cc/cert-acquirer-worker:${var.nomad_temporal_jobs_version}"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]

@@ -33,6 +33,11 @@
 #     vault-mode repos instead reuse a PAT already in the secret store
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "nomad_temporal_jobs_version" {
+  type = string
+}
+
 job "ci-runner-scaler" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -141,8 +146,7 @@ job "ci-runner-scaler" {
       }
 
       config {
-        image              = "registry.munchbox.cc/ci-runner-scaler:latest"
-        force_pull         = true
+        image              = "registry.munchbox.cc/ci-runner-scaler:${var.nomad_temporal_jobs_version}"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]

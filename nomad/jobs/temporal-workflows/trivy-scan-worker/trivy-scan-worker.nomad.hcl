@@ -8,6 +8,11 @@
 # trivy-task-queue; workflows are started on schedule by a Temporal Schedule.
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "nomad_temporal_jobs_version" {
+  type = string
+}
+
 job "trivy-scan-worker" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -122,8 +127,7 @@ job "trivy-scan-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/trivy-scan-worker:latest"
-        force_pull         = true
+        image              = "registry.munchbox.cc/trivy-scan-worker:${var.nomad_temporal_jobs_version}"
         image_pull_timeout = "10m"
         network_mode       = "host"
         ports              = ["metrics"]

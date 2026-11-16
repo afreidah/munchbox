@@ -8,6 +8,11 @@
 # schedule by a Temporal Schedule (managed in infrastructure/terragrunt).
 # -------------------------------------------------------------------------------
 
+# --- Set by make run from Consul KV deploy/versions/ ---
+variable "nomad_temporal_jobs_version" {
+  type = string
+}
+
 job "cleanup-worker" {
   region      = "global"
   datacenters = ["munchbox"]
@@ -115,8 +120,7 @@ job "cleanup-worker" {
       }
 
       config {
-        image              = "registry.munchbox.cc/cleanup-worker:latest"
-        force_pull         = true
+        image              = "registry.munchbox.cc/cleanup-worker:${var.nomad_temporal_jobs_version}"
         image_pull_timeout = "5m"
         network_mode       = "host"
         ports              = ["metrics"]
