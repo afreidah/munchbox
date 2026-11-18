@@ -423,6 +423,15 @@ backend_circuit_breaker:
   failure_threshold: 8
   open_timeout: 5m
 
+# Tries a backend whose calls slowed against its own baseline after the
+# others; it is never refused. These are the defaults (v0.184.0).
+backend_pressure:
+  enabled: true
+  slow_factor: 3
+  slow_share: 0.25
+  timeout_share: 0.05
+  min_calls: 20
+
 write_path:
   pending_pattern:
     reaper_tick: 10m
