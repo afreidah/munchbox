@@ -1,0 +1,9 @@
+---
+name: firecracker
+title: firecracker cookbook integration
+maintainer: Alex Freidah
+license: MIT
+summary: Verifies the thin pool and containerd's devmapper snapshotter on a debian-12 VM
+version: 0.1.0
+supports:
+  - platform: debian

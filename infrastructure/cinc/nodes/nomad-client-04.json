@@ -3,7 +3,8 @@
   "chef_environment": "_default",
   "run_list": [
   "role[proxmox_vm]",
-  "recipe[nvidia::install]"
+  "recipe[nvidia::install]",
+  "recipe[firecracker::host]"
 ]
 ,
   "normal": {

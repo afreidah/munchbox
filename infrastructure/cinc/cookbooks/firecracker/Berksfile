@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+source({ chef_repo: '../..' })
+
+metadata
+
+# --- The kitchen suite runs on Docker's containerd, as the node does. ---
+group :integration do
+  cookbook 'docker'
+end

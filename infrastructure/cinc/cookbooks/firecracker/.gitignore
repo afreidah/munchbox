@@ -1,0 +1,5 @@
+.kitchen/
+kitchen.local.yml
+.ruby-lsp/
+vendor/bundle/
+Berksfile.lock
