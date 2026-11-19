@@ -1,0 +1,61 @@
+---
+# -------------------------------------------------------------------------------
+# Test-Kitchen config for firecracker.
+#
+# Single-node debian-12 VM with Docker's containerd. Verifies the thin pool
+# comes up, containerd loads its devmapper snapshotter on it, and Firecracker's
+# user holds its UID. Booting microVMs needs /dev/kvm and the agent, so that is
+# verified on the node itself.
+# -------------------------------------------------------------------------------
+
+driver:
+  name: vagrant
+  provider: libvirt
+  customize:
+    memory: 2048
+    cpus: 2
+
+provisioner:
+  name: chef_zero
+  product_name: cinc
+  product_version: latest
+  install_strategy: once
+  multiple_converge: 2
+  enforce_idempotency: true
+  chef_license: accept
+  log_level: warn
+  client_rb:
+    node_name: kitchen
+
+verifier:
+  name: inspec
+  format: doc
+
+platforms:
+  - name: debian-12
+    driver:
+      box: generic/debian12
+
+suites:
+  - name: host
+    # --- The box's CA bundle predates packages.cinc.sh's issuer, so cinc will not download until it is refreshed. ---
+    lifecycle:
+      pre_converge:
+        - remote: sudo apt-get update -q && sudo apt-get install -y -q ca-certificates
+    run_list:
+      - recipe[docker::install]
+      - recipe[firecracker::host]
+    verifier:
+      inspec_tests:
+        - test/integration/default
+    attributes:
+      docker:
+        install:
+          # --- No nomad user in the kitchen VM; skip the group add so the suite stays self-contained. ---
+          add_user_to_group: ~
+          dependent_service: ~
+      firecracker:
+        host:
+          # --- Sparse either way; small keeps the VM's disk out of it. ---
+          data_size: 4G
+          meta_size: 128M

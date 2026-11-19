@@ -4,8 +4,9 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Dispatches stateless CI jobs to Cloud Run and Code Engine first and the
-# homelab agent pool after them. State lives in Postgres. The API has no authentication, so it stays
-# on the LAN: no Traefik route. Agents dial 4748 over mutual TLS, with certs
+# homelab agent pool after them, in containers or Firecracker microVMs. State
+# lives in Postgres. The API has no authentication, so it stays on the LAN: no
+# Traefik route. Agents dial 4748 over mutual TLS, with certs
 # from pki_vagabond, which signs nothing else.
 #
 # The job name is what grants secret/vagabond/*, through nomad-workload-self,
@@ -132,6 +133,16 @@ server {
 provider "homelab" {
   type = "containerd"
   tier = 1
+}
+
+# The same agents' Firecracker microVMs, for jobs that name it in providers.
+provider "homelab-vm" {
+  type = "firecracker"
+  tier = 1
+
+  config {
+    pool = "homelab"
+  }
 }
 
 {{ with secret "secret/data/vagabond/postgres" }}

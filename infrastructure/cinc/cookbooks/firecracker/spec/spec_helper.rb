@@ -1,0 +1,24 @@
+# frozen_string_literal: true
+require_relative '../../simplecov_bootstrap'
+
+# -------------------------------------------------------------------------------
+# Cookbook:: firecracker
+# Spec helper.
+# -------------------------------------------------------------------------------
+
+require 'chefspec'
+
+ChefSpec::Coverage.start! do
+  add_filter 'munchbox_lib'
+  add_filter 'munchbox_base'
+end
+
+RSpec.configure do |config|
+  config.cookbook_path = [File.expand_path('../../', __dir__)]
+  config.platform        = 'debian'
+  config.version         = '12'
+  config.log_level       = :error
+  config.disable_monkey_patching!
+  config.order = :random
+  Kernel.srand(config.seed)
+end

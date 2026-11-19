@@ -4,7 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Joins the server's homelab pool and runs its workloads on the host's
-# containerd. Its capacity is this task's reservation, but workloads run under
+# containerd, and in Firecracker microVMs through the vagabond-firecracker it
+# starts. Its capacity is this task's reservation, but workloads run under
 # /vagabond, outside the task's cgroup, so stopping or redeploying the agent
 # leaves them running. Dials vagabond.service.consul:4748 over mutual TLS with
 # a cert from pki_vagabond; the cert's common name is the node name, and the
@@ -13,8 +14,8 @@
 # Workloads run as root on the host network, so it stays off ingress nodes.
 # -------------------------------------------------------------------------------
 
-# --- Set by make run from Consul KV deploy/versions/vagabond-agent. Its own key,
-#     so a server release doesn't restart the agent under running workloads. ---
+# --- Set by make run from Consul KV deploy/versions/vagabond-agent, which a
+#     release writes with the server's: the two speak one protocol version. ---
 variable "vagabond_agent_version" {
   type = string
 }
@@ -141,11 +142,15 @@ job "vagabond-agent" {
       #     dir has the same path inside and out, because containerd resolves
       #     the log mounts on the host. containerd's client mounts each image's
       #     rootfs in the agent to read its /etc/group, so the snapshot layers
-      #     it names must be visible here too. ---
+      #     it names must be visible here too. For -firecracker: the host's
+      #     PID namespace, so microVMs outlive the container and a restarted
+      #     agent finds them by pid; and the host's /dev, where each microVM's
+      #     devmapper root drive appears after the container started. ---
       config {
         image              = "registry.munchbox.cc/vagabond:${var.vagabond_agent_version}"
         image_pull_timeout = "10m"
         network_mode       = "host"
+        pid_mode           = "host"
         privileged         = true
         cgroupns           = "host"
         cpu_hard_limit     = true
@@ -158,12 +163,14 @@ job "vagabond-agent" {
           "-tls-cert", "/secrets/agent.pem",
           "-tls-key", "/secrets/agent-key.pem",
           "-cgroup-parent", "/vagabond",
+          "-firecracker",
         ]
 
         volumes = [
           "/run/containerd/containerd.sock:/run/containerd/containerd.sock",
           "/var/lib/vagabond:/var/lib/vagabond",
           "/var/lib/containerd:/var/lib/containerd:ro",
+          "/dev:/dev",
         ]
       }
 
