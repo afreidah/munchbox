@@ -32,7 +32,7 @@ Under `firecracker.host`:
 ## Failure modes
 
 - **The pool fails to come up:** `containerd-thinpool.service` fails, containerd and Docker start without it, and `ctr plugins ls` shows `devmapper` as `skip` or `error`. The agent's `-firecracker` then fails at startup with `containerd's devmapper snapshotter did not load`. `journalctl -u containerd-thinpool` has the reason.
-- **The disk fills under a full pool:** writes inside the microVMs fail. Grow the disk or stop workloads; `dmsetup status containerd-thinpool` shows the pool's use.
+- **The pool or the disk under it fills:** writes inside the microVMs stall, and fail after dm-thin's `no_space_timeout`, 60 seconds by default. Grow the disk or stop workloads; `dmsetup status containerd-thinpool` shows the pool's use.
 
 ## Testing
 
