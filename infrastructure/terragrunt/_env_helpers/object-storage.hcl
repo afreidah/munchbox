@@ -69,10 +69,12 @@ locals {
     # --- S3-compatible-only (aws s3compat) ---
     e2 = { bucket_name = "munchbox-backups" }
     c2 = { bucket_name = "munchbox-backups" }
-    # --- minio provider: self-hosted MinIO + path-less S3-compat (g3) ---
+    # --- minio provider: self-hosted MinIO + path-less S3-compat (g3/filebase/edge) ---
     minio        = { bucket_name = "munchbox-backups" }
     "minio-arm2" = { bucket_name = "munchbox-backups" }
     g3           = { bucket_name = "munchbox-backups" }
+    filebase     = { bucket_name = "munchbox-storage" }
+    edge         = { bucket_name = "munchbox-data" }
     # --- supabase management-API provider (shellscape/supabase) ---
     supabase = {
       project_ref = "uyeggdssdvreqtxjkfhi"
@@ -86,7 +88,7 @@ locals {
   # --- S3-compatible-only backends (no native provider) ---
   #     s3compat: aws_s3_bucket.  minio: aminueza/minio (self-hosted MinIO + path-less S3-compat)
   s3compat_providers = ["e2", "c2"]
-  minio_providers    = ["minio", "minio-arm2", "g3"]
+  minio_providers    = ["minio", "minio-arm2", "g3", "filebase", "edge"]
   is_s3compat        = contains(local.s3compat_providers, local.provider)
   is_minio           = contains(local.minio_providers, local.provider)
   # supabase: management-API provider (path-prefixed S3 endpoint, no bucket sub-APIs)
