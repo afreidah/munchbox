@@ -388,6 +388,26 @@ backends:
       - name: class_b
         operations: [GetObject, HeadObject]
         limit: 100000
+  - name: "filebase"
+    endpoint: "{{ .Data.data.filebase_s3_endpoint }}"
+    region: "{{ .Data.data.filebase_s3_region }}"
+    bucket: "{{ .Data.data.filebase_s3_bucket }}"
+    access_key_id: "{{ .Data.data.filebase_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.filebase_s3_secret_key }}"
+    force_path_style: true
+    # Free plan: 5 GB storage, 5 GB/month bandwidth.
+    quota_bytes: 5000000000
+    max_object_size: 5000000000    # 5 GB per-object limit
+    egress_byte_limit: 5000000000
+  - name: "edge"
+    endpoint: "{{ .Data.data.edge_s3_endpoint }}"
+    region: "{{ .Data.data.edge_s3_region }}"
+    bucket: "{{ .Data.data.edge_s3_bucket }}"
+    access_key_id: "{{ .Data.data.edge_s3_access_key }}"
+    secret_access_key: "{{ .Data.data.edge_s3_secret_key }}"
+    force_path_style: true
+    quota_bytes: 5000000000        # 5 GB storage
+    max_object_size: 5000000000    # 5 GB single-object upload limit
   - name: "minio"
     endpoint: "{{ .Data.data.minio_s3_endpoint }}"
     region: "us-east-1"
