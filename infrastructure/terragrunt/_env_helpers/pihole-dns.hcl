@@ -39,24 +39,27 @@ locals {
     "oracle-arm-2"    = { domain = "oracle-arm-2.munchbox.cc", ip = "10.200.0.14" }
     "cinc-server"     = { domain = "cinc-server.munchbox.cc", ip = "192.168.68.99" }
 
-    # --- Bandwidth Alliance edge proxies. These are Cloudflare Workers with no
-    #     origin, and the egress waiver they exist for only applies to traffic
-    #     that actually leaves through Cloudflare -- so they must not resolve to
-    #     anything on the LAN. The *.munchbox.cc wildcard in dnsmasq would
-    #     otherwise answer them with traefik, and a `server=` override cannot
-    #     undo that: address= answers locally, so the query is never forwarded.
-    #     An explicit record wins, which is why every catalogued service already
-    #     reaches the VIP rather than the wildcard's address.
-    #
-    #     The address is a Cloudflare edge IP for the zone. Pinning one is safe
-    #     because the edge routes by Host, so any Cloudflare address serves this
-    #     zone even if the zone's own anycast pair changes. ---
-    "b2-proxy"  = { domain = "b2-proxy.munchbox.cc", ip = "104.21.21.42" }
-    "ibm-proxy" = { domain = "ibm-proxy.munchbox.cc", ip = "104.21.21.42" }
-    "oci-proxy" = { domain = "oci-proxy.munchbox.cc", ip = "104.21.21.42" }
+    # --- the apex is a Cloudflare redirect with no LAN origin, so it resolves
+    #     to the edge for the same reason as edge_proxy_records ---
+    "munchbox-apex" = { domain = "munchbox.cc", ip = local.cloudflare_edge_ip }
+  }
 
-    # --- the apex is a Cloudflare redirect with no LAN origin; same reason ---
-    "munchbox-apex" = { domain = "munchbox.cc", ip = "104.21.21.42" }
+  # --- a Cloudflare edge IP for the zone. Pinning one is safe because the edge
+  #     routes by Host, so any Cloudflare address serves this zone even if the
+  #     zone's own anycast pair changes. ---
+  cloudflare_edge_ip = "104.21.21.42"
+
+  # --- one record per root.locals.edge_backends entry. These are Cloudflare
+  #     Workers with no origin, and the egress waiver they exist for only
+  #     applies to traffic that actually leaves through Cloudflare -- so they
+  #     must not resolve to anything on the LAN. The *.munchbox.cc wildcard in
+  #     dnsmasq would otherwise answer them with traefik, and a `server=`
+  #     override cannot undo that: address= answers locally, so the query is
+  #     never forwarded. An explicit record wins, which is why every catalogued
+  #     service already reaches the VIP rather than the wildcard's address. ---
+  edge_proxy_records = {
+    for name, _ in local.root.locals.edge_backends :
+    "${name}-proxy" => { domain = "${name}-proxy.munchbox.cc", ip = local.cloudflare_edge_ip }
   }
 
   # --- munchbox.cc services from the shared catalog (root.locals.web_services)
@@ -79,6 +82,6 @@ inputs = {
   pihole_password_primary   = get_env("TF_VAR_pihole_password_primary", "")
   pihole_password_secondary = get_env("TF_VAR_pihole_password_secondary", "")
 
-  dns_records   = merge(local.traefik_records, local.pihole_special_dns_records)
+  dns_records   = merge(local.traefik_records, local.pihole_special_dns_records, local.edge_proxy_records)
   cname_records = {}
 }

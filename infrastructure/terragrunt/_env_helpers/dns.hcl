@@ -110,43 +110,6 @@ locals {
       ttl     = 300
     }
 
-    # --- Bandwidth Alliance edge proxies. A Worker route only matches a
-    #     hostname that resolves through Cloudflare, and nothing here has an
-    #     origin -- the Worker answers every request itself. So these are
-    #     placeholder A records (RFC 5737 TEST-NET-1) that exist to be
-    #     orange-clouded; the address is never connected to. Losing the proxy
-    #     flag would send callers to an unroutable address rather than
-    #     silently bypassing the Worker. ---
-    "munchbox-edge-proxy-b2" = {
-      zone_id          = local.munchbox_zone_id
-      name             = "b2-proxy"
-      type             = "A"
-      content          = "192.0.2.1"
-      proxied          = true
-      ttl              = 1
-      external_content = true
-    }
-
-    "munchbox-edge-proxy-ibm" = {
-      zone_id          = local.munchbox_zone_id
-      name             = "ibm-proxy"
-      type             = "A"
-      content          = "192.0.2.1"
-      proxied          = true
-      ttl              = 1
-      external_content = true
-    }
-
-    "munchbox-edge-proxy-oci" = {
-      zone_id          = local.munchbox_zone_id
-      name             = "oci-proxy"
-      type             = "A"
-      content          = "192.0.2.1"
-      proxied          = true
-      ttl              = 1
-      external_content = true
-    }
-
     # --- munchbox.cc itself. Exists only so Cloudflare answers for the apex
     #     and the redirect rule in cloudflare-zone-settings can send it to
     #     alexfreidah.com; the address is never connected to. ---
@@ -184,6 +147,26 @@ locals {
     }
   }
 
+  # --- one record per root.locals.edge_backends entry. A Worker route only
+  #     matches a hostname that resolves through Cloudflare, and nothing here
+  #     has an origin -- the Worker answers every request itself. So these are
+  #     placeholder A records (RFC 5737 TEST-NET-1) that exist to be
+  #     orange-clouded; the address is never connected to. Losing the proxy
+  #     flag would send callers to an unroutable address rather than
+  #     silently bypassing the Worker. ---
+  edge_proxy_records = {
+    for name, _ in local.root.locals.edge_backends :
+    "munchbox-edge-proxy-${name}" => {
+      zone_id          = local.munchbox_zone_id
+      name             = "${name}-proxy"
+      type             = "A"
+      content          = "192.0.2.1"
+      proxied          = true
+      ttl              = 1
+      external_content = true
+    }
+  }
+
   # --- proxied CNAME -> tunnel for each public munchbox.cc service ---
   munchbox_public_cnames = {
     for slug, svc in local.root.locals.web_services :
@@ -214,6 +197,7 @@ locals {
 inputs = {
   dns_records = merge(
     local.munchbox_static,
+    local.edge_proxy_records,
     local.munchbox_public_cnames,
     local.alexfreidah_cnames,
   )
