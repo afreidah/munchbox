@@ -118,6 +118,24 @@ locals {
   }
 
   # ---------------------------------------------------------------------------
+  # S3-ORCHESTRATOR EDGE PROXIES
+  #
+  # One Cloudflare Worker per Bandwidth Alliance backend, served at
+  # <name>-proxy.munchbox.cc. Those providers waive egress on traffic leaving
+  # to Cloudflare, so a read through the edge costs nothing to pull out of the
+  # backend. Read by cloudflare-worker-routes (the workers), dns and pihole-dns
+  # (their records) and cloudflare-waf (their skip rule). host is a bare
+  # hostname: the worker sets it on the URL, so a scheme would make it
+  # unroutable.
+  # ---------------------------------------------------------------------------
+
+  edge_backends = {
+    b2  = { host = "s3.us-east-005.backblazeb2.com", region = "us-east-005" }
+    ibm = { host = "s3.us-east.cloud-object-storage.appdomain.cloud", region = "us-east" }
+    oci = { host = "axlubepkixee.compat.objectstorage.us-phoenix-1.oraclecloud.com", region = "us-phoenix-1" }
+  }
+
+  # ---------------------------------------------------------------------------
   # PI-HOLE  (shared provider URLs; record maps live in pihole-dns/pihole-config)
   # ---------------------------------------------------------------------------
 

@@ -54,23 +54,6 @@ locals {
   az = local.root.locals.cloudflare_alexfreidah_zone_id
   mz = local.root.locals.cloudflare_munchbox_zone_id
 
-  # --- edge-proxy: one worker per Bandwidth Alliance backend. Those providers
-  #     waive egress on traffic leaving to Cloudflare, so a read served through
-  #     the edge costs nothing to pull out of the backend.
-  #
-  #     The worker verifies an inbound signature made with the edge-proxy
-  #     keypair, then re-signs to the origin with the backend's own credentials.
-  #     Keeping the two separate means the credential s3-orchestrator holds is
-  #     not the one that can reach the bucket directly.
-  #
-  #     ORIGIN_HOST is a bare hostname: the worker sets it on the URL, so a
-  #     scheme here would produce an unroutable origin. ---
-  edge_backends = {
-    b2  = { host = "s3.us-east-005.backblazeb2.com", region = "us-east-005" }
-    ibm = { host = "s3.us-east.cloud-object-storage.appdomain.cloud", region = "us-east" }
-    oci = { host = "axlubepkixee.compat.objectstorage.us-phoenix-1.oraclecloud.com", region = "us-phoenix-1" }
-  }
-
   # --- written by the s3-orchestrator release workflow ---
   s3_orchestrator_version = run_cmd("--terragrunt-quiet", "consul", "kv", "get", "deploy/versions/s3-orchestrator")
 
@@ -81,8 +64,13 @@ locals {
     endpoint = local.root.locals.s3_orchestrator_artifacts.endpoint
   }
 
+  # --- edge-proxy: one worker per root.locals.edge_backends entry. The worker
+  #     verifies an inbound signature made with the edge-proxy keypair, then
+  #     re-signs to the origin with the backend's own credentials. Keeping the
+  #     two separate means the credential s3-orchestrator holds is not the one
+  #     that can reach the bucket directly. ---
   edge_workers = {
-    for name, b in local.edge_backends :
+    for name, b in local.root.locals.edge_backends :
     "s3-orchestrator-${name}-proxy" => {
       bindings = [
         { name = "ORIGIN_HOST", type = "plain_text", text = b.host },

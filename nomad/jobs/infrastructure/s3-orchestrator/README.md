@@ -54,7 +54,7 @@ repo and published to the `artifacts` bucket at a pinned version, which
 terragrunt reads back. Cloudflare runs JavaScript and the worker is
 TypeScript, so it has to be bundled before terraform can upload it.
 
-Three things to know before changing any of this:
+Four things to know before changing any of this:
 
 - This job does not hold those backends' real credentials. It signs with
   the `edge-proxy/*` keypair; the worker checks that, then re-signs to
@@ -66,9 +66,15 @@ Three things to know before changing any of this:
   checks the signature against what arrived. Without the flag every
   request fails with `SignatureDoesNotMatch`.
 - The proxy hostnames need their own Pi-hole records (see
-  `pihole_special_dns_records`). The internal `*.munchbox.cc` wildcard
-  would otherwise answer them with traefik, and traffic that never
-  reaches Cloudflare gets neither the worker nor the free egress.
+  `edge_proxy_records` in the pihole-dns helper). The internal
+  `*.munchbox.cc` wildcard would otherwise answer them with traefik, and
+  traffic that never reaches Cloudflare gets neither the worker nor the
+  free egress.
+- The proxy hostnames skip the managed WAF and Super Bot Fight Mode (see
+  `edge_proxy_skip` in the cloudflare-waf helper). The managed WAF answers
+  the SDK's calls with a challenge page, and the zone's bot mode
+  challenges automated traffic too. The SDK reports the page as a 403
+  with an unparseable XML body, on every call to that backend.
 
 Egress budgets on these three are `0`, meaning unlimited, since the
 allowance they used to track no longer applies. Request budgets stay as

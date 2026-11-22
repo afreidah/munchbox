@@ -52,6 +52,19 @@ locals {
     skip_phases = ["http_request_firewall_managed", "http_request_sbfm"]
   }
   probe_skip_expression = "any(http.request.headers[\"x-munchbox-probe\"][*] eq \"%s\")"
+
+  # --- s3-orchestrator's SDK calls to the edge proxies are automated by
+  #     definition, and the managed WAF answers them with a challenge an S3
+  #     client cannot solve. The worker verifies a SigV4 signature on every
+  #     request and refuses anything else itself, so these hosts skip both. ---
+  edge_proxy_skip = {
+    description = "s3-orchestrator edge proxies"
+    action      = "skip"
+    skip_phases = ["http_request_firewall_managed", "http_request_sbfm"]
+    expression = format("http.host in {%s}", join(" ", [
+      for name, _ in local.root.locals.edge_backends : "\"${name}-proxy.munchbox.cc\""
+    ]))
+  }
 }
 
 inputs = {
@@ -129,6 +142,7 @@ inputs = {
         merge(local.probe_skip, {
           expression = format(local.probe_skip_expression, dependency.passwords.outputs.vault_data["blackbox-exporter-external"].probe_token)
         }),
+        local.edge_proxy_skip,
       ]
     }
   }
