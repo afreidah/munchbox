@@ -20,15 +20,16 @@ variable "region" {
 
 variable "services" {
   description = <<-EOT
-    APIs to enable on the project. Cloud Run to submit jobs, Logging to read
-    what they printed, IAM Credentials so the dispatcher can act as the runtime
-    identity.
+    APIs to enable on the project. Cloud Run to submit jobs, Cloud Build to
+    start builds, Logging to read what they printed, IAM Credentials so the
+    dispatcher can act as the runtime identity.
   EOT
 
   type = list(string)
 
   default = [
     "run.googleapis.com",
+    "cloudbuild.googleapis.com",
     "logging.googleapis.com",
     "iamcredentials.googleapis.com",
   ]
@@ -41,13 +42,15 @@ variable "consumers" {
 
     roles are granted to the dispatcher at project scope. The defaults are the
     minimum for the job: run.developer creates, executes and deletes jobs;
-    logging.viewer reads their output. run.admin would additionally allow
-    changing services, which nothing dispatching work needs.
+    cloudbuild.builds.editor creates, reads and cancels builds; logging.viewer
+    reads their output. run.admin would additionally allow changing services,
+    which nothing dispatching work needs.
   EOT
 
   type = map(object({
     roles = optional(list(string), [
       "roles/run.developer",
+      "roles/cloudbuild.builds.editor",
       "roles/logging.viewer",
     ])
   }))

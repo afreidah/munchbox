@@ -3,9 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Grants a consumer the ability to run Cloud Run jobs and read their output.
-# Generic and map-driven: one catalog entry per consumer, each with its own
-# identities and its own key.
+# Grants a consumer the ability to run Cloud Run jobs and Cloud Build builds,
+# and read their output. Generic and map-driven: one catalog entry per
+# consumer, each with its own identities and its own key.
 #
 # Two service accounts per consumer, not one. The dispatcher holds the key and
 # submits work; the runtime is what the container actually runs as. Splitting
@@ -36,9 +36,9 @@ resource "google_project_service" "this" {
 # -----------------------------------------------------------------------------
 # RUNTIME IDENTITY
 #
-# What the job's container runs as. Deliberately granted nothing: a CI task
-# builds and tests, and anything it could reach with a project role is something
-# a compromised dependency could reach too.
+# What the container runs as, on Cloud Run and Cloud Build alike. Granted only
+# log writing: a CI task builds and tests, and anything it could reach with a
+# broader project role is something a compromised dependency could reach too.
 # -----------------------------------------------------------------------------
 
 resource "google_service_account" "runtime" {
@@ -47,13 +47,27 @@ resource "google_service_account" "runtime" {
   project      = var.project
   account_id   = "${each.key}-run"
   display_name = "${each.key} Cloud Run job runtime"
-  description  = "Identity ${each.key} job containers execute as. Holds no project roles."
+  description  = "Identity ${each.key} job containers execute as. Holds only log writing."
+}
+
+# -----------------------------------------------------------------------------
+# RUNTIME ROLE - log writing, which Cloud Build requires of the account a build runs as
+# -----------------------------------------------------------------------------
+
+# Cloud Run writes a job's logs itself, so only builds use this grant
+resource "google_project_iam_member" "runtime_log_writer" {
+  for_each = var.consumers
+
+  project = var.project
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.runtime[each.key].email}"
 }
 
 # -----------------------------------------------------------------------------
 # DISPATCHER IDENTITY
 #
-# What Vagabond authenticates as. Creates job runs and reads their logs.
+# What Vagabond authenticates as. Creates job runs and builds, and reads their
+# logs.
 # -----------------------------------------------------------------------------
 
 resource "google_service_account" "dispatcher" {
@@ -68,9 +82,10 @@ resource "google_service_account" "dispatcher" {
 # -----------------------------------------------------------------------------
 # DISPATCHER ROLES
 #
-# run.developer creates, executes and deletes jobs. logging.viewer reads what
-# they printed, which is the whole reason this platform was chosen: the output
-# comes back through a documented API rather than a paid log product.
+# run.developer creates, executes and deletes jobs. cloudbuild.builds.editor
+# creates, reads and cancels builds. logging.viewer reads what both printed,
+# which is the whole reason this platform was chosen: the output comes back
+# through a documented API rather than a paid log product.
 # -----------------------------------------------------------------------------
 
 resource "google_project_iam_member" "dispatcher" {
@@ -84,8 +99,8 @@ resource "google_project_iam_member" "dispatcher" {
 # -----------------------------------------------------------------------------
 # ACTING AS THE RUNTIME
 #
-# Deploying a job that runs as a service account requires permission to act as
-# it. Granted on the single runtime account rather than at the project, so the
+# Deploying a job or starting a build that runs as a service account requires
+# permission to act as it. Granted on the single runtime account rather than at the project, so the
 # dispatcher cannot impersonate anything else that happens to live here.
 # -----------------------------------------------------------------------------
 

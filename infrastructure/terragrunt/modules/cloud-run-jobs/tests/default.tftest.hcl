@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Asserts the separation that makes the key safe to hand out: a dispatcher that
-# can submit and read logs, a runtime identity holding nothing, and act-as
-# granted on that one account rather than at the project.
+# can submit and read logs, a runtime identity holding only log writing, and
+# act-as granted on that one account rather than at the project.
 # -----------------------------------------------------------------------------
 
 mock_provider "google" {}
@@ -45,24 +45,24 @@ run "identities" {
 
 # -------------------------------------------------------------------------
 # Least privilege: the dispatcher submits and reads, nothing more, and the
-# runtime holds nothing at all
+# runtime only writes logs
 # -------------------------------------------------------------------------
 
 run "dispatcher_roles" {
   command = plan
 
-  # --- the two defaults, and only those ---
+  # --- the three defaults, and only those ---
   assert {
-    condition     = length(google_project_iam_member.dispatcher) == 2
-    error_message = "dispatcher must hold exactly the two default roles"
+    condition     = length(google_project_iam_member.dispatcher) == 3
+    error_message = "dispatcher must hold exactly the three default roles"
   }
 
   assert {
     condition = alltrue([
       for m in google_project_iam_member.dispatcher :
-      contains(["roles/run.developer", "roles/logging.viewer"], m.role)
+      contains(["roles/run.developer", "roles/cloudbuild.builds.editor", "roles/logging.viewer"], m.role)
     ])
-    error_message = "dispatcher roles must be run.developer and logging.viewer"
+    error_message = "dispatcher roles must be run.developer, cloudbuild.builds.editor and logging.viewer"
   }
 
   # --- every grant is keyed to a consumer, so a role can only ever land on
@@ -70,6 +70,21 @@ run "dispatcher_roles" {
   assert {
     condition     = alltrue([for k, _ in google_project_iam_member.dispatcher : startswith(k, "vagabond/")])
     error_message = "project roles must be granted per consumer to the dispatcher only"
+  }
+}
+
+# --- the one role a build needs of the account it runs as ---
+run "runtime_role" {
+  command = plan
+
+  assert {
+    condition     = length(google_project_iam_member.runtime_log_writer) == 1
+    error_message = "the runtime must hold one grant per consumer"
+  }
+
+  assert {
+    condition     = google_project_iam_member.runtime_log_writer["vagabond"].role == "roles/logging.logWriter"
+    error_message = "the runtime's one role must be logging.logWriter"
   }
 }
 
@@ -134,8 +149,8 @@ run "services" {
   command = plan
 
   assert {
-    condition     = length(google_project_service.this) == 3
-    error_message = "run, logging and iamcredentials must all be enabled"
+    condition     = length(google_project_service.this) == 4
+    error_message = "run, cloudbuild, logging and iamcredentials must all be enabled"
   }
 
   # --- another consumer in the same project would lose the API otherwise ---

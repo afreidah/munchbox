@@ -3,9 +3,9 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Runs on Cloud Run or Code Engine, and on the homelab pool once their free
-# quota runs out. The repository must be public on GitHub, since neither cloud
-# can reach Forgejo.
+# Runs on Cloud Run, Cloud Build or Code Engine, and on the homelab pool once
+# their free quota runs out. The repository must be public on GitHub, since no
+# cloud can reach Forgejo.
 #
 #   vagabond job register vagabond/parameterized/static-analysis.vagabond.hcl
 #   vagabond job dispatch -meta repo=afreidah/vagabond -meta commit=<sha> \
@@ -18,7 +18,7 @@ job "static-analysis" {
   }
 
   routing {
-    providers    = ["gcp-cloud-run", "ibm-code-engine", "homelab"]
+    providers    = ["gcp-cloud-run", "gcp-cloud-build", "ibm-code-engine", "homelab"]
     max_cost_usd = 0
   }
 
@@ -36,9 +36,10 @@ job "static-analysis" {
       ]
     }
 
-    # --- Charges follow this block, so it is sized to what both clouds bill:
+    # --- Charges follow this block, so it is sized to what the clouds bill:
     #     whole vCPUs for Cloud Run, and 3814 MiB is Code Engine's 4G at 2 vCPU.
-    #     4096 would run there at 8G while the ledger counted 4 GiB. ---
+    #     4096 would run there at 8G while the ledger counted 4 GiB. Cloud
+    #     Build runs it on its one 2 vCPU machine and bills only the minutes. ---
     resources {
       cpu    = 2000
       memory = 3814
