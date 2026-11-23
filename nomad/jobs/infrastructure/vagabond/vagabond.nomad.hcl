@@ -3,8 +3,8 @@
 #
 # Project: Munchbox / Author: Alex Freidah
 #
-# Dispatches stateless CI jobs to Cloud Run and Code Engine first and the
-# homelab agent pool after them, in containers or Firecracker microVMs. State
+# Dispatches stateless CI jobs to Cloud Run, Cloud Build and Code Engine first
+# and the homelab agent pool after them, in containers or Firecracker microVMs. State
 # lives in Postgres. The API has no authentication, so it stays on the LAN: no
 # Traefik route. Agents dial 4748 over mutual TLS, with certs
 # from pki_vagabond, which signs nothing else.
@@ -175,6 +175,28 @@ provider "gcp-cloud-run" {
   pool "memory" {
     meter  = "gb_seconds"
     limit  = 360000
+    period = "monthly"
+  }
+}
+
+# The same key and runtime account, on Cloud Build's own free tier.
+provider "gcp-cloud-build" {
+  type = "cloud-build"
+
+  config {
+    project                 = "{{ .Data.data.project }}"
+    region                  = "{{ .Data.data.region }}"
+    runtime_service_account = "{{ .Data.data.runtime_account_email }}"
+  }
+
+  credentials {
+    file = "/secrets/gcp-dispatcher.json"
+  }
+
+  # 80% of the 2,500 free build-minutes a month.
+  pool "minutes" {
+    meter  = "seconds"
+    limit  = 120000
     period = "monthly"
   }
 }

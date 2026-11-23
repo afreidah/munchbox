@@ -2,15 +2,17 @@
 # CLOUD-RUN-JOBS ENV HELPER
 # -----------------------------------------------------------------------------
 #
-# Declares the consumers allowed to run containers on Cloud Run's free tier.
-# Each gets a dispatcher identity with a key and a runtime identity its
-# containers execute as, so a leaked dispatcher key cannot act as the workload
-# and the workload holds nothing.
+# Declares the consumers allowed to run containers on Cloud Run's and Cloud
+# Build's free tiers. Each gets a dispatcher identity with a key and a runtime
+# identity its containers execute as, so a leaked dispatcher key cannot act as
+# the workload and the workload holds nothing but log writing.
 #
-# The free tier is per project: 240,000 vCPU-seconds and 450,000 GiB-seconds a
-# month, shared across everything declared here. Cloud Logging's 50 GiB a month
-# is what makes this platform usable at all, since it is the only one of the
-# three we looked at that returns a job's output through a free documented API.
+# Cloud Run's free tier is per project: 240,000 vCPU-seconds and 450,000
+# GiB-seconds a month, shared across everything declared here. Cloud Build's
+# is apart from it: 2,500 build-minutes a month per billing account. Cloud
+# Logging's 50 GiB a month is what makes this platform usable at all, since it
+# is the only one of the three we looked at that returns a job's output through
+# a free documented API.
 #
 # Keys land in Vault through _env_helpers/vault-secrets.hcl, not from here.
 #
