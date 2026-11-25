@@ -127,6 +127,26 @@ dependency "cloud_run_jobs" {
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
+dependency "functions_oci_vagabond" {
+  config_path = "${get_repo_root()}/infrastructure/terragrunt/oci/functions/vagabond"
+
+  mock_outputs = {
+    vault_data = {
+      vagabond = {
+        private_key       = "-----BEGIN RSA PRIVATE KEY-----\nmock\n-----END RSA PRIVATE KEY-----\n"
+        tenancy           = "ocid1.tenancy.oc1..mock"
+        user              = "ocid1.user.oc1..mock"
+        fingerprint       = "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00"
+        region            = "us-phoenix-1"
+        compartment_id    = "ocid1.compartment.oc1..mock"
+        application_id    = "ocid1.fnapp.oc1.phx.mock"
+        function_livetest = "ocid1.fnfunc.oc1.phx.mock"
+      }
+    }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
+}
+
 locals {
   root = read_terragrunt_config(find_in_parent_folders("root.hcl"))
 
@@ -203,6 +223,12 @@ locals {
       source = "cloud_run_jobs"
       key    = "vagabond"
     }
+    # --- the private key, plus the tenancy, user, fingerprint and region its
+    #     signatures name, and the live test function's OCID ---
+    "vagabond/oci-functions" = {
+      source = "functions_oci_vagabond"
+      key    = "vagabond"
+    }
     # --- read by data/postgres/vagabond, which creates the role from it ---
     "vagabond/postgres" = {
       source = "passwords"
@@ -227,14 +253,15 @@ inputs = {
       data = merge(
         try(s.static, {}),
         {
-          aptly_secrets     = dependency.aptly_secrets.outputs.vault_data
-          cloudflare_tokens = dependency.cloudflare_tokens.outputs.vault_data
-          access_keys       = dependency.access_keys.outputs.vault_data
-          gossip_keys       = dependency.gossip_keys.outputs.vault_data
-          cinc_server_keys  = dependency.cinc_server_keys.outputs.vault_data
-          passwords         = dependency.passwords.outputs.vault_data
-          code_engine       = dependency.code_engine.outputs.vault_data
-          cloud_run_jobs    = dependency.cloud_run_jobs.outputs.vault_data
+          aptly_secrets          = dependency.aptly_secrets.outputs.vault_data
+          cloudflare_tokens      = dependency.cloudflare_tokens.outputs.vault_data
+          access_keys            = dependency.access_keys.outputs.vault_data
+          gossip_keys            = dependency.gossip_keys.outputs.vault_data
+          cinc_server_keys       = dependency.cinc_server_keys.outputs.vault_data
+          passwords              = dependency.passwords.outputs.vault_data
+          code_engine            = dependency.code_engine.outputs.vault_data
+          cloud_run_jobs         = dependency.cloud_run_jobs.outputs.vault_data
+          functions_oci_vagabond = dependency.functions_oci_vagabond.outputs.vault_data
         }[s.source][s.key],
       )
     }

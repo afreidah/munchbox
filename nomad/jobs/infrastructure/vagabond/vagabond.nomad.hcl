@@ -4,8 +4,8 @@
 # Project: Munchbox / Author: Alex Freidah
 #
 # Dispatches stateless CI jobs to Cloud Run, Cloud Build and Code Engine first
-# and the homelab agent pool after them, in containers or Firecracker microVMs. State
-# lives in Postgres. The API has no authentication, so it stays on the LAN: no
+# and the homelab agent pool after them, in containers or Firecracker microVMs,
+# and function tasks to OCI Functions. State lives in Postgres. The API has no authentication, so it stays on the LAN: no
 # Traefik route. Agents dial 4748 over mutual TLS, with certs
 # from pki_vagabond, which signs nothing else.
 #
@@ -230,6 +230,37 @@ provider "ibm-code-engine" {
   }
 }
 {{ end }}
+
+{{ with secret "secret/data/vagabond/oci-functions" }}
+provider "oci-functions" {
+  type = "oci-functions"
+
+  config {
+    region      = "{{ .Data.data.region }}"
+    tenancy     = "{{ .Data.data.tenancy }}"
+    user        = "{{ .Data.data.user }}"
+    fingerprint = "{{ .Data.data.fingerprint }}"
+  }
+
+  credentials {
+    file = "/secrets/oci-api-key.pem"
+  }
+
+  # 80% of the free tier: 2,000,000 invocations and 400,000 GB-seconds, which
+  # is 372,529 in gb_seconds if Oracle's GB is decimal, as IBM's is.
+  pool "invocations" {
+    meter  = "executions"
+    limit  = 1600000
+    period = "monthly"
+  }
+
+  pool "memory" {
+    meter  = "gb_seconds"
+    limit  = 298023
+    period = "monthly"
+  }
+}
+{{ end }}
 EOH
         destination = "secrets/config.hcl"
         change_mode = "restart"
@@ -256,6 +287,18 @@ EOH
 {{ with secret "secret/data/vagabond/code-engine" }}{{ .Data.data.api_key }}{{ end }}
 EOH
         destination = "secrets/ibm-api-key"
+        change_mode = "restart"
+        uid         = 10001
+        gid         = 10001
+        perms       = "0400"
+      }
+
+      # --- The OCI Functions API signing key, as a file for the same reason ---
+      template {
+        data        = <<EOH
+{{ with secret "secret/data/vagabond/oci-functions" }}{{ .Data.data.private_key }}{{ end }}
+EOH
+        destination = "secrets/oci-api-key.pem"
         change_mode = "restart"
         uid         = 10001
         gid         = 10001
