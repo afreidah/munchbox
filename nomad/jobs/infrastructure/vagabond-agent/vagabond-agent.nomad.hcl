@@ -164,6 +164,7 @@ job "vagabond-agent" {
           "-tls-key", "/secrets/agent-key.pem",
           "-cgroup-parent", "/vagabond",
           "-firecracker",
+          "-log-json",
         ]
 
         volumes = [

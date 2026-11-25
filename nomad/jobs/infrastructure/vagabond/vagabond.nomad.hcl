@@ -112,7 +112,7 @@ job "vagabond" {
         image_pull_timeout = "10m"
         ports              = ["http", "agent"]
         network_mode       = "host"
-        args               = ["server", "-config", "/secrets/config.hcl"]
+        args               = ["server", "-config", "/secrets/config.hcl", "-log-json"]
       }
 
       # --- Configuration rendered by Vault; uid is the image's appuser ---
