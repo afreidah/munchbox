@@ -75,6 +75,30 @@ export APTLY_ENDPOINT=http://aptly.service.consul:8089
 # -------------------------------------------------------------------------------
 _mb_missing=()
 
+# _mb_reason OUTPUT - Vault's reason on one line: its first line, plus the
+# status and first error when Vault answered, which sit lines below it. A
+# refused token then reads as HTTP 403, not a bare "Error making API request".
+_mb_reason() {
+  local first=${1%%$'\n'*} code="" error="" line
+  while IFS= read -r line; do
+    case $line in
+      Code:\ *)
+        code=${line#Code: }
+        code=${code%%.*}
+        ;;
+      '* '*)
+        error=${line#\* }
+        break
+        ;;
+    esac
+  done <<<"$1"
+  if [[ -n $code ]]; then
+    printf '%s (HTTP %s%s)' "$first" "$code" "${error:+: $error}"
+  else
+    printf '%s' "$first"
+  fi
+}
+
 # _mb_secret VAR FIELD PATH - export VAR from a Vault field, or record why not.
 # stderr is captured rather than discarded, so the recorded reason is Vault's.
 # The read is guarded by `if` so a caller under `set -e` (CI) records a failure
@@ -82,7 +106,7 @@ _mb_missing=()
 _mb_secret() {
   local var=$1 field=$2 path=$3 out
   if ! out=$(vault kv get -field="$field" "$path" 2>&1); then
-    _mb_missing+=("${path}#${field}: ${out%%$'\n'*}")
+    _mb_missing+=("${path}#${field}: $(_mb_reason "$out")")
     return 0
   fi
   if [[ -z $out ]]; then
@@ -164,7 +188,7 @@ _mb_vault_port="${_mb_vault_target##*:}"
 if ! timeout 2 bash -c "echo > /dev/tcp/${_mb_vault_host}/${_mb_vault_port}" 2>/dev/null; then
   [[ $- == *i* ]] && echo "munchbox-env: Vault unreachable at ${_mb_vault_host}:${_mb_vault_port}; skipping secret lookups." >&2
   unset _mb_vault_target _mb_vault_host _mb_vault_port
-  unset -f _mb_secret
+  unset -f _mb_secret _mb_reason
   unset _mb_missing
   return 0 2>/dev/null || exit 0
 fi
@@ -258,7 +282,7 @@ if [[ -f "${_mb_ssh_key}.pub" ]]; then
       printf '%s\n' "$_mb_ssh_out" >"${_mb_ssh_cert}.tmp"
       mv "${_mb_ssh_cert}.tmp" "$_mb_ssh_cert"
     else
-      _mb_missing+=("ssh-client-signer/sign/client-user: ${_mb_ssh_out%%$'\n'*}")
+      _mb_missing+=("ssh-client-signer/sign/client-user: $(_mb_reason "$_mb_ssh_out")")
     fi
   fi
 fi
@@ -277,10 +301,10 @@ if ((${#_mb_missing[@]} > 0)); then
     printf '  %s\n' "${_mb_missing[@]}"
     echo "munchbox-env: those credentials are unset. Fix the grant or the field before running terragrunt."
   } >&2
-  unset -f _mb_secret
+  unset -f _mb_secret _mb_reason
   unset _mb_missing
   return 1 2>/dev/null || exit 1
 fi
 
-unset -f _mb_secret
+unset -f _mb_secret _mb_reason
 unset _mb_missing
