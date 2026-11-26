@@ -56,6 +56,7 @@ dependency "passwords" {
       "cinc-console"                = { session_secret = "mock-session-secret" }
       "vagabond/postgres"           = { db_password = "mock-db-password" }
       "blackbox-exporter-external"  = { probe_token = "mock-probe-token" }
+      "ovoo"                        = { ticket_secret = "mock-ticket-secret" }
     }
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
@@ -240,6 +241,10 @@ locals {
     "blackbox-exporter-external" = {
       source = "passwords"
       key    = "blackbox-exporter-external"
+    }
+    "ovoo" = {
+      source = "passwords"
+      key    = "ovoo"
     }
   }
 }
