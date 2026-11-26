@@ -41,6 +41,10 @@ locals {
     "blackbox-exporter-external" = {
       probe_token = { length = 48, special = false }
     }
+    # --- ovoo's HMAC key for remote-exec WebSocket tickets ---
+    "ovoo" = {
+      ticket_secret = { length = 64, special = false }
+    }
   }
 }
 

@@ -186,6 +186,7 @@ locals {
     "haproxy"         = {}
     "lidarr"          = {}
     "nomad"           = {}
+    "ovoo"            = {}
     "pihole"          = {}
     "pihole-green"    = {}
     "pihole-logan"    = {}
