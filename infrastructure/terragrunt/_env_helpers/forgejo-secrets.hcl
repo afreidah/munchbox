@@ -99,6 +99,19 @@ locals {
       secret_name = "VAULT_ADDR"
     }
   }
+
+  # --- Secrets one repository gets on top of its set, keyed by repository.
+  #     vagabond's static-analysis workflow dispatches with the ci token,
+  #     which writes the default namespace only. ---
+  repository_secrets = {
+    vagabond = {
+      "vagabond-token" = {
+        vault_path  = "vagabond/tokens"
+        vault_field = "ci"
+        secret_name = "VAGABOND_TOKEN"
+      }
+    }
+  }
 }
 
 inputs = {
@@ -110,5 +123,8 @@ inputs = {
   repository_owner = "alex"
   repository_name  = local.repository
 
-  secrets = local.repository == "munchbox" ? local.munchbox_secrets : local.app_secrets
+  secrets = merge(
+    local.repository == "munchbox" ? local.munchbox_secrets : local.app_secrets,
+    lookup(local.repository_secrets, local.repository, {}),
+  )
 }

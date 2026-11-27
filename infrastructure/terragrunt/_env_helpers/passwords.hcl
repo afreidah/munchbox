@@ -35,6 +35,12 @@ locals {
     "vagabond/postgres" = {
       db_password = { length = 32, special = false }
     }
+    # --- vagabond's API tokens: admin manages everything, ci dispatches in
+    #     default. No specials because each is sent as a header. ---
+    "vagabond/tokens" = {
+      admin = { length = 48, special = false }
+      ci    = { length = 48, special = false }
+    }
     # --- blackbox-exporter-external sends it as a header that Cloudflare's WAF
     #     skips bot challenges for; no specials because it lands in a header and
     #     a rule expression ---

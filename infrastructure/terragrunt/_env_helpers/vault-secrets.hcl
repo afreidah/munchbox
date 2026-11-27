@@ -55,6 +55,7 @@ dependency "passwords" {
       "vaultwarden/master-password" = { password = "mock-master-password" }
       "cinc-console"                = { session_secret = "mock-session-secret" }
       "vagabond/postgres"           = { db_password = "mock-db-password" }
+      "vagabond/tokens"             = { admin = "mock-admin-token", ci = "mock-ci-token" }
       "blackbox-exporter-external"  = { probe_token = "mock-probe-token" }
       "ovoo"                        = { ticket_secret = "mock-ticket-secret" }
     }
@@ -235,6 +236,12 @@ locals {
       source = "passwords"
       key    = "vagabond/postgres"
       static = { db_username = "vagabond" }
+    }
+    # --- read by vagabond's server for its token blocks, admin by
+    #     munchbox-env.sh, and ci by the vagabond repository's Forgejo CI ---
+    "vagabond/tokens" = {
+      source = "passwords"
+      key    = "vagabond/tokens"
     }
     # --- the job's own prefix, so blackbox-exporter-external reads it with no
     #     extra grant; cloudflare-waf matches it in its probe skip rule ---
