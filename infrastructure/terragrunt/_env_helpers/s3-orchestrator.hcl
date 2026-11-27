@@ -51,10 +51,11 @@ locals {
     }
 
     # wal-g enforces its own retention, so the archive identity deletes as well
-    # as writes.
+    # as writes. It also asks for the bucket's versioning, which list-buckets
+    # covers.
     "postgres-wal" = {
       label  = "patroni wal archive"
-      grants = [{ name = "postgres-wal", permissions = ["list", "read", "write", "delete"] }]
+      grants = [{ name = "postgres-wal", permissions = ["list-buckets", "list", "read", "write", "delete"] }]
     }
 
     # restic deletes during prune and when it removes its lock files.
@@ -88,13 +89,20 @@ locals {
   # None of them carry a multipart limit or CORS rules, matching the entries
   # they are taking over from. A difference here would change how the bucket
   # behaves at the handover rather than at a time anyone chose.
+  #
+  # stored_form replaces the deployment's layers for a bucket's new writes and
+  # replication_factor its copy count; a bucket setting neither takes both from
+  # the deployment. restic already encrypts the thinkpad's backups.
   buckets = {
-    "unified"              = {}
-    "aptly"                = {}
-    "tempo-traces"         = {}
-    "artifacts"            = {}
-    "postgres-wal"         = {}
-    "alex-debian-thinkpad" = {}
+    "unified"      = {}
+    "aptly"        = {}
+    "tempo-traces" = { stored_form = ["compressed", "encrypted"], replication_factor = 1 }
+    "artifacts"    = {}
+    "postgres-wal" = { replication_factor = 1 }
+    "alex-debian-thinkpad" = {
+      stored_form        = ["compressed", "hashed"]
+      replication_factor = 1
+    }
   }
 }
 
