@@ -61,6 +61,7 @@ locals {
     "temporal",
     "trivy-dashboard",
     "vagabond/postgres",
+    "vagabond/tokens",
     "vaultwarden",
   ]
 
