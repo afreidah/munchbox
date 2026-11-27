@@ -1,0 +1,14 @@
+# dns-health alert group
+# LAN resolvers: each Pi-hole's admin page as probed by blackbox-exporter-internal.
+
+- name: dns-health
+  interval: 30s
+  rules:
+    - alert: PiholeDown
+      expr: probe_success{job="pihole_probes"} == 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pi-hole down: {{ $labels.instance }}"
+        description: "{{ $labels.instance }} has failed its probe for 5 minutes. Clients that resolve through it fall back to the other Pi-hole, or fail outright if it is their only resolver."

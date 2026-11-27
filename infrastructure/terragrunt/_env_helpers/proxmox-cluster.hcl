@@ -82,7 +82,7 @@ locals {
         cloud_init = {
           ip         = "192.168.68.73/24"
           gateway    = "192.168.68.1"
-          nameserver = "192.168.68.62"
+          nameserver = "192.168.68.62 192.168.68.64"
         }
       }
     }
@@ -98,7 +98,7 @@ locals {
         cloud_init = {
           ip         = "192.168.68.74/24"
           gateway    = "192.168.68.1"
-          nameserver = "192.168.68.62"
+          nameserver = "192.168.68.62 192.168.68.64"
         }
       }
     }
@@ -114,7 +114,7 @@ locals {
         cloud_init = {
           ip         = "192.168.68.99/24"
           gateway    = "192.168.68.1"
-          nameserver = "192.168.68.62"
+          nameserver = "192.168.68.62 192.168.68.64"
           sshkeys    = local.root.locals.ssh_public_key
           # Attach a cloud-init CD-ROM so the OS can actually read the
           # ipconfig0 / ciuser settings above.

@@ -1,7 +1,7 @@
 # redis-health alert group
 # Two-server Redis cluster (sentinel-fronted): liveness, replication health,
-# split-brain, persistence, memory pressure, rejection rates, client count,
-# fragmentation.
+# split-brain, persistence, keyspace loss, memory pressure, rejection rates,
+# client count, fragmentation.
 #
 # NOTE: the servers run maxmemory-policy noeviction, so nothing is ever
 # evicted. Memory exhaustion shows up as rejected writes, not evictions --
@@ -98,10 +98,24 @@
         description: "Replica {{ $labels.instance }} has lost its link to the master; it is serving stale data and cannot be promoted cleanly."
 
     - alert: RedisPersistenceFailing
+      # short window: a save failure is often followed within a minute by the
+      # restart that loses the dataset, so a longer wait reports it too late
       expr: redis_rdb_last_bgsave_status == 0 or redis_aof_last_write_status == 0
-      for: 5m
+      for: 1m
       labels:
         severity: warning
       annotations:
         summary: "Redis persistence failing"
         description: "Redis on {{ $labels.instance }} reports a failed RDB bgsave or AOF write. A restart would lose everything since the last good snapshot."
+
+    - alert: RedisKeyspaceCollapse
+      # floor of 100 keys so a near-empty instance draining to zero is not loss
+      expr: |
+        sum by (instance) (redis_db_keys) < 0.5 * sum by (instance) (redis_db_keys offset 10m)
+        and sum by (instance) (redis_db_keys offset 10m) > 100
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Redis lost most of its keys on {{ $labels.instance }}"
+        description: "Redis on {{ $labels.instance }} holds {{ $value | printf \"%.0f\" }} keys, under half of what it held 10 minutes ago. A replica that resyncs from an emptied master is wiped too; check the data dir and the last save before restarting anything."
