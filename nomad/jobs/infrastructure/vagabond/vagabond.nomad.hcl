@@ -5,9 +5,10 @@
 #
 # Dispatches stateless CI jobs to Cloud Run, Cloud Build and Code Engine first
 # and the homelab agent pool after them, in containers or Firecracker microVMs,
-# and function tasks to OCI Functions. State lives in Postgres. The API has no authentication, so it stays on the LAN: no
-# Traefik route. Agents dial 4748 over mutual TLS, with certs
-# from pki_vagabond, which signs nothing else.
+# and function tasks to OCI Functions. State lives in Postgres. The API takes
+# only the tokens in secret/vagabond/tokens, over plain HTTP, so it stays on the
+# LAN: no Traefik route. Agents dial 4748 over mutual TLS, with certs from
+# pki_vagabond, which signs nothing else.
 #
 # The job name is what grants secret/vagabond/*, through nomad-workload-self,
 # and its vagabond role adds issuing the server's agent-listener cert.
@@ -126,6 +127,21 @@ server {
     cert = "/secrets/agent-listener.pem"
     key  = "/secrets/agent-listener-key.pem"
     ca   = "/secrets/agent-ca.pem"
+  }
+}
+
+# The operator's token, exported by munchbox-env.sh.
+token "admin" {
+  credentials { file = "/secrets/token-admin" }
+  management = true
+}
+
+# The vagabond repository's Forgejo CI, which dispatches static-analysis.
+token "ci" {
+  credentials { file = "/secrets/token-ci" }
+
+  namespace "default" {
+    policy = "write"
   }
 }
 
@@ -287,6 +303,29 @@ EOH
 {{ with secret "secret/data/vagabond/code-engine" }}{{ .Data.data.api_key }}{{ end }}
 EOH
         destination = "secrets/ibm-api-key"
+        change_mode = "restart"
+        uid         = 10001
+        gid         = 10001
+        perms       = "0400"
+      }
+
+      # --- The API tokens' secrets, one file per token block ---
+      template {
+        data        = <<EOH
+{{ with secret "secret/data/vagabond/tokens" }}{{ .Data.data.admin }}{{ end }}
+EOH
+        destination = "secrets/token-admin"
+        change_mode = "restart"
+        uid         = 10001
+        gid         = 10001
+        perms       = "0400"
+      }
+
+      template {
+        data        = <<EOH
+{{ with secret "secret/data/vagabond/tokens" }}{{ .Data.data.ci }}{{ end }}
+EOH
+        destination = "secrets/token-ci"
         change_mode = "restart"
         uid         = 10001
         gid         = 10001

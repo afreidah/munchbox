@@ -155,6 +155,7 @@ export S3O_ADMIN_ADDR=https://s3.munchbox.cc
 
 # Vagabond CLI: the API is plain HTTP on the LAN with no Traefik route, so no
 # VAGABOND_TLS_* is needed. Jobs live in the default namespace, the CLI's default.
+# VAGABOND_TOKEN is read from Vault below.
 export VAGABOND_ADDR="${VAGABOND_ADDR-http://vagabond.service.consul:4747}"
 
 # PostgreSQL: point psql at the Patroni primary via haproxy-postgres, with the
@@ -257,6 +258,12 @@ export IBMCLOUD_API_KEY="${IC_API_KEY:-}"
 # grants, so it can be narrowed or revoked without redeploying the orchestrator.
 _mb_secret S3O_ACCESS_KEY_ID access_key secret/s3-identity/admin
 _mb_secret S3O_SECRET_ACCESS_KEY secret_key secret/s3-identity/admin
+
+# Vagabond CLI, as the management token. Optional: only a person running the
+# CLI needs it, so a token that cannot read it leaves it unset rather than
+# failing the file.
+VAGABOND_TOKEN=$(vault kv get -field=admin secret/vagabond/tokens 2>/dev/null) &&
+  export VAGABOND_TOKEN || unset VAGABOND_TOKEN
 
 # PostgreSQL
 _mb_secret PGUSER username secret/postgres-shared/root
