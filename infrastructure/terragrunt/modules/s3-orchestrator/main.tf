@@ -45,6 +45,8 @@ resource "s3orchestrator_bucket" "this" {
 
   name                  = each.key
   max_multipart_uploads = each.value.max_multipart_uploads
+  stored_form           = each.value.stored_form
+  replication_factor    = each.value.replication_factor
 
   dynamic "cors_rule" {
     for_each = each.value.cors

@@ -121,7 +121,8 @@ jobs:
           # token only reads, and cluster-wide Nomad config needs operator
           # write, which is the whole point of the scoped token. The vaultwarden
           # units need the personal master password, which this token cannot read.
-          deny='cluster/secrets/forgejo|cluster/vault-config|cluster/consul-acls|cluster/nomad-acls|cluster/nomad-config|cluster/vault-secrets|cluster/secrets/oauth2-proxy|cluster/secrets/vaultwarden|data/postgres/vaultwarden|proxmox/vms/|oci/vms/'
+          # The pi-hole units reach green, which is down.
+          deny='cluster/secrets/forgejo|cluster/vault-config|cluster/consul-acls|cluster/nomad-acls|cluster/nomad-config|cluster/vault-secrets|cluster/secrets/oauth2-proxy|cluster/secrets/vaultwarden|data/postgres/vaultwarden|proxmox/vms/|oci/vms/|dns/pihole/'
 
           # grep exits 1 on no match, which under pipefail would fail the step on
           # the ordinary case of a push touching no terragrunt unit.

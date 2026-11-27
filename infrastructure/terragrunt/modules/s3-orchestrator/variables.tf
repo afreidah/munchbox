@@ -87,6 +87,8 @@ variable "buckets" {
 
   type = map(object({
     max_multipart_uploads = optional(number)
+    stored_form           = optional(set(string))
+    replication_factor    = optional(number, 0)
     cors = optional(list(object({
       allowed_origins = list(string)
       allowed_methods = list(string)
@@ -107,6 +109,20 @@ variable "buckets" {
   validation {
     condition     = alltrue([for b in var.buckets : b.max_multipart_uploads == null || b.max_multipart_uploads >= 0])
     error_message = "A negative multipart limit is not a limit; omit it or use 0 for unlimited."
+  }
+
+  # --- null takes the deployment's layers; a set, even empty, is exactly those ---
+  validation {
+    condition = alltrue(flatten([
+      for b in var.buckets : [for l in coalesce(b.stored_form, []) : contains(["compressed", "encrypted", "hashed"], l)]
+    ]))
+    error_message = "A stored form names only compressed, encrypted and hashed."
+  }
+
+  # --- 0 takes the deployment's replication.factor ---
+  validation {
+    condition     = alltrue([for b in var.buckets : b.replication_factor >= 0])
+    error_message = "A negative replication factor is not a factor; omit it or use 0 for the deployment's."
   }
 
   # --- a rule matching no origin grants access nobody gets, and the
