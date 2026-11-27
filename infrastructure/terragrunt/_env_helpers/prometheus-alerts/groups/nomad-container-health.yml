@@ -1,6 +1,7 @@
 # nomad-container-health alert group
 # Per-allocation and per-client signals: stuck-queued allocs, restart loops,
-# client resource saturation. Per-job names come through as `exported_job`
+# task memory near its limit, client resource saturation. Per-job names come
+# through as `exported_job`
 # (Nomad prefixes the original `job` label so it doesn't collide with
 # Prometheus's scrape-job label).
 
@@ -24,6 +25,23 @@
       annotations:
         summary: "Nomad alloc restart loop on {{ $labels.instance }}"
         description: "A Nomad allocation has restarted {{ $value | printf \"%.0f\" }} times in 10 minutes on {{ $labels.instance }}."
+
+    - alert: NomadTaskMemoryNearLimit
+      # rss, not usage: usage counts reclaimable page cache, so cache-heavy tasks
+      # sit at ~100% of their limit while healthy. The limit is memory_max where
+      # set, else memory; server nodes are scraped by both nomad jobs, so max
+      # collapses the duplicate series.
+      expr: |
+        max by (exported_job, task_group, task, host, alloc_id) (nomad_client_allocs_memory_rss)
+        / max by (exported_job, task_group, task, host, alloc_id) (
+            nomad_client_allocs_memory_max_allocated or nomad_client_allocs_memory_allocated
+          ) > 0.85
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "{{ $labels.exported_job }}/{{ $labels.task }} near its memory limit on {{ $labels.host }}"
+        description: "Task {{ $labels.task }} of {{ $labels.exported_job }} on {{ $labels.host }} holds {{ $value | humanizePercentage }} of its memory limit as resident memory. The kernel OOM-kills it when that reaches the limit."
 
     - alert: NomadClientHighMemory
       # allocated/unallocated are both MB; host_memory_total is bytes (don't mix)

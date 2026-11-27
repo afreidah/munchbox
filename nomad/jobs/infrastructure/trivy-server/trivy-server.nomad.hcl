@@ -132,11 +132,11 @@ job "trivy-server" {
         env         = true
       }
 
-      # Vuln DB sync spikes well above steady-state (OOM-killed at 256).
-      # Keeping memory at the historical 512 MiB; CPU was safely cut.
+      # --- A DB update holds the old and new vuln DB at once ---
       resources {
-        cpu    = 100
-        memory = 512
+        cpu        = 100
+        memory     = 512
+        memory_max = 1024
       }
 
       kill_timeout = "30s"
