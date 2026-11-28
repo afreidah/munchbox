@@ -243,6 +243,9 @@ _mb_secret FORGEJO_API_TOKEN api_token secret/forgejo
 _mb_secret TF_VAR_grafana_admin_user admin_user secret/grafana
 _mb_secret TF_VAR_grafana_admin_password admin_password secret/grafana
 
+# Ramble (for Terraform/Terragrunt registry packs and jobs)
+_mb_secret TF_VAR_ramble_token api_token secret/ramble
+
 # Jellyfin (for Terraform/Terragrunt config provisioning)
 _mb_secret TF_VAR_jellyfin_endpoint endpoint secret/jellyfin
 _mb_secret TF_VAR_jellyfin_api_key api_key secret/jellyfin
