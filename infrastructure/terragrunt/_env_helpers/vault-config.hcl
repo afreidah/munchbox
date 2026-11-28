@@ -33,6 +33,7 @@ locals {
     "pihole/logan",
     "postgres-shared/root",
     "proxmox/api-token",
+    "ramble",
     "s3-identity/admin",
     "s3-orchestrator",
     "vaultwarden/master-password",
